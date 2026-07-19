@@ -1,6 +1,12 @@
 import Phaser from "phaser";
 import type { Room } from "colyseus.js";
-import { GRID_HEIGHT, GRID_WIDTH, ROOM_REGIONS, label } from "@zodiac-clue/shared";
+import {
+  GRID_HEIGHT,
+  GRID_WIDTH,
+  ROOM_REGIONS,
+  emoji,
+  label,
+} from "@zodiac-clue/shared";
 
 const CELL = 20;
 const PLAYER_COLORS = [
@@ -91,7 +97,10 @@ export class GameScene extends Phaser.Scene {
           .setOrigin(0);
         this.sprites.set(id, rect);
         const tag = this.add
-          .text(0, 0, p.name, { fontSize: "9px", color: "#ffffff" })
+          .text(0, 0, `${emoji(p.suspect)} ${p.name}`, {
+            fontSize: "9px",
+            color: "#ffffff",
+          })
           .setOrigin(0, 1);
         this.tags.set(id, tag);
       }
@@ -113,6 +122,7 @@ export class GameScene extends Phaser.Scene {
 
 type PlayerView = {
   name: string;
+  suspect: string;
   x: number;
   y: number;
   eliminated: boolean;

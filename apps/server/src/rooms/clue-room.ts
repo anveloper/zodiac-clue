@@ -14,7 +14,7 @@ import {
 } from "@zodiac-clue/shared";
 import { GameState, Player } from "../schema/game-state";
 
-type JoinOptions = { name?: string };
+type JoinOptions = { character?: string };
 
 const pick = <T>(arr: readonly T[]): T =>
   arr[Math.floor(Math.random() * arr.length)];
@@ -56,33 +56,68 @@ export class ClueRoom extends Room<GameState> {
     const used = new Set(
       [...this.state.players.values()].map((p) => p.suspect),
     );
-    const suspect = SUSPECTS.find((s) => !used.has(s)) ?? SUSPECTS[0];
+    // 요청한 캐릭터가 유효(손님)하고 비어있으면 배정, 아니면 남는 것 중 첫 번째
+    const requested = options.character;
+    const wanted =
+      requested &&
+      (SUSPECTS as readonly string[]).includes(requested) &&
+      !used.has(requested)
+        ? requested
+        : undefined;
+    const suspect = wanted ?? SUSPECTS.find((s) => !used.has(s)) ?? SUSPECTS[0];
 
     const player = new Player();
     player.id = client.sessionId;
-    player.name = options.name?.trim() || `탐정-${this.state.players.size + 1}`;
     player.suspect = suspect;
+    player.name = label(suspect);
     const spawn = this.spawnPoint(this.state.players.size);
     player.x = spawn.x;
     player.y = spawn.y;
     player.room = roomAt(player.x, player.y) ?? "";
 
     this.state.players.set(client.sessionId, player);
+    if (!this.state.host) {
+      this.state.host = client.sessionId;
+    }
     this.broadcast("log", {
       text: `${player.name} 입장 (${label(suspect)}).`,
     });
   }
 
-  onLeave(client: Client): void {
+  async onLeave(client: Client, consented: boolean): Promise<void> {
     const player = this.state.players.get(client.sessionId);
-    if (player) {
-      this.broadcast("log", { text: `${player.name} 퇴장.` });
+    if (player) player.connected = false;
+
+    // 새로고침·순단 등 비자발적 이탈이면 잠시 재접속을 기다린다.
+    if (!consented) {
+      this.broadcast("log", {
+        text: `${player?.name ?? "누군가"} 연결 끊김 — 재접속 대기…`,
+      });
+      try {
+        await this.allowReconnection(client, 60);
+        const back = this.state.players.get(client.sessionId);
+        if (back) back.connected = true;
+        this.broadcast("log", { text: `${back?.name ?? "플레이어"} 재접속!` });
+        return;
+      } catch {
+        // 시간 초과 → 아래에서 제거
+      }
     }
-    this.state.players.delete(client.sessionId);
-    this.hands.delete(client.sessionId);
+    this.removePlayer(client.sessionId);
+  }
+
+  private removePlayer(sessionId: string): void {
+    const player = this.state.players.get(sessionId);
+    if (player) this.broadcast("log", { text: `${player.name} 퇴장.` });
+    this.state.players.delete(sessionId);
+    this.hands.delete(sessionId);
+    // 방장이 나가면 다음 사람에게 위임
+    if (this.state.host === sessionId) {
+      this.state.host = [...this.state.players.keys()][0] ?? "";
+    }
     if (
       this.state.phase === "playing" &&
-      this.state.currentTurn === client.sessionId
+      this.state.currentTurn === sessionId
     ) {
       this.advanceTurn();
     }
@@ -118,11 +153,17 @@ export class ClueRoom extends Room<GameState> {
   // ── 게임 시작: 정답 봉투 + 카드 분배 ──
   private handleStart(client: Client): void {
     if (this.state.phase !== "lobby") return;
+    if (this.state.host !== client.sessionId) {
+      client.send("log", { text: "방장만 잔치를 시작할 수 있습니다." });
+      return;
+    }
     const ids = [...this.state.players.keys()];
     if (ids.length < 2) {
       client.send("log", { text: "2명 이상이어야 시작할 수 있습니다." });
       return;
     }
+    // 시작하면 방을 잠가 난입 방지
+    void this.lock();
 
     const solution: Solution = {
       suspect: pick(SUSPECTS),

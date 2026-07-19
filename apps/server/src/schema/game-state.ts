@@ -17,6 +17,8 @@ export class Player extends Schema {
 export class GameState extends Schema {
   /** lobby | playing | ended */
   @type("string") phase = "lobby";
+  /** 방장(host) sessionId — 첫 입장자. 게임 시작 권한. */
+  @type("string") host = "";
   /** 현재 턴 플레이어의 sessionId */
   @type("string") currentTurn = "";
   @type(["string"]) turnOrder = new ArraySchema<string>();

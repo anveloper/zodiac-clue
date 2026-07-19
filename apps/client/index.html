@@ -12,15 +12,62 @@
         background: #16130f;
         color: #f0e9dc;
       }
-      .wrap { display: flex; gap: 16px; padding: 16px; flex-wrap: wrap; }
-      #game { border: 1px solid #3a3126; line-height: 0; }
-      .side { flex: 1; min-width: 260px; max-width: 420px; }
-      .controls { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+      .hidden { display: none !important; }
       button {
         background: #b4622b; color: #fff; border: 0; border-radius: 6px;
         padding: 8px 12px; font-size: 13px; cursor: pointer;
       }
       button:hover { background: #c9733a; }
+      button:disabled { background: #45403a; color: #8c8578; cursor: not-allowed; }
+      input {
+        background: #16130f; color: #f0e9dc; border: 1px solid #4a3d2b;
+        border-radius: 6px; padding: 8px 10px; font-size: 13px;
+      }
+      h1 { color: #f0d9a8; }
+
+      /* ── 랜딩 / 로비 공통 카드 ── */
+      .center { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px; }
+      .card {
+        width: 340px; background: #211c16; border: 1px solid #3a3126;
+        border-radius: 12px; padding: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+      }
+      .card h1 { font-size: 20px; margin: 0 0 4px; }
+      .card .subtitle { font-size: 12px; color: #a89778; margin: 0 0 20px; }
+      .field { margin-bottom: 12px; }
+      .field label { display: block; font-size: 12px; color: #a89778; margin-bottom: 4px; }
+      .field input { width: 100%; }
+      .full { width: 100%; margin-top: 4px; }
+      .char-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 4px; }
+      .char {
+        display: flex; flex-direction: column; align-items: center; gap: 3px;
+        padding: 8px 2px; background: #16130f; border: 1px solid #3a3126;
+        border-radius: 8px; cursor: pointer; font-size: 10px; color: #cbbfa8;
+        text-align: center;
+      }
+      .char .em { font-size: 20px; line-height: 1; }
+      .char:hover { border-color: #b4622b; }
+      .char.selected { border-color: #e0a35a; background: #2c2317; color: #f0d9a8; }
+      .char.locked { opacity: 0.35; cursor: not-allowed; }
+      .divider { text-align: center; color: #6b6355; font-size: 11px; margin: 16px 0; }
+      .join-row { display: flex; gap: 8px; }
+      .join-row input { flex: 1; }
+      .msg { font-size: 12px; color: #e0a35a; margin-top: 12px; min-height: 16px; }
+
+      /* ── 로비(대기실) ── */
+      .invite { display: flex; gap: 8px; margin-bottom: 16px; }
+      .invite input { flex: 1; font-size: 11px; }
+      #playerList { list-style: none; padding: 0; margin: 8px 0 16px; }
+      #playerList li {
+        padding: 8px 10px; background: #16130f; border: 1px solid #2c251c;
+        border-radius: 6px; margin-bottom: 6px; font-size: 13px;
+      }
+      .host-hint { font-size: 12px; color: #a89778; margin-top: 10px; text-align: center; }
+
+      /* ── 게임 화면 ── */
+      .wrap { display: flex; gap: 16px; padding: 16px; flex-wrap: wrap; }
+      #game { border: 1px solid #3a3126; line-height: 0; }
+      .side { flex: 1; min-width: 260px; max-width: 420px; }
+      .controls { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
       #hand {
         background: #211c16; border: 1px solid #3a3126; border-radius: 6px;
         padding: 10px; font-size: 13px; margin-bottom: 12px; min-height: 20px;
@@ -30,10 +77,10 @@
         padding: 10px; font-size: 12px; height: 320px; overflow-y: auto;
       }
       #log > div { padding: 2px 0; border-bottom: 1px solid #2c251c; }
-      h1 { font-size: 16px; margin: 0 0 4px; color: #f0d9a8; }
-      .subtitle { font-size: 12px; color: #a89778; margin: 0 0 12px; }
+      .side h2 { font-size: 15px; margin: 0 0 4px; color: #f0d9a8; }
+      .side .subtitle { font-size: 12px; color: #a89778; margin: 0 0 12px; }
 
-      /* 카드 선택 모달 */
+      /* ── 카드 선택 모달 ── */
       .overlay {
         position: fixed; inset: 0; background: rgba(0, 0, 0, 0.6);
         display: flex; align-items: center; justify-content: center; z-index: 10;
@@ -55,21 +102,61 @@
     </style>
   </head>
   <body>
-    <div class="wrap">
-      <div id="game"></div>
-      <div class="side">
-        <h1>🐯 호랑이 생신 잔치 — 도둑은 누구?</h1>
-        <p class="subtitle">대감집 손님 6인 중 잔치 선물을 훔친 자를 추리하라 (기본 클루 6인)</p>
-        <div class="controls">
-          <button id="start">잔치 시작</button>
-          <button id="suggest">제안</button>
-          <button id="accuse">고발</button>
-          <button id="endTurn">턴 종료</button>
+    <!-- ① 랜딩 -->
+    <section id="landing" class="center">
+      <div class="card">
+        <h1>🐯 호랑이 생신 잔치</h1>
+        <p class="subtitle">대감집 손님들 중 잔치 선물을 훔친 자를 추리하라</p>
+        <div class="field">
+          <label>캐릭터 선택 (십이지신 손님)</label>
+          <div id="charGrid" class="char-grid"></div>
         </div>
-        <div id="hand"><b>내 단서 패</b>: (잔치 시작 후 표시)</div>
-        <div id="log"></div>
+        <button id="createBtn" class="full" disabled>방 만들기</button>
+        <div class="divider">— 또는 초대받았다면 —</div>
+        <div class="join-row">
+          <input id="codeInput" placeholder="초대 코드" />
+          <button id="joinBtn" disabled>참가</button>
+        </div>
+        <div id="landingMsg" class="msg"></div>
       </div>
-    </div>
+    </section>
+
+    <!-- ② 대기실(로비) -->
+    <section id="lobby" class="center hidden">
+      <div class="card">
+        <h1>🏮 대기실</h1>
+        <p class="subtitle">초대 링크를 친구에게 공유하세요</p>
+        <div class="invite">
+          <input id="inviteLink" readonly />
+          <button id="copyBtn">복사</button>
+        </div>
+        <div style="font-size: 12px; color: #a89778;">
+          참가자 (<span id="playerCount">0</span>/6)
+        </div>
+        <ul id="playerList"></ul>
+        <button id="startBtn" class="full" disabled>잔치 시작</button>
+        <div id="hostHint" class="host-hint"></div>
+      </div>
+    </section>
+
+    <!-- ③ 게임 -->
+    <section id="gameScreen" class="hidden">
+      <div class="wrap">
+        <div id="game"></div>
+        <div class="side">
+          <h2>🐯 호랑이 생신 잔치</h2>
+          <p class="subtitle">이동: 방향키/WASD · 방에 들어가 [제안]</p>
+          <div class="controls">
+            <button id="suggest">제안</button>
+            <button id="accuse">고발</button>
+            <button id="endTurn">턴 종료</button>
+          </div>
+          <div id="hand"><b>내 단서 패</b>: (잔치 시작 후 표시)</div>
+          <div id="log"></div>
+        </div>
+      </div>
+    </section>
+
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

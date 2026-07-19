@@ -1,23 +1,47 @@
 import Phaser from "phaser";
 import {
+  HOST,
   ROOMS,
   SUSPECTS,
   WEAPONS,
+  ZODIAC,
+  emoji,
   label,
   type Card,
 } from "@zodiac-clue/shared";
-import { joinClue } from "./network";
+import type { Room } from "colyseus.js";
+import { client, createRoom, joinRoomById } from "./network";
 import { GameScene } from "./scenes/game-scene";
 
-const logEl = document.getElementById("log") as HTMLDivElement;
-const handEl = document.getElementById("hand") as HTMLDivElement;
+/** 재접속 토큰 저장 키. sessionStorage = 탭 단위(새로고침엔 유지, 새 탭엔 없음). */
+const RECONNECT_KEY = "zc_reconnect";
 
+const $ = <T extends HTMLElement = HTMLElement>(id: string): T =>
+  document.getElementById(id) as T;
+
+const errMsg = (e: unknown): string => {
+  if (e instanceof Error) return e.message;
+  if (typeof Event !== "undefined" && e instanceof Event) {
+    return "서버(ws://localhost:2567)에 연결하지 못했습니다. 서버가 켜져 있나요? → `pnpm dev`";
+  }
+  return String(e);
+};
+
+// ── 화면 전환 ─────────────────────────────
+const SCREENS = ["landing", "lobby", "gameScreen"] as const;
+type ScreenId = (typeof SCREENS)[number];
+const show = (which: ScreenId): void => {
+  for (const id of SCREENS) $(id).classList.toggle("hidden", id !== which);
+};
+
+// ── 로그 ─────────────────────────────
 const addLog = (text: string): void => {
   const div = document.createElement("div");
   div.textContent = text;
-  logEl.prepend(div);
+  $("log").prepend(div);
 };
 
+// ── 카드 선택 모달 ─────────────────────────────
 type Pick = { suspect: string; weapon: string; room?: string };
 
 const selectFrom = (values: readonly string[]): HTMLSelectElement => {
@@ -31,7 +55,6 @@ const selectFrom = (values: readonly string[]): HTMLSelectElement => {
   return sel;
 };
 
-/** 용의자/수법(/장소) 드롭다운 모달을 띄우고 선택값을 반환. 취소 시 null. */
 const openPicker = (title: string, needRoom: boolean): Promise<Pick | null> =>
   new Promise((resolve) => {
     const overlay = document.createElement("div");
@@ -86,28 +109,112 @@ const openPicker = (title: string, needRoom: boolean): Promise<Pick | null> =>
     document.body.appendChild(overlay);
   });
 
-const main = async (): Promise<void> => {
-  const name = window.prompt("잔치에 참석할 이름을 입력하세요", "탐정") ?? "탐정";
-  const room = await joinClue(name);
+// ── 상태 ─────────────────────────────
+let room: Room | null = null;
+let phaserStarted = false;
+let selectedCharacter: string | null = null;
 
-  room.onMessage("log", (m: { text: string }) => addLog(m.text));
-  room.onMessage("hand", (m: { cards: Card[] }) => {
-    handEl.innerHTML =
+// ── 십이지신 캐릭터 선택 그리드 ─────────────────────────────
+const selectCharacter = (z: string, grid: HTMLElement): void => {
+  selectedCharacter = z;
+  [...grid.children].forEach((c, i) =>
+    c.classList.toggle("selected", ZODIAC[i] === z),
+  );
+  ($("createBtn") as HTMLButtonElement).disabled = false;
+  ($("joinBtn") as HTMLButtonElement).disabled = false;
+};
+
+const buildCharGrid = (): void => {
+  const grid = $("charGrid");
+  grid.innerHTML = "";
+  for (const z of ZODIAC) {
+    const cell = document.createElement("div");
+    const locked = z === HOST;
+    cell.className = "char" + (locked ? " locked" : "");
+    cell.innerHTML =
+      `<span class="em">${emoji(z)}</span>` +
+      `<span>${locked ? "주최자" : label(z)}</span>`;
+    if (locked) {
+      cell.title = "호랑이 대감은 잔치 주최자입니다";
+    } else {
+      cell.onclick = () => selectCharacter(z, grid);
+    }
+    grid.appendChild(cell);
+  }
+};
+
+// ── 방 연결 후 공통 배선 ─────────────────────────────
+const storeToken = (r: Room): void => {
+  try {
+    sessionStorage.setItem(RECONNECT_KEY, r.reconnectionToken);
+  } catch {
+    /* sessionStorage 불가 시 무시 */
+  }
+};
+
+const wireRoom = (r: Room): void => {
+  room = r;
+  storeToken(r);
+
+  const link = `${location.origin}${location.pathname}?room=${r.roomId}`;
+  ($("inviteLink") as HTMLInputElement).value = link;
+
+  r.onMessage("log", (m: { text: string }) => addLog(m.text));
+  r.onMessage("hand", (m: { cards: Card[] }) => {
+    $("hand").innerHTML =
       "<b>내 단서 패</b>: " + m.cards.map((c) => label(c.value)).join(", ");
   });
-  room.onMessage(
-    "disprove",
-    (m: { by: string | null; card: Card | null }) => {
-      if (m.card) {
-        addLog(`🔎 ${m.by} 님이 "${label(m.card.value)}" 단서로 반증 (나만 봄)`);
-      } else {
-        addLog("🔎 아무도 반증하지 못함 — 정답 후보!");
-      }
-    },
-  );
-  room.onMessage("accuseResult", (m: { player: string; correct: boolean }) => {
+  r.onMessage("disprove", (m: { by: string | null; card: Card | null }) => {
+    if (m.card) {
+      addLog(`🔎 ${m.by} 님이 "${label(m.card.value)}" 단서로 반증 (나만 봄)`);
+    } else {
+      addLog("🔎 아무도 반증하지 못함 — 정답 후보!");
+    }
+  });
+  r.onMessage("accuseResult", (m: { player: string; correct: boolean }) => {
     addLog(m.correct ? `🎉 ${m.player} 정답!` : `❌ ${m.player} 오답`);
   });
+
+  r.onStateChange((state) => {
+    renderLobby(state);
+    if (state.phase === "playing" && !phaserStarted) enterGame();
+  });
+
+  r.onError((code, message) => addLog(`에러(${code}): ${message ?? ""}`));
+
+  show("lobby");
+};
+
+const renderLobby = (state: Room["state"]): void => {
+  const players = state.players as Map<
+    string,
+    { name: string; id: string; suspect: string }
+  >;
+  const list = $("playerList");
+  list.innerHTML = "";
+  let count = 0;
+  players.forEach((p) => {
+    count += 1;
+    const li = document.createElement("li");
+    li.textContent =
+      `${emoji(p.suspect)} ${p.name}` + (p.id === state.host ? "  👑 방장" : "");
+    list.appendChild(li);
+  });
+  $("playerCount").textContent = String(count);
+
+  const isHost = room !== null && state.host === room.sessionId;
+  const startBtn = $("startBtn") as HTMLButtonElement;
+  startBtn.disabled = !isHost || count < 2;
+  $("hostHint").textContent = isHost
+    ? count < 2
+      ? "2명 이상 모이면 시작할 수 있어요."
+      : ""
+    : "방장이 시작하기를 기다리는 중…";
+};
+
+const enterGame = (): void => {
+  phaserStarted = true;
+  show("gameScreen");
 
   const game = new Phaser.Game({
     type: Phaser.AUTO,
@@ -119,36 +226,104 @@ const main = async (): Promise<void> => {
   });
   game.registry.set("room", room);
 
-  const btn = (id: string): HTMLButtonElement =>
-    document.getElementById(id) as HTMLButtonElement;
-
-  btn("start").onclick = () => room.send("start", {});
-  btn("endTurn").onclick = () => room.send("endTurn", {});
-  btn("suggest").onclick = async () => {
-    // 장소는 서버가 현재 방으로 강제하므로 용의자·수법만 선택
+  ($("suggest") as HTMLButtonElement).onclick = async () => {
     const pick = await openPicker("제안 — 누가, 무엇으로?", false);
-    if (pick) room.send("suggest", { suspect: pick.suspect, weapon: pick.weapon, room: "" });
+    if (pick) {
+      room?.send("suggest", {
+        suspect: pick.suspect,
+        weapon: pick.weapon,
+        room: "",
+      });
+    }
   };
-  btn("accuse").onclick = async () => {
+  ($("accuse") as HTMLButtonElement).onclick = async () => {
     const pick = await openPicker("고발 — 진범을 지목하라", true);
     if (pick && pick.room) {
-      room.send("accuse", { suspect: pick.suspect, weapon: pick.weapon, room: pick.room });
+      room?.send("accuse", {
+        suspect: pick.suspect,
+        weapon: pick.weapon,
+        room: pick.room,
+      });
+    }
+  };
+  ($("endTurn") as HTMLButtonElement).onclick = () => room?.send("endTurn", {});
+
+  addLog("잔치 시작! 이동: 방향키/WASD, 방에 들어가 [제안]");
+};
+
+// ── 랜딩 액션 ─────────────────────────────
+const setLandingMsg = (text: string): void => {
+  $("landingMsg").textContent = text;
+};
+
+const init = async (): Promise<void> => {
+  buildCharGrid();
+
+  // 초대 링크(?room=CODE)로 들어온 경우 코드 자동 채움
+  const params = new URLSearchParams(location.search);
+  const invited = params.get("room");
+  if (invited) {
+    ($("codeInput") as HTMLInputElement).value = invited;
+    setLandingMsg("초대 링크로 들어왔어요. 이름을 입력하고 [참가]를 누르세요.");
+  }
+
+  ($("createBtn") as HTMLButtonElement).onclick = async () => {
+    if (!selectedCharacter) {
+      setLandingMsg("캐릭터를 선택하세요.");
+      return;
+    }
+    setLandingMsg("방 만드는 중…");
+    try {
+      wireRoom(await createRoom(selectedCharacter));
+    } catch (e) {
+      setLandingMsg("방 생성 실패: " + errMsg(e));
     }
   };
 
-  addLog("입장 완료. 2명 이상 모이면 [잔치 시작]. 이동: 방향키/WASD");
+  ($("joinBtn") as HTMLButtonElement).onclick = async () => {
+    if (!selectedCharacter) {
+      setLandingMsg("캐릭터를 선택하세요.");
+      return;
+    }
+    const code = ($("codeInput") as HTMLInputElement).value.trim();
+    if (!code) {
+      setLandingMsg("초대 코드를 입력하세요.");
+      return;
+    }
+    setLandingMsg("참가하는 중…");
+    try {
+      wireRoom(await joinRoomById(code, selectedCharacter));
+    } catch (e) {
+      setLandingMsg("참가 실패 — 코드를 확인하세요. (" + errMsg(e) + ")");
+    }
+  };
+
+  ($("startBtn") as HTMLButtonElement).onclick = () => room?.send("start", {});
+
+  ($("copyBtn") as HTMLButtonElement).onclick = async () => {
+    const link = ($("inviteLink") as HTMLInputElement).value;
+    try {
+      await navigator.clipboard.writeText(link);
+      ($("copyBtn") as HTMLButtonElement).textContent = "복사됨!";
+      window.setTimeout(() => {
+        ($("copyBtn") as HTMLButtonElement).textContent = "복사";
+      }, 1500);
+    } catch {
+      ($("inviteLink") as HTMLInputElement).select();
+    }
+  };
+
+  // 새로고침 세션 복원 (탭 기준). 유효 토큰이면 방으로 바로 재입장.
+  const token = sessionStorage.getItem(RECONNECT_KEY);
+  if (token) {
+    setLandingMsg("이전 세션에 재접속 중…");
+    try {
+      wireRoom(await client.reconnect(token));
+    } catch {
+      sessionStorage.removeItem(RECONNECT_KEY);
+      setLandingMsg(invited ? "초대 링크로 들어왔어요. 이름을 입력하고 [참가]를 누르세요." : "");
+    }
+  }
 };
 
-main().catch((e: unknown) => {
-  let msg: string;
-  if (e instanceof Error) {
-    msg = e.message;
-  } else if (typeof Event !== "undefined" && e instanceof Event) {
-    // colyseus.js는 WebSocket 연결 실패를 ProgressEvent로 던진다.
-    msg =
-      "서버(ws://localhost:2567)에 연결하지 못했습니다. 서버가 켜져 있는지 확인하세요 → `pnpm dev`";
-  } else {
-    msg = String(e);
-  }
-  addLog("접속 실패: " + msg);
-});
+void init();
