@@ -1,6 +1,5 @@
 import Phaser from "phaser";
 import {
-  HOST,
   ROOMS,
   SUSPECTS,
   WEAPONS,
@@ -129,16 +128,10 @@ const buildCharGrid = (): void => {
   grid.innerHTML = "";
   for (const z of ZODIAC) {
     const cell = document.createElement("div");
-    const locked = z === HOST;
-    cell.className = "char" + (locked ? " locked" : "");
+    cell.className = "char";
     cell.innerHTML =
-      `<span class="em">${emoji(z)}</span>` +
-      `<span>${locked ? "주최자" : label(z)}</span>`;
-    if (locked) {
-      cell.title = "호랑이 대감은 잔치 주최자입니다";
-    } else {
-      cell.onclick = () => selectCharacter(z, grid);
-    }
+      `<span class="em">${emoji(z)}</span>` + `<span>${label(z)}</span>`;
+    cell.onclick = () => selectCharacter(z, grid);
     grid.appendChild(cell);
   }
 };
@@ -234,18 +227,14 @@ const renderLobbyChars = (state: Room["state"]): void => {
   grid.innerHTML = "";
   for (const z of ZODIAC) {
     const cell = document.createElement("div");
-    const locked = z === HOST;
     const ownerId = owner.get(z);
     const takenByOther = ownerId !== undefined && ownerId !== room?.sessionId;
     const mine = z === mySuspect;
     cell.className =
-      "char" +
-      (locked || takenByOther ? " locked" : "") +
-      (mine ? " selected" : "");
+      "char" + (takenByOther ? " locked" : "") + (mine ? " selected" : "");
     cell.innerHTML =
-      `<span class="em">${emoji(z)}</span>` +
-      `<span>${locked ? "주최자" : label(z)}</span>`;
-    if (!locked && !takenByOther && !mine) {
+      `<span class="em">${emoji(z)}</span>` + `<span>${label(z)}</span>`;
+    if (!takenByOther && !mine) {
       cell.onclick = () => room?.send("character", { value: z });
     }
     grid.appendChild(cell);
@@ -300,6 +289,15 @@ const setLandingMsg = (text: string): void => {
   $("landingMsg").textContent = text;
 };
 
+/** 주소를 메인(/)으로 되돌린다 — 없는 방/실패 시. */
+const goMain = (): void => {
+  try {
+    history.replaceState({}, "", "/");
+  } catch {
+    /* history 사용 불가 시 무시 */
+  }
+};
+
 const init = async (): Promise<void> => {
   buildCharGrid();
 
@@ -339,7 +337,12 @@ const init = async (): Promise<void> => {
     try {
       wireRoom(await joinRoomById(code, selectedCharacter));
     } catch (e) {
-      setLandingMsg("참가 실패 — 코드를 확인하세요. (" + errMsg(e) + ")");
+      goMain();
+      setLandingMsg(
+        "없는 방이거나 참가할 수 없어요. 코드를 확인하거나 새 방을 만드세요. (" +
+          errMsg(e) +
+          ")",
+      );
     }
   };
 

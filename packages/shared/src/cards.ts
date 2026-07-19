@@ -21,26 +21,14 @@ export const ZODIAC = [
 ] as const;
 export type Zodiac = (typeof ZODIAC)[number];
 
-/** 잔치 주최자 = 호랑이. 플레이 불가(후속 AI 증인/반전용). */
+/** 잔치 주최자 = 호랑이. (후속 AI 증인/진범 반전 단계에서 특수 역할 예정.) */
 export const HOST: Zodiac = "tiger";
 
 /**
- * 용의자 = 플레이 가능한 손님 11지신 (호랑이 제외).
+ * 용의자 = 플레이 가능한 십이지 손님 12명 (호랑이 포함).
  * 클루의 "누가?" 후보이자, 플레이어가 고르는 캐릭터.
  */
-export const SUSPECTS = [
-  "rat",
-  "ox",
-  "rabbit",
-  "dragon",
-  "snake",
-  "horse",
-  "sheep",
-  "monkey",
-  "rooster",
-  "dog",
-  "pig",
-] as const;
+export const SUSPECTS = ZODIAC;
 export type Suspect = (typeof SUSPECTS)[number];
 
 /** 수법(흉기) — 대감집에 있을 법한 물건 6종. */
