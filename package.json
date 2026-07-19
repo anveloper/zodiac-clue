@@ -1,0 +1,19 @@
+{
+  "name": "zodiac-clue",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Web multiplayer Clue-style deduction game (NAN 2026). Monorepo: Colyseus server + Phaser client.",
+  "type": "module",
+  "packageManager": "pnpm@10.32.1",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "pnpm -r --parallel dev",
+    "dev:server": "pnpm --filter @zodiac-clue/server dev",
+    "dev:client": "pnpm --filter @zodiac-clue/client dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "clean": "pnpm -r exec rm -rf dist node_modules && rm -rf node_modules"
+  }
+}
