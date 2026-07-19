@@ -11,7 +11,7 @@ import {
 } from "@zodiac-clue/shared";
 import type { Room } from "colyseus.js";
 import { client, createRoom, joinRoomById } from "./network";
-import { GameScene } from "./scenes/game-scene";
+import { BOARD_H, BOARD_W, GameScene } from "./scenes/game-scene";
 
 /** 재접속 토큰 저장 키. sessionStorage = 탭 단위(새로고침엔 유지, 새 탭엔 없음). */
 const RECONNECT_KEY = "zc_reconnect";
@@ -156,8 +156,13 @@ const wireRoom = (r: Room): void => {
   room = r;
   storeToken(r);
 
-  const link = `${location.origin}${location.pathname}?room=${r.roomId}`;
+  const link = `${location.origin}/room/${r.roomId}`;
   ($("inviteLink") as HTMLInputElement).value = link;
+  try {
+    history.replaceState({}, "", `/room/${r.roomId}`);
+  } catch {
+    /* history 사용 불가 시 무시 */
+  }
 
   r.onMessage("log", (m: { text: string }) => addLog(m.text));
   r.onMessage("hand", (m: { cards: Card[] }) => {
@@ -210,6 +215,41 @@ const renderLobby = (state: Room["state"]): void => {
       ? "2명 이상 모이면 시작할 수 있어요."
       : ""
     : "방장이 시작하기를 기다리는 중…";
+
+  renderLobbyChars(state);
+};
+
+// 대기실 캐릭터 그리드 — 선택됨/사용중(다른 사람) 실시간 반영, 클릭 시 변경.
+const renderLobbyChars = (state: Room["state"]): void => {
+  const players = state.players as Map<
+    string,
+    { id: string; suspect: string }
+  >;
+  const owner = new Map<string, string>(); // suspect -> sessionId
+  players.forEach((p) => owner.set(p.suspect, p.id));
+  const mySuspect =
+    room !== null ? players.get(room.sessionId)?.suspect : undefined;
+
+  const grid = $("lobbyChars");
+  grid.innerHTML = "";
+  for (const z of ZODIAC) {
+    const cell = document.createElement("div");
+    const locked = z === HOST;
+    const ownerId = owner.get(z);
+    const takenByOther = ownerId !== undefined && ownerId !== room?.sessionId;
+    const mine = z === mySuspect;
+    cell.className =
+      "char" +
+      (locked || takenByOther ? " locked" : "") +
+      (mine ? " selected" : "");
+    cell.innerHTML =
+      `<span class="em">${emoji(z)}</span>` +
+      `<span>${locked ? "주최자" : label(z)}</span>`;
+    if (!locked && !takenByOther && !mine) {
+      cell.onclick = () => room?.send("character", { value: z });
+    }
+    grid.appendChild(cell);
+  }
 };
 
 const enterGame = (): void => {
@@ -218,10 +258,14 @@ const enterGame = (): void => {
 
   const game = new Phaser.Game({
     type: Phaser.AUTO,
-    width: 480,
-    height: 480,
     parent: "game",
     backgroundColor: "#1c1712",
+    scale: {
+      mode: Phaser.Scale.FIT,
+      autoCenter: Phaser.Scale.CENTER_BOTH,
+      width: BOARD_W,
+      height: BOARD_H,
+    },
     scene: [GameScene],
   });
   game.registry.set("room", room);
@@ -259,12 +303,13 @@ const setLandingMsg = (text: string): void => {
 const init = async (): Promise<void> => {
   buildCharGrid();
 
-  // 초대 링크(?room=CODE)로 들어온 경우 코드 자동 채움
-  const params = new URLSearchParams(location.search);
-  const invited = params.get("room");
+  // 초대 링크(/room/CODE, 구형 ?room=CODE)로 들어온 경우 코드 자동 채움
+  const pathMatch = location.pathname.match(/\/room\/([^/]+)/);
+  const invited =
+    pathMatch?.[1] ?? new URLSearchParams(location.search).get("room");
   if (invited) {
     ($("codeInput") as HTMLInputElement).value = invited;
-    setLandingMsg("초대 링크로 들어왔어요. 이름을 입력하고 [참가]를 누르세요.");
+    setLandingMsg("초대 링크로 들어왔어요. 캐릭터를 고르고 [참가]를 누르세요.");
   }
 
   ($("createBtn") as HTMLButtonElement).onclick = async () => {
@@ -321,7 +366,9 @@ const init = async (): Promise<void> => {
       wireRoom(await client.reconnect(token));
     } catch {
       sessionStorage.removeItem(RECONNECT_KEY);
-      setLandingMsg(invited ? "초대 링크로 들어왔어요. 이름을 입력하고 [참가]를 누르세요." : "");
+      setLandingMsg(
+        invited ? "초대 링크로 들어왔어요. 캐릭터를 고르고 [참가]를 누르세요." : "",
+      );
     }
   }
 };

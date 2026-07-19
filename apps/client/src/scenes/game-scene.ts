@@ -8,7 +8,10 @@ import {
   label,
 } from "@zodiac-clue/shared";
 
-const CELL = 20;
+export const CELL = 24;
+export const BOARD_W = GRID_WIDTH * CELL;
+export const BOARD_H = GRID_HEIGHT * CELL;
+
 const PLAYER_COLORS = [
   0xef4444, 0xf59e0b, 0xe5e7eb, 0x22c55e, 0x3b82f6, 0xa855f7,
 ];

@@ -39,6 +39,9 @@ export class ClueRoom extends Room<GameState> {
     this.onMessage("move", (client, msg: { dx: number; dy: number }) =>
       this.handleMove(client, msg),
     );
+    this.onMessage("character", (client, msg: { value: string }) =>
+      this.handleChooseCharacter(client, msg),
+    );
     this.onMessage("start", (client) => this.handleStart(client));
     this.onMessage("suggest", (client, msg: Suggestion) =>
       this.handleSuggest(client, msg),
@@ -148,6 +151,27 @@ export class ClueRoom extends Room<GameState> {
         });
       }
     }
+  }
+
+  // ── 대기실에서 캐릭터 변경 (중복 거부) ──
+  private handleChooseCharacter(
+    client: Client,
+    msg: { value: string },
+  ): void {
+    if (this.state.phase !== "lobby") return;
+    const player = this.state.players.get(client.sessionId);
+    if (!player) return;
+    const value = msg.value;
+    if (!(SUSPECTS as readonly string[]).includes(value)) return;
+    const takenByOther = [...this.state.players.values()].some(
+      (p) => p.id !== player.id && p.suspect === value,
+    );
+    if (takenByOther) {
+      client.send("log", { text: `${label(value)}는 이미 선택되었습니다.` });
+      return;
+    }
+    player.suspect = value;
+    player.name = label(value);
   }
 
   // ── 게임 시작: 정답 봉투 + 카드 분배 ──

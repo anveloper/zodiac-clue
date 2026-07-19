@@ -64,9 +64,15 @@
       .host-hint { font-size: 12px; color: #a89778; margin-top: 10px; text-align: center; }
 
       /* ── 게임 화면 ── */
-      .wrap { display: flex; gap: 16px; padding: 16px; flex-wrap: wrap; }
-      #game { border: 1px solid #3a3126; line-height: 0; }
-      .side { flex: 1; min-width: 260px; max-width: 420px; }
+      .wrap {
+        display: flex; gap: 20px; padding: 20px; flex-wrap: wrap;
+        min-height: 100vh; align-items: center; justify-content: center;
+      }
+      #game {
+        width: min(80vmin, 600px); aspect-ratio: 1 / 1;
+        border: 1px solid #3a3126; line-height: 0;
+      }
+      .side { flex: 1; min-width: 280px; max-width: 440px; }
       .controls { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
       #hand {
         background: #211c16; border: 1px solid #3a3126; border-radius: 6px;
@@ -134,6 +140,10 @@
           참가자 (<span id="playerCount">0</span>/6)
         </div>
         <ul id="playerList"></ul>
+        <div style="font-size: 12px; color: #a89778; margin-bottom: 4px;">
+          내 캐릭터 (선택됨 🟡 / 사용중 🔒)
+        </div>
+        <div id="lobbyChars" class="char-grid" style="margin-bottom: 16px;"></div>
         <button id="startBtn" class="full" disabled>잔치 시작</button>
         <div id="hostHint" class="host-hint"></div>
       </div>
