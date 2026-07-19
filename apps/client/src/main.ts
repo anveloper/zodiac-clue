@@ -140,6 +140,15 @@ const main = async (): Promise<void> => {
 };
 
 main().catch((e: unknown) => {
-  const msg = e instanceof Error ? e.message : String(e);
+  let msg: string;
+  if (e instanceof Error) {
+    msg = e.message;
+  } else if (typeof Event !== "undefined" && e instanceof Event) {
+    // colyseus.js는 WebSocket 연결 실패를 ProgressEvent로 던진다.
+    msg =
+      "서버(ws://localhost:2567)에 연결하지 못했습니다. 서버가 켜져 있는지 확인하세요 → `pnpm dev`";
+  } else {
+    msg = String(e);
+  }
   addLog("접속 실패: " + msg);
 });
