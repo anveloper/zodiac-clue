@@ -3,48 +3,70 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>zodiac-clue</title>
+    <title>호랑이 생신 잔치 — zodiac-clue</title>
     <style>
       * { box-sizing: border-box; }
       body {
         margin: 0;
         font-family: system-ui, -apple-system, "Apple SD Gothic Neo", sans-serif;
-        background: #141418;
-        color: #e8e8ee;
+        background: #16130f;
+        color: #f0e9dc;
       }
       .wrap { display: flex; gap: 16px; padding: 16px; flex-wrap: wrap; }
-      #game { border: 1px solid #333340; line-height: 0; }
+      #game { border: 1px solid #3a3126; line-height: 0; }
       .side { flex: 1; min-width: 260px; max-width: 420px; }
       .controls { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
       button {
-        background: #2a78d6; color: #fff; border: 0; border-radius: 6px;
+        background: #b4622b; color: #fff; border: 0; border-radius: 6px;
         padding: 8px 12px; font-size: 13px; cursor: pointer;
       }
-      button:hover { background: #3b86e0; }
+      button:hover { background: #c9733a; }
       #hand {
-        background: #1e1e26; border: 1px solid #333340; border-radius: 6px;
+        background: #211c16; border: 1px solid #3a3126; border-radius: 6px;
         padding: 10px; font-size: 13px; margin-bottom: 12px; min-height: 20px;
       }
       #log {
-        background: #1e1e26; border: 1px solid #333340; border-radius: 6px;
-        padding: 10px; font-size: 12px; height: 340px; overflow-y: auto;
+        background: #211c16; border: 1px solid #3a3126; border-radius: 6px;
+        padding: 10px; font-size: 12px; height: 320px; overflow-y: auto;
       }
-      #log > div { padding: 2px 0; border-bottom: 1px solid #26262f; }
-      h1 { font-size: 15px; margin: 0 0 12px; color: #9aa; }
+      #log > div { padding: 2px 0; border-bottom: 1px solid #2c251c; }
+      h1 { font-size: 16px; margin: 0 0 4px; color: #f0d9a8; }
+      .subtitle { font-size: 12px; color: #a89778; margin: 0 0 12px; }
+
+      /* 카드 선택 모달 */
+      .overlay {
+        position: fixed; inset: 0; background: rgba(0, 0, 0, 0.6);
+        display: flex; align-items: center; justify-content: center; z-index: 10;
+      }
+      .modal {
+        background: #221c15; border: 1px solid #4a3d2b; border-radius: 10px;
+        padding: 20px; width: 300px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+      }
+      .modal h2 { font-size: 15px; margin: 0 0 14px; color: #f0d9a8; }
+      .modal-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+      .modal-row label { width: 52px; font-size: 12px; color: #a89778; }
+      .modal select {
+        flex: 1; background: #16130f; color: #f0e9dc; border: 1px solid #4a3d2b;
+        border-radius: 6px; padding: 6px 8px; font-size: 13px;
+      }
+      .modal .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+      .modal .ghost { background: #3a3126; }
+      .modal .ghost:hover { background: #493d2d; }
     </style>
   </head>
   <body>
     <div class="wrap">
       <div id="game"></div>
       <div class="side">
-        <h1>🕵️ zodiac-clue — 기본 클루(6인) 프로토타입</h1>
+        <h1>🐯 호랑이 생신 잔치 — 도둑은 누구?</h1>
+        <p class="subtitle">대감집 손님 6인 중 잔치 선물을 훔친 자를 추리하라 (기본 클루 6인)</p>
         <div class="controls">
-          <button id="start">게임 시작</button>
+          <button id="start">잔치 시작</button>
           <button id="suggest">제안</button>
           <button id="accuse">고발</button>
           <button id="endTurn">턴 종료</button>
         </div>
-        <div id="hand"><b>내 손패</b>: (게임 시작 후 표시)</div>
+        <div id="hand"><b>내 단서 패</b>: (잔치 시작 후 표시)</div>
         <div id="log"></div>
       </div>
     </div>

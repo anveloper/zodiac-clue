@@ -18,15 +18,15 @@ export type RoomRegion = {
 };
 
 export const ROOM_REGIONS: RoomRegion[] = [
-  { name: "kitchen", x: 1, y: 1, w: 5, h: 5 },
-  { name: "ballroom", x: 9, y: 1, w: 6, h: 5 },
-  { name: "conservatory", x: 18, y: 1, w: 5, h: 5 },
-  { name: "dining", x: 1, y: 9, w: 5, h: 6 },
-  { name: "billiard", x: 18, y: 9, w: 5, h: 4 },
-  { name: "library", x: 18, y: 15, w: 5, h: 4 },
-  { name: "lounge", x: 1, y: 18, w: 5, h: 5 },
-  { name: "hall", x: 9, y: 18, w: 6, h: 5 },
-  { name: "study", x: 18, y: 20, w: 5, h: 3 },
+  { name: "jeongji", x: 1, y: 1, w: 5, h: 5 },
+  { name: "daecheong", x: 9, y: 1, w: 6, h: 5 },
+  { name: "huwon", x: 18, y: 1, w: 5, h: 5 },
+  { name: "sarangbang", x: 1, y: 9, w: 5, h: 6 },
+  { name: "sarangchae", x: 18, y: 9, w: 5, h: 4 },
+  { name: "seojae", x: 18, y: 15, w: 5, h: 4 },
+  { name: "anbang", x: 1, y: 18, w: 5, h: 5 },
+  { name: "haengnang", x: 9, y: 18, w: 6, h: 5 },
+  { name: "byeoldang", x: 18, y: 20, w: 5, h: 3 },
 ];
 
 /** (x,y)가 속한 방 이름을 반환, 없으면 null. */
