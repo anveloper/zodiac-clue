@@ -119,8 +119,6 @@ const selectCharacter = (z: string, grid: HTMLElement): void => {
   [...grid.children].forEach((c, i) =>
     c.classList.toggle("selected", ZODIAC[i] === z),
   );
-  ($("createBtn") as HTMLButtonElement).disabled = false;
-  ($("joinBtn") as HTMLButtonElement).disabled = false;
 };
 
 const buildCharGrid = (): void => {
@@ -202,11 +200,9 @@ const renderLobby = (state: Room["state"]): void => {
 
   const isHost = room !== null && state.host === room.sessionId;
   const startBtn = $("startBtn") as HTMLButtonElement;
-  startBtn.disabled = !isHost || count < 2;
+  startBtn.disabled = !isHost;
   $("hostHint").textContent = isHost
-    ? count < 2
-      ? "2명 이상 모이면 시작할 수 있어요."
-      : ""
+    ? "빈 자리는 NPC로 채워집니다 (최대 6인). 바로 시작할 수 있어요."
     : "방장이 시작하기를 기다리는 중…";
 
   renderLobbyChars(state);
@@ -307,27 +303,19 @@ const init = async (): Promise<void> => {
     pathMatch?.[1] ?? new URLSearchParams(location.search).get("room");
   if (invited) {
     ($("codeInput") as HTMLInputElement).value = invited;
-    setLandingMsg("초대 링크로 들어왔어요. 캐릭터를 고르고 [참가]를 누르세요.");
+    setLandingMsg("초대 링크로 들어왔어요. [참가] 후 대기실에서 캐릭터를 고르세요.");
   }
 
   ($("createBtn") as HTMLButtonElement).onclick = async () => {
-    if (!selectedCharacter) {
-      setLandingMsg("캐릭터를 선택하세요.");
-      return;
-    }
     setLandingMsg("방 만드는 중…");
     try {
-      wireRoom(await createRoom(selectedCharacter));
+      wireRoom(await createRoom(selectedCharacter ?? undefined));
     } catch (e) {
       setLandingMsg("방 생성 실패: " + errMsg(e));
     }
   };
 
   ($("joinBtn") as HTMLButtonElement).onclick = async () => {
-    if (!selectedCharacter) {
-      setLandingMsg("캐릭터를 선택하세요.");
-      return;
-    }
     const code = ($("codeInput") as HTMLInputElement).value.trim();
     if (!code) {
       setLandingMsg("초대 코드를 입력하세요.");
@@ -335,7 +323,7 @@ const init = async (): Promise<void> => {
     }
     setLandingMsg("참가하는 중…");
     try {
-      wireRoom(await joinRoomById(code, selectedCharacter));
+      wireRoom(await joinRoomById(code, selectedCharacter ?? undefined));
     } catch (e) {
       goMain();
       setLandingMsg(
@@ -370,7 +358,7 @@ const init = async (): Promise<void> => {
     } catch {
       sessionStorage.removeItem(RECONNECT_KEY);
       setLandingMsg(
-        invited ? "초대 링크로 들어왔어요. 캐릭터를 고르고 [참가]를 누르세요." : "",
+        invited ? "초대 링크로 들어왔어요. [참가] 후 대기실에서 캐릭터를 고르세요." : "",
       );
     }
   }

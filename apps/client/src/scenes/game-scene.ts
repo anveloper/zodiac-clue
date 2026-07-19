@@ -100,9 +100,9 @@ export class GameScene extends Phaser.Scene {
           .setOrigin(0);
         this.sprites.set(id, rect);
         const tag = this.add
-          .text(0, 0, `${emoji(p.suspect)} ${p.name}`, {
+          .text(0, 0, `${p.isBot ? "🤖" : ""}${emoji(p.suspect)} ${p.name}`, {
             fontSize: "9px",
-            color: "#ffffff",
+            color: p.isBot ? "#cbb892" : "#ffffff",
           })
           .setOrigin(0, 1);
         this.tags.set(id, tag);
@@ -126,6 +126,7 @@ export class GameScene extends Phaser.Scene {
 type PlayerView = {
   name: string;
   suspect: string;
+  isBot: boolean;
   x: number;
   y: number;
   eliminated: boolean;

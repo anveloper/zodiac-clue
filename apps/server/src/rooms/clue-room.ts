@@ -3,6 +3,7 @@ import {
   GRID_HEIGHT,
   GRID_WIDTH,
   MAX_PLAYERS,
+  ROOM_REGIONS,
   ROOMS,
   SUSPECTS,
   WEAPONS,
@@ -16,8 +17,20 @@ import { GameState, Player } from "../schema/game-state";
 
 type JoinOptions = { character?: string };
 
+/** 봇의 추리 노트 — 각 카테고리에서 아직 남은(정답 후보) 값들. */
+type BotKnowledge = {
+  suspects: Set<string>;
+  weapons: Set<string>;
+  rooms: Set<string>;
+};
+
+const BOT_TURN_DELAY = 1600;
+
 const pick = <T>(arr: readonly T[]): T =>
   arr[Math.floor(Math.random() * arr.length)];
+
+const pickFromSet = (s: Set<string>): string | undefined =>
+  s.size === 0 ? undefined : [...s][Math.floor(Math.random() * s.size)];
 
 const shuffle = <T>(arr: T[]): void => {
   for (let i = arr.length - 1; i > 0; i--) {
@@ -26,12 +39,19 @@ const shuffle = <T>(arr: T[]): void => {
   }
 };
 
+const cardMatches = (c: Card, s: Suggestion): boolean =>
+  (c.kind === "suspect" && c.value === s.suspect) ||
+  (c.kind === "weapon" && c.value === s.weapon) ||
+  (c.kind === "room" && c.value === s.room);
+
 export class ClueRoom extends Room<GameState> {
   maxClients = MAX_PLAYERS;
 
-  // ── 서버 전용 비밀 상태 (동기화하지 않음) ──
+  // 서버 전용 비밀 상태 (동기화하지 않음)
   private solution: Solution | null = null;
   private hands = new Map<string, Card[]>();
+  private botKnowledge = new Map<string, BotKnowledge>();
+  private botSeq = 0;
 
   onCreate(): void {
     this.setState(new GameState());
@@ -59,7 +79,6 @@ export class ClueRoom extends Room<GameState> {
     const used = new Set(
       [...this.state.players.values()].map((p) => p.suspect),
     );
-    // 요청한 캐릭터가 유효(손님)하고 비어있으면 배정, 아니면 남는 것 중 첫 번째
     const requested = options.character;
     const wanted =
       requested &&
@@ -82,17 +101,15 @@ export class ClueRoom extends Room<GameState> {
     if (!this.state.host) {
       this.state.host = client.sessionId;
     }
-    this.broadcast("log", {
-      text: `${player.name} 입장 (${label(suspect)}).`,
-    });
+    this.broadcast("log", { text: `${player.name} 입장.` });
   }
 
   async onLeave(client: Client, consented: boolean): Promise<void> {
     const player = this.state.players.get(client.sessionId);
     if (player) player.connected = false;
 
-    // 새로고침·순단 등 비자발적 이탈이면 잠시 재접속을 기다린다.
-    if (!consented) {
+    // 게임 중 비자발적 이탈만 재접속을 기다린다(대기실에선 즉시 제거).
+    if (!consented && this.state.phase === "playing") {
       this.broadcast("log", {
         text: `${player?.name ?? "누군가"} 연결 끊김 — 재접속 대기…`,
       });
@@ -114,7 +131,7 @@ export class ClueRoom extends Room<GameState> {
     if (player) this.broadcast("log", { text: `${player.name} 퇴장.` });
     this.state.players.delete(sessionId);
     this.hands.delete(sessionId);
-    // 방장이 나가면 다음 사람에게 위임
+    this.botKnowledge.delete(sessionId);
     if (this.state.host === sessionId) {
       this.state.host = [...this.state.players.keys()][0] ?? "";
     }
@@ -174,21 +191,21 @@ export class ClueRoom extends Room<GameState> {
     player.name = label(value);
   }
 
-  // ── 게임 시작: 정답 봉투 + 카드 분배 ──
+  // ── 게임 시작: NPC 충원 + 정답 봉투 + 카드 분배 ──
   private handleStart(client: Client): void {
     if (this.state.phase !== "lobby") return;
     if (this.state.host !== client.sessionId) {
       client.send("log", { text: "방장만 잔치를 시작할 수 있습니다." });
       return;
     }
-    const ids = [...this.state.players.keys()];
-    if (ids.length < 2) {
-      client.send("log", { text: "2명 이상이어야 시작할 수 있습니다." });
-      return;
+
+    // 빈 자리를 NPC로 6인까지 충원
+    while (this.state.players.size < MAX_PLAYERS) {
+      if (!this.addBot()) break;
     }
-    // 시작하면 방을 잠가 난입 방지
     void this.lock();
 
+    const ids = [...this.state.players.keys()];
     const solution: Solution = {
       suspect: pick(SUSPECTS),
       weapon: pick(WEAPONS),
@@ -215,10 +232,16 @@ export class ClueRoom extends Room<GameState> {
       this.hands.get(ids[i % ids.length])?.push(card);
     });
 
-    // 각자 손패는 본인에게만 private 전송
+    // 사람에게만 손패 private 전송, 봇은 추리 노트 초기화
+    this.botKnowledge.clear();
     for (const id of ids) {
-      const target = this.clients.find((c) => c.sessionId === id);
-      target?.send("hand", { cards: this.hands.get(id) ?? [] });
+      const player = this.state.players.get(id);
+      if (player?.isBot) {
+        this.initBotKnowledge(id);
+      } else {
+        const target = this.clients.find((c) => c.sessionId === id);
+        target?.send("hand", { cards: this.hands.get(id) ?? [] });
+      }
     }
 
     this.state.turnOrder.clear();
@@ -226,13 +249,83 @@ export class ClueRoom extends Room<GameState> {
     this.state.currentTurn = ids[0];
     this.state.phase = "playing";
 
+    const botCount = [...this.state.players.values()].filter(
+      (p) => p.isBot,
+    ).length;
     const first = this.state.players.get(ids[0]);
     this.broadcast("log", {
-      text: `게임 시작! 정답 봉투 봉인 완료. ${first?.name} 님의 턴.`,
+      text: `게임 시작! 정답 봉투 봉인. NPC ${botCount}명 합류. ${first?.name} 님의 턴.`,
     });
+    this.scheduleBotIfNeeded();
   }
 
-  // ── 제안(Suggestion) + 시계방향 반증 ──
+  private addBot(): boolean {
+    const used = new Set(
+      [...this.state.players.values()].map((p) => p.suspect),
+    );
+    const suspect = SUSPECTS.find((s) => !used.has(s));
+    if (!suspect) return false;
+    const id = `bot-${++this.botSeq}`;
+    const bot = new Player();
+    bot.id = id;
+    bot.isBot = true;
+    bot.suspect = suspect;
+    bot.name = label(suspect);
+    const spawn = this.spawnPoint(this.state.players.size);
+    bot.x = spawn.x;
+    bot.y = spawn.y;
+    bot.room = roomAt(bot.x, bot.y) ?? "";
+    this.state.players.set(id, bot);
+    return true;
+  }
+
+  private initBotKnowledge(id: string): void {
+    const k: BotKnowledge = {
+      suspects: new Set<string>(SUSPECTS),
+      weapons: new Set<string>(WEAPONS),
+      rooms: new Set<string>(ROOMS),
+    };
+    for (const c of this.hands.get(id) ?? []) this.eliminate(k, c);
+    this.botKnowledge.set(id, k);
+  }
+
+  private eliminate(k: BotKnowledge, card: Card): void {
+    if (card.kind === "suspect") k.suspects.delete(card.value);
+    else if (card.kind === "weapon") k.weapons.delete(card.value);
+    else k.rooms.delete(card.value);
+  }
+
+  // ── 제안(Suggestion) + 시계방향 반증 (사람/봇 공용) ──
+  private doSuggestion(
+    suggesterId: string,
+    suggestion: Suggestion,
+  ): { by: string | null; card: Card | null } {
+    const suggester = this.state.players.get(suggesterId);
+    this.broadcast("log", {
+      text: `${suggester?.name}의 제안: "${label(suggestion.suspect)} · ${label(
+        suggestion.weapon,
+      )} · ${label(suggestion.room)}"`,
+    });
+
+    const order = [...this.state.turnOrder] as string[];
+    const start = order.indexOf(suggesterId);
+    for (let i = 1; i < order.length; i++) {
+      const otherId = order[(start + i) % order.length];
+      const match = (this.hands.get(otherId) ?? []).find((c) =>
+        cardMatches(c, suggestion),
+      );
+      if (match) {
+        const other = this.state.players.get(otherId);
+        this.broadcast("log", {
+          text: `${other?.name} 님이 반증했습니다.`,
+        });
+        return { by: other?.name ?? otherId, card: match };
+      }
+    }
+    this.broadcast("log", { text: "아무도 반증하지 못했습니다 — 정답 후보!" });
+    return { by: null, card: null };
+  }
+
   private handleSuggest(client: Client, msg: Suggestion): void {
     if (this.state.phase !== "playing") return;
     const player = this.state.players.get(client.sessionId);
@@ -244,66 +337,35 @@ export class ClueRoom extends Room<GameState> {
       client.send("log", { text: "방 안에서만 제안할 수 있습니다." });
       return;
     }
-
-    // 정식 룰: 제안의 장소는 현재 있는 방으로 강제
     const suggestion: Suggestion = {
       suspect: msg.suspect,
       weapon: msg.weapon,
       room: player.room as Suggestion["room"],
     };
-    this.broadcast("log", {
-      text: `${player.name}의 제안: "${label(suggestion.suspect)} · ${label(
-        suggestion.weapon,
-      )} · ${label(suggestion.room)}"`,
+    const result = this.doSuggestion(player.id, suggestion);
+    client.send("disprove", {
+      by: result.by,
+      card: result.card,
+      suggestion,
     });
-
-    const order = [...this.state.turnOrder] as string[];
-    const start = order.indexOf(player.id);
-    for (let i = 1; i < order.length; i++) {
-      const otherId = order[(start + i) % order.length];
-      const hand = this.hands.get(otherId) ?? [];
-      const match = hand.find(
-        (c) =>
-          (c.kind === "suspect" && c.value === suggestion.suspect) ||
-          (c.kind === "weapon" && c.value === suggestion.weapon) ||
-          (c.kind === "room" && c.value === suggestion.room),
-      );
-      if (match) {
-        const other = this.state.players.get(otherId);
-        client.send("disprove", {
-          by: other?.name ?? otherId,
-          card: match,
-          suggestion,
-        });
-        this.broadcast("log", {
-          text: `${other?.name} 님이 반증했습니다. (카드는 ${player.name}에게만 공개)`,
-        });
-        return;
-      }
-    }
-    client.send("disprove", { by: null, card: null, suggestion });
-    this.broadcast("log", { text: "아무도 반증하지 못했습니다 — 정답 후보!" });
   }
 
-  // ── 고발(Accusation): 봉투와 대조 ──
-  private handleAccuse(client: Client, msg: Suggestion): void {
-    if (this.state.phase !== "playing" || !this.solution) return;
-    const player = this.state.players.get(client.sessionId);
-    if (!player || this.state.currentTurn !== player.id) {
-      client.send("log", { text: "당신의 턴이 아닙니다." });
-      return;
-    }
+  // ── 고발(Accusation) (사람/봇 공용) ──
+  private doAccusation(playerId: string, accusation: Suggestion): void {
+    if (!this.solution) return;
+    const player = this.state.players.get(playerId);
+    if (!player) return;
 
     const correct =
-      msg.suspect === this.solution.suspect &&
-      msg.weapon === this.solution.weapon &&
-      msg.room === this.solution.room;
+      accusation.suspect === this.solution.suspect &&
+      accusation.weapon === this.solution.weapon &&
+      accusation.room === this.solution.room;
 
     this.broadcast("accuseResult", { player: player.name, correct });
 
     if (correct) {
       this.state.phase = "ended";
-      this.state.winner = player.id;
+      this.state.winner = playerId;
       this.broadcast("log", {
         text: `🎉 ${player.name} 사건 해결! 정답: ${label(
           this.solution.suspect,
@@ -318,10 +380,86 @@ export class ClueRoom extends Room<GameState> {
     }
   }
 
+  private handleAccuse(client: Client, msg: Suggestion): void {
+    if (this.state.phase !== "playing" || !this.solution) return;
+    const player = this.state.players.get(client.sessionId);
+    if (!player || this.state.currentTurn !== player.id) {
+      client.send("log", { text: "당신의 턴이 아닙니다." });
+      return;
+    }
+    this.doAccusation(player.id, msg);
+  }
+
   private handleEndTurn(client: Client): void {
     const player = this.state.players.get(client.sessionId);
     if (!player || this.state.currentTurn !== player.id) return;
     this.advanceTurn();
+  }
+
+  // ── NPC 턴: 방 이동 → 제안/추리 → 확신 시 고발 ──
+  private runBotTurn(id: string): void {
+    if (this.state.phase !== "playing" || this.state.currentTurn !== id) return;
+    const bot = this.state.players.get(id);
+    if (!bot || !bot.isBot) return;
+    const k = this.botKnowledge.get(id);
+    if (!k) {
+      this.advanceTurn();
+      return;
+    }
+
+    // 1) 임의의 방으로 이동
+    const region = pick(ROOM_REGIONS);
+    bot.x = region.x + Math.floor(region.w / 2);
+    bot.y = region.y + Math.floor(region.h / 2);
+    if (bot.room !== region.name) {
+      bot.room = region.name;
+      this.broadcast("log", {
+        text: `${bot.name} 님이 ${label(region.name)}에 들어갔습니다.`,
+      });
+    }
+
+    // 2) 아직 남은 후보로 제안
+    const suggestion: Suggestion = {
+      suspect: (pickFromSet(k.suspects) ??
+        pick(SUSPECTS)) as Suggestion["suspect"],
+      weapon: (pickFromSet(k.weapons) ?? pick(WEAPONS)) as Suggestion["weapon"],
+      room: region.name as Suggestion["room"],
+    };
+    const result = this.doSuggestion(id, suggestion);
+
+    if (result.card) {
+      // 반증받은 카드는 정답 아님 → 후보에서 제거
+      this.eliminate(k, result.card);
+    } else {
+      // 아무도 반증 못했고 내가 3장 다 안 갖고 있으면 → 그 셋이 정답
+      const holdsAny = (this.hands.get(id) ?? []).some((c) =>
+        cardMatches(c, suggestion),
+      );
+      if (!holdsAny) {
+        this.doAccusation(id, suggestion);
+        return;
+      }
+    }
+
+    // 3) 각 카테고리 후보가 1개로 좁혀졌으면 고발
+    if (k.suspects.size === 1 && k.weapons.size === 1 && k.rooms.size === 1) {
+      this.doAccusation(id, {
+        suspect: [...k.suspects][0] as Suggestion["suspect"],
+        weapon: [...k.weapons][0] as Suggestion["weapon"],
+        room: [...k.rooms][0] as Suggestion["room"],
+      });
+      return;
+    }
+
+    this.advanceTurn();
+  }
+
+  private scheduleBotIfNeeded(): void {
+    if (this.state.phase !== "playing") return;
+    const cur = this.state.players.get(this.state.currentTurn);
+    if (cur?.isBot) {
+      this.clock.setTimeout(() => this.runBotTurn(cur.id), BOT_TURN_DELAY);
+    }
   }
 
   private advanceTurn(): void {
@@ -331,7 +469,6 @@ export class ClueRoom extends Room<GameState> {
     });
     if (order.length === 0) return;
     if (order.length === 1) {
-      // 마지막 생존자 자동 승리
       this.state.phase = "ended";
       this.state.winner = order[0];
       const w = this.state.players.get(order[0]);
@@ -343,6 +480,7 @@ export class ClueRoom extends Room<GameState> {
     this.state.currentTurn = next;
     const np = this.state.players.get(next);
     this.broadcast("log", { text: `${np?.name} 님의 턴입니다.` });
+    this.scheduleBotIfNeeded();
   }
 
   private spawnPoint(index: number): { x: number; y: number } {

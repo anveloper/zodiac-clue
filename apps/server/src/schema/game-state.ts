@@ -9,6 +9,8 @@ export class Player extends Schema {
   @type("number") y = 0;
   @type("boolean") connected = true;
   @type("boolean") eliminated = false;
+  /** NPC(봇) 여부. */
+  @type("boolean") isBot = false;
   /** 현재 위치한 방(장소). 없으면 "" (복도). */
   @type("string") room = "";
 }
