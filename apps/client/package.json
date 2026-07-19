@@ -1,0 +1,21 @@
+{
+  "name": "@zodiac-clue/client",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@zodiac-clue/shared": "workspace:*",
+    "colyseus.js": "^0.15.28",
+    "phaser": "^3.80.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5",
+    "vite": "^5.4.0"
+  }
+}

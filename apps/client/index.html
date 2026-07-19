@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>zodiac-clue</title>
+    <style>
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: system-ui, -apple-system, "Apple SD Gothic Neo", sans-serif;
+        background: #141418;
+        color: #e8e8ee;
+      }
+      .wrap { display: flex; gap: 16px; padding: 16px; flex-wrap: wrap; }
+      #game { border: 1px solid #333340; line-height: 0; }
+      .side { flex: 1; min-width: 260px; max-width: 420px; }
+      .controls { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+      button {
+        background: #2a78d6; color: #fff; border: 0; border-radius: 6px;
+        padding: 8px 12px; font-size: 13px; cursor: pointer;
+      }
+      button:hover { background: #3b86e0; }
+      #hand {
+        background: #1e1e26; border: 1px solid #333340; border-radius: 6px;
+        padding: 10px; font-size: 13px; margin-bottom: 12px; min-height: 20px;
+      }
+      #log {
+        background: #1e1e26; border: 1px solid #333340; border-radius: 6px;
+        padding: 10px; font-size: 12px; height: 340px; overflow-y: auto;
+      }
+      #log > div { padding: 2px 0; border-bottom: 1px solid #26262f; }
+      h1 { font-size: 15px; margin: 0 0 12px; color: #9aa; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div id="game"></div>
+      <div class="side">
+        <h1>🕵️ zodiac-clue — 기본 클루(6인) 프로토타입</h1>
+        <div class="controls">
+          <button id="start">게임 시작</button>
+          <button id="suggest">제안</button>
+          <button id="accuse">고발</button>
+          <button id="endTurn">턴 종료</button>
+        </div>
+        <div id="hand"><b>내 손패</b>: (게임 시작 후 표시)</div>
+        <div id="log"></div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
