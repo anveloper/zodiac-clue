@@ -12,6 +12,12 @@ export type NarrationInput = {
   room: string;
   /** 캐릭터 성격 (말투에 반영) */
   persona?: string;
+  /** 말투 지시 (LLM 프롬프트용, 예: "훈계조로 꾸짖듯") */
+  tone?: string;
+  /** 폴백 대사 앞 추임새 (예: "쯧쯧, ") */
+  intro?: string;
+  /** 폴백 대사 끝 추임새 (예: " 마땅히 그러하렷다.") */
+  outro?: string;
   /** 제안이 반증되었는지 */
   disproved?: boolean;
 };
@@ -26,22 +32,26 @@ const SYSTEM =
 
 const rand = <T>(a: T[]): T => a[Math.floor(Math.random() * a.length)];
 
-/** 규칙기반 폴백 대사 (LLM 없이도 사극 말투 한 줄). */
+/** 규칙기반 폴백 대사 (LLM 없이도 사극 말투 한 줄). intro/outro로 캐릭터색을 입힌다. */
 export const fallbackLine = (i: NarrationInput): string => {
+  const deco = (s: string): string =>
+    `${i.intro ?? ""}${s}${i.outro ?? ""}`.trim().slice(0, 80);
   if (i.action === "accuse") {
-    return rand([
-      `이건 필시 ${i.suspect}의 소행! ${i.weapon}로 ${i.room}에서 벌인 짓이렷다!`,
-      `범인은 ${i.suspect}! ${i.room}의 ${i.weapon}이 증거니라.`,
-      `더 볼 것도 없다. ${i.suspect}, ${i.weapon}, ${i.room}!`,
-    ]);
+    return deco(
+      rand([
+        `이건 필시 ${i.suspect}의 소행! ${i.weapon}로 ${i.room}에서 벌인 짓이야`,
+        `범인은 ${i.suspect}! ${i.room}의 ${i.weapon}이 증거다`,
+        `더 볼 것도 없다. ${i.suspect}, ${i.weapon}, ${i.room}`,
+      ]),
+    );
   }
   const base = rand([
-    `흠… ${i.room}에서 ${i.suspect}가 ${i.weapon}로? 수상쩍구먼.`,
-    `내 짐작엔 ${i.suspect}, ${i.weapon}, ${i.room}이렷다.`,
-    `${i.room} 쪽을 살피니 ${i.weapon}이 눈에 밟히는걸.`,
-    `${i.suspect}, 자네 ${i.room}엔 왜 갔는가?`,
+    `흠… ${i.room}에서 ${i.suspect}가 ${i.weapon}로? 수상쩍구먼`,
+    `내 짐작엔 ${i.suspect}, ${i.weapon}, ${i.room}`,
+    `${i.room} 쪽을 살피니 ${i.weapon}이 눈에 밟히는걸`,
+    `${i.suspect}, 자네 ${i.room}엔 왜 갔는가`,
   ]);
-  return i.disproved ? `${base} …아니라니, 하나 지웠네.` : base;
+  return deco(i.disproved ? `${base} …아니라니 하나 지웠군` : base);
 };
 
 /**
@@ -59,7 +69,9 @@ export const narrate = async (i: NarrationInput): Promise<string | null> => {
       : `행동: 제안 — ${i.suspect} / ${i.weapon} / ${i.room}${
           i.disproved ? " (반증당함)" : ""
         }.`;
-  const userText = `NPC: ${i.name} (성격: ${i.persona ?? "무난함"}). ${act}`;
+  const userText =
+    `NPC: ${i.name} (성격: ${i.persona ?? "무난함"}` +
+    `${i.tone ? `; 말투: ${i.tone}` : ""}). ${act}`;
 
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), NARRATE_TIMEOUT_MS);

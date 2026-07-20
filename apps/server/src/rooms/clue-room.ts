@@ -10,6 +10,7 @@ import {
   label,
   persona,
   roomAt,
+  voice,
   type Card,
   type Solution,
   type Suggestion,
@@ -491,13 +492,26 @@ export class ClueRoom extends Room<GameState> {
 
   // NPC 대사: 결정된 정보만 넘겨 LLM 대사 생성, 실패 시 규칙 폴백 → 브로드캐스트.
   private async speak(id: string, input: NarrationInput): Promise<void> {
+    // 캐릭터 말투(voice)를 주입해 페르소나를 대사에 뚜렷이 반영.
+    const suspect = this.state.players.get(id)?.suspect;
+    const v = suspect ? voice(suspect) : undefined;
+    const enriched: NarrationInput = v
+      ? {
+          ...input,
+          persona: input.persona ?? persona(suspect as string),
+          tone: v.tone,
+          intro: v.intro,
+          outro: v.outro,
+        }
+      : input;
+
     let text: string | null = null;
     try {
-      text = await narrate(input);
+      text = await narrate(enriched);
     } catch {
       text = null;
     }
-    if (!text) text = fallbackLine(input);
+    if (!text) text = fallbackLine(enriched);
     if (!this.state.players.has(id)) return;
     this.broadcast("say", { id, from: input.name, text });
   }

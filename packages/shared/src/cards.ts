@@ -127,3 +127,28 @@ export const PERSONA: Record<string, string> = {
 };
 
 export const persona = (value: string): string => PERSONA[value] ?? "";
+
+/**
+ * 캐릭터 말투(voice) — 페르소나를 대사에 뚜렷이 입히기 위한 데이터.
+ * - tone: LLM 프롬프트에 넣는 "이렇게 말하라" 지시.
+ * - intro/outro: LLM 없이 폴백 대사를 만들 때 앞뒤에 붙이는 캐릭터 추임새.
+ */
+export type Voice = { tone: string; intro: string; outro: string };
+
+export const VOICE: Record<string, Voice> = {
+  rat: { tone: "잔꾀 섞어 이문 따지듯", intro: "허, ", outro: " 셈속이 그러하렷다." },
+  ox: { tone: "말수 적고 직설적으로", intro: "", outro: " 에두를 것 없네." },
+  tiger: { tone: "위엄 있게 호령하듯", intro: "어험— ", outro: " 감히 누구 앞이라고!" },
+  rabbit: { tone: "새침하고 빠르게 쏘아붙이듯", intro: "어머, ", outro: " 눈치 못 챌 줄 알고?" },
+  dragon: { tone: "허풍 섞어 과장되게", intro: "핫핫, ", outro: " 내 눈은 못 속이지!" },
+  snake: { tone: "음산하게 에둘러", intro: "스으…, ", outro: "… 두고 보면 알겠지." },
+  horse: { tone: "수다스럽게 소문 옮기듯", intro: "그거 아나, ", outro: " 소문이 파다하더군!" },
+  sheep: { tone: "조심스럽고 겁먹은 듯", intro: "저, 저기… ", outro: "… 아니면 말고요." },
+  monkey: { tone: "익살맞게 농치듯", intro: "낄낄, ", outro: " 이거 아주 볼만하구먼!" },
+  rooster: { tone: "훈계조로 꾸짖듯", intro: "쯧쯧, ", outro: " 마땅히 그러하렷다." },
+  dog: { tone: "딱딱한 공무 말투로", intro: "고하오— ", outro: " 지체 없이 밝히겠소." },
+  pig: { tone: "넉살 좋게 흥정하듯", intro: "어이구, ", outro: " 밑질 거래는 아니지 않소?" },
+};
+
+export const voice = (value: string): Voice =>
+  VOICE[value] ?? { tone: "무난하게", intro: "", outro: "" };
