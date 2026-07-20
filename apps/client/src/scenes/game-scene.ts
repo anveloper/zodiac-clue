@@ -8,7 +8,8 @@ import {
   label,
 } from "@zodiac-clue/shared";
 
-export const CELL = 24;
+// 셀 크기 = 근접(줌 1.0) 기준 해상도. 크게 잡아 줌 1.0에서 선명하게 보이도록.
+export const CELL = 40;
 export const BOARD_W = GRID_WIDTH * CELL;
 export const BOARD_H = GRID_HEIGHT * CELL;
 
@@ -16,11 +17,12 @@ const PLAYER_COLORS = [
   0xef4444, 0xf59e0b, 0x84cc16, 0x22c55e, 0x38bdf8, 0xa855f7,
 ];
 const MOVE_COOLDOWN_MS = 110;
+const MOVE_TWEEN_MS = 110; // 칸 이동 보간
 
-// 카메라
-const MIN_ZOOM = 0.6;
-const MAX_ZOOM = 3;
-const INIT_ZOOM = 1.8;
+// 카메라: 근접(1.0)이 기본·최대 근처, 축소(<1)로 전체 조망
+const MIN_ZOOM = 0.3;
+const MAX_ZOOM = 1.25;
+const INIT_ZOOM = 1.0;
 const CAM_LERP = 0.12;
 const PAN_STEP = 48;
 
@@ -32,10 +34,12 @@ const C_ROOM_EDGE = 0x7c6238;
 const C_GOLD = 0xffd479;
 
 type Token = {
+  c: Phaser.GameObjects.Container;
   ring: Phaser.GameObjects.Arc;
   disc: Phaser.GameObjects.Arc;
   face: Phaser.GameObjects.Text;
   name: Phaser.GameObjects.Text;
+  placed: boolean;
 };
 
 type PlayerView = {
@@ -54,7 +58,7 @@ export class GameScene extends Phaser.Scene {
   private lastMove = 0;
   private cam!: Phaser.Cameras.Scene2D.Camera;
   private myId = "";
-  private myDisc?: Phaser.GameObjects.Arc;
+  private myTarget?: Phaser.GameObjects.Container;
   private freeLook = false;
 
   constructor() {
@@ -66,16 +70,15 @@ export class GameScene extends Phaser.Scene {
     this.myId = this.room.sessionId;
     this.drawBoard();
 
-    // ── 카메라: 내 캐릭터 추적 탑뷰 ──
+    // ── 카메라: 내 캐릭터 추적 탑뷰 (bounds 없음 → 캐릭터가 항상 중앙, 보드 밖 여백 허용) ──
     const cam = this.cameras.main;
-    cam.setBounds(0, 0, BOARD_W, BOARD_H);
     cam.setZoom(INIT_ZOOM);
     cam.centerOn(BOARD_W / 2, BOARD_H / 2);
     this.cam = cam;
 
     this.room.onStateChange((state) => this.render(state));
 
-    // 휠 줌 (커서 기준 확대감)
+    // 휠 줌 (1.0=선명 근접, 축소하며 전체 조망)
     this.input.on(
       "wheel",
       (_p: unknown, _o: unknown, _dx: number, dy: number) => {
@@ -135,20 +138,27 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
+  /** 매 프레임 말풍선을 해당 말 위치에 붙여둔다(트윈 중에도 따라오도록). */
+  update(): void {
+    this.bubbles.forEach((b, id) => {
+      const t = this.tokens.get(id);
+      if (t) b.setPosition(t.c.x, t.c.y - CELL * 0.95);
+    });
+  }
+
   /** 자유시점 on/off — off 시 내 캐릭터로 부드럽게 복귀. */
   private setFreeLook(on: boolean): void {
     if (this.freeLook === on) return;
     this.freeLook = on;
     if (on) {
       this.cam.stopFollow();
-    } else if (this.myDisc) {
-      this.cam.startFollow(this.myDisc, true, CAM_LERP, CAM_LERP);
+    } else if (this.myTarget) {
+      this.cam.startFollow(this.myTarget, true, CAM_LERP, CAM_LERP);
     }
   }
 
   // ── 보드 그리기 (복도 + 방 + 중앙 잔치상) ──
   private drawBoard(): void {
-    // 복도 바닥
     this.add.rectangle(0, 0, BOARD_W, BOARD_H, C_CORRIDOR).setOrigin(0);
     const grid = this.add.graphics();
     grid.lineStyle(1, C_GRID, 0.5);
@@ -159,22 +169,22 @@ export class GameScene extends Phaser.Scene {
       grid.lineBetween(0, y * CELL, BOARD_W, y * CELL);
     }
 
-    // 중앙 잔치상 (클루의 중앙 카드 자리)
+    // 중앙 잔치상
     const fx = 9 * CELL;
     const fy = 9 * CELL;
     const fw = 6 * CELL;
     const fh = 6 * CELL;
     const feast = this.add.graphics();
     feast.fillStyle(0x3a2b1a, 1);
-    feast.fillRoundedRect(fx, fy, fw, fh, 12);
-    feast.lineStyle(2, 0xb8933f, 1);
-    feast.strokeRoundedRect(fx, fy, fw, fh, 12);
+    feast.fillRoundedRect(fx, fy, fw, fh, 16);
+    feast.lineStyle(3, 0xb8933f, 1);
+    feast.strokeRoundedRect(fx, fy, fw, fh, 16);
     this.add
-      .text(fx + fw / 2, fy + fh / 2 - 12, "🎁", { fontSize: "30px" })
+      .text(fx + fw / 2, fy + fh / 2 - 20, "🎁", { fontSize: "52px" })
       .setOrigin(0.5);
     this.add
-      .text(fx + fw / 2, fy + fh / 2 + 20, "잔치상", {
-        fontSize: "13px",
+      .text(fx + fw / 2, fy + fh / 2 + 34, "잔치상", {
+        fontSize: "22px",
         color: "#d8c188",
       })
       .setOrigin(0.5);
@@ -187,18 +197,18 @@ export class GameScene extends Phaser.Scene {
       const h = r.h * CELL;
       const g = this.add.graphics();
       g.fillStyle(C_ROOM, 1);
-      g.fillRoundedRect(x, y, w, h, 8);
-      g.lineStyle(2, C_ROOM_EDGE, 1);
-      g.strokeRoundedRect(x, y, w, h, 8);
+      g.fillRoundedRect(x, y, w, h, 12);
+      g.lineStyle(3, C_ROOM_EDGE, 1);
+      g.strokeRoundedRect(x, y, w, h, 12);
 
       const name = label(r.name);
-      const plW = Math.min(w - 10, name.length * 13 + 18);
+      const plW = Math.min(w - 16, name.length * 20 + 24);
       const plaque = this.add.graphics();
       plaque.fillStyle(0x2b2013, 0.92);
-      plaque.fillRoundedRect(x + 6, y + 6, plW, 20, 5);
+      plaque.fillRoundedRect(x + 10, y + 10, plW, 30, 7);
       this.add
-        .text(x + 6 + plW / 2, y + 16, name, {
-          fontSize: "12px",
+        .text(x + 10 + plW / 2, y + 25, name, {
+          fontSize: "18px",
           color: "#f0d9a8",
         })
         .setOrigin(0.5);
@@ -214,21 +224,32 @@ export class GameScene extends Phaser.Scene {
 
     players.forEach((p, id) => {
       seen.add(id);
-      const token = this.tokens.get(id) ?? this.createToken(id, ids.indexOf(id), p);
-      if (id === this.myId && this.myDisc !== token.disc) {
-        this.myDisc = token.disc;
+      const token =
+        this.tokens.get(id) ?? this.createToken(id, ids.indexOf(id), p);
+      if (id === this.myId && this.myTarget !== token.c) {
+        this.myTarget = token.c;
         if (!this.freeLook) {
-          this.cam.startFollow(token.disc, true, CAM_LERP, CAM_LERP);
+          this.cam.startFollow(token.c, true, CAM_LERP, CAM_LERP);
         }
       }
+
       const [ox, oy] = tokenOffset(id);
       const cx = p.x * CELL + CELL / 2 + ox;
       const cy = p.y * CELL + CELL / 2 + oy;
-      token.ring.setPosition(cx, cy);
-      token.disc.setPosition(cx, cy);
-      token.face.setPosition(cx, cy);
-      token.name.setPosition(cx, cy + CELL * 0.5);
-      this.bubbles.get(id)?.setPosition(cx, cy - CELL * 0.95);
+
+      if (!token.placed) {
+        token.c.setPosition(cx, cy);
+        token.placed = true;
+      } else if (token.c.x !== cx || token.c.y !== cy) {
+        this.tweens.killTweensOf(token.c);
+        this.tweens.add({
+          targets: token.c,
+          x: cx,
+          y: cy,
+          duration: MOVE_TWEEN_MS,
+          ease: "Quad.Out",
+        });
+      }
 
       const isCurrent = id === current;
       token.ring.setVisible(isCurrent);
@@ -241,11 +262,7 @@ export class GameScene extends Phaser.Scene {
 
     for (const id of [...this.tokens.keys()]) {
       if (!seen.has(id)) {
-        const t = this.tokens.get(id);
-        t?.ring.destroy();
-        t?.disc.destroy();
-        t?.face.destroy();
-        t?.name.destroy();
+        this.tokens.get(id)?.c.destroy();
         this.tokens.delete(id);
         this.bubbles.get(id)?.destroy();
         this.bubbles.delete(id);
@@ -259,13 +276,13 @@ export class GameScene extends Phaser.Scene {
     if (!token) return;
     this.bubbles.get(id)?.destroy();
     const bubble = this.add
-      .text(token.disc.x, token.disc.y - CELL * 0.95, text, {
-        fontSize: "11px",
+      .text(token.c.x, token.c.y - CELL * 0.95, text, {
+        fontSize: "15px",
         color: "#2a2118",
         backgroundColor: "#f0e0c0",
-        padding: { x: 6, y: 3 },
+        padding: { x: 8, y: 4 },
         align: "center",
-        wordWrap: { width: 170 },
+        wordWrap: { width: 260 },
       })
       .setOrigin(0.5, 1)
       .setDepth(100);
@@ -291,14 +308,15 @@ export class GameScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
     const name = this.add
-      .text(0, 0, `${p.isBot ? "🤖" : ""}${p.name}`, {
-        fontSize: "9px",
+      .text(0, CELL * 0.55, `${p.isBot ? "🤖" : ""}${p.name}`, {
+        fontSize: "13px",
         color: "#f0e9dc",
         backgroundColor: "#000000aa",
-        padding: { x: 3, y: 1 },
+        padding: { x: 4, y: 1 },
       })
       .setOrigin(0.5, 0);
-    const token: Token = { ring, disc, face, name };
+    const c = this.add.container(0, 0, [ring, disc, face, name]);
+    const token: Token = { c, ring, disc, face, name, placed: false };
     this.tokens.set(id, token);
     return token;
   }
