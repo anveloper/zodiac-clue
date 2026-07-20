@@ -162,12 +162,26 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  /** 매 프레임 말풍선을 해당 말 위치에 붙여둔다(트윈 중에도 따라오도록). */
+  /** 우측 패널(기록/노트)이 가리는 폭(px). 그만큼 카메라 중심을 왼쪽으로 보정. */
+  private rightInset(): number {
+    const el = document.getElementById("rightPanel");
+    if (!el) return 0;
+    const r = el.getBoundingClientRect();
+    return Math.max(0, window.innerWidth - r.left);
+  }
+
+  /** 보이는 영역 중앙에 대상이 오도록 하는 followOffset.x (월드 단위). */
+  private insetOffset(): number {
+    return -this.rightInset() / 2 / this.cam.zoom;
+  }
+
+  /** 매 프레임: 말풍선 위치 + 우측 패널 보정(줌·드래그에 실시간 반응). */
   update(): void {
     this.bubbles.forEach((b, id) => {
       const t = this.tokens.get(id);
       if (t) b.setPosition(t.c.x, t.c.y - CELL * 0.95);
     });
+    if (this.cam) this.cam.followOffset.x = this.insetOffset();
   }
 
   /** 자유시점 on/off — off 시 현재 추적 대상으로 복귀. */
@@ -307,7 +321,7 @@ export class GameScene extends Phaser.Scene {
             if (this.followId !== followId || this.freeLook) return;
             this.cam.stopFollow();
             this.cam.pan(
-              t.x,
+              t.x - this.insetOffset(),
               t.y,
               isMe ? 350 : 1000,
               "Sine.easeInOut",
