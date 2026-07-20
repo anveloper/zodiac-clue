@@ -29,4 +29,6 @@ export class GameState extends Schema {
   @type("string") winner = "";
   /** 현재 턴 플레이어의 남은 이동 칸 수(주사위). 0이면 이동 불가. */
   @type("number") stepsLeft = 0;
+  /** 공통 단서(모두 공개·정답 아님). 솔로(사람1)일 때 추리 보조로 일부 공개. */
+  @type(["string"]) commonCards = new ArraySchema<string>();
 }

@@ -436,6 +436,10 @@ const buildEvidence = (roomId: string): void => {
   const host = $("evidence");
   host.innerHTML = "";
   const data = loadEvi(roomId);
+  // 공통 단서(모두 공개·정답 아님) — 증거노트에 자동 제외 표시
+  const commonSet = new Set<string>(
+    room ? ([...((room.state.commonCards as string[]) ?? [])] as string[]) : [],
+  );
   const groups: [string, readonly string[]][] = [
     ["용의자", participantSuspects()],
     ["수법", WEAPONS],
@@ -454,11 +458,11 @@ const buildEvidence = (roomId: string): void => {
       const chip = document.createElement("div");
       chip.innerHTML =
         `<span>${emoji(v)}</span>` + `<span>${label(v)}</span>`;
-      const own = myCards.has(v); // 내 패 → 정답 아님, 자동 제외·잠금
+      // 내 패 또는 공통 단서 → 정답 아님, 자동 제외·잠금
+      const own = myCards.has(v) || commonSet.has(v);
       if (own) {
-        // 내 손패는 항상 '제외'로 고정, 토글 불가
         chip.className = "evi-chip cleared own";
-        chip.title = "내 패 (정답 아님)";
+        chip.title = commonSet.has(v) ? "공통 단서 (정답 아님)" : "내 패 (정답 아님)";
       } else {
         chip.title = "클릭: 없음(제외) → 의심 → 초기화";
         const apply = (): void => {

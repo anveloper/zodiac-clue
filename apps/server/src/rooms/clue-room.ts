@@ -274,6 +274,32 @@ export class ClueRoom extends Room<GameState> {
     ];
     shuffle(deck);
 
+    // 공통 단서: 솔로(사람1 + 봇들)일 때 추리 보조로 2장 앞면 공개(정답 아님).
+    // 근거: 6인 꽉차면 딜이 딱 나눠떨어져 남는 카드가 없음 → 솔로 난이도 완화용 변형 룰.
+    this.state.commonCards.clear();
+    this.revealed.clear();
+    const humanCount = ids.filter(
+      (id) => !this.state.players.get(id)?.isBot,
+    ).length;
+    if (humanCount === 1) {
+      const n = Math.min(2, Math.max(0, deck.length - ids.length)); // 딜 유지 위해 여유분만
+      for (let j = 0; j < n; j++) {
+        const c = deck.shift();
+        if (c) {
+          this.state.commonCards.push(c.value);
+          this.revealed.add(c.value); // 봇도 정답 아님으로 인지
+        }
+      }
+      if (this.state.commonCards.length > 0) {
+        this.broadcast("log", {
+          text: `📢 공통 단서 공개(정답 아님): ${([...this.state.commonCards] as string[])
+            .map((v) => label(v))
+            .join(", ")}`,
+          kind: "info",
+        });
+      }
+    }
+
     this.hands.clear();
     ids.forEach((id) => this.hands.set(id, []));
     deck.forEach((card, i) => {
@@ -282,7 +308,6 @@ export class ClueRoom extends Room<GameState> {
 
     // 사람에게만 손패 private 전송, 봇은 추리 노트 초기화
     this.botKnowledge.clear();
-    this.revealed.clear();
     for (const id of ids) {
       const player = this.state.players.get(id);
       if (player?.isBot) {
