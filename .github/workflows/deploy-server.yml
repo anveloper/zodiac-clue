@@ -1,0 +1,38 @@
+name: Deploy server (OCI)
+
+# 서버/공용 코드가 main에 push되면 OCI VM에 SSH로 자동 배포.
+# 클라(apps/client)는 Vercel이 담당하므로 여기서 제외.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/server/**"
+      - "packages/shared/**"
+      - "pnpm-lock.yaml"
+      - "package.json"
+      - ".github/workflows/deploy-server.yml"
+  workflow_dispatch: {}
+
+concurrency:
+  group: deploy-server
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script_stop: true
+          script: |
+            set -e
+            cd ~/zodiac-clue
+            git pull --ff-only
+            pnpm install --frozen-lockfile
+            sudo systemctl restart zodiac-server
+            sleep 3
+            systemctl is-active zodiac-server
