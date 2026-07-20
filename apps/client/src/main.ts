@@ -6,6 +6,7 @@ import {
   ZODIAC,
   emoji,
   label,
+  passageOf,
   persona,
   type Card,
 } from "@zodiac-clue/shared";
@@ -336,10 +337,15 @@ const updateTurnInfo = (state: Room["state"]): void => {
   el.classList.remove("hidden");
   const players = state.players as Map<
     string,
-    { suspect: string; name: string }
+    { suspect: string; name: string; room?: string }
   >;
   const cur = players.get(state.currentTurn);
   const mine = room !== null && state.currentTurn === room.sessionId;
+  // 비밀 통로 버튼: 내 턴 + 현재 방에 통로가 있을 때만 활성
+  const myRoom = room ? players.get(room.sessionId)?.room : undefined;
+  ($("passage") as HTMLButtonElement).disabled = !(
+    mine && !!myRoom && !!passageOf(myRoom)
+  );
   const turnChanged = state.currentTurn !== lastTurn;
   lastTurn = state.currentTurn;
   el.classList.toggle("mine", mine);
@@ -539,6 +545,8 @@ const enterGame = (): void => {
     }
   };
   ($("endTurn") as HTMLButtonElement).onclick = () => room?.send("endTurn", {});
+  ($("passage") as HTMLButtonElement).onclick = () =>
+    room?.send("passage", {});
   ($("endHome") as HTMLButtonElement).onclick = exitToMain;
   ($("specHome") as HTMLButtonElement).onclick = exitToMain;
 

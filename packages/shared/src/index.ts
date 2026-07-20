@@ -49,6 +49,19 @@ export const roomAt = (x: number, y: number): string | null => {
   return null;
 };
 
+/** 비밀 통로 — 대각 방 쌍 연결(양방향). 방에서 주사위 없이 상대 방으로 이동. */
+export const PASSAGES: Record<string, string> = {
+  jeongji: "byeoldang",
+  byeoldang: "jeongji",
+  huwon: "anbang",
+  anbang: "huwon",
+  sarangbang: "seojae",
+  seojae: "sarangbang",
+};
+
+/** 해당 방의 비밀 통로 연결 방(없으면 undefined). */
+export const passageOf = (name: string): string | undefined => PASSAGES[name];
+
 /** 방 영역 조회(이름). */
 export const regionOf = (name: string): RoomRegion | undefined =>
   ROOM_REGIONS.find((r) => r.name === name);

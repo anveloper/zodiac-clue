@@ -30,6 +30,8 @@ export type ClientMessages = {
   suggest: Suggestion;
   accuse: Suggestion;
   endTurn: Record<string, never>;
+  /** 현재 방의 비밀 통로로 이동(턴 종료) */
+  passage: Record<string, never>;
 };
 
 // ── 서버 → 클라 메시지 (개별/브로드캐스트) ───────────

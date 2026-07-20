@@ -10,6 +10,7 @@ import {
   canCross,
   inFeast,
   label,
+  passageOf,
   persona,
   regionOf,
   roomAt,
@@ -91,6 +92,32 @@ export class ClueRoom extends Room<GameState> {
       this.handleAccuse(client, msg),
     );
     this.onMessage("endTurn", (client) => this.handleEndTurn(client));
+    this.onMessage("passage", (client) => this.handlePassage(client));
+  }
+
+  // ── 비밀 통로: 현재 방 → 연결된 방으로 이동(주사위 없이) → 턴 종료 ──
+  private handlePassage(client: Client): void {
+    if (this.state.phase !== "playing") return;
+    const player = this.state.players.get(client.sessionId);
+    if (!player || player.eliminated) return;
+    if (this.state.currentTurn !== client.sessionId) {
+      client.send("log", { text: "당신의 턴이 아닙니다." });
+      return;
+    }
+    const dest = player.room ? passageOf(player.room) : undefined;
+    if (!dest) {
+      client.send("log", { text: "이 방엔 비밀 통로가 없습니다." });
+      return;
+    }
+    const c = this.freeCellIn(dest, player.id);
+    player.x = c.x;
+    player.y = c.y;
+    player.room = dest;
+    this.broadcast("log", {
+      text: `🚪 ${player.name} 님이 비밀 통로로 ${label(dest)}에 이동!`,
+      kind: "move",
+    });
+    this.advanceTurn(); // 통로 사용은 턴을 소비
   }
 
   onJoin(client: Client, options: JoinOptions = {}): void {
