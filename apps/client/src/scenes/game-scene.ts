@@ -5,7 +5,9 @@ import {
   GRID_WIDTH,
   ROOM_REGIONS,
   emoji,
+  inFeast,
   label,
+  roomAt,
 } from "@zodiac-clue/shared";
 
 // 셀 크기 = 근접(줌 1.0) 기준 해상도. 크게 잡아 줌 1.0에서 선명하게 보이도록.
@@ -139,12 +141,18 @@ export class GameScene extends Phaser.Scene {
         cam.scrollY += (dy * PAN_STEP) / cam.zoom;
         return;
       }
-      // 정통 클루: 내 턴 + 이동 한도가 남았을 때만 이동
+      // 정통 클루: 내 턴에만 이동. 이동 한도는 복도 이동만 제한
+      // (방 안·잔치상 위에서는 한도 0이어도 자유 이동).
       const s = this.room.state as unknown as {
         currentTurn: string;
         stepsLeft: number;
+        players: Map<string, { x: number; y: number }>;
       };
-      if (s.currentTurn !== this.myId || (s.stepsLeft ?? 0) <= 0) return;
+      if (s.currentTurn !== this.myId) return;
+      const me = s.players.get(this.myId);
+      const free =
+        !!me && (roomAt(me.x, me.y) !== null || inFeast(me.x, me.y));
+      if (!free && (s.stepsLeft ?? 0) <= 0) return;
       const now = this.time.now;
       if (now - this.lastMove < MOVE_COOLDOWN_MS) return;
       this.lastMove = now;
@@ -254,9 +262,9 @@ export class GameScene extends Phaser.Scene {
       seen.add(id);
       const token =
         this.tokens.get(id) ?? this.createToken(id, ids.indexOf(id), p);
-      const [ox, oy] = tokenOffset(id);
-      const cx = p.x * CELL + CELL / 2 + ox;
-      const cy = p.y * CELL + CELL / 2 + oy;
+      // 칸 정중앙에 정렬(겹침 방지는 서버가 빈 칸 배치로 처리)
+      const cx = p.x * CELL + CELL / 2;
+      const cy = p.y * CELL + CELL / 2;
 
       if (!token.placed) {
         token.c.setPosition(cx, cy);
@@ -281,14 +289,29 @@ export class GameScene extends Phaser.Scene {
       token.name.setAlpha(alpha);
     });
 
-    // 카메라: 현재 턴 캐릭터를 따라감 (내 턴=빠름 / NPC 턴=천천히)
+    // 카메라: 현재 턴 캐릭터로 이동해 확실히 비춤 (내 턴=빠름 / NPC 턴=천천히)
     const followId = current && this.tokens.has(current) ? current : this.myId;
     if (followId !== this.followId) {
       this.followId = followId;
-      this.followTarget = this.tokens.get(followId)?.c;
-      if (!this.freeLook && this.followTarget) {
-        const l = followId === this.myId ? CAM_LERP : SLOW_LERP;
-        this.cam.startFollow(this.followTarget, true, l, l);
+      const t = this.tokens.get(followId)?.c;
+      this.followTarget = t;
+      if (!this.freeLook && t) {
+        const isMe = followId === this.myId;
+        const l = isMe ? CAM_LERP : SLOW_LERP;
+        // 타이밍 팬으로 대상까지 반드시 도달 → 이후 추적
+        this.cam.stopFollow();
+        this.cam.pan(
+          t.x,
+          t.y,
+          isMe ? 350 : 900,
+          "Sine.easeInOut",
+          true,
+          (_c, prog) => {
+            if (prog === 1 && this.followId === followId && !this.freeLook) {
+              this.cam.startFollow(t, true, l, l);
+            }
+          },
+        );
       }
     }
 
@@ -381,12 +404,3 @@ export class GameScene extends Phaser.Scene {
     return token;
   }
 }
-
-/** id 기반 결정적 소량 오프셋 — 같은 칸에 여럿 있어도 겹치지 않게. */
-const tokenOffset = (id: string): [number, number] => {
-  let h = 0;
-  for (const ch of id) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  const ox = (((h % 5) - 2) * CELL) / 7;
-  const oy = ((((h >> 3) % 5) - 2) * CELL) / 7;
-  return [ox, oy];
-};

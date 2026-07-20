@@ -473,6 +473,22 @@ const enterGame = (): void => {
   }
 
   ($("suggest") as HTMLButtonElement).onclick = async () => {
+    // 방 안에서만 제안 가능 — 밖이면 안내(제안이 거부돼 턴이 안 넘어가는 혼동 방지)
+    const me = room
+      ? (room.state.players as Map<string, { room: string; id: string }>).get(
+          room.sessionId,
+        )
+      : undefined;
+    if (room && room.state.currentTurn !== room.sessionId) {
+      addLog("지금은 내 턴이 아니에요.", { kind: "info" });
+      return;
+    }
+    if (!me?.room) {
+      addLog("방 안에서만 제안할 수 있어요. 방으로 이동하세요.", {
+        kind: "info",
+      });
+      return;
+    }
     const pick = await openPicker("제안 — 누가, 무엇으로?", false);
     if (pick) {
       room?.send("suggest", {
@@ -494,11 +510,19 @@ const enterGame = (): void => {
   };
   ($("endTurn") as HTMLButtonElement).onclick = () => room?.send("endTurn", {});
 
-  // 기록 창 크게 보기 토글 (details 접힘과 별개)
+  // 기록 창 크게 보기 토글 — 확장 시 증거노트를 접어 겹침 방지(상호작용)
+  const eviDetails = document.querySelector<HTMLDetailsElement>(
+    ".hud-evi details",
+  );
+  eviDetails?.addEventListener("toggle", () => {
+    if (eviDetails.open) $("logPanel").classList.remove("expanded");
+  });
   ($("logExpand") as HTMLButtonElement).onclick = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    $("logPanel").classList.toggle("expanded");
+    const panel = $("logPanel");
+    panel.classList.toggle("expanded");
+    if (panel.classList.contains("expanded")) eviDetails?.removeAttribute("open");
   };
 
   addLog("잔치 시작! 이동: 방향키, 방에 들어가 [제안]");

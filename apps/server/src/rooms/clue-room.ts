@@ -11,6 +11,7 @@ import {
   inFeast,
   label,
   persona,
+  regionOf,
   roomAt,
   roomCenter,
   voice,
@@ -310,13 +311,30 @@ export class ClueRoom extends Room<GameState> {
     bot.isBot = true;
     bot.suspect = suspect;
     bot.name = label(suspect);
-    // 봇은 서로 다른 방 중심에서 시작 (복도가 아니라 방)
+    // 봇은 서로 다른 방의 빈 칸에서 시작 (복도가 아니라 방, 겹침 없이)
     const region = ROOM_REGIONS[(this.botSeq - 1) % ROOM_REGIONS.length];
-    bot.x = region.x + Math.floor(region.w / 2);
-    bot.y = region.y + Math.floor(region.h / 2);
+    const cell = this.freeCellIn(region.name, id);
+    bot.x = cell.x;
+    bot.y = cell.y;
     bot.room = region.name;
     this.state.players.set(id, bot);
     return true;
+  }
+
+  /** 방 안에서 다른 말과 겹치지 않는 빈 칸을 찾는다(없으면 중심). */
+  private freeCellIn(name: string, excludeId: string): { x: number; y: number } {
+    const r = regionOf(name);
+    if (!r) return { x: 0, y: 0 };
+    const occ = new Set<string>();
+    this.state.players.forEach((p, id) => {
+      if (id !== excludeId) occ.add(`${p.x},${p.y}`);
+    });
+    for (let yy = r.y; yy < r.y + r.h; yy++) {
+      for (let xx = r.x; xx < r.x + r.w; xx++) {
+        if (!occ.has(`${xx},${yy}`)) return { x: xx, y: yy };
+      }
+    }
+    return roomCenter(name);
   }
 
   /** 이번 턴 이동 한도(주사위 2d6) — 2~12칸. 방 안 이동은 무료라 실효 이동은 더 큼. */
@@ -362,7 +380,7 @@ export class ClueRoom extends Room<GameState> {
       (p) => p.suspect === suggestion.suspect,
     );
     if (target) {
-      const c = roomCenter(suggestion.room);
+      const c = this.freeCellIn(suggestion.room, target.id);
       target.x = c.x;
       target.y = c.y;
       target.room = suggestion.room;
@@ -488,8 +506,9 @@ export class ClueRoom extends Room<GameState> {
 
     // 1) 임의의 방으로 이동 (먼저 보여줌 → 카메라가 따라감)
     const region = pick(ROOM_REGIONS);
-    bot.x = region.x + Math.floor(region.w / 2);
-    bot.y = region.y + Math.floor(region.h / 2);
+    const cell = this.freeCellIn(region.name, id);
+    bot.x = cell.x;
+    bot.y = cell.y;
     if (bot.room !== region.name) {
       bot.room = region.name;
       this.broadcast("log", {
