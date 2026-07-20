@@ -14,6 +14,7 @@
   - `.md`(AI 전용): 참조 시 **읽기 토큰 절약**을 위해 압축(핵심만 밀도 높게).
   - `.html`(사람용): **Claude가 별도로 보기 좋게 디자인**(md→html 자동변환/빌드 미사용).
   - `docs/plans/*`는 `.md`만. 그 외 = `.md`(압축) + `.html`(디자인) 2중.
+  - 사람용 진입점: `docs/index.html`(설계/플랜/로그 대시보드). 문서 추가·상태 변경 시 갱신.
 
 ## 코딩 컨벤션
 - TypeScript strict, `any` 금지, `type` 선호, 파일명 kebab-case.
