@@ -44,14 +44,21 @@ const addLog = (text: string): void => {
 // ── 카드 선택 모달 ─────────────────────────────
 type Pick = { suspect: string; weapon: string; room?: string };
 
-const selectFrom = (values: readonly string[]): HTMLSelectElement => {
+const selectFrom = (
+  values: readonly string[],
+  disabled?: Set<string>,
+): HTMLSelectElement => {
   const sel = document.createElement("select");
   for (const v of values) {
     const opt = document.createElement("option");
     opt.value = v;
-    opt.textContent = label(v);
+    opt.textContent = label(v) + (disabled?.has(v) ? " (내 패)" : "");
+    if (disabled?.has(v)) opt.disabled = true;
     sel.appendChild(opt);
   }
+  // 비활성(내 패)이 아닌 첫 옵션을 기본 선택
+  const firstEnabled = [...sel.options].find((o) => !o.disabled);
+  if (firstEnabled) sel.value = firstEnabled.value;
   return sel;
 };
 
@@ -66,9 +73,9 @@ const openPicker = (title: string, needRoom: boolean): Promise<Pick | null> =>
     h.textContent = title;
     modal.appendChild(h);
 
-    const suspectSel = selectFrom(SUSPECTS);
-    const weaponSel = selectFrom(WEAPONS);
-    const roomSel = needRoom ? selectFrom(ROOMS) : null;
+    const suspectSel = selectFrom(SUSPECTS, myCards);
+    const weaponSel = selectFrom(WEAPONS, myCards);
+    const roomSel = needRoom ? selectFrom(ROOMS, myCards) : null;
 
     const row = (labelText: string, sel: HTMLSelectElement): HTMLDivElement => {
       const r = document.createElement("div");
@@ -114,6 +121,8 @@ let room: Room | null = null;
 let game: Phaser.Game | null = null;
 let phaserStarted = false;
 let selectedCharacter: string | null = null;
+/** 내 손패 카드값 집합 — 정답일 수 없으므로 제안·증거노트에서 자동 비활성화. */
+let myCards = new Set<string>();
 
 // ── 십이지신 캐릭터 선택 그리드 ─────────────────────────────
 const showPersona = (z: string): void => {
@@ -166,8 +175,11 @@ const wireRoom = (r: Room): void => {
 
   r.onMessage("log", (m: { text: string }) => addLog(m.text));
   r.onMessage("hand", (m: { cards: Card[] }) => {
+    myCards = new Set(m.cards.map((c) => c.value));
     $("hand").innerHTML =
       "<b>내 단서 패</b>: " + m.cards.map((c) => label(c.value)).join(", ");
+    // 내 패를 증거노트에 '제외' 잠금으로 반영
+    if (room) buildEvidence(room.roomId);
   });
   r.onMessage("disprove", (m: { by: string | null; card: Card | null }) => {
     if (m.card) {
@@ -321,19 +333,26 @@ const buildEvidence = (roomId: string): void => {
       const chip = document.createElement("div");
       chip.innerHTML =
         `<span>${emoji(v)}</span>` + `<span>${label(v)}</span>`;
-      chip.title = "클릭: 없음(제외) → 의심 → 초기화";
-      const apply = (): void => {
-        const st = data[v] ?? "";
-        chip.className = "evi-chip" + (st ? " " + st : "");
-      };
-      chip.onclick = () => {
-        const next = EVI_NEXT[data[v] ?? ""];
-        if (next) data[v] = next;
-        else delete data[v];
+      const own = myCards.has(v); // 내 패 → 정답 아님, 자동 제외·잠금
+      if (own) {
+        // 내 손패는 항상 '제외'로 고정, 토글 불가
+        chip.className = "evi-chip cleared own";
+        chip.title = "내 패 (정답 아님)";
+      } else {
+        chip.title = "클릭: 없음(제외) → 의심 → 초기화";
+        const apply = (): void => {
+          const st = data[v] ?? "";
+          chip.className = "evi-chip" + (st ? " " + st : "");
+        };
+        chip.onclick = () => {
+          const next = EVI_NEXT[data[v] ?? ""];
+          if (next) data[v] = next;
+          else delete data[v];
+          apply();
+          saveEvi(roomId, data);
+        };
         apply();
-        saveEvi(roomId, data);
-      };
-      apply();
+      }
       chips.appendChild(chip);
     }
     g.appendChild(chips);
