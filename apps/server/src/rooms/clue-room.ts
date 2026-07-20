@@ -68,6 +68,8 @@ export class ClueRoom extends Room<GameState> {
   private suggestSeq = 0;
   /** 이번 판 용의자 후보 = 참여자 6명의 캐릭터. */
   private suspectPool: string[] = [];
+  /** 반증으로 드러난(=정답 아님) 카드값. NPC들이 공유해 추리 가속. */
+  private revealed = new Set<string>();
   // 사용자 턴 시간 이동평균(ms) + 현재 턴 시작 시각(clock)
   private avgHumanTurnMs = 0;
   private turnStartedAt = 0;
@@ -272,6 +274,7 @@ export class ClueRoom extends Room<GameState> {
 
     // 사람에게만 손패 private 전송, 봇은 추리 노트 초기화
     this.botKnowledge.clear();
+    this.revealed.clear();
     for (const id of ids) {
       const player = this.state.players.get(id);
       if (player?.isBot) {
@@ -401,6 +404,8 @@ export class ClueRoom extends Room<GameState> {
       );
       if (match) {
         const other = this.state.players.get(otherId);
+        // 드러난 카드는 정답 아님 → NPC 공유 지식에 반영(추리 가속)
+        this.revealed.add(match.value);
         this.broadcast("log", {
           text: `🛡 ${other?.name} 님이 반증했습니다.`,
           kind: "disprove",
@@ -535,10 +540,16 @@ export class ClueRoom extends Room<GameState> {
       return;
     }
 
+    // 공유 지식(revealed) 반영한 유효 후보 — 이미 드러난 카드는 제외하고 제안
+    const eff = (set: Set<string>): string[] => {
+      const c = [...set].filter((v) => !this.revealed.has(v));
+      return c.length ? c : [...set];
+    };
+    const es = eff(k.suspects);
+    const ew = eff(k.weapons);
     const suggestion: Suggestion = {
-      suspect: (pickFromSet(k.suspects) ??
-        pick(this.suspectPool)) as Suggestion["suspect"],
-      weapon: (pickFromSet(k.weapons) ?? pick(WEAPONS)) as Suggestion["weapon"],
+      suspect: (pick(es) ?? pick(this.suspectPool)) as Suggestion["suspect"],
+      weapon: (pick(ew) ?? pick(WEAPONS)) as Suggestion["weapon"],
       room: roomName as Suggestion["room"],
     };
     const result = this.doSuggestion(id, suggestion);
@@ -574,12 +585,15 @@ export class ClueRoom extends Room<GameState> {
       }
     }
 
-    // 3) 각 카테고리 후보가 1개로 좁혀졌으면 고발
-    if (k.suspects.size === 1 && k.weapons.size === 1 && k.rooms.size === 1) {
+    // 3) 유효 후보(공유 지식 반영)가 각 1개로 좁혀졌으면 고발
+    const fs = eff(k.suspects);
+    const fw = eff(k.weapons);
+    const fr = eff(k.rooms);
+    if (fs.length === 1 && fw.length === 1 && fr.length === 1) {
       const acc: Suggestion = {
-        suspect: [...k.suspects][0] as Suggestion["suspect"],
-        weapon: [...k.weapons][0] as Suggestion["weapon"],
-        room: [...k.rooms][0] as Suggestion["room"],
+        suspect: fs[0] as Suggestion["suspect"],
+        weapon: fw[0] as Suggestion["weapon"],
+        room: fr[0] as Suggestion["room"],
       };
       void this.speak(id, {
         name: bot.name,
