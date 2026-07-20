@@ -103,24 +103,25 @@ export class GameScene extends Phaser.Scene {
     this.input.keyboard?.on("keyup-SPACE", () => this.setFreeLook(false));
 
     // 이동 / (자유시점 중엔) 방향키 팬
+    // e.code(물리키)로 처리 → 한글 IME(ㅈㅁㄴㅇ)·WASD·화살표 모두 동작.
     this.input.keyboard?.on("keydown", (e: KeyboardEvent) => {
       let dx = 0;
       let dy = 0;
-      switch (e.key) {
+      switch (e.code) {
         case "ArrowUp":
-        case "w":
+        case "KeyW":
           dy = -1;
           break;
         case "ArrowDown":
-        case "s":
+        case "KeyS":
           dy = 1;
           break;
         case "ArrowLeft":
-        case "a":
+        case "KeyA":
           dx = -1;
           break;
         case "ArrowRight":
-        case "d":
+        case "KeyD":
           dx = 1;
           break;
         default:
@@ -131,6 +132,12 @@ export class GameScene extends Phaser.Scene {
         cam.scrollY += (dy * PAN_STEP) / cam.zoom;
         return;
       }
+      // 정통 클루: 내 턴 + 이동 한도가 남았을 때만 이동
+      const s = this.room.state as unknown as {
+        currentTurn: string;
+        stepsLeft: number;
+      };
+      if (s.currentTurn !== this.myId || (s.stepsLeft ?? 0) <= 0) return;
       const now = this.time.now;
       if (now - this.lastMove < MOVE_COOLDOWN_MS) return;
       this.lastMove = now;

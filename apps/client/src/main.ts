@@ -187,12 +187,36 @@ const wireRoom = (r: Room): void => {
 
   r.onStateChange((state) => {
     renderLobby(state);
+    updateTurnInfo(state);
     if (state.phase === "playing" && !phaserStarted) enterGame();
   });
 
   r.onError((code, message) => addLog(`에러(${code}): ${message ?? ""}`));
 
   show("lobby");
+};
+
+// 게임 중 현재 턴 배너 (내 턴이면 강조 + 남은 이동 표시)
+const updateTurnInfo = (state: Room["state"]): void => {
+  const el = $("turnInfo");
+  if (state.phase !== "playing") {
+    el.classList.add("hidden");
+    return;
+  }
+  el.classList.remove("hidden");
+  const players = state.players as Map<
+    string,
+    { suspect: string; name: string }
+  >;
+  const cur = players.get(state.currentTurn);
+  const mine = room !== null && state.currentTurn === room.sessionId;
+  el.classList.toggle("mine", mine);
+  if (mine) {
+    el.innerHTML =
+      `🎲 <b>내 턴</b> · 남은 이동 ${state.stepsLeft ?? 0}칸 · 방에서 [제안]`;
+  } else {
+    el.textContent = cur ? `⏳ ${emoji(cur.suspect)} ${cur.name} 님의 턴` : "";
+  }
 };
 
 const renderLobby = (state: Room["state"]): void => {

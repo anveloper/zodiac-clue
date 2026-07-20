@@ -89,6 +89,13 @@
       .hud details:not([open]) summary::before { content: "▸ "; }
       .hud details[open] summary { margin-bottom: 8px; }
       .hud-ctrl { left: 16px; top: 16px; display: flex; gap: 8px; padding: 8px; }
+      .hud-turn {
+        left: 50%; top: 14px; transform: translateX(-50%);
+        color: #cbbfa8; font-size: 13px; padding: 7px 16px; white-space: nowrap;
+      }
+      .hud-turn.mine {
+        color: #16130f; background: #e0a35a; border-color: #e0a35a; font-weight: 600;
+      }
       .hud-hand { left: 16px; bottom: 16px; max-width: 300px; }
       #hand { min-height: 18px; }
       .hud-evi { right: 16px; top: 16px; width: 216px; max-height: 66vh; overflow-y: auto; }
@@ -208,6 +215,8 @@
         <button id="accuse">고발</button>
         <button id="endTurn">턴 종료</button>
       </div>
+
+      <div class="hud hud-turn hidden" id="turnInfo"></div>
 
       <div class="hud hud-evi">
         <details open>

@@ -152,10 +152,15 @@ export class ClueRoom extends Room<GameState> {
     }
   }
 
-  // ── 이동 (그리드 한 칸, 서버 검증) ──
+  // ── 이동 (그리드 한 칸, 서버 검증) — 정통 클루: 자기 턴 + 이동 한도 내에서만 ──
   private handleMove(client: Client, msg: { dx: number; dy: number }): void {
+    if (this.state.phase !== "playing") return;
     const player = this.state.players.get(client.sessionId);
     if (!player || player.eliminated) return;
+    // 자기 턴이 아니면 이동 불가
+    if (this.state.currentTurn !== client.sessionId) return;
+    // 이번 턴 이동 한도 소진 시 불가
+    if (this.state.stepsLeft <= 0) return;
 
     const nx = Math.max(
       0,
@@ -165,8 +170,11 @@ export class ClueRoom extends Room<GameState> {
       0,
       Math.min(GRID_HEIGHT - 1, player.y + Math.sign(msg.dy ?? 0)),
     );
+    // 벽/경계로 실제 이동이 없으면 이동 수 소모하지 않음
+    if (nx === player.x && ny === player.y) return;
     player.x = nx;
     player.y = ny;
+    this.state.stepsLeft -= 1;
 
     const nextRoom = roomAt(nx, ny) ?? "";
     if (nextRoom !== player.room) {
@@ -256,6 +264,7 @@ export class ClueRoom extends Room<GameState> {
     this.state.turnOrder.clear();
     ids.forEach((id) => this.state.turnOrder.push(id));
     this.state.currentTurn = ids[0];
+    this.state.stepsLeft = this.rollSteps();
     this.state.phase = "playing";
     this.turnStartedAt = this.clock.currentTime;
 
@@ -281,12 +290,18 @@ export class ClueRoom extends Room<GameState> {
     bot.isBot = true;
     bot.suspect = suspect;
     bot.name = label(suspect);
-    const spawn = this.spawnPoint(this.state.players.size);
-    bot.x = spawn.x;
-    bot.y = spawn.y;
-    bot.room = roomAt(bot.x, bot.y) ?? "";
+    // 봇은 서로 다른 방 중심에서 시작 (복도가 아니라 방)
+    const region = ROOM_REGIONS[(this.botSeq - 1) % ROOM_REGIONS.length];
+    bot.x = region.x + Math.floor(region.w / 2);
+    bot.y = region.y + Math.floor(region.h / 2);
+    bot.room = region.name;
     this.state.players.set(id, bot);
     return true;
+  }
+
+  /** 이번 턴 이동 한도(주사위) — 큰 보드 이동성을 위해 6~12칸. */
+  private rollSteps(): number {
+    return 6 + Math.floor(Math.random() * 7);
   }
 
   private initBotKnowledge(id: string): void {
@@ -358,6 +373,8 @@ export class ClueRoom extends Room<GameState> {
       card: result.card,
       suggestion,
     });
+    // 정통 클루: 제안하면 그 턴은 종료된다.
+    this.advanceTurn();
   }
 
   // ── 고발(Accusation) (사람/봇 공용) ──
@@ -562,6 +579,7 @@ export class ClueRoom extends Room<GameState> {
     const cur = order.indexOf(this.state.currentTurn);
     const next = order[(cur + 1) % order.length];
     this.state.currentTurn = next;
+    this.state.stepsLeft = this.rollSteps();
     this.turnStartedAt = this.clock.currentTime;
     const np = this.state.players.get(next);
     this.broadcast("log", { text: `${np?.name} 님의 턴입니다.` });

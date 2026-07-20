@@ -27,4 +27,6 @@ export class GameState extends Schema {
   @type({ map: Player }) players = new MapSchema<Player>();
   /** 승자 sessionId (없으면 "") */
   @type("string") winner = "";
+  /** 현재 턴 플레이어의 남은 이동 칸 수(주사위). 0이면 이동 불가. */
+  @type("number") stepsLeft = 0;
 }
