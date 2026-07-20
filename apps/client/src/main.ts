@@ -480,7 +480,14 @@ const enterGame = (): void => {
   };
   ($("endTurn") as HTMLButtonElement).onclick = () => room?.send("endTurn", {});
 
-  addLog("잔치 시작! 이동: 방향키/WASD, 방에 들어가 [제안]");
+  // 기록 창 크게 보기 토글 (details 접힘과 별개)
+  ($("logExpand") as HTMLButtonElement).onclick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    $("logPanel").classList.toggle("expanded");
+  };
+
+  addLog("잔치 시작! 이동: 방향키, 방에 들어가 [제안]");
 };
 
 // ── 랜딩 액션 ─────────────────────────────

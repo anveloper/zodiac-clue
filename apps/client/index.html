@@ -112,9 +112,15 @@
       .dice-overlay .dice-label { font-size: 22px; color: #f0d9a8; margin-top: 10px; font-weight: 700; }
       .hud-hand { left: 16px; bottom: 16px; max-width: 300px; }
       #hand { min-height: 18px; }
-      .hud-evi { right: 16px; top: 16px; width: 216px; max-height: 66vh; overflow-y: auto; }
-      .hud-log { right: 16px; bottom: 16px; width: 244px; }
+      .hud-evi { right: 16px; top: 16px; width: 252px; max-height: 66vh; overflow-y: auto; }
+      .hud-log { right: 16px; bottom: 16px; width: 250px; transition: width 0.15s; }
+      .hud-log.expanded { width: 380px; }
+      .log-expand {
+        float: right; margin-left: 6px; padding: 0 6px; font-size: 12px;
+        background: #2c2519; border: 1px solid #4a3d2b; border-radius: 4px; line-height: 1.4;
+      }
       #log { height: 168px; overflow-y: auto; margin-top: 6px; }
+      .hud-log.expanded #log { height: 62vh; }
       #log > div {
         padding: 3px 6px; border-bottom: 1px solid #2c251c;
         border-left: 3px solid transparent; border-radius: 3px; margin-bottom: 2px;
@@ -147,13 +153,16 @@
       /* 증거 노트 (개인 메모) */
       .evi-group { margin-bottom: 8px; }
       .evi-group .cat { font-size: 10px; color: #a89778; margin-bottom: 4px; }
-      .evi-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+      /* 규칙적인 그리드 배치 (탐정 수첩 느낌) */
+      .evi-chips { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; }
       .evi-chip {
-        display: inline-flex; align-items: center; gap: 3px;
-        padding: 3px 6px; border-radius: 6px; cursor: pointer;
+        display: flex; align-items: center; gap: 4px; min-width: 0;
+        padding: 4px 7px; border-radius: 6px; cursor: pointer;
         background: #16130f; border: 1px solid #3a3126;
         font-size: 11px; color: #cbbfa8; user-select: none;
+        white-space: nowrap; overflow: hidden;
       }
+      .evi-chip > span:last-child { overflow: hidden; text-overflow: ellipsis; }
       .evi-chip:hover { border-color: #b4622b; }
       .evi-chip.cleared { opacity: 0.4; text-decoration: line-through; }
       .evi-chip.suspect { background: #3a2b1a; border-color: #e0a35a; color: #f0d9a8; }
@@ -267,9 +276,10 @@
         <div id="hand"><b>내 단서 패</b>: (잔치 시작 후 표시)</div>
       </div>
 
-      <div class="hud hud-log">
+      <div class="hud hud-log" id="logPanel">
         <details open>
-          <summary>📜 <span id="logLatest">기록 / 알림</span></summary>
+          <summary>📜 <span id="logLatest">기록 / 알림</span
+            ><button id="logExpand" class="log-expand" title="크게 보기">⤢</button></summary>
           <div id="log"></div>
         </details>
       </div>

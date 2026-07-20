@@ -23,8 +23,11 @@ const MOVE_TWEEN_MS = 110; // 칸 이동 보간
 const MIN_ZOOM = 0.3;
 const MAX_ZOOM = 1.25;
 const INIT_ZOOM = 1.0;
-const CAM_LERP = 0.12;
+const CAM_LERP = 0.12; // 내 캐릭터 추적(빠름)
+const SLOW_LERP = 0.045; // NPC 턴 추적(천천히)
 const PAN_STEP = 48;
+const TYPE_MS = 55; // 대사 타이핑 속도(글자당) — 추후 TTS 속도에 맞춤
+const BUBBLE_HOLD_MS = 2600; // 타이핑 완료 후 유지
 
 // 보드 팔레트 (한옥/사극 톤)
 const C_CORRIDOR = 0x2a2118;
@@ -58,8 +61,10 @@ export class GameScene extends Phaser.Scene {
   private lastMove = 0;
   private cam!: Phaser.Cameras.Scene2D.Camera;
   private myId = "";
-  private myTarget?: Phaser.GameObjects.Container;
   private freeLook = false;
+  private followId = "";
+  private followTarget?: Phaser.GameObjects.Container;
+  private bubbleTimers = new Map<string, Phaser.Time.TimerEvent>();
 
   constructor() {
     super("game");
@@ -153,14 +158,15 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  /** 자유시점 on/off — off 시 내 캐릭터로 부드럽게 복귀. */
+  /** 자유시점 on/off — off 시 현재 추적 대상으로 복귀. */
   private setFreeLook(on: boolean): void {
     if (this.freeLook === on) return;
     this.freeLook = on;
     if (on) {
       this.cam.stopFollow();
-    } else if (this.myTarget) {
-      this.cam.startFollow(this.myTarget, true, CAM_LERP, CAM_LERP);
+    } else if (this.followTarget) {
+      const l = this.followId === this.myId ? CAM_LERP : SLOW_LERP;
+      this.cam.startFollow(this.followTarget, true, l, l);
     }
   }
 
@@ -243,13 +249,6 @@ export class GameScene extends Phaser.Scene {
       seen.add(id);
       const token =
         this.tokens.get(id) ?? this.createToken(id, ids.indexOf(id), p);
-      if (id === this.myId && this.myTarget !== token.c) {
-        this.myTarget = token.c;
-        if (!this.freeLook) {
-          this.cam.startFollow(token.c, true, CAM_LERP, CAM_LERP);
-        }
-      }
-
       const [ox, oy] = tokenOffset(id);
       const cx = p.x * CELL + CELL / 2 + ox;
       const cy = p.y * CELL + CELL / 2 + oy;
@@ -277,23 +276,40 @@ export class GameScene extends Phaser.Scene {
       token.name.setAlpha(alpha);
     });
 
+    // 카메라: 현재 턴 캐릭터를 따라감 (내 턴=빠름 / NPC 턴=천천히)
+    const followId = current && this.tokens.has(current) ? current : this.myId;
+    if (followId !== this.followId) {
+      this.followId = followId;
+      this.followTarget = this.tokens.get(followId)?.c;
+      if (!this.freeLook && this.followTarget) {
+        const l = followId === this.myId ? CAM_LERP : SLOW_LERP;
+        this.cam.startFollow(this.followTarget, true, l, l);
+      }
+    }
+
     for (const id of [...this.tokens.keys()]) {
       if (!seen.has(id)) {
         this.tokens.get(id)?.c.destroy();
         this.tokens.delete(id);
         this.bubbles.get(id)?.destroy();
         this.bubbles.delete(id);
+        this.bubbleTimers.get(id)?.remove();
+        this.bubbleTimers.delete(id);
       }
     }
   }
 
-  /** NPC 대사 말풍선을 해당 말 위에 잠시 띄운다. */
+  /** NPC 대사 말풍선을 해당 말 위에 타이핑 효과로 띄운다. */
   showBubble(id: string, text: string): void {
     const token = this.tokens.get(id);
     if (!token) return;
+    // 이전 말풍선/타이머 정리
+    this.bubbleTimers.get(id)?.remove();
+    this.bubbleTimers.delete(id);
     this.bubbles.get(id)?.destroy();
+
     const bubble = this.add
-      .text(token.c.x, token.c.y - CELL * 0.95, text, {
+      .text(token.c.x, token.c.y - CELL * 0.95, "", {
         fontSize: "15px",
         color: "#2a2118",
         backgroundColor: "#f0e0c0",
@@ -304,10 +320,32 @@ export class GameScene extends Phaser.Scene {
       .setOrigin(0.5, 1)
       .setDepth(100);
     this.bubbles.set(id, bubble);
-    this.time.delayedCall(4200, () => {
-      if (this.bubbles.get(id) === bubble) this.bubbles.delete(id);
-      bubble.destroy();
+
+    // 타이핑 효과 (추후 TTS 속도에 맞춰 TYPE_MS 조정)
+    let i = 0;
+    const timer = this.time.addEvent({
+      delay: TYPE_MS,
+      loop: true,
+      callback: () => {
+        if (this.bubbles.get(id) !== bubble) {
+          timer.remove();
+          return;
+        }
+        i += 1;
+        bubble.setText(text.slice(0, i));
+        if (i >= text.length) {
+          timer.remove();
+          this.bubbleTimers.delete(id);
+          this.time.delayedCall(BUBBLE_HOLD_MS, () => {
+            if (this.bubbles.get(id) === bubble) {
+              this.bubbles.delete(id);
+              bubble.destroy();
+            }
+          });
+        }
+      },
     });
+    this.bubbleTimers.set(id, timer);
   }
 
   private createToken(id: string, index: number, p: PlayerView): Token {

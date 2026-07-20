@@ -30,9 +30,12 @@ type BotKnowledge = {
 };
 
 // NPC 행동 딜레이 = 사용자 평균 턴 시간의 절반 (클램프). 데이터 없으면 기본값.
-const NPC_DELAY_DEFAULT = 1600;
-const NPC_DELAY_MIN = 800;
-const NPC_DELAY_MAX = 6000;
+// 사용자가 흐름을 인지할 수 있게 넉넉히.
+const NPC_DELAY_DEFAULT = 3000;
+const NPC_DELAY_MIN = 1800;
+const NPC_DELAY_MAX = 7000;
+// 봇 턴 내 '이동 → (쉬고) → 제안' 사이 간격 (카메라 이동·인지 시간)
+const BOT_ACT_GAP = 1300;
 
 const pick = <T>(arr: readonly T[]): T =>
   arr[Math.floor(Math.random() * arr.length)];
@@ -471,7 +474,7 @@ export class ClueRoom extends Room<GameState> {
     this.advanceTurn();
   }
 
-  // ── NPC 턴: 방 이동 → 제안/추리 → 확신 시 고발 ──
+  // ── NPC 턴 1박자: 방으로 이동 (제안은 잠시 뒤 별도) ──
   private runBotTurn(id: string): void {
     if (this.state.phase !== "playing" || this.state.currentTurn !== id) return;
     const bot = this.state.players.get(id);
@@ -482,7 +485,7 @@ export class ClueRoom extends Room<GameState> {
       return;
     }
 
-    // 1) 임의의 방으로 이동
+    // 1) 임의의 방으로 이동 (먼저 보여줌 → 카메라가 따라감)
     const region = pick(ROOM_REGIONS);
     bot.x = region.x + Math.floor(region.w / 2);
     bot.y = region.y + Math.floor(region.h / 2);
@@ -490,15 +493,32 @@ export class ClueRoom extends Room<GameState> {
       bot.room = region.name;
       this.broadcast("log", {
         text: `${bot.name} 님이 ${label(region.name)}에 들어갔습니다.`,
+        kind: "move",
       });
     }
 
-    // 2) 아직 남은 후보로 제안
+    // 2) 한 박자 쉬고 제안 (사용자 인지 시간)
+    this.clock.setTimeout(
+      () => this.botSuggestPhase(id, region.name),
+      BOT_ACT_GAP,
+    );
+  }
+
+  // ── NPC 턴 2박자: 제안/추리 → 확신 시 고발 ──
+  private botSuggestPhase(id: string, roomName: string): void {
+    if (this.state.phase !== "playing" || this.state.currentTurn !== id) return;
+    const bot = this.state.players.get(id);
+    const k = this.botKnowledge.get(id);
+    if (!bot || !k) {
+      this.advanceTurn();
+      return;
+    }
+
     const suggestion: Suggestion = {
       suspect: (pickFromSet(k.suspects) ??
         pick(this.suspectPool)) as Suggestion["suspect"],
       weapon: (pickFromSet(k.weapons) ?? pick(WEAPONS)) as Suggestion["weapon"],
-      room: region.name as Suggestion["room"],
+      room: roomName as Suggestion["room"],
     };
     const result = this.doSuggestion(id, suggestion);
     void this.speak(id, {
