@@ -56,8 +56,6 @@ const addLog = (text: string, opts: LogOpts = {}): void => {
     }
   }
   $("log").prepend(div);
-  // 접힘 상태용 최신 한 줄 요약
-  $("logLatest").textContent = text.length > 40 ? text.slice(0, 40) + "…" : text;
 };
 
 // ── 카드 선택 모달 ─────────────────────────────
@@ -465,13 +463,6 @@ const enterGame = (): void => {
   game.registry.set("room", room);
   if (room) buildEvidence(room.roomId);
 
-  // 좁은 화면에선 HUD 접이식 패널을 접어 겹침 방지
-  if (window.innerWidth <= 680) {
-    document
-      .querySelectorAll("#gameScreen details[open]")
-      .forEach((d) => d.removeAttribute("open"));
-  }
-
   ($("suggest") as HTMLButtonElement).onclick = async () => {
     // 방 안에서만 제안 가능 — 밖이면 안내(제안이 거부돼 턴이 안 넘어가는 혼동 방지)
     const me = room
@@ -510,45 +501,47 @@ const enterGame = (): void => {
   };
   ($("endTurn") as HTMLButtonElement).onclick = () => room?.send("endTurn", {});
 
-  // 우측 컬럼(증거노트+기록) 넓게 보기 토글 — 둘은 같은 컬럼에 세로로 공존
-  ($("logExpand") as HTMLButtonElement).onclick = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    $("rightPanel").classList.toggle("wide");
+  // 우측 컬럼: 좌측 모서리 드래그=너비, 노트↔기록 사이 드래그=높이
+  const rightCol = $("rightPanel");
+  const eviPanel = $("eviPanel");
+
+  const makeDrag = (
+    handle: HTMLElement,
+    onMove: (e: PointerEvent) => void,
+  ): void => {
+    let dragging = false;
+    handle.addEventListener("pointerdown", (e) => {
+      dragging = true;
+      handle.setPointerCapture(e.pointerId);
+      e.preventDefault();
+    });
+    handle.addEventListener("pointermove", (e) => {
+      if (dragging) onMove(e);
+    });
+    const stop = (e: PointerEvent): void => {
+      dragging = false;
+      try {
+        handle.releasePointerCapture(e.pointerId);
+      } catch {
+        /* noop */
+      }
+    };
+    handle.addEventListener("pointerup", stop);
+    handle.addEventListener("pointercancel", stop);
   };
 
-  // 노트↔기록 사이 드래그로 높이 조절
-  const resizer = $("colResizer");
-  const eviPanel = $("eviPanel");
-  const rightCol = $("rightPanel");
-  let dragging = false;
-  resizer.addEventListener("pointerdown", (e) => {
-    dragging = true;
-    (e.target as Element).setPointerCapture((e as PointerEvent).pointerId);
-    e.preventDefault();
-  });
-  resizer.addEventListener("pointermove", (e) => {
-    if (!dragging) return;
+  // 높이 조절: 증거노트 높이 = 포인터 y − 컬럼 top
+  makeDrag($("colResizer"), (e) => {
     const rect = rightCol.getBoundingClientRect();
-    const h = Math.max(
-      60,
-      Math.min(rect.height - 150, (e as PointerEvent).clientY - rect.top),
-    );
-    eviPanel.style.flex = "none";
+    const h = Math.max(80, Math.min(rect.height - 160, e.clientY - rect.top));
     eviPanel.style.height = `${h}px`;
   });
-  const stopDrag = (e: Event): void => {
-    dragging = false;
-    try {
-      (e.target as Element).releasePointerCapture(
-        (e as PointerEvent).pointerId,
-      );
-    } catch {
-      /* noop */
-    }
-  };
-  resizer.addEventListener("pointerup", stopDrag);
-  resizer.addEventListener("pointercancel", stopDrag);
+  // 너비 조절: 컬럼 너비 = 우측 고정 모서리 − 포인터 x
+  makeDrag($("colWResizer"), (e) => {
+    const right = rightCol.getBoundingClientRect().right;
+    const w = Math.max(220, Math.min(680, right - e.clientX));
+    rightCol.style.width = `${w}px`;
+  });
 
   addLog("잔치 시작! 이동: 방향키, 방에 들어가 [제안]");
 };
