@@ -65,5 +65,7 @@
 - **ARM 용량**: A1.Flex는 수시로 out-of-capacity → 재시도하거나 E2.1.Micro로 우회.
 
 ### 재배포/업데이트
-- 서버 코드 갱신: VM에서 `cd ~/zodiac-clue && git pull && pnpm i && sudo systemctl restart zodiac-server`.
+- **서버: 자동(CI)** — main에 `apps/server/**`·`packages/shared/**`·`pnpm-lock.yaml` push 시 GitHub Actions(`.github/workflows/deploy-server.yml`)가 SSH로 `git pull && pnpm i && systemctl restart` 실행. `workflow_dispatch`로 수동 실행도 가능.
+  - Secret: `SSH_HOST`/`SSH_USER`/`SSH_PRIVATE_KEY`(CI 전용 배포키, `authorized_keys`에 등록). `ubuntu`는 passwordless sudo.
+  - 수동 폴백: VM에서 `cd ~/zodiac-clue && git pull && pnpm i && sudo systemctl restart zodiac-server`.
 - 클라 갱신: 루트에서 `vercel --prod`(또는 GitHub 연동 시 push).
