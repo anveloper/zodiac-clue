@@ -26,8 +26,9 @@ const MIN_ZOOM = 0.3;
 const MAX_ZOOM = 1.25;
 const INIT_ZOOM = 1.0;
 const CAM_LERP = 0.12; // 내 캐릭터 추적(빠름)
-const SLOW_LERP = 0.045; // NPC 턴 추적(천천히)
+const SLOW_LERP = 0.06; // NPC 턴 추적(천천히)
 const PAN_STEP = 48;
+const CAM_SWITCH_DELAY = 900; // 턴 바뀔 때 카메라 전환 지연(반증 먼저 인지 → 덜 어지러움)
 const TYPE_MS = 55; // 대사 타이핑 속도(글자당) — 추후 TTS 속도에 맞춤
 const BUBBLE_HOLD_MS = 2600; // 타이핑 완료 후 유지
 
@@ -66,6 +67,7 @@ export class GameScene extends Phaser.Scene {
   private freeLook = false;
   private followId = "";
   private followTarget?: Phaser.GameObjects.Container;
+  private camSwitchTimer?: Phaser.Time.TimerEvent;
   private bubbleTimers = new Map<string, Phaser.Time.TimerEvent>();
 
   constructor() {
@@ -289,27 +291,33 @@ export class GameScene extends Phaser.Scene {
       token.name.setAlpha(alpha);
     });
 
-    // 카메라: 현재 턴 캐릭터로 이동해 확실히 비춤 (내 턴=빠름 / NPC 턴=천천히)
+    // 카메라: 현재 턴 캐릭터로 이동. 전환은 잠깐 지연(반증 먼저 인지 → 덜 어지러움).
     const followId = current && this.tokens.has(current) ? current : this.myId;
     if (followId !== this.followId) {
       this.followId = followId;
       const t = this.tokens.get(followId)?.c;
       this.followTarget = t;
+      this.camSwitchTimer?.remove();
       if (!this.freeLook && t) {
         const isMe = followId === this.myId;
         const l = isMe ? CAM_LERP : SLOW_LERP;
-        // 타이밍 팬으로 대상까지 반드시 도달 → 이후 추적
-        this.cam.stopFollow();
-        this.cam.pan(
-          t.x,
-          t.y,
-          isMe ? 350 : 900,
-          "Sine.easeInOut",
-          true,
-          (_c, prog) => {
-            if (prog === 1 && this.followId === followId && !this.freeLook) {
-              this.cam.startFollow(t, true, l, l);
-            }
+        this.camSwitchTimer = this.time.delayedCall(
+          isMe ? 150 : CAM_SWITCH_DELAY,
+          () => {
+            if (this.followId !== followId || this.freeLook) return;
+            this.cam.stopFollow();
+            this.cam.pan(
+              t.x,
+              t.y,
+              isMe ? 350 : 1000,
+              "Sine.easeInOut",
+              true,
+              (_c, prog) => {
+                if (prog === 1 && this.followId === followId && !this.freeLook) {
+                  this.cam.startFollow(t, true, l, l);
+                }
+              },
+            );
           },
         );
       }

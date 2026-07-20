@@ -517,6 +517,39 @@ const enterGame = (): void => {
     $("rightPanel").classList.toggle("wide");
   };
 
+  // 노트↔기록 사이 드래그로 높이 조절
+  const resizer = $("colResizer");
+  const eviPanel = $("eviPanel");
+  const rightCol = $("rightPanel");
+  let dragging = false;
+  resizer.addEventListener("pointerdown", (e) => {
+    dragging = true;
+    (e.target as Element).setPointerCapture((e as PointerEvent).pointerId);
+    e.preventDefault();
+  });
+  resizer.addEventListener("pointermove", (e) => {
+    if (!dragging) return;
+    const rect = rightCol.getBoundingClientRect();
+    const h = Math.max(
+      60,
+      Math.min(rect.height - 150, (e as PointerEvent).clientY - rect.top),
+    );
+    eviPanel.style.flex = "none";
+    eviPanel.style.height = `${h}px`;
+  });
+  const stopDrag = (e: Event): void => {
+    dragging = false;
+    try {
+      (e.target as Element).releasePointerCapture(
+        (e as PointerEvent).pointerId,
+      );
+    } catch {
+      /* noop */
+    }
+  };
+  resizer.addEventListener("pointerup", stopDrag);
+  resizer.addEventListener("pointercancel", stopDrag);
+
   addLog("잔치 시작! 이동: 방향키, 방에 들어가 [제안]");
 };
 
