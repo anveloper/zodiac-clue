@@ -194,6 +194,7 @@ export class ClueRoom extends Room<GameState> {
     if (!free) this.state.stepsLeft -= 1;
 
     const nextRoom = roomAt(nx, ny) ?? "";
+    const enteredRoom = nextRoom !== "" && nextRoom !== player.room;
     if (nextRoom !== player.room) {
       player.room = nextRoom;
       if (nextRoom) {
@@ -203,6 +204,8 @@ export class ClueRoom extends Room<GameState> {
         });
       }
     }
+    // P2(정통 클루): 방에 들어서면 그 턴의 이동은 종료된다.
+    if (enteredRoom) this.state.stepsLeft = 0;
   }
 
   // ── 대기실에서 캐릭터 변경 (중복 거부) ──
