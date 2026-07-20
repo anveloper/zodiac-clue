@@ -117,6 +117,37 @@
     <li>단일 인스턴스 = 재시작 시 진행 중 방 소실(MVP 허용). 영속 필요 시 이후 Redis/드라이버.</li>
     <li>키·시크릿은 호스트 env/secret로만.</li>
   </ul>
+
+  <h2>✅ 실배포 기록 (2026-07-20) — 현재 라이브</h2>
+  <div class="arch">
+    <div class="node"><b>클라</b><span>Vercel 정적<br>zodiac-clue.vercel.app</span></div>
+    <div class="arrow"><b>wss</b>VITE_SERVER_URL</div>
+    <div class="node"><b>Caddy + Let's Encrypt</b><span>141-147-157-219<br>.sslip.io (TLS)</span></div>
+    <div class="arrow"><b>localhost</b>:2567</div>
+    <div class="node"><b>Colyseus</b><span>OCI E2.1.Micro<br>systemd 상시</span></div>
+  </div>
+  <table>
+    <tr><th>레이어</th><th>구성</th></tr>
+    <tr><td><b>클라(정적)</b></td><td>Vercel · <a href="https://zodiac-clue.vercel.app">zodiac-clue.vercel.app</a>. 루트 <code>vercel.json</code>(outputDirectory=<code>apps/client/dist</code>, buildCommand로 <code>VITE_SERVER_URL</code> 주입, SPA rewrite).</td></tr>
+    <tr><td><b>서버(WS)</b></td><td>Oracle Always Free VM(Osaka·Ubuntu 22.04). A1(ARM) 용량부족 → <b>VM.Standard.E2.1.Micro</b>(1 OCPU/1GB) + swap 2GB. Node 22·pnpm·tsx.</td></tr>
+    <tr><td><b>상시 실행</b></td><td><code>systemd</code> <code>zodiac-server.service</code>(<code>pnpm exec tsx src/index.ts</code>, Restart=always, 부팅 자동기동).</td></tr>
+    <tr><td><b>TLS/wss</b></td><td><b>Caddy</b> 리버스 프록시 + Let's Encrypt 자동. 도메인 미보유 → <b>sslip.io</b>로 IP에도 인증서 취득.</td></tr>
+    <tr><td><b>비밀값</b></td><td><code>apps/server/.env</code>(gitignore)에 <code>GEMINI_API_KEY</code>/<code>PORT</code>. <code>process.loadEnvFile()</code> 로드.</td></tr>
+  </table>
+
+  <h3>OCI 특유 함정(겪은 것)</h3>
+  <ul>
+    <li><b>홈 리전 영구 고정</b>: 무료 계정엔 한국 리전이 선택지에 없을 수 있음 → Osaka(ARM 확보에도 유리).</li>
+    <li><b>네트워킹은 VCN 마법사로</b>: 인스턴스 마법사의 인라인 서브넷은 <b>공인 IP 토글이 잠기는 버그</b>. <code>Networking → VCN Wizard → Create VCN with Internet Connectivity</code>로 먼저 만들고 인스턴스에서 기존 VCN 선택.</li>
+    <li><b>방화벽 2겹</b>: OCI <b>Security List</b>(Ingress 80·443) + <b>OS iptables</b>(80·443 + 영구저장) 둘 다 열어야 함.</li>
+    <li><b>ARM 용량</b>: A1.Flex 수시로 out-of-capacity → 재시도 또는 E2.1.Micro 우회.</li>
+  </ul>
+
+  <h3>재배포/업데이트</h3>
+  <ul>
+    <li>서버: VM에서 <code>git pull &amp;&amp; pnpm i &amp;&amp; sudo systemctl restart zodiac-server</code>.</li>
+    <li>클라: 루트에서 <code>vercel --prod</code>(또는 GitHub 연동 push).</li>
+  </ul>
 </div>
 </body>
 </html>

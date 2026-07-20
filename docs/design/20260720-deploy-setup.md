@@ -44,3 +44,26 @@
 - 무료 scale-to-zero 호스팅은 WS 게임에 부적합.
 - 단일 인스턴스 = 재시작 시 진행 중 방 소실(MVP 허용). 영속 필요 시 이후 Redis/드라이버.
 - 키·시크릿은 호스트 env/secret로만.
+
+## 실배포 기록 (2026-07-20) — 현재 라이브 구성
+- **클라(정적)**: Vercel → **https://zodiac-clue.vercel.app**
+  - 모노레포 루트 `vercel.json`: `outputDirectory=apps/client/dist`, buildCommand로 `VITE_SERVER_URL` 주입, SPA rewrite(`/(.*)`→`/index.html`).
+  - 클라 접속 주소는 `VITE_SERVER_URL` env(빌드타임 인라인). 미설정 시 `ws://localhost:2567`.
+- **서버(WS)**: Oracle Cloud Always Free VM(Osaka, Ubuntu 22.04) → **wss://141-147-157-219.sslip.io**
+  - shape: A1(ARM)가 `out of host capacity`라 **VM.Standard.E2.1.Micro**(x86, 1 OCPU/1GB)로 진행. swap 2GB 부여.
+  - 런타임: Node 22 + pnpm(corepack). 서버 실행은 tsx.
+  - **systemd** `zodiac-server.service`(WorkingDirectory=apps/server, `pnpm exec tsx src/index.ts`, Restart=always, enable) → 상시 실행·재부팅 자동기동.
+  - `.env`(gitignore)에 `GEMINI_API_KEY`/`GEMINI_MODEL`/`PORT=2567`. 코드가 `process.loadEnvFile()`로 로드.
+- **TLS/wss**: **Caddy** 리버스 프록시 `<host> { reverse_proxy localhost:2567 }`, Let's Encrypt 자동 발급.
+  - 도메인 미보유 → **sslip.io**(IP 기반 호스트네임 `141-147-157-219.sslip.io`)로 IP에도 TLS 인증서 취득.
+- **CORS**: Colyseus가 Origin 반사 헤더 제공 → Vercel 도메인에서 매치메이킹 정상.
+
+### OCI 특유 함정(겪은 것)
+- **홈 리전 영구 고정**: 무료 계정은 한국(Seoul/Chuncheon)이 선택지에 없을 수 있음 → Osaka로 진행(ARM 확보도 유리).
+- **네트워킹은 VCN 마법사로**: 인스턴스 생성 마법사의 인라인 서브넷은 공인 IP 토글이 잠기는 버그가 있음. **Networking → VCN Wizard → "Create VCN with Internet Connectivity"**로 VCN+public subnet+IGW를 먼저 만들고 인스턴스에서 기존 VCN 선택.
+- **방화벽 2겹**: OCI **Security List**(Ingress TCP 80·443)와 **OS iptables**(80·443 ACCEPT + 영구저장) 둘 다 열어야 외부 접속됨. OCI 우분투는 기본 iptables가 막혀 있음.
+- **ARM 용량**: A1.Flex는 수시로 out-of-capacity → 재시도하거나 E2.1.Micro로 우회.
+
+### 재배포/업데이트
+- 서버 코드 갱신: VM에서 `cd ~/zodiac-clue && git pull && pnpm i && sudo systemctl restart zodiac-server`.
+- 클라 갱신: 루트에서 `vercel --prod`(또는 GitHub 연동 시 push).
