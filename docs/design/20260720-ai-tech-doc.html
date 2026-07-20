@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>제출물 ④ AI 기술 문서 — zodiac-clue</title>
+<style>
+  :root { --bg:#16130f; --card:#211c16; --edge:#3a3126; --ink:#f0e9dc; --dim:#a89778; --gold:#f0d9a8; --accent:#b4622b; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink);
+    font-family: system-ui,-apple-system,"Apple SD Gothic Neo",sans-serif; line-height:1.6; }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { color:var(--gold); font-size:26px; margin:0 0 4px; }
+  .sub { color:var(--dim); font-size:13px; margin:0 0 28px; }
+  h2 { color:var(--gold); font-size:19px; margin:32px 0 10px; border-bottom:1px solid var(--edge); padding-bottom:6px; }
+  h3 { font-size:15px; margin:16px 0 6px; }
+  p, li { font-size:14px; }
+  code { background:#2c2519; border:1px solid var(--edge); border-radius:4px; padding:1px 5px; font-size:13px; }
+  .pill { background:#2c2519; border:1px solid var(--edge); border-radius:6px; padding:2px 8px; font-size:12px; color:var(--dim); }
+  .card { background:var(--card); border:1px solid var(--edge); border-radius:10px; padding:16px 20px; margin:12px 0; }
+  ul { padding-left:20px; }
+  .lead { background:#2b2013; border:1px solid #7c6238; border-radius:8px; padding:12px 16px; font-size:14px; }
+
+  .flow { display:flex; align-items:stretch; gap:12px; flex-wrap:wrap; margin:16px 0; }
+  .layer { flex:1; min-width:260px; background:#211c16; border:1px solid var(--edge); border-radius:10px; padding:14px 16px; }
+  .layer h3 { margin:0 0 6px; color:var(--gold); }
+  .layer .tag { font-size:11px; padding:2px 8px; border-radius:20px; }
+  .t-rule { background:#1f3a24; color:#7ee29a; }
+  .t-llm { background:#22303d; color:#7ec8e0; }
+  table { width:100%; border-collapse:collapse; margin:12px 0; font-size:13px; }
+  th, td { border:1px solid var(--edge); padding:8px 10px; text-align:left; vertical-align:top; }
+  th { background:#2c2519; color:var(--gold); }
+  .same { color:#7ee29a; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🤖 제출물 ④ — AI 기술 문서</h1>
+  <p class="sub">zodiac-clue · 2026-07-20 초안 · <span class="pill">사람용 .html</span></p>
+
+  <div class="lead"><b>핵심 원칙 — load-bearing AI는 "표현 전용".</b><br>
+  <b>무엇을 하는가(결정·진실값)</b>는 <b>결정론적 규칙엔진</b>이, <b>어떻게 보이는가(대사·연출)</b>는 <b>LLM</b>이 담당한다.
+  LLM은 정답이나 남의 패를 만들지 않는다 → <b>환각 차단 · 무료티어 안전 · 재현성</b>.</div>
+
+  <h2>2계층 구조</h2>
+  <div class="flow">
+    <div class="layer">
+      <h3>① 결정 계층 <span class="tag t-rule">규칙엔진</span></h3>
+      <p>서버 <code>clue-room.ts</code>. 정답 봉투·카드 분배·이동(입구/주사위/통로)·제안·반증·고발 판정이 전부 결정론.</p>
+      <ul>
+        <li><b>NPC 추리</b>: 후보집합에서 자기 손패·자기 제안 반증·<b>공유 공개카드</b>를 소거 → 남은 후보로 제안.</li>
+        <li>반증 안 됨 + 자기 미보유 → 그 3장이 봉투 → <b>정확한 고발</b>(봇은 오답 고발 안 함).</li>
+        <li>LLM 장애와 무관하게 진행·판정 항상 정상.</li>
+      </ul>
+    </div>
+    <div class="layer">
+      <h3>② 표현 계층 <span class="tag t-llm">LLM(Gemini)</span></h3>
+      <p>서버 <code>ai/narrator.ts</code>. 규칙엔진이 확정한 <b>결정된 정보만</b> 입력 → 사극 대사 한 문장.</p>
+      <ul>
+        <li><code>systemInstruction</code>으로 형식·길이·<b>진실값 생성 금지</b> 계약.</li>
+        <li><b>성격(PERSONA)·말투(VOICE)</b> 주입 → 같은 결정도 캐릭터별 말투 상이.</li>
+        <li><b>폴백</b>: 키없음/타임아웃/429/오류 시 규칙기반 대사(intro/outro로 캐릭터색 유지).</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>Gemini 운용 (무료티어 안전)</h2>
+  <div class="card">
+    <ul>
+      <li>모델 <code>gemini-flash-lite-latest</code>(~1s). flash 계열은 thinking 모델 → <code>thinkingConfig.thinkingBudget:0</code>으로 꺼야 빈 응답 방지.</li>
+      <li><code>maxOutputTokens:64</code> · <code>temperature:0.95</code> · AbortController <b>4초 타임아웃</b>.</li>
+      <li><b>호출 최소화</b>: 이벤트당 1콜 + <b>동일상황 캐시(LRU 200)</b> 재사용, 프레임 루프 호출 0.</li>
+      <li>키는 서버 <code>.env</code>(gitignore)에만 — 클라·로그·커밋 노출 없음.</li>
+    </ul>
+  </div>
+
+  <h2>사람다운 템포</h2>
+  <p>NPC 행동 딜레이 = <b>사용자 평균 턴시간의 절반</b>(EMA, 800~7000ms 클램프). 턴 내 <b>2박자</b>(방 이동 → 잠깐 쉬고 → 제안)로 흐름 인지.</p>
+
+  <h2>검증 — 결정 vs 표현 분리</h2>
+  <table>
+    <tr><th>결정(규칙엔진, 동일)</th><th>표현(LLM, 페르소나별)</th></tr>
+    <tr>
+      <td rowspan="2" class="same">제안 = 뱀 무녀 / 오랏줄 / 후원 <span class="dim">(진실값 동일)</span></td>
+      <td><b>잔나비 광대</b>(익살): "낄낄, 후원서 오랏줄이라니 아주 볼만하구먼!"</td>
+    </tr>
+    <tr><td><b>닭 훈장</b>(훈계조): "쯧쯧, 오랏줄로 엄히 다스림이 마땅하렷다."</td></tr>
+  </table>
+  <p class="dim">봇 수렴: 공유 공개카드 도입 후, 사람 전멸 뒤 봇만 남아도 유한 시간에 종결(측정 ~40s·제안 13회).</p>
+
+  <h2>재현성 · 안전 요약</h2>
+  <ul>
+    <li>LLM 실패해도 게임 로직·판정 불변(폴백).</li>
+    <li>LLM은 정답/손패를 모름 → 치트·환각 불가.</li>
+    <li>무료티어: thinking off + 캐시 + 타임아웃 + 이벤트당 1콜.</li>
+  </ul>
+
+  <h2>파일 맵</h2>
+  <ul>
+    <li>결정: <code>apps/server/src/rooms/clue-room.ts</code>, <code>schema/game-state.ts</code>, <code>packages/shared</code></li>
+    <li>표현: <code>apps/server/src/ai/narrator.ts</code>, 성격/말투 <code>packages/shared/src/cards.ts</code>(PERSONA/VOICE)</li>
+  </ul>
+</div>
+</body>
+</html>
