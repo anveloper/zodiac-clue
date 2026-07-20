@@ -11,7 +11,7 @@ import {
 } from "@zodiac-clue/shared";
 import type { Room } from "colyseus.js";
 import { client, createRoom, joinRoomById } from "./network";
-import { BOARD_H, BOARD_W, GameScene } from "./scenes/game-scene";
+import { GameScene } from "./scenes/game-scene";
 
 /** 재접속 토큰 저장 키. sessionStorage = 탭 단위(새로고침엔 유지, 새 탭엔 없음). */
 const RECONNECT_KEY = "zc_reconnect";
@@ -251,6 +251,72 @@ const renderLobbyChars = (state: Room["state"]): void => {
   }
 };
 
+// ── 증거 노트 (개인 추리 메모 · 서버 전송 X · 로컬 저장) ─────────────
+type EviState = "" | "cleared" | "suspect";
+const EVI_NEXT: Record<EviState, EviState> = {
+  "": "cleared",
+  cleared: "suspect",
+  suspect: "",
+};
+
+const eviKey = (roomId: string): string => `zc_evi_${roomId}`;
+const loadEvi = (roomId: string): Record<string, EviState> => {
+  try {
+    return JSON.parse(localStorage.getItem(eviKey(roomId)) ?? "{}");
+  } catch {
+    return {};
+  }
+};
+const saveEvi = (roomId: string, data: Record<string, EviState>): void => {
+  try {
+    localStorage.setItem(eviKey(roomId), JSON.stringify(data));
+  } catch {
+    /* localStorage 불가 시 무시 */
+  }
+};
+
+const buildEvidence = (roomId: string): void => {
+  const host = $("evidence");
+  host.innerHTML = "";
+  const data = loadEvi(roomId);
+  const groups: [string, readonly string[]][] = [
+    ["용의자", SUSPECTS],
+    ["수법", WEAPONS],
+    ["장소", ROOMS],
+  ];
+  for (const [cat, values] of groups) {
+    const g = document.createElement("div");
+    g.className = "evi-group";
+    const c = document.createElement("div");
+    c.className = "cat";
+    c.textContent = cat;
+    g.appendChild(c);
+    const chips = document.createElement("div");
+    chips.className = "evi-chips";
+    for (const v of values) {
+      const chip = document.createElement("div");
+      chip.innerHTML =
+        `<span>${emoji(v)}</span>` + `<span>${label(v)}</span>`;
+      chip.title = "클릭: 없음(제외) → 의심 → 초기화";
+      const apply = (): void => {
+        const st = data[v] ?? "";
+        chip.className = "evi-chip" + (st ? " " + st : "");
+      };
+      chip.onclick = () => {
+        const next = EVI_NEXT[data[v] ?? ""];
+        if (next) data[v] = next;
+        else delete data[v];
+        apply();
+        saveEvi(roomId, data);
+      };
+      apply();
+      chips.appendChild(chip);
+    }
+    g.appendChild(chips);
+    host.appendChild(g);
+  }
+};
+
 const enterGame = (): void => {
   phaserStarted = true;
   show("gameScreen");
@@ -260,14 +326,13 @@ const enterGame = (): void => {
     parent: "game",
     backgroundColor: "#1c1712",
     scale: {
-      mode: Phaser.Scale.FIT,
-      autoCenter: Phaser.Scale.CENTER_BOTH,
-      width: BOARD_W,
-      height: BOARD_H,
+      mode: Phaser.Scale.RESIZE,
+      autoCenter: Phaser.Scale.NO_CENTER,
     },
     scene: [GameScene],
   });
   game.registry.set("room", room);
+  if (room) buildEvidence(room.roomId);
 
   ($("suggest") as HTMLButtonElement).onclick = async () => {
     const pick = await openPicker("제안 — 누가, 무엇으로?", false);

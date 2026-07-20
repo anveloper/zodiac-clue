@@ -17,6 +17,13 @@ const PLAYER_COLORS = [
 ];
 const MOVE_COOLDOWN_MS = 110;
 
+// 카메라
+const MIN_ZOOM = 0.6;
+const MAX_ZOOM = 3;
+const INIT_ZOOM = 1.8;
+const CAM_LERP = 0.12;
+const PAN_STEP = 48;
+
 // 보드 팔레트 (한옥/사극 톤)
 const C_CORRIDOR = 0x2a2118;
 const C_GRID = 0x3a2e20;
@@ -45,6 +52,10 @@ export class GameScene extends Phaser.Scene {
   private tokens = new Map<string, Token>();
   private bubbles = new Map<string, Phaser.GameObjects.Text>();
   private lastMove = 0;
+  private cam!: Phaser.Cameras.Scene2D.Camera;
+  private myId = "";
+  private myDisc?: Phaser.GameObjects.Arc;
+  private freeLook = false;
 
   constructor() {
     super("game");
@@ -52,13 +63,44 @@ export class GameScene extends Phaser.Scene {
 
   create(): void {
     this.room = this.registry.get("room") as Room;
+    this.myId = this.room.sessionId;
     this.drawBoard();
+
+    // ── 카메라: 내 캐릭터 추적 탑뷰 ──
+    const cam = this.cameras.main;
+    cam.setBounds(0, 0, BOARD_W, BOARD_H);
+    cam.setZoom(INIT_ZOOM);
+    cam.centerOn(BOARD_W / 2, BOARD_H / 2);
+    this.cam = cam;
 
     this.room.onStateChange((state) => this.render(state));
 
+    // 휠 줌 (커서 기준 확대감)
+    this.input.on(
+      "wheel",
+      (_p: unknown, _o: unknown, _dx: number, dy: number) => {
+        const z = Phaser.Math.Clamp(
+          cam.zoom * (dy > 0 ? 0.9 : 1.1),
+          MIN_ZOOM,
+          MAX_ZOOM,
+        );
+        cam.setZoom(z);
+      },
+    );
+
+    // 자유시점 중 드래그 팬
+    this.input.on("pointermove", (p: Phaser.Input.Pointer) => {
+      if (!this.freeLook || !p.isDown) return;
+      cam.scrollX -= (p.x - p.prevPosition.x) / cam.zoom;
+      cam.scrollY -= (p.y - p.prevPosition.y) / cam.zoom;
+    });
+
+    // 특수키(Space, hold) = 자유시점 토글
+    this.input.keyboard?.on("keydown-SPACE", () => this.setFreeLook(true));
+    this.input.keyboard?.on("keyup-SPACE", () => this.setFreeLook(false));
+
+    // 이동 / (자유시점 중엔) 방향키 팬
     this.input.keyboard?.on("keydown", (e: KeyboardEvent) => {
-      const now = this.time.now;
-      if (now - this.lastMove < MOVE_COOLDOWN_MS) return;
       let dx = 0;
       let dy = 0;
       switch (e.key) {
@@ -81,9 +123,27 @@ export class GameScene extends Phaser.Scene {
         default:
           return;
       }
+      if (this.freeLook) {
+        cam.scrollX += (dx * PAN_STEP) / cam.zoom;
+        cam.scrollY += (dy * PAN_STEP) / cam.zoom;
+        return;
+      }
+      const now = this.time.now;
+      if (now - this.lastMove < MOVE_COOLDOWN_MS) return;
       this.lastMove = now;
       this.room.send("move", { dx, dy });
     });
+  }
+
+  /** 자유시점 on/off — off 시 내 캐릭터로 부드럽게 복귀. */
+  private setFreeLook(on: boolean): void {
+    if (this.freeLook === on) return;
+    this.freeLook = on;
+    if (on) {
+      this.cam.stopFollow();
+    } else if (this.myDisc) {
+      this.cam.startFollow(this.myDisc, true, CAM_LERP, CAM_LERP);
+    }
   }
 
   // ── 보드 그리기 (복도 + 방 + 중앙 잔치상) ──
@@ -155,6 +215,12 @@ export class GameScene extends Phaser.Scene {
     players.forEach((p, id) => {
       seen.add(id);
       const token = this.tokens.get(id) ?? this.createToken(id, ids.indexOf(id), p);
+      if (id === this.myId && this.myDisc !== token.disc) {
+        this.myDisc = token.disc;
+        if (!this.freeLook) {
+          this.cam.startFollow(token.disc, true, CAM_LERP, CAM_LERP);
+        }
+      }
       const [ox, oy] = tokenOffset(id);
       const cx = p.x * CELL + CELL / 2 + ox;
       const cy = p.y * CELL + CELL / 2 + oy;
