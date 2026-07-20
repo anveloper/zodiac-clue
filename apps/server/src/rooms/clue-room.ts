@@ -61,6 +61,8 @@ export class ClueRoom extends Room<GameState> {
   private botKnowledge = new Map<string, BotKnowledge>();
   private botSeq = 0;
   private suggestSeq = 0;
+  /** 이번 판 용의자 후보 = 참여자 6명의 캐릭터. */
+  private suspectPool: string[] = [];
   // 사용자 턴 시간 이동평균(ms) + 현재 턴 시작 시각(clock)
   private avgHumanTurnMs = 0;
   private turnStartedAt = 0;
@@ -232,17 +234,22 @@ export class ClueRoom extends Room<GameState> {
     void this.lock();
 
     const ids = [...this.state.players.keys()];
+    // 용의자 후보 = 실제 참여자 6명의 캐릭터만 (경우의 수 축소 · 정통 클루)
+    const suspectPool = ids.map(
+      (id) => this.state.players.get(id)?.suspect ?? "",
+    );
+    this.suspectPool = suspectPool;
     const solution: Solution = {
-      suspect: pick(SUSPECTS),
+      suspect: pick(suspectPool) as Solution["suspect"],
       weapon: pick(WEAPONS),
       room: pick(ROOMS),
     };
     this.solution = solution;
 
     const deck: Card[] = [
-      ...SUSPECTS.filter((s) => s !== solution.suspect).map(
-        (v): Card => ({ kind: "suspect", value: v }),
-      ),
+      ...suspectPool
+        .filter((s) => s !== solution.suspect)
+        .map((v): Card => ({ kind: "suspect", value: v })),
       ...WEAPONS.filter((w) => w !== solution.weapon).map(
         (v): Card => ({ kind: "weapon", value: v }),
       ),
@@ -316,7 +323,7 @@ export class ClueRoom extends Room<GameState> {
 
   private initBotKnowledge(id: string): void {
     const k: BotKnowledge = {
-      suspects: new Set<string>(SUSPECTS),
+      suspects: new Set<string>(this.suspectPool),
       weapons: new Set<string>(WEAPONS),
       rooms: new Set<string>(ROOMS),
     };
@@ -489,7 +496,7 @@ export class ClueRoom extends Room<GameState> {
     // 2) 아직 남은 후보로 제안
     const suggestion: Suggestion = {
       suspect: (pickFromSet(k.suspects) ??
-        pick(SUSPECTS)) as Suggestion["suspect"],
+        pick(this.suspectPool)) as Suggestion["suspect"],
       weapon: (pickFromSet(k.weapons) ?? pick(WEAPONS)) as Suggestion["weapon"],
       room: region.name as Suggestion["room"],
     };

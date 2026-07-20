@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>정통 클루 갭 분석 — zodiac-clue</title>
+<style>
+  :root { --bg:#16130f; --card:#211c16; --edge:#3a3126; --ink:#f0e9dc; --dim:#a89778; --gold:#f0d9a8; --accent:#b4622b; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink);
+    font-family: system-ui,-apple-system,"Apple SD Gothic Neo",sans-serif; line-height:1.6; }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { color:var(--gold); font-size:26px; margin:0 0 4px; }
+  .sub { color:var(--dim); font-size:13px; margin:0 0 28px; }
+  h2 { color:var(--gold); font-size:19px; margin:34px 0 10px; border-bottom:1px solid var(--edge); padding-bottom:6px; }
+  h3 { font-size:15px; margin:16px 0 6px; }
+  p, li { font-size:14px; }
+  code { background:#2c2519; border:1px solid var(--edge); border-radius:4px; padding:1px 5px; font-size:13px; }
+  .pill { background:#2c2519; border:1px solid var(--edge); border-radius:6px; padding:2px 8px; font-size:12px; color:var(--dim); }
+  table { width:100%; border-collapse:collapse; margin:12px 0; font-size:13px; }
+  th, td { border:1px solid var(--edge); padding:8px 10px; text-align:left; vertical-align:top; }
+  th { background:#2c2519; color:var(--gold); }
+  .ok { color:#7ee29a; } .no { color:#e0736b; } .part { color:#e0c25a; } .dim { color:var(--dim); }
+  .card { background:var(--card); border:1px solid var(--edge); border-radius:10px; padding:16px 20px; margin:12px 0; }
+  .p { display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:6px; margin-right:6px; }
+  .p1 { background:#3a2b1a; color:#e0a35a; } .p2 { background:#1f3a24; color:#7ee29a; }
+  .p3 { background:#1f2b3a; color:#7ec8e0; } .p4 { background:#2b1f3a; color:#b98fe0; } .p5 { background:#2c2519; color:#b8a888; }
+  ul { padding-left:20px; }
+  .lead { background:#2b2013; border:1px solid #7c6238; border-radius:8px; padding:12px 16px; font-size:13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🕵 정통 클루 대비 갭 분석 + 추가 룰 제안</h1>
+  <p class="sub">zodiac-clue · 2026-07-20 · <span class="pill">사람용 .html</span> · 요약본: <code>20260720-clue-gap-analysis.md</code></p>
+
+  <div class="lead">현재 구현을 보드게임 <b>클루(Cluedo)</b> 정통 규칙과 대조하고, 추가할 가치가 있는 룰(입구·비밀통로·지름길)을 우선순위와 함께 제시.</div>
+
+  <h2>요소 대조</h2>
+  <table>
+    <tr><th>요소</th><th>정통 클루</th><th>우리 구현</th><th>상태</th></tr>
+    <tr><td>용의자</td><td>6명 카드</td><td>참여자 6명 캐릭터로 한정</td><td class="ok">✅</td></tr>
+    <tr><td>흉기</td><td>6종 · 보드 토큰</td><td>6종 · 카드만(토큰 없음)</td><td class="part">부분</td></tr>
+    <tr><td>방</td><td>9개 · 문으로 출입</td><td>9개 · 입구(🚪) 1칸</td><td class="ok">✅</td></tr>
+    <tr><td>정답 봉투</td><td>용의자·흉기·방 각 1</td><td>동일</td><td class="ok">✅</td></tr>
+    <tr><td>이동</td><td>2d6 주사위</td><td>2d6 + 방 안 이동 무료</td><td class="ok">✅</td></tr>
+    <tr><td>방 진입 시</td><td>그 턴 이동 종료</td><td>계속 이동 가능</td><td class="no">❌</td></tr>
+    <tr><td>제안</td><td>방에서 용의자·흉기 지목 → 토큰 소환</td><td>용의자 토큰 소환(흉기 토큰 없음)</td><td class="part">부분</td></tr>
+    <tr><td>반증</td><td>시계방향 1장 비공개</td><td>동일</td><td class="ok">✅</td></tr>
+    <tr><td>고발</td><td>봉투 대조 · 오답=탈락(반증만)</td><td>동일</td><td class="ok">✅</td></tr>
+    <tr><td>비밀 통로</td><td>대각 방 2쌍 연결(주사위 없이)</td><td>없음</td><td class="no">❌</td></tr>
+    <tr><td>탐정 수첩</td><td>개인 메모</td><td>증거노트(로컬 저장)</td><td class="ok">✅</td></tr>
+    <tr><td>미참여 캐릭터</td><td>이동 안 함(소환만)</td><td>NPC가 실제 플레이</td><td class="dim">차이(의도)</td></tr>
+  </table>
+
+  <h2>주요 갭</h2>
+  <ul>
+    <li><b>비밀 통로 없음</b> — 클루의 핵심 묘미(원거리 순간이동 역전 요소)가 빠짐.</li>
+    <li><b>방 진입 정지 없음</b> — 방을 관통 가능해 "도착지" 성격이 약함.</li>
+    <li><b>흉기 토큰 없음</b> — 제안 시 흉기가 방에 시각적으로 놓이지 않음.</li>
+    <li><b>문 봉쇄 개념 없음</b> — 입구 1칸인데 말 겹침을 허용.</li>
+  </ul>
+
+  <h2>추가 구현 제안 (우선순위)</h2>
+
+  <div class="card">
+    <h3><span class="p p1">P1</span>비밀 통로 (secret passage) ⭐</h3>
+    <p>대각 반대편 방 2쌍을 통로로 연결(예: 정지↔별당, 후원↔안방). 방 안에서 <code>[통로]</code> → 주사위 없이 상대 방으로 즉시 이동, 그 턴 종료.</p>
+    <p class="dim">구현: <code>ROOM_REGIONS.passage</code> + 서버 <code>usePassage</code> + 클라 버튼. 난이도 <b>중</b> · 효과 <b>큼</b>.</p>
+  </div>
+  <div class="card">
+    <h3><span class="p p2">P2</span>방 진입 시 이동 종료</h3>
+    <p>입구로 방에 들어서면 <code>stepsLeft=0</code>. 방=도착지 성격 강화(정통).</p>
+    <p class="dim">구현: <code>handleMove</code>에서 복도→방 진입 시 <code>stepsLeft=0</code>. 난이도 <b>낮음</b>.</p>
+  </div>
+  <div class="card">
+    <h3><span class="p p3">P3</span>흉기 토큰(보드 표시)</h3>
+    <p>흉기 6종을 방에 배치하고 제안 시 해당 흉기를 그 방으로 이동(용의자 소환과 대칭).</p>
+    <p class="dim">구현: 흉기 위치 스키마 + 렌더. 난이도 <b>중</b>.</p>
+  </div>
+  <div class="card">
+    <h3><span class="p p4">P4</span>지름길 복도 / 중앙 통로</h3>
+    <p>넓은 복도를 미로형·중앙 통로형으로 재설계해 이동 전략성 부여.</p>
+    <p class="dim">구현: 벽(non-walkable) 도입 → 맵 리디자인. 난이도 <b>높음</b>.</p>
+  </div>
+  <div class="card">
+    <h3><span class="p p5">P5</span>문 봉쇄</h3>
+    <p>입구 칸에 다른 말이 있으면 진입 불가. 난이도 <b>낮음</b>, 정통성↑.</p>
+  </div>
+
+  <h2>권장 로드맵</h2>
+  <p class="lead"><b>P2(방 진입 정지) → P1(비밀 통로)</b> 순으로 하면 적은 비용으로 정통성·재미가 크게 오른다. P3/P4는 여력 있을 때.</p>
+</div>
+</body>
+</html>

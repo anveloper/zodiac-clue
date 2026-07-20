@@ -81,6 +81,16 @@ const selectFrom = (
   return sel;
 };
 
+/** 이번 판 용의자 후보 = 참여자 6명의 캐릭터(십이지 순서 유지). */
+const participantSuspects = (): string[] => {
+  if (!room) return [...SUSPECTS];
+  const set = new Set<string>();
+  (room.state.players as Map<string, { suspect: string }>).forEach((p) =>
+    set.add(p.suspect),
+  );
+  return ZODIAC.filter((z) => set.has(z));
+};
+
 const openPicker = (title: string, needRoom: boolean): Promise<Pick | null> =>
   new Promise((resolve) => {
     const overlay = document.createElement("div");
@@ -92,7 +102,7 @@ const openPicker = (title: string, needRoom: boolean): Promise<Pick | null> =>
     h.textContent = title;
     modal.appendChild(h);
 
-    const suspectSel = selectFrom(SUSPECTS, myCards);
+    const suspectSel = selectFrom(participantSuspects(), myCards);
     const weaponSel = selectFrom(WEAPONS, myCards);
     const roomSel = needRoom ? selectFrom(ROOMS, myCards) : null;
 
@@ -243,19 +253,28 @@ let diceTimer: number | undefined;
 const myTurnText = (steps: number): string =>
   `🎲 <b>내 턴</b> · 남은 이동 ${steps}칸 · 방에서 [제안]`;
 
-const rollDiceAnim = (el: HTMLElement): void => {
+// 내 차례 시작 시 화면 중앙에 주사위를 굴린다.
+const showDiceRoll = (): void => {
+  const ov = $("diceOverlay");
+  ov.classList.remove("hidden");
   if (diceTimer) window.clearInterval(diceTimer);
   let t = 0;
+  const render = (faces: string, label: string): void => {
+    ov.innerHTML =
+      `<div class="dice-card"><div class="dice-faces">${faces}</div>` +
+      `<div class="dice-label">${label}</div></div>`;
+  };
   diceTimer = window.setInterval(() => {
     t += 1;
     const a = DICE_FACES[Math.floor(Math.random() * 6)];
     const b = DICE_FACES[Math.floor(Math.random() * 6)];
-    el.innerHTML = `<b>주사위</b> <span style="font-size:20px">${a}${b}</span>`;
-    if (t >= 8) {
+    render(`${a} ${b}`, "주사위 굴리는 중…");
+    if (t >= 9) {
       window.clearInterval(diceTimer);
       diceTimer = undefined;
-      const steps = ((room?.state as { stepsLeft?: number })?.stepsLeft ?? 0);
-      el.innerHTML = myTurnText(steps);
+      const steps = (room?.state as { stepsLeft?: number })?.stepsLeft ?? 0;
+      render("🎲", `이동 ${steps}칸!`);
+      window.setTimeout(() => ov.classList.add("hidden"), 950);
     }
   }, 70);
 };
@@ -279,13 +298,9 @@ const updateTurnInfo = (state: Room["state"]): void => {
   el.classList.toggle("mine", mine);
 
   if (mine) {
-    if (turnChanged) rollDiceAnim(el); // 턴 시작 → 주사위 굴림
-    else if (!diceTimer) el.innerHTML = myTurnText(state.stepsLeft ?? 0);
+    el.innerHTML = myTurnText(state.stepsLeft ?? 0);
+    if (turnChanged) showDiceRoll(); // 턴 시작 → 중앙 주사위
   } else {
-    if (diceTimer) {
-      window.clearInterval(diceTimer);
-      diceTimer = undefined;
-    }
     el.textContent = cur ? `⏳ ${emoji(cur.suspect)} ${cur.name} 님의 턴` : "";
   }
 };
@@ -375,7 +390,7 @@ const buildEvidence = (roomId: string): void => {
   host.innerHTML = "";
   const data = loadEvi(roomId);
   const groups: [string, readonly string[]][] = [
-    ["용의자", SUSPECTS],
+    ["용의자", participantSuspects()],
     ["수법", WEAPONS],
     ["장소", ROOMS],
   ];

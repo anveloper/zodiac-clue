@@ -28,7 +28,7 @@ const PAN_STEP = 48;
 
 // 보드 팔레트 (한옥/사극 톤)
 const C_CORRIDOR = 0x2a2118;
-const C_GRID = 0x3a2e20;
+const C_GRID = 0x5a4a34;
 const C_ROOM = 0xcbb489;
 const C_ROOM_EDGE = 0x7c6238;
 const C_GOLD = 0xffd479;
@@ -168,7 +168,7 @@ export class GameScene extends Phaser.Scene {
   private drawBoard(): void {
     this.add.rectangle(0, 0, BOARD_W, BOARD_H, C_CORRIDOR).setOrigin(0);
     const grid = this.add.graphics();
-    grid.lineStyle(1, C_GRID, 0.5);
+    grid.lineStyle(1, C_GRID, 0.9);
     for (let x = 0; x <= GRID_WIDTH; x++) {
       grid.lineBetween(x * CELL, 0, x * CELL, BOARD_H);
     }
