@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>배포 세팅 (프리티어 지향) — zodiac-clue</title>
+<style>
+  :root { --bg:#16130f; --card:#211c16; --edge:#3a3126; --ink:#f0e9dc; --dim:#a89778; --gold:#f0d9a8; --accent:#b4622b; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink);
+    font-family: system-ui,-apple-system,"Apple SD Gothic Neo",sans-serif; line-height:1.6; }
+  a { color:#e0a35a; }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { color:var(--gold); font-size:26px; margin:0 0 4px; }
+  .sub { color:var(--dim); font-size:13px; margin:0 0 28px; }
+  h2 { color:var(--gold); font-size:19px; margin:34px 0 10px; border-bottom:1px solid var(--edge); padding-bottom:6px; }
+  h3 { font-size:15px; margin:16px 0 6px; }
+  p, li { font-size:14px; }
+  code { background:#2c2519; border:1px solid var(--edge); border-radius:4px; padding:1px 5px; font-size:13px; }
+  pre { background:#0f0d0a; border:1px solid var(--edge); border-radius:8px; padding:12px 14px; overflow-x:auto; font-size:13px; }
+  pre code { background:none; border:0; padding:0; }
+  .card { background:var(--card); border:1px solid var(--edge); border-radius:10px; padding:18px 22px; margin:14px 0; }
+  .pill { background:#2c2519; border:1px solid var(--edge); border-radius:6px; padding:2px 8px; font-size:12px; color:var(--dim); }
+  ul, ol { padding-left:22px; }
+
+  /* 아키텍처 다이어그램 */
+  .arch { display:flex; align-items:center; justify-content:center; gap:14px; flex-wrap:wrap; margin:16px 0; }
+  .node { background:#211c16; border:1px solid var(--edge); border-radius:10px; padding:12px 16px; text-align:center; min-width:150px; }
+  .node b { color:var(--gold); display:block; font-size:14px; }
+  .node span { font-size:11px; color:var(--dim); }
+  .arrow { color:var(--dim); font-size:13px; text-align:center; }
+  .arrow b { color:#7ec8e0; display:block; font-size:12px; }
+
+  table { width:100%; border-collapse:collapse; margin:12px 0; font-size:13px; }
+  th, td { border:1px solid var(--edge); padding:8px 10px; text-align:left; }
+  th { background:#2c2519; color:var(--gold); }
+  .ok { color:#7ee29a; } .no { color:#e0736b; } .dim { color:var(--dim); }
+  .warn { background:#2b1f12; border:1px solid #7c5a2a; border-radius:8px; padding:10px 14px; font-size:13px; }
+  .chk { list-style:none; padding-left:0; }
+  .chk li::before { content:"☐ "; color:var(--dim); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🚀 배포 세팅 (프리티어 지향)</h1>
+  <p class="sub">zodiac-clue · 2026-07-20 · <span class="pill">사람용 .html</span> · 요약본: <code>20260720-deploy-setup.md</code></p>
+
+  <div class="card">
+    <p style="margin:0;">서버는 <b>Colyseus(Node WS 권위 서버)</b> — 방 상태는 인메모리, DB 불필요, AI는 외부 Gemini. <b>CPU·RAM보다 "상시 켜진 WebSocket + wss(TLS)"가 핵심 제약</b>이다.</p>
+  </div>
+
+  <h2>구조</h2>
+  <div class="arch">
+    <div class="node"><b>브라우저</b><span>Phaser 클라</span></div>
+    <div class="arrow"><b>https</b>정적 로드</div>
+    <div class="node"><b>정적 호스팅</b><span>Vercel / CF Pages<br>(프리티어·TLS 자동)</span></div>
+    <div class="arrow"><b>wss</b>실시간 소켓</div>
+    <div class="node"><b>Colyseus 서버</b><span>상시 VM · Node 20<br>인메모리 방</span></div>
+    <div class="arrow"><b>https</b>REST</div>
+    <div class="node"><b>Gemini API</b><span>외부 무료</span></div>
+  </div>
+
+  <h2>최소 스펙 (MVP)</h2>
+  <ul>
+    <li>vCPU 1개(shared 무방) · <b>RAM 512MB</b>(최소 256MB) · 디스크 1~10GB</li>
+    <li>Node 20 LTS · Ubuntu 22.04 · 공개 포트 1개 + <b>TLS 종단(wss)</b></li>
+    <li>단일 인스턴스로 시작 — 수평확장은 Redis presence 필요, MVP엔 생략</li>
+  </ul>
+
+  <h2>호스팅 후보</h2>
+  <table>
+    <tr><th>후보</th><th>스펙/비용</th><th>WS 상시</th><th>메모</th></tr>
+    <tr><td><b>Oracle Always Free</b></td><td>ARM 최대 4vCPU/24GB · <span class="ok">영구 무료</span></td><td class="ok">O</td><td>가성비 최고, VM 직접 운영</td></tr>
+    <tr><td><b>AWS Lightsail / EC2 t3.micro</b></td><td>1vCPU/1GB · $3.5~5 / 12개월 무료</td><td class="ok">O</td><td>익숙·빠른 세팅(AWS 라인)</td></tr>
+    <tr><td><b>Fly.io</b></td><td>소형 상시 · 저렴/무료급</td><td class="ok">O</td><td>WS 친화</td></tr>
+    <tr><td class="dim">Render / Railway 무료</td><td class="dim">scale-to-zero</td><td class="no">△</td><td class="dim">15분 유휴 슬립 → 콜드스타트</td></tr>
+  </table>
+  <div class="warn">⚠️ <b>무료 scale-to-zero 호스팅은 WS 게임에 부적합</b>(슬립 후 재연결 지연). 데모만이면 감수 가능.</div>
+
+  <h2>VM 레시피 (Oracle / EC2 공통)</h2>
+  <div class="card">
+    <ol>
+      <li>Node 20 설치(nvm 또는 nodesource), <code>corepack enable</code>로 pnpm 활성.</li>
+      <li>레포 클론 → <code>pnpm i</code> → 서버 실행(<code>pnpm --filter @zodiac-clue/server dev</code> 또는 build 후 node/tsx).</li>
+      <li><code>apps/server/.env</code>에 <code>GEMINI_API_KEY</code>·<code>GEMINI_MODEL</code>·<code>PORT=2567</code> — <b>커밋 금지 유지</b>.</li>
+      <li><b>Caddy</b> 리버스 프록시(자동 Let's Encrypt) — <code>:443</code>에서 wss 종단:</li>
+    </ol>
+<pre><code>game.example.com {
+    reverse_proxy localhost:2567
+}</code></pre>
+    <ol start="5">
+      <li><b>pm2</b> 또는 <b>systemd</b>로 Node 상시 유지 + 재부팅 자동 기동.</li>
+      <li>방화벽/보안그룹: <b>443, 22(SSH)만</b> 개방. 2567은 외부 비공개(프록시 경유).</li>
+    </ol>
+  </div>
+
+  <h2>클라 연결 설정</h2>
+  <ul>
+    <li>서버 주소를 env로 분리: 개발 <code>ws://localhost:2567</code>, 운영 <code>wss://game.example.com</code>.</li>
+    <li>클라를 https로 배포하면 <b>반드시 wss</b> — 브라우저가 <code>ws://</code> 혼합콘텐츠 차단.</li>
+    <li>서버 <b>CORS/allowed origins</b>에 클라 도메인 등록.</li>
+  </ul>
+
+  <h2>체크리스트</h2>
+  <ul class="chk">
+    <li>서버 호스트 선택(Oracle / EC2 / Fly)</li>
+    <li>도메인·서브도메인 + DNS A레코드</li>
+    <li>Caddy 자동 TLS 동작(wss 접속 확인)</li>
+    <li>pm2 / systemd 상시 기동 + 재부팅 복원</li>
+    <li>.env 시크릿 주입(키 커밋 금지)</li>
+    <li>클라 운영 빌드에 wss 주소 주입 + 배포</li>
+    <li>방화벽 443 / 22만 개방</li>
+  </ul>
+
+  <h2>주의</h2>
+  <ul>
+    <li>단일 인스턴스 = 재시작 시 진행 중 방 소실(MVP 허용). 영속 필요 시 이후 Redis/드라이버.</li>
+    <li>키·시크릿은 호스트 env/secret로만.</li>
+  </ul>
+</div>
+</body>
+</html>
