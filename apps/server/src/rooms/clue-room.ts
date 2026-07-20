@@ -184,6 +184,11 @@ export class ClueRoom extends Room<GameState> {
     if (nx === player.x && ny === player.y) return;
     // 방 경계는 입구로만 출입 (벽)
     if (!canCross(player.x, player.y, nx, ny)) return;
+    // P5: 다른 말이 있는 칸으로는 이동 불가 (입구 칸이 막히면 진입 불가 = 문 봉쇄)
+    const occupied = [...this.state.players.values()].some(
+      (p) => p.id !== client.sessionId && !p.eliminated && p.x === nx && p.y === ny,
+    );
+    if (occupied) return;
 
     // 방 안·잔치상 위 이동은 자유(한도 무관). 복도 이동만 한도 소모.
     const free =
