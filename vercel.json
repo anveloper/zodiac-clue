@@ -1,0 +1,8 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "pnpm install",
+  "buildCommand": "VITE_SERVER_URL=wss://141-147-157-219.sslip.io pnpm --filter @zodiac-clue/client build",
+  "outputDirectory": "apps/client/dist",
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+}
