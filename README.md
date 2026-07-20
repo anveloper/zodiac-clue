@@ -1,49 +1,53 @@
 # zodiac-clue
 
 NHN NAN 2026 사전과제 — 웹 기반 멀티플레이 **클루(Cluedo)형 추리 게임**.
-초기 목표: **기본 클루 룰(6인)** 을 웹에서 동작시키는 것. 실시간 이동·장소 상호작용까지. (음성은 이후 단계)
+테마: **호랑이 생신 잔치**(십이지 손님 중 잔치 선물을 훔친 자를 추리). NPC 대사는 LLM으로 표현.
+
+- 🎮 **라이브(플레이)**: https://zodiac-clue.vercel.app
+- 🖥 **서버**: `wss://141-147-157-219.sslip.io` (OCI, Colyseus)
+- 📚 **문서 대시보드**: [`docs/index.html`](docs/index.html) — 설계·플랜·개발일지 링크
 
 ## 구조 (pnpm 모노레포)
 
 ```
 zodiac-clue/
 ├── apps/
-│   ├── server/     # Colyseus (Node/TS) — 방·상태동기화·클루 룰 (권위 서버)
-│   └── client/     # Phaser 3 + Vite (TS) — 그리드 렌더·입력·네트워크
+│   ├── server/     # Colyseus (Node/TS) — 방·상태동기화·클루 룰·NPC 결정(권위 서버)
+│   └── client/     # Phaser 3 + Vite (TS) — 보드 렌더·카메라·입력·네트워크
 └── packages/
-    └── shared/     # 공용 타입 + 클루 카드 데이터(용의자6·흉기6·장소9)
+    └── shared/     # 공용 타입·카드/방/성격 데이터(용의자·흉기6·장소9)
 ```
 
 ## 기술 스택
 
-- **서버**: [Colyseus](https://colyseus.io) 0.15 — 방/로비/상태동기화 내장, 권위 서버. 비밀 정보(각자 손패·정답 봉투)는 동기화 상태에 넣지 않고 개별 클라에 private 전송.
-- **클라**: [Phaser 3](https://phaser.io) + [Vite](https://vitejs.dev) + `colyseus.js`
-- **이동**: 그리드(칸 단위) — netcode 최소화 (연속 이동 대비 예측·보간 불필요)
-- **AI(예정)**: Gemini 심문 NPC를 서버 라우트로 (이후 단계)
+- **서버**: [Colyseus](https://colyseus.io) 0.15 — 방/로비/상태동기화. 비밀정보(손패·정답 봉투)는 동기화하지 않고 개별 private 전송.
+- **클라**: [Phaser 3](https://phaser.io) + [Vite](https://vitejs.dev) + `colyseus.js` — 탑뷰 추적 카메라·줌·트윈 이동·플로팅 HUD.
+- **AI(NPC 대사)**: Google **Gemini**(`gemini-flash-lite-latest`). 원칙 — **결정·진실값은 규칙엔진, 표현(대사)만 LLM**. 실패 시 규칙 폴백. → [AI 기술문서](docs/design/20260720-ai-tech-doc.html)
+- **배포**: 서버 GitHub Actions(SSH→OCI), 클라 Vercel(Git 연동). main push 자동배포. → [배포 세팅](docs/design/20260720-deploy-setup.html)
 
 ## 개발
 
 ```sh
 pnpm install
 pnpm dev          # 서버(:2567) + 클라(:5173) 동시 실행
-# 개별 실행
-pnpm dev:server
-pnpm dev:client
+pnpm dev:server   # / pnpm dev:client
+pnpm -r typecheck # 타입체크
 ```
 
-브라우저에서 http://localhost:5173 접속 → 여러 탭을 열어 멀티 접속 테스트.
+브라우저 http://localhost:5173 → 방 만들기/초대(`/room/<코드>`)로 멀티 접속. 6인 미만이면 NPC 자동 충원.
 
-## 현재 구현 범위 (초기 세팅)
+## 구현 현황
 
-- [x] 모노레포 스캐폴딩(서버/클라/공용)
-- [x] Colyseus 방 접속(최대 6인) + 캐릭터 배정
-- [x] 그리드 맵 렌더 + 실시간 이동 동기화
-- [x] 장소(방) 진입 감지 = 상호작용 지점
-- [x] 게임 시작 시 카드 분배 + 정답 봉투(서버 비밀) + 손패 private 전송
-- [x] 기본 제안(Suggestion)·반증(Disprove)·고발(Accusation) 흐름
-- [ ] 주사위/턴 이동 규칙 정식화 (현재는 자유 그리드 이동)
-- [ ] 조디악(띠) 테마 리스킨 + AI 증인(호랑이) 심문
-- [ ] 음성(STT/TTS) — 이후 단계
+- [x] 모노레포 · Colyseus 방(최대 6인, 부족분 NPC 충원) · 재접속(탭 기준)
+- [x] 십이지 테마 리스킨(호랑이 생신 잔치) · 캐릭터 선택/중복검증 · 성격 도감
+- [x] 보드: 탑뷰 추적 카메라·줌·자유시점, 방/입구(🚪)·중앙 잔치상, 플로팅 HUD·증거노트
+- [x] 정통 클루 턴: **주사위 2d6**·턴 게이팅·방 안 무료이동·문 봉쇄·제안 시 용의자 소환·**비밀 통로**
+- [x] 제안(Suggestion)·시계방향 반증(Disprove)·고발(Accusation)·탈락 관전·종료 결과 화면
+- [x] **NPC**: 규칙기반 추리(공유 공개카드로 수렴) + **LLM 대사·페르소나(말투)**, 절반 딜레이
+- [x] 공통 단서 패(솔로 보조) · 배포 자동화
+- [ ] 리매치(같은 방 다시 하기) · 호랑이 AI 반전(보류) · 엔진/콘텐츠 분리 · 도메인/음성
+
+자세한 로드맵·남은 작업은 [문서 대시보드](docs/index.html) 및 `docs/plans/` 참고.
 
 ## 라이선스
 
