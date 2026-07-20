@@ -510,19 +510,11 @@ const enterGame = (): void => {
   };
   ($("endTurn") as HTMLButtonElement).onclick = () => room?.send("endTurn", {});
 
-  // 기록 창 크게 보기 토글 — 확장 시 증거노트를 접어 겹침 방지(상호작용)
-  const eviDetails = document.querySelector<HTMLDetailsElement>(
-    ".hud-evi details",
-  );
-  eviDetails?.addEventListener("toggle", () => {
-    if (eviDetails.open) $("logPanel").classList.remove("expanded");
-  });
+  // 우측 컬럼(증거노트+기록) 넓게 보기 토글 — 둘은 같은 컬럼에 세로로 공존
   ($("logExpand") as HTMLButtonElement).onclick = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    const panel = $("logPanel");
-    panel.classList.toggle("expanded");
-    if (panel.classList.contains("expanded")) eviDetails?.removeAttribute("open");
+    $("rightPanel").classList.toggle("wide");
   };
 
   addLog("잔치 시작! 이동: 방향키, 방에 들어가 [제안]");

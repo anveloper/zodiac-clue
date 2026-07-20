@@ -113,15 +113,22 @@
       .dice-overlay.done .dice-label { color: #ffd479; }
       .hud-hand { left: 16px; bottom: 16px; max-width: 300px; }
       #hand { min-height: 18px; }
-      .hud-evi { right: 16px; top: 16px; width: 252px; max-height: 66vh; overflow-y: auto; }
-      .hud-log { right: 16px; bottom: 16px; width: 250px; transition: width 0.15s; }
-      .hud-log.expanded { width: 380px; z-index: 6; }
+      /* 우측 컬럼: 증거노트 + 기록을 세로로 쌓아 겹침 없이 둘 다 사용 */
+      .hud-col {
+        position: fixed; top: 16px; right: 16px; bottom: 16px;
+        width: 252px; z-index: 5; display: flex; flex-direction: column; gap: 10px;
+        pointer-events: none; transition: width 0.15s;
+      }
+      .hud-col.wide { width: 400px; }
+      .hud-col > .hud { position: static; pointer-events: auto; }
+      .hud-evi { flex: 0 1 auto; max-height: 50%; overflow-y: auto; }
+      .hud-log { flex: 1 1 auto; min-height: 130px; display: flex; flex-direction: column; }
+      .hud-log details { display: flex; flex-direction: column; min-height: 0; flex: 1; }
       .log-expand {
         float: right; margin-left: 6px; padding: 0 6px; font-size: 12px;
         background: #2c2519; border: 1px solid #4a3d2b; border-radius: 4px; line-height: 1.4;
       }
-      #log { height: 168px; overflow-y: auto; margin-top: 6px; }
-      .hud-log.expanded #log { height: 62vh; }
+      #log { flex: 1; min-height: 0; overflow-y: auto; margin-top: 6px; }
       #log > div {
         padding: 3px 6px; border-bottom: 1px solid #2c251c;
         border-left: 3px solid transparent; border-radius: 3px; margin-bottom: 2px;
@@ -266,23 +273,25 @@
 
       <div id="diceOverlay" class="dice-overlay hidden"></div>
 
-      <div class="hud hud-evi">
-        <details open>
-          <summary>🔍 증거 노트 (나만 봄)</summary>
-          <div id="evidence"></div>
-        </details>
+      <!-- 우측 컬럼: 증거노트 + 기록을 한 컴포넌트에 세로 배치(겹치지 않고 둘 다 사용) -->
+      <div class="hud-col" id="rightPanel">
+        <div class="hud hud-evi">
+          <details open>
+            <summary>🔍 증거 노트 (나만 봄)</summary>
+            <div id="evidence"></div>
+          </details>
+        </div>
+        <div class="hud hud-log" id="logPanel">
+          <details open>
+            <summary>📜 <span id="logLatest">기록 / 알림</span
+              ><button id="logExpand" class="log-expand" title="넓게 보기">⤢</button></summary>
+            <div id="log"></div>
+          </details>
+        </div>
       </div>
 
       <div class="hud hud-hand">
         <div id="hand"><b>내 단서 패</b>: (잔치 시작 후 표시)</div>
-      </div>
-
-      <div class="hud hud-log" id="logPanel">
-        <details open>
-          <summary>📜 <span id="logLatest">기록 / 알림</span
-            ><button id="logExpand" class="log-expand" title="크게 보기">⤢</button></summary>
-          <div id="log"></div>
-        </details>
       </div>
 
       <div class="hud hud-help">
