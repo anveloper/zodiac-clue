@@ -1,6 +1,6 @@
 # plan: 게임형 카메라(탑뷰 추적·줌·자유시점) + 플로팅 HUD
 
-status: active · created: 2026-07-20 · ref: docs/design/20260720-camera-and-hud
+status: done · created: 2026-07-20 · closed: 2026-07-20 · ref: docs/design/20260720-camera-and-hud
 
 ## goal
 사이드패널 레이아웃 → **전체화면 보드**. 카메라가 내 캐릭터를 따라가는 탑뷰, 휠 줌, 특수키 자유시점. 단서 패/증거 체크는 화면 모서리 플로팅 UI.
@@ -12,7 +12,7 @@ status: active · created: 2026-07-20 · ref: docs/design/20260720-camera-and-hu
 - [x] 자유시점: Space(hold) → stopFollow + 드래그/방향키 팬, 릴리즈 시 내 토큰으로 복귀(lerp). 자유시점 중 이동 잠금
 - [x] 플로팅 HUD(DOM overlay): ①내 단서 패(좌하) ②증거 노트(우상, 용의자·흉기·장소 토글·로컬저장) ③로그/알림(우하) ④조작 버튼(좌상)
 - [x] 조작 안내 바(이동/줌/자유시점/제안)
-- [ ] 반응형: 모바일 축소 시 HUD 접힘/토글 (미구현 — 소화면에서 HUD 겹침 여지)
+- [x] 반응형: 접이식(details) HUD + 소화면 미디어쿼리(≤680/≤420), 진입 시 자동 접힘
 
 ## done-criteria
 - 보드가 뷰포트보다 크고, 내 캐릭터 중심 탑뷰로 이동·추적됨

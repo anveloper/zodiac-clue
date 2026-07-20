@@ -80,6 +80,14 @@
         font-size: 12px; color: #f0e9dc;
       }
       .hud h3 { margin: 0 0 8px; font-size: 11px; color: #f0d9a8; letter-spacing: 0.4px; }
+      .hud summary {
+        cursor: pointer; list-style: none; font-size: 11px;
+        color: #f0d9a8; letter-spacing: 0.4px; outline: none;
+      }
+      .hud summary::-webkit-details-marker { display: none; }
+      .hud summary::before { content: "▾ "; color: #a89778; }
+      .hud details:not([open]) summary::before { content: "▸ "; }
+      .hud details[open] summary { margin-bottom: 8px; }
       .hud-ctrl { left: 16px; top: 16px; display: flex; gap: 8px; padding: 8px; }
       .hud-hand { left: 16px; bottom: 16px; max-width: 300px; }
       #hand { min-height: 18px; }
@@ -108,6 +116,22 @@
       .evi-chip:hover { border-color: #b4622b; }
       .evi-chip.cleared { opacity: 0.4; text-decoration: line-through; }
       .evi-chip.suspect { background: #3a2b1a; border-color: #e0a35a; color: #f0d9a8; }
+
+      /* 반응형: 좁은 화면에서 HUD 축소·모서리 정리 */
+      @media (max-width: 680px) {
+        .hud { font-size: 11px; padding: 8px 10px; }
+        .hud-ctrl { left: 8px; top: 8px; gap: 6px; padding: 6px; }
+        .hud-ctrl button { padding: 6px 8px; }
+        .hud-hand { left: 8px; bottom: 8px; max-width: 46vw; }
+        .hud-evi { right: 8px; top: 8px; width: 46vw; max-height: 40vh; }
+        .hud-log { right: 8px; bottom: 8px; width: 46vw; }
+        #log { height: 84px; }
+        .hud-help { display: none; }
+      }
+      @media (max-width: 420px) {
+        .hud-hand, .hud-evi, .hud-log { max-width: 92vw; width: auto; }
+        .hud-hand { right: 8px; }
+      }
 
       /* ── 카드 선택 모달 ── */
       .overlay {
@@ -186,8 +210,10 @@
       </div>
 
       <div class="hud hud-evi">
-        <h3>🔍 증거 노트 (나만 봄)</h3>
-        <div id="evidence"></div>
+        <details open>
+          <summary>🔍 증거 노트 (나만 봄)</summary>
+          <div id="evidence"></div>
+        </details>
       </div>
 
       <div class="hud hud-hand">
@@ -195,8 +221,10 @@
       </div>
 
       <div class="hud hud-log">
-        <h3>📜 기록 / 알림</h3>
-        <div id="log"></div>
+        <details open>
+          <summary>📜 기록 / 알림</summary>
+          <div id="log"></div>
+        </details>
       </div>
 
       <div class="hud hud-help">

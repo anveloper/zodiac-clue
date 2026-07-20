@@ -334,6 +334,13 @@ const enterGame = (): void => {
   game.registry.set("room", room);
   if (room) buildEvidence(room.roomId);
 
+  // 좁은 화면에선 HUD 접이식 패널을 접어 겹침 방지
+  if (window.innerWidth <= 680) {
+    document
+      .querySelectorAll("#gameScreen details[open]")
+      .forEach((d) => d.removeAttribute("open"));
+  }
+
   ($("suggest") as HTMLButtonElement).onclick = async () => {
     const pick = await openPicker("제안 — 누가, 무엇으로?", false);
     if (pick) {
