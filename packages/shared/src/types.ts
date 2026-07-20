@@ -42,6 +42,8 @@ export type ServerMessages = {
   log: { text: string };
   /** 고발 결과 */
   accuseResult: { player: string; correct: boolean };
+  /** NPC 대사 (브로드캐스트) — 말풍선/로그용 */
+  say: { id: string; from: string; text: string };
 };
 
 export type MessageType = keyof ClientMessages | keyof ServerMessages;

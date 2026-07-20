@@ -109,3 +109,21 @@ export const LABELS: Record<string, string> = {
 };
 
 export const label = (value: string): string => LABELS[value] ?? value;
+
+/** 캐릭터별 성격 — 도감 표시 + NPC 대사 프롬프트에 공용으로 쓰인다. */
+export const PERSONA: Record<string, string> = {
+  rat: "약삭빠르고 잔꾀 많은 책상물림. 매사 이문부터 따진다.",
+  ox: "우직하고 뚝심 있는 장사. 말수 적고 직설적이다.",
+  tiger: "위엄 넘치고 오만한 잔치 주최자. 호령하듯 말한다.",
+  rabbit: "영민하고 새침한 낭자. 말이 빠르고 눈치가 밝다.",
+  dragon: "자존심 세고 허풍이 심한 도령. 과장이 몸에 뱄다.",
+  snake: "음산하고 속을 알 수 없는 무녀. 늘 에둘러 말한다.",
+  horse: "발 넓고 수다스러운 장돌뱅이. 소문에 훤하다.",
+  sheep: "순박하고 겁 많은 목동. 매사 조심스럽다.",
+  monkey: "익살맞고 촐랑대는 광대. 농을 즐긴다.",
+  rooster: "깐깐하고 원칙주의 훈장. 훈계조로 말한다.",
+  dog: "충직하고 우직한 포교. 딱딱한 공무 말투.",
+  pig: "넉살 좋고 셈에 밝은 객주. 흥정하듯 말한다.",
+};
+
+export const persona = (value: string): string => PERSONA[value] ?? "";

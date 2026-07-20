@@ -6,11 +6,12 @@ status: active · created: 2026-07-20 · ref: docs/design/20260720-engine-and-wo
 NPC 결정은 규칙엔진, 대사/연출은 LLM(Gemini) 경유, 딜레이 = 사용자 평균 플레이시간 × 0.5.
 
 ## tasks
-- [ ] 사용자 턴 소요시간 측정(EMA) → npcDelay = avg / 2 (하한/상한 클램프)
-- [ ] 파이프라인: decideTurn(규칙, 진실값) → narrate(LLM, 대사/제스처만)
-- [ ] LLM 입력은 '결정된 정보'만. 진실값 생성/변경 금지(프롬프트 계약)
-- [ ] 폴백: 한도(429)/실패 시 규칙기반 정적 대사
-- [ ] 무료티어 가드: 호출 캐시/디바운스, 프레임 호출 0, 키는 서버 env
+- [x] 사용자 턴 소요시간 측정(EMA) → npcDelay = avg / 2 (800~6000 클램프)
+- [x] 파이프라인: decideTurn(규칙, 진실값) → narrate(LLM, 대사만)
+- [x] LLM 입력은 '결정된 정보'만. 진실값 생성/변경 금지(systemInstruction 계약)
+- [x] 폴백: 한도(429)/타임아웃/오류 시 규칙기반 정적 대사
+- [x] 캐릭터 성격(PERSONA)을 프롬프트에 반영 + 랜딩 성격 도감
+- [~] 무료티어 가드: 프레임 호출 0·키 env·thinking off 완료 / **캐시·디바운스 미구현**
 - [ ] 대사 로그/검증(제출물 ④ AI 기술문서 소재)
 
 ## done-criteria

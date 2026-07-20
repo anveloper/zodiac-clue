@@ -43,6 +43,7 @@ type PlayerView = {
 export class GameScene extends Phaser.Scene {
   private room!: Room;
   private tokens = new Map<string, Token>();
+  private bubbles = new Map<string, Phaser.GameObjects.Text>();
   private lastMove = 0;
 
   constructor() {
@@ -161,6 +162,7 @@ export class GameScene extends Phaser.Scene {
       token.disc.setPosition(cx, cy);
       token.face.setPosition(cx, cy);
       token.name.setPosition(cx, cy + CELL * 0.5);
+      this.bubbles.get(id)?.setPosition(cx, cy - CELL * 0.95);
 
       const isCurrent = id === current;
       token.ring.setVisible(isCurrent);
@@ -179,8 +181,33 @@ export class GameScene extends Phaser.Scene {
         t?.face.destroy();
         t?.name.destroy();
         this.tokens.delete(id);
+        this.bubbles.get(id)?.destroy();
+        this.bubbles.delete(id);
       }
     }
+  }
+
+  /** NPC 대사 말풍선을 해당 말 위에 잠시 띄운다. */
+  showBubble(id: string, text: string): void {
+    const token = this.tokens.get(id);
+    if (!token) return;
+    this.bubbles.get(id)?.destroy();
+    const bubble = this.add
+      .text(token.disc.x, token.disc.y - CELL * 0.95, text, {
+        fontSize: "11px",
+        color: "#2a2118",
+        backgroundColor: "#f0e0c0",
+        padding: { x: 6, y: 3 },
+        align: "center",
+        wordWrap: { width: 170 },
+      })
+      .setOrigin(0.5, 1)
+      .setDepth(100);
+    this.bubbles.set(id, bubble);
+    this.time.delayedCall(4200, () => {
+      if (this.bubbles.get(id) === bubble) this.bubbles.delete(id);
+      bubble.destroy();
+    });
   }
 
   private createToken(id: string, index: number, p: PlayerView): Token {

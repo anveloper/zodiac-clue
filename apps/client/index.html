@@ -48,6 +48,12 @@
       .char:hover { border-color: #b4622b; }
       .char.selected { border-color: #e0a35a; background: #2c2317; color: #f0d9a8; }
       .char.locked { opacity: 0.35; cursor: not-allowed; }
+      .persona {
+        margin-top: 8px; font-size: 12px; color: #cbbfa8; line-height: 1.5;
+        background: #16130f; border: 1px solid #3a3126; border-radius: 8px;
+        padding: 8px 10px; min-height: 40px;
+      }
+      .persona b { color: #f0d9a8; }
       .divider { text-align: center; color: #6b6355; font-size: 11px; margin: 16px 0; }
       .join-row { display: flex; gap: 8px; }
       .join-row input { flex: 1; }
@@ -116,6 +122,9 @@
         <div class="field">
           <label>캐릭터 선택 (선택 사항 · 대기실에서 변경 가능)</label>
           <div id="charGrid" class="char-grid"></div>
+        </div>
+        <div id="personaPanel" class="persona">
+          캐릭터에 마우스를 올리면 <b>성격</b>이 표시됩니다. 이 성격은 NPC 대사에도 반영돼요.
         </div>
         <button id="createBtn" class="full">방 만들기</button>
         <div class="divider">— 또는 초대받았다면 —</div>

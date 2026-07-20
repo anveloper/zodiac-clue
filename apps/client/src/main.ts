@@ -6,6 +6,7 @@ import {
   ZODIAC,
   emoji,
   label,
+  persona,
   type Card,
 } from "@zodiac-clue/shared";
 import type { Room } from "colyseus.js";
@@ -110,15 +111,22 @@ const openPicker = (title: string, needRoom: boolean): Promise<Pick | null> =>
 
 // ── 상태 ─────────────────────────────
 let room: Room | null = null;
+let game: Phaser.Game | null = null;
 let phaserStarted = false;
 let selectedCharacter: string | null = null;
 
 // ── 십이지신 캐릭터 선택 그리드 ─────────────────────────────
+const showPersona = (z: string): void => {
+  $("personaPanel").innerHTML =
+    `${emoji(z)} <b>${label(z)}</b> — ${persona(z)}`;
+};
+
 const selectCharacter = (z: string, grid: HTMLElement): void => {
   selectedCharacter = z;
   [...grid.children].forEach((c, i) =>
     c.classList.toggle("selected", ZODIAC[i] === z),
   );
+  showPersona(z);
 };
 
 const buildCharGrid = (): void => {
@@ -130,6 +138,7 @@ const buildCharGrid = (): void => {
     cell.innerHTML =
       `<span class="em">${emoji(z)}</span>` + `<span>${label(z)}</span>`;
     cell.onclick = () => selectCharacter(z, grid);
+    cell.onmouseenter = () => showPersona(z);
     grid.appendChild(cell);
   }
 };
@@ -169,6 +178,11 @@ const wireRoom = (r: Room): void => {
   });
   r.onMessage("accuseResult", (m: { player: string; correct: boolean }) => {
     addLog(m.correct ? `🎉 ${m.player} 정답!` : `❌ ${m.player} 오답`);
+  });
+  r.onMessage("say", (m: { id: string; from: string; text: string }) => {
+    addLog(`💬 ${m.from}: ${m.text}`);
+    const scene = game?.scene.getScene("game") as GameScene | undefined;
+    scene?.showBubble(m.id, m.text);
   });
 
   r.onStateChange((state) => {
@@ -241,7 +255,7 @@ const enterGame = (): void => {
   phaserStarted = true;
   show("gameScreen");
 
-  const game = new Phaser.Game({
+  game = new Phaser.Game({
     type: Phaser.AUTO,
     parent: "game",
     backgroundColor: "#1c1712",

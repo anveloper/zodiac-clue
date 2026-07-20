@@ -8,12 +8,14 @@ import {
   SUSPECTS,
   WEAPONS,
   label,
+  persona,
   roomAt,
   type Card,
   type Solution,
   type Suggestion,
 } from "@zodiac-clue/shared";
 import { GameState, Player } from "../schema/game-state";
+import { fallbackLine, narrate, type NarrationInput } from "../ai/narrator";
 
 type JoinOptions = { character?: string };
 
@@ -24,7 +26,10 @@ type BotKnowledge = {
   rooms: Set<string>;
 };
 
-const BOT_TURN_DELAY = 1600;
+// NPC 행동 딜레이 = 사용자 평균 턴 시간의 절반 (클램프). 데이터 없으면 기본값.
+const NPC_DELAY_DEFAULT = 1600;
+const NPC_DELAY_MIN = 800;
+const NPC_DELAY_MAX = 6000;
 
 const pick = <T>(arr: readonly T[]): T =>
   arr[Math.floor(Math.random() * arr.length)];
@@ -52,6 +57,9 @@ export class ClueRoom extends Room<GameState> {
   private hands = new Map<string, Card[]>();
   private botKnowledge = new Map<string, BotKnowledge>();
   private botSeq = 0;
+  // 사용자 턴 시간 이동평균(ms) + 현재 턴 시작 시각(clock)
+  private avgHumanTurnMs = 0;
+  private turnStartedAt = 0;
 
   onCreate(): void {
     this.setState(new GameState());
@@ -248,6 +256,7 @@ export class ClueRoom extends Room<GameState> {
     ids.forEach((id) => this.state.turnOrder.push(id));
     this.state.currentTurn = ids[0];
     this.state.phase = "playing";
+    this.turnStartedAt = this.clock.currentTime;
 
     const botCount = [...this.state.players.values()].filter(
       (p) => p.isBot,
@@ -426,6 +435,15 @@ export class ClueRoom extends Room<GameState> {
       room: region.name as Suggestion["room"],
     };
     const result = this.doSuggestion(id, suggestion);
+    void this.speak(id, {
+      name: bot.name,
+      persona: persona(bot.suspect),
+      action: "suggest",
+      suspect: label(suggestion.suspect),
+      weapon: label(suggestion.weapon),
+      room: label(suggestion.room),
+      disproved: !!result.card,
+    });
 
     if (result.card) {
       // 반증받은 카드는 정답 아님 → 후보에서 제거
@@ -436,6 +454,14 @@ export class ClueRoom extends Room<GameState> {
         cardMatches(c, suggestion),
       );
       if (!holdsAny) {
+        void this.speak(id, {
+          name: bot.name,
+          persona: persona(bot.suspect),
+          action: "accuse",
+          suspect: label(suggestion.suspect),
+          weapon: label(suggestion.weapon),
+          room: label(suggestion.room),
+        });
         this.doAccusation(id, suggestion);
         return;
       }
@@ -443,26 +469,70 @@ export class ClueRoom extends Room<GameState> {
 
     // 3) 각 카테고리 후보가 1개로 좁혀졌으면 고발
     if (k.suspects.size === 1 && k.weapons.size === 1 && k.rooms.size === 1) {
-      this.doAccusation(id, {
+      const acc: Suggestion = {
         suspect: [...k.suspects][0] as Suggestion["suspect"],
         weapon: [...k.weapons][0] as Suggestion["weapon"],
         room: [...k.rooms][0] as Suggestion["room"],
+      };
+      void this.speak(id, {
+        name: bot.name,
+        persona: persona(bot.suspect),
+        action: "accuse",
+        suspect: label(acc.suspect),
+        weapon: label(acc.weapon),
+        room: label(acc.room),
       });
+      this.doAccusation(id, acc);
       return;
     }
 
     this.advanceTurn();
   }
 
+  // NPC 대사: 결정된 정보만 넘겨 LLM 대사 생성, 실패 시 규칙 폴백 → 브로드캐스트.
+  private async speak(id: string, input: NarrationInput): Promise<void> {
+    let text: string | null = null;
+    try {
+      text = await narrate(input);
+    } catch {
+      text = null;
+    }
+    if (!text) text = fallbackLine(input);
+    if (!this.state.players.has(id)) return;
+    this.broadcast("say", { id, from: input.name, text });
+  }
+
+  /** NPC 행동 딜레이 = 사용자 평균 턴 시간의 절반 (클램프). */
+  private npcDelay(): number {
+    const base =
+      this.avgHumanTurnMs > 0 ? this.avgHumanTurnMs / 2 : NPC_DELAY_DEFAULT;
+    return Math.max(NPC_DELAY_MIN, Math.min(NPC_DELAY_MAX, base));
+  }
+
+  /** 떠나는 턴이 사람이면 소요시간을 EMA로 기록. */
+  private recordTurnDuration(): void {
+    const leaving = this.state.players.get(this.state.currentTurn);
+    if (leaving && !leaving.isBot && this.turnStartedAt > 0) {
+      const dur = this.clock.currentTime - this.turnStartedAt;
+      if (dur > 0 && dur < 120000) {
+        this.avgHumanTurnMs =
+          this.avgHumanTurnMs === 0
+            ? dur
+            : this.avgHumanTurnMs * 0.6 + dur * 0.4;
+      }
+    }
+  }
+
   private scheduleBotIfNeeded(): void {
     if (this.state.phase !== "playing") return;
     const cur = this.state.players.get(this.state.currentTurn);
     if (cur?.isBot) {
-      this.clock.setTimeout(() => this.runBotTurn(cur.id), BOT_TURN_DELAY);
+      this.clock.setTimeout(() => this.runBotTurn(cur.id), this.npcDelay());
     }
   }
 
   private advanceTurn(): void {
+    this.recordTurnDuration();
     const order = ([...this.state.turnOrder] as string[]).filter((id) => {
       const p = this.state.players.get(id);
       return p && !p.eliminated;
@@ -478,6 +548,7 @@ export class ClueRoom extends Room<GameState> {
     const cur = order.indexOf(this.state.currentTurn);
     const next = order[(cur + 1) % order.length];
     this.state.currentTurn = next;
+    this.turnStartedAt = this.clock.currentTime;
     const np = this.state.players.get(next);
     this.broadcast("log", { text: `${np?.name} 님의 턴입니다.` });
     this.scheduleBotIfNeeded();
