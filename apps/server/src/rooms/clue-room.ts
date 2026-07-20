@@ -504,8 +504,9 @@ export class ClueRoom extends Room<GameState> {
       return;
     }
 
-    // 1) 임의의 방으로 이동 (먼저 보여줌 → 카메라가 따라감)
-    const region = pick(ROOM_REGIONS);
+    // 1) 아직 후보인 방을 우선 노려 이동(수렴 가속). 없으면 임의 방.
+    const targetRoom = pickFromSet(k.rooms) ?? pick(ROOMS);
+    const region = regionOf(targetRoom) ?? pick(ROOM_REGIONS);
     const cell = this.freeCellIn(region.name, id);
     bot.x = cell.x;
     bot.y = cell.y;

@@ -96,6 +96,24 @@
       .hud-turn.mine {
         color: #16130f; background: #e0a35a; border-color: #e0a35a; font-weight: 600;
       }
+      .hud-spectate {
+        left: 50%; top: 56px; transform: translateX(-50%);
+        display: flex; gap: 10px; align-items: center; color: #e0736b; font-weight: 600;
+      }
+      .hud-spectate button { padding: 4px 10px; }
+      /* 종료 결과 오버레이 */
+      .end-overlay {
+        position: fixed; inset: 0; z-index: 40;
+        display: flex; align-items: center; justify-content: center;
+        background: rgba(0, 0, 0, 0.55);
+      }
+      .end-card {
+        background: #211c16; border: 2px solid #e0a35a; border-radius: 16px;
+        padding: 32px 44px; text-align: center; box-shadow: 0 16px 60px rgba(0, 0, 0, 0.7);
+      }
+      .end-title { font-size: 26px; color: #f0d9a8; font-weight: 700; }
+      .end-sub { font-size: 14px; color: #a89778; margin: 10px 0 20px; }
+      .end-btn { padding: 10px 22px; font-size: 14px; }
       /* 화면 중앙 주사위 오버레이 */
       .dice-overlay {
         position: fixed; inset: 0; z-index: 30; pointer-events: none;
@@ -309,7 +327,19 @@
 
       <div class="hud hud-turn hidden" id="turnInfo"></div>
 
+      <div class="hud hud-spectate hidden" id="spectateBar">
+        ❌ 탈락 · 관전 중 <button id="specHome">메인으로</button>
+      </div>
+
       <div id="diceOverlay" class="dice-overlay hidden"></div>
+
+      <div id="endOverlay" class="end-overlay hidden">
+        <div class="end-card">
+          <div id="endTitle" class="end-title"></div>
+          <div id="endSub" class="end-sub"></div>
+          <button id="endHome" class="end-btn">메인으로</button>
+        </div>
+      </div>
 
       <!-- 우측 컬럼: 증거노트(위) + 기록(아래). 좌측 모서리 드래그=너비, 사이 드래그=높이 -->
       <div class="rp-col" id="rightPanel">

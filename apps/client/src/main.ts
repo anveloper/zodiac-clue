@@ -235,6 +235,7 @@ const wireRoom = (r: Room): void => {
   r.onStateChange((state) => {
     renderLobby(state);
     updateTurnInfo(state);
+    updateEndState(state);
     if (state.phase === "playing" && !phaserStarted) enterGame();
   });
 
@@ -289,6 +290,40 @@ const showDiceRoll = (): void => {
       window.setTimeout(() => ov.classList.add("hidden"), 1900);
     }
   }, 150);
+};
+
+// 세션 정리 후 메인으로 (탈락/종료 시 나가기)
+const exitToMain = (): void => {
+  try {
+    sessionStorage.removeItem(RECONNECT_KEY);
+  } catch {
+    /* noop */
+  }
+  location.href = "/";
+};
+
+// 탈락(관전) 배너 + 종료 결과 오버레이
+const updateEndState = (state: Room["state"]): void => {
+  const players = state.players as Map<
+    string,
+    { name: string; eliminated: boolean }
+  >;
+  const meElim = room ? players.get(room.sessionId)?.eliminated : false;
+  $("spectateBar").classList.toggle(
+    "hidden",
+    !(state.phase === "playing" && !!meElim),
+  );
+
+  const overlay = $("endOverlay");
+  if (state.phase === "ended") {
+    const w = players.get(state.winner);
+    $("endTitle").textContent = w ? `🎉 ${w.name} 승리!` : "게임 종료";
+    $("endSub").textContent =
+      "사건이 종결되었습니다. 정답은 기록(우측)을 확인하세요.";
+    overlay.classList.remove("hidden");
+  } else {
+    overlay.classList.add("hidden");
+  }
 };
 
 const updateTurnInfo = (state: Room["state"]): void => {
@@ -500,6 +535,8 @@ const enterGame = (): void => {
     }
   };
   ($("endTurn") as HTMLButtonElement).onclick = () => room?.send("endTurn", {});
+  ($("endHome") as HTMLButtonElement).onclick = exitToMain;
+  ($("specHome") as HTMLButtonElement).onclick = exitToMain;
 
   // 우측 컬럼: 좌측 모서리 드래그=너비, 노트↔기록 사이 드래그=높이
   const rightCol = $("rightPanel");
