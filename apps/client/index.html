@@ -136,24 +136,30 @@
       .rp-evi { flex: none; height: 260px; }   /* 높이 드래그로 조절 */
       .rp-log { flex: 1 1 0; }                  /* 남은 공간 채우고 내부 스크롤 */
 
-      /* 높이 조절 핸들(노트↔기록) */
+      /* 드래그 핸들 — 잡을 수 있음이 보이도록 강조색(주황) + 그립 */
       .rp-hresizer {
-        flex: none; height: 12px; cursor: row-resize;
+        flex: none; height: 14px; cursor: row-resize; border-radius: 7px;
         display: flex; align-items: center; justify-content: center;
+        background: rgba(180, 98, 43, 0.18);
       }
       .rp-hresizer::before {
-        content: ""; width: 44px; height: 4px; border-radius: 2px; background: #4a3d2b;
+        content: ""; width: 52px; height: 6px; border-radius: 3px;
+        background: #b4622b; box-shadow: 0 0 0 1px #e0a35a inset;
       }
-      .rp-hresizer:hover::before { background: #7c6238; }
+      .rp-hresizer:hover { background: rgba(180, 98, 43, 0.32); }
+      .rp-hresizer:hover::before { background: #e0a35a; }
       /* 너비 조절 핸들(컬럼 좌측 모서리) */
       .rp-wresizer {
-        position: absolute; left: -7px; top: 0; bottom: 0; width: 14px;
+        position: absolute; left: -8px; top: 0; bottom: 0; width: 16px; border-radius: 8px;
         cursor: col-resize; display: flex; align-items: center; justify-content: center;
+        background: rgba(180, 98, 43, 0.18);
       }
       .rp-wresizer::before {
-        content: ""; width: 4px; height: 44px; border-radius: 2px; background: #4a3d2b;
+        content: ""; width: 6px; height: 56px; border-radius: 3px;
+        background: #b4622b; box-shadow: 0 0 0 1px #e0a35a inset;
       }
-      .rp-wresizer:hover::before { background: #7c6238; }
+      .rp-wresizer:hover { background: rgba(180, 98, 43, 0.32); }
+      .rp-wresizer:hover::before { background: #e0a35a; }
 
       /* 스크롤바 톤 통일 */
       * { scrollbar-width: thin; scrollbar-color: #4a3d2b #16130f; }
