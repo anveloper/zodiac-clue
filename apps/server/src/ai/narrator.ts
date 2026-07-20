@@ -58,10 +58,38 @@ export const fallbackLine = (i: NarrationInput): string => {
  * LLM(Gemini) 대사 생성. 키가 없거나 오류/타임아웃이면 null 반환(→ 호출부에서 폴백).
  * 무료티어 안전: 이벤트당 1콜, 짧은 출력, 타임아웃.
  */
+// 동일 상황 대사 캐시 (무료티어 호출 절약). 단순 LRU-ish, 상한 200.
+const CACHE_MAX = 200;
+const cache = new Map<string, string>();
+const cacheKey = (i: NarrationInput): string =>
+  [i.action, i.suspect, i.weapon, i.room, i.persona, i.tone, i.disproved].join(
+    "|",
+  );
+const cacheGet = (k: string): string | undefined => {
+  const v = cache.get(k);
+  if (v !== undefined) {
+    cache.delete(k); // 최근 사용으로 갱신
+    cache.set(k, v);
+  }
+  return v;
+};
+const cacheSet = (k: string, v: string): void => {
+  cache.set(k, v);
+  if (cache.size > CACHE_MAX) {
+    const oldest = cache.keys().next().value;
+    if (oldest !== undefined) cache.delete(oldest);
+  }
+};
+
 export const narrate = async (i: NarrationInput): Promise<string | null> => {
   const key = process.env.GEMINI_API_KEY;
   if (!key) return null;
   const model = process.env.GEMINI_MODEL ?? "gemini-flash-lite-latest";
+
+  // 캐시 히트 시 API 호출 없이 재사용
+  const ck = cacheKey(i);
+  const cached = cacheGet(ck);
+  if (cached !== undefined) return cached;
 
   const act =
     i.action === "accuse"
@@ -108,7 +136,12 @@ export const narrate = async (i: NarrationInput): Promise<string | null> => {
       return null;
     }
     // 안전: 한 줄만, 따옴표/과도한 길이 정리
-    return text.split("\n")[0].replace(/^["'*]+|["'*]+$/g, "").slice(0, 80);
+    const line = text
+      .split("\n")[0]
+      .replace(/^["'*]+|["'*]+$/g, "")
+      .slice(0, 80);
+    cacheSet(ck, line);
+    return line;
   } catch (e) {
     console.warn(`[narrate] err ${e instanceof Error ? e.name : String(e)}`);
     return null;
