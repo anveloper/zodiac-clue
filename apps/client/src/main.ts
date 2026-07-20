@@ -253,10 +253,17 @@ let diceTimer: number | undefined;
 const myTurnText = (steps: number): string =>
   `🎲 <b>내 턴</b> · 남은 이동 ${steps}칸 · 방에서 [제안]`;
 
-// 내 차례 시작 시 화면 중앙에 주사위를 굴린다.
+/** 합계 steps(2~12)를 2개 주사위 눈으로 분해. */
+const splitDice = (steps: number): [number, number] => {
+  const d1 = Math.max(1, Math.min(6, steps - Math.min(6, steps - 1)));
+  return [d1, steps - d1];
+};
+
+// 내 차례 시작 시 화면 중앙에 주사위를 차분히 굴린다.
 const showDiceRoll = (): void => {
   const ov = $("diceOverlay");
   ov.classList.remove("hidden");
+  ov.classList.remove("done");
   if (diceTimer) window.clearInterval(diceTimer);
   let t = 0;
   const render = (faces: string, label: string): void => {
@@ -264,19 +271,26 @@ const showDiceRoll = (): void => {
       `<div class="dice-card"><div class="dice-faces">${faces}</div>` +
       `<div class="dice-label">${label}</div></div>`;
   };
+  // 굴리는 단계: 느린 간격으로 6프레임(~0.9s)
   diceTimer = window.setInterval(() => {
     t += 1;
     const a = DICE_FACES[Math.floor(Math.random() * 6)];
     const b = DICE_FACES[Math.floor(Math.random() * 6)];
-    render(`${a} ${b}`, "주사위 굴리는 중…");
-    if (t >= 9) {
+    render(`${a} ${b}`, "주사위");
+    if (t >= 6) {
       window.clearInterval(diceTimer);
       diceTimer = undefined;
       const steps = (room?.state as { stepsLeft?: number })?.stepsLeft ?? 0;
-      render("🎲", `이동 ${steps}칸!`);
-      window.setTimeout(() => ov.classList.add("hidden"), 950);
+      const [d1, d2] = splitDice(steps);
+      render(
+        `${DICE_FACES[d1 - 1]} ${DICE_FACES[d2 - 1]}`,
+        `이동 ${steps}칸`,
+      );
+      ov.classList.add("done"); // 강조(살짝 커짐)
+      // 결과를 충분히 보여주고 서서히 사라짐
+      window.setTimeout(() => ov.classList.add("hidden"), 1900);
     }
-  }, 70);
+  }, 150);
 };
 
 const updateTurnInfo = (state: Room["state"]): void => {
