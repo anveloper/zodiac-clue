@@ -100,8 +100,28 @@
       #hand { min-height: 18px; }
       .hud-evi { right: 16px; top: 16px; width: 216px; max-height: 66vh; overflow-y: auto; }
       .hud-log { right: 16px; bottom: 16px; width: 244px; }
-      #log { height: 168px; overflow-y: auto; }
-      #log > div { padding: 2px 0; border-bottom: 1px solid #2c251c; }
+      #log { height: 168px; overflow-y: auto; margin-top: 6px; }
+      #log > div {
+        padding: 3px 6px; border-bottom: 1px solid #2c251c;
+        border-left: 3px solid transparent; border-radius: 3px; margin-bottom: 2px;
+      }
+      /* 로그 종류별 배경/좌측 강조 */
+      .log-suggest { background: #1f2b3a; border-left-color: #5b9bd5 !important; }
+      .log-disprove { background: #2b1f3a; border-left-color: #a878d5 !important; }
+      .log-accuse { background: #3a1f1f; border-left-color: #d56b6b !important; }
+      .log-win { background: #1f3a24; border-left-color: #6be08a !important; }
+      .log-move { background: #26221a; border-left-color: #8c8578 !important; }
+      .log-info { background: transparent; }
+      .log-badge {
+        display: inline-block; margin-left: 6px; padding: 0 5px; border-radius: 8px;
+        font-size: 10px; background: #a878d5; color: #16130f; font-weight: 600;
+      }
+      .log-badge.none { background: #d5b45b; }
+      #logLatest {
+        display: inline-block; max-width: 190px; overflow: hidden;
+        text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom;
+        font-weight: 400; color: #cbbfa8;
+      }
       .hud-help {
         left: 50%; bottom: 12px; transform: translateX(-50%);
         color: #cbbfa8; font-size: 11px; padding: 6px 14px; white-space: nowrap;
@@ -233,7 +253,7 @@
 
       <div class="hud hud-log">
         <details open>
-          <summary>📜 기록 / 알림</summary>
+          <summary>📜 <span id="logLatest">기록 / 알림</span></summary>
           <div id="log"></div>
         </details>
       </div>

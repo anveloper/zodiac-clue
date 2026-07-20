@@ -35,10 +35,29 @@ const show = (which: ScreenId): void => {
 };
 
 // ── 로그 ─────────────────────────────
-const addLog = (text: string): void => {
+type LogKind = "info" | "move" | "suggest" | "disprove" | "accuse" | "win";
+type LogOpts = { kind?: LogKind; sid?: string; disproved?: boolean };
+const sidDivs = new Map<string, HTMLElement>();
+
+const addLog = (text: string, opts: LogOpts = {}): void => {
+  const kind = opts.kind ?? "info";
   const div = document.createElement("div");
+  div.className = "log-" + kind;
   div.textContent = text;
+  if (opts.sid && kind === "suggest") sidDivs.set(opts.sid, div);
+  // 반증 결과 → 원 제안 로그에 배지 부착
+  if (opts.sid && kind === "disprove") {
+    const orig = sidDivs.get(opts.sid);
+    if (orig) {
+      const badge = document.createElement("span");
+      badge.className = "log-badge" + (opts.disproved ? "" : " none");
+      badge.textContent = opts.disproved ? "반증됨" : "정답후보";
+      orig.appendChild(badge);
+    }
+  }
   $("log").prepend(div);
+  // 접힘 상태용 최신 한 줄 요약
+  $("logLatest").textContent = text.length > 40 ? text.slice(0, 40) + "…" : text;
 };
 
 // ── 카드 선택 모달 ─────────────────────────────
@@ -173,7 +192,11 @@ const wireRoom = (r: Room): void => {
     /* history 사용 불가 시 무시 */
   }
 
-  r.onMessage("log", (m: { text: string }) => addLog(m.text));
+  r.onMessage(
+    "log",
+    (m: { text: string; kind?: LogKind; sid?: string; disproved?: boolean }) =>
+      addLog(m.text, { kind: m.kind, sid: m.sid, disproved: m.disproved }),
+  );
   r.onMessage("hand", (m: { cards: Card[] }) => {
     myCards = new Set(m.cards.map((c) => c.value));
     $("hand").innerHTML =
@@ -183,16 +206,20 @@ const wireRoom = (r: Room): void => {
   });
   r.onMessage("disprove", (m: { by: string | null; card: Card | null }) => {
     if (m.card) {
-      addLog(`🔎 ${m.by} 님이 "${label(m.card.value)}" 단서로 반증 (나만 봄)`);
+      addLog(`🔎 ${m.by} 님이 "${label(m.card.value)}" 단서로 반증 (나만 봄)`, {
+        kind: "disprove",
+      });
     } else {
-      addLog("🔎 아무도 반증하지 못함 — 정답 후보!");
+      addLog("🔎 아무도 반증하지 못함 — 정답 후보!", { kind: "disprove" });
     }
   });
   r.onMessage("accuseResult", (m: { player: string; correct: boolean }) => {
-    addLog(m.correct ? `🎉 ${m.player} 정답!` : `❌ ${m.player} 오답`);
+    addLog(m.correct ? `🎉 ${m.player} 정답!` : `❌ ${m.player} 오답`, {
+      kind: m.correct ? "win" : "accuse",
+    });
   });
   r.onMessage("say", (m: { id: string; from: string; text: string }) => {
-    addLog(`💬 ${m.from}: ${m.text}`);
+    addLog(`💬 ${m.from}: ${m.text}`, { kind: "info" });
     const scene = game?.scene.getScene("game") as GameScene | undefined;
     scene?.showBubble(m.id, m.text);
   });
@@ -208,11 +235,36 @@ const wireRoom = (r: Room): void => {
   show("lobby");
 };
 
-// 게임 중 현재 턴 배너 (내 턴이면 강조 + 남은 이동 표시)
+// 게임 중 현재 턴 배너 (내 턴이면 주사위 굴림 + 남은 이동 표시)
+const DICE_FACES = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
+let lastTurn = "";
+let diceTimer: number | undefined;
+
+const myTurnText = (steps: number): string =>
+  `🎲 <b>내 턴</b> · 남은 이동 ${steps}칸 · 방에서 [제안]`;
+
+const rollDiceAnim = (el: HTMLElement): void => {
+  if (diceTimer) window.clearInterval(diceTimer);
+  let t = 0;
+  diceTimer = window.setInterval(() => {
+    t += 1;
+    const a = DICE_FACES[Math.floor(Math.random() * 6)];
+    const b = DICE_FACES[Math.floor(Math.random() * 6)];
+    el.innerHTML = `<b>주사위</b> <span style="font-size:20px">${a}${b}</span>`;
+    if (t >= 8) {
+      window.clearInterval(diceTimer);
+      diceTimer = undefined;
+      const steps = ((room?.state as { stepsLeft?: number })?.stepsLeft ?? 0);
+      el.innerHTML = myTurnText(steps);
+    }
+  }, 70);
+};
+
 const updateTurnInfo = (state: Room["state"]): void => {
   const el = $("turnInfo");
   if (state.phase !== "playing") {
     el.classList.add("hidden");
+    lastTurn = "";
     return;
   }
   el.classList.remove("hidden");
@@ -222,11 +274,18 @@ const updateTurnInfo = (state: Room["state"]): void => {
   >;
   const cur = players.get(state.currentTurn);
   const mine = room !== null && state.currentTurn === room.sessionId;
+  const turnChanged = state.currentTurn !== lastTurn;
+  lastTurn = state.currentTurn;
   el.classList.toggle("mine", mine);
+
   if (mine) {
-    el.innerHTML =
-      `🎲 <b>내 턴</b> · 남은 이동 ${state.stepsLeft ?? 0}칸 · 방에서 [제안]`;
+    if (turnChanged) rollDiceAnim(el); // 턴 시작 → 주사위 굴림
+    else if (!diceTimer) el.innerHTML = myTurnText(state.stepsLeft ?? 0);
   } else {
+    if (diceTimer) {
+      window.clearInterval(diceTimer);
+      diceTimer = undefined;
+    }
     el.textContent = cur ? `⏳ ${emoji(cur.suspect)} ${cur.name} 님의 턴` : "";
   }
 };

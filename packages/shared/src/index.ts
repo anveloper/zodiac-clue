@@ -8,25 +8,27 @@ export const MAX_PLAYERS = 6;
 export const GRID_WIDTH = 24;
 export const GRID_HEIGHT = 24;
 
-/** 장소(방) 영역 정의 — 그리드 좌표 사각형. 진입 시 상호작용 지점. */
+/** 장소(방) 영역 정의 — 그리드 좌표 사각형 + 입구(door) 1칸. */
 export type RoomRegion = {
   name: string;
   x: number;
   y: number;
   w: number;
   h: number;
+  /** 입구 칸(방 경계). 방 출입은 이 칸으로만 가능. */
+  door: { x: number; y: number };
 };
 
 export const ROOM_REGIONS: RoomRegion[] = [
-  { name: "jeongji", x: 1, y: 1, w: 5, h: 5 },
-  { name: "daecheong", x: 9, y: 1, w: 6, h: 5 },
-  { name: "huwon", x: 18, y: 1, w: 5, h: 5 },
-  { name: "sarangbang", x: 1, y: 9, w: 5, h: 6 },
-  { name: "sarangchae", x: 18, y: 9, w: 5, h: 4 },
-  { name: "seojae", x: 18, y: 15, w: 5, h: 4 },
-  { name: "anbang", x: 1, y: 18, w: 5, h: 5 },
-  { name: "haengnang", x: 9, y: 18, w: 6, h: 5 },
-  { name: "byeoldang", x: 18, y: 20, w: 5, h: 3 },
+  { name: "jeongji", x: 1, y: 1, w: 5, h: 5, door: { x: 3, y: 5 } },
+  { name: "daecheong", x: 9, y: 1, w: 6, h: 5, door: { x: 11, y: 5 } },
+  { name: "huwon", x: 18, y: 1, w: 5, h: 5, door: { x: 20, y: 5 } },
+  { name: "sarangbang", x: 1, y: 9, w: 5, h: 6, door: { x: 5, y: 11 } },
+  { name: "sarangchae", x: 18, y: 9, w: 5, h: 4, door: { x: 18, y: 10 } },
+  { name: "seojae", x: 18, y: 15, w: 5, h: 4, door: { x: 18, y: 16 } },
+  { name: "anbang", x: 1, y: 18, w: 5, h: 5, door: { x: 3, y: 18 } },
+  { name: "haengnang", x: 9, y: 18, w: 6, h: 5, door: { x: 11, y: 18 } },
+  { name: "byeoldang", x: 18, y: 20, w: 5, h: 3, door: { x: 20, y: 20 } },
 ];
 
 /** (x,y)가 속한 방 이름을 반환, 없으면 null. */
@@ -35,4 +37,42 @@ export const roomAt = (x: number, y: number): string | null => {
     if (x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h) return r.name;
   }
   return null;
+};
+
+/** 방 영역 조회(이름). */
+export const regionOf = (name: string): RoomRegion | undefined =>
+  ROOM_REGIONS.find((r) => r.name === name);
+
+/** 방 중심 칸. */
+export const roomCenter = (name: string): { x: number; y: number } => {
+  const r = regionOf(name);
+  if (!r) return { x: 0, y: 0 };
+  return { x: r.x + Math.floor(r.w / 2), y: r.y + Math.floor(r.h / 2) };
+};
+
+/**
+ * (ax,ay)→(bx,by) 인접 이동이 방 경계 규칙상 허용되는지.
+ * - 같은 방/같은 복도 내부: 허용
+ * - 복도→방: 목표가 그 방의 입구일 때만
+ * - 방→복도: 출발이 그 방의 입구일 때만
+ * - 방↔방 직접: 불가
+ */
+export const canCross = (
+  ax: number,
+  ay: number,
+  bx: number,
+  by: number,
+): boolean => {
+  const ra = roomAt(ax, ay);
+  const rb = roomAt(bx, by);
+  if (ra === rb) return true;
+  if (ra === null && rb !== null) {
+    const r = regionOf(rb);
+    return !!r && r.door.x === bx && r.door.y === by;
+  }
+  if (ra !== null && rb === null) {
+    const r = regionOf(ra);
+    return !!r && r.door.x === ax && r.door.y === ay;
+  }
+  return false; // 방↔방 직접 이동 불가
 };

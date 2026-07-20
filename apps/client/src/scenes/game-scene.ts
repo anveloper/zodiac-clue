@@ -219,6 +219,16 @@ export class GameScene extends Phaser.Scene {
           color: "#f0d9a8",
         })
         .setOrigin(0.5);
+
+      // 입구(door) — 이 칸으로만 출입
+      const dcx = r.door.x * CELL + CELL / 2;
+      const dcy = r.door.y * CELL + CELL / 2;
+      this.add
+        .rectangle(dcx, dcy, CELL * 0.9, CELL * 0.9, 0x2a2118, 1)
+        .setStrokeStyle(2, C_GOLD);
+      this.add
+        .text(dcx, dcy, "🚪", { fontSize: `${Math.floor(CELL * 0.6)}px` })
+        .setOrigin(0.5);
     }
   }
 

@@ -39,7 +39,15 @@ export type ServerMessages = {
   /** 제안에 대한 반증 결과 (제안자에게만 private) */
   disprove: { by: string | null; card: Card | null; suggestion: Suggestion };
   /** 공개 로그 (브로드캐스트) */
-  log: { text: string };
+  log: {
+    text: string;
+    /** 로그 종류 — 색상/구분용 */
+    kind?: "info" | "move" | "suggest" | "disprove" | "accuse" | "win";
+    /** 제안-반증 연결 id (제안 로그에 결과 배지를 붙이기 위함) */
+    sid?: string;
+    /** 반증 결과일 때: 반증됨 여부 */
+    disproved?: boolean;
+  };
   /** 고발 결과 */
   accuseResult: { player: string; correct: boolean };
   /** NPC 대사 (브로드캐스트) — 말풍선/로그용 */

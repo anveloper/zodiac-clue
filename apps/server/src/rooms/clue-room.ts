@@ -7,9 +7,11 @@ import {
   ROOMS,
   SUSPECTS,
   WEAPONS,
+  canCross,
   label,
   persona,
   roomAt,
+  roomCenter,
   voice,
   type Card,
   type Solution,
@@ -58,6 +60,7 @@ export class ClueRoom extends Room<GameState> {
   private hands = new Map<string, Card[]>();
   private botKnowledge = new Map<string, BotKnowledge>();
   private botSeq = 0;
+  private suggestSeq = 0;
   // 사용자 턴 시간 이동평균(ms) + 현재 턴 시작 시각(clock)
   private avgHumanTurnMs = 0;
   private turnStartedAt = 0;
@@ -170,11 +173,16 @@ export class ClueRoom extends Room<GameState> {
       0,
       Math.min(GRID_HEIGHT - 1, player.y + Math.sign(msg.dy ?? 0)),
     );
-    // 벽/경계로 실제 이동이 없으면 이동 수 소모하지 않음
+    // 벽/경계로 실제 이동이 없으면 무시
     if (nx === player.x && ny === player.y) return;
+    // 방 경계는 입구로만 출입 (벽)
+    if (!canCross(player.x, player.y, nx, ny)) return;
+
+    // 이동 수는 복도에서 출발할 때만 소모(방 안 이동은 무료)
+    const fromCorridor = roomAt(player.x, player.y) === null;
     player.x = nx;
     player.y = ny;
-    this.state.stepsLeft -= 1;
+    if (fromCorridor) this.state.stepsLeft -= 1;
 
     const nextRoom = roomAt(nx, ny) ?? "";
     if (nextRoom !== player.room) {
@@ -182,6 +190,7 @@ export class ClueRoom extends Room<GameState> {
       if (nextRoom) {
         this.broadcast("log", {
           text: `${player.name} 님이 ${label(nextRoom)}에 들어갔습니다.`,
+          kind: "move",
         });
       }
     }
@@ -299,9 +308,10 @@ export class ClueRoom extends Room<GameState> {
     return true;
   }
 
-  /** 이번 턴 이동 한도(주사위) — 큰 보드 이동성을 위해 6~12칸. */
+  /** 이번 턴 이동 한도(주사위 2d6) — 2~12칸. 방 안 이동은 무료라 실효 이동은 더 큼. */
   private rollSteps(): number {
-    return 6 + Math.floor(Math.random() * 7);
+    const d = (): number => 1 + Math.floor(Math.random() * 6);
+    return d() + d();
   }
 
   private initBotKnowledge(id: string): void {
@@ -326,11 +336,32 @@ export class ClueRoom extends Room<GameState> {
     suggestion: Suggestion,
   ): { by: string | null; card: Card | null } {
     const suggester = this.state.players.get(suggesterId);
+    const sid = `s${++this.suggestSeq}`;
+    // 카테고리별 명확 표기
     this.broadcast("log", {
-      text: `${suggester?.name}의 제안: "${label(suggestion.suspect)} · ${label(
-        suggestion.weapon,
-      )} · ${label(suggestion.room)}"`,
+      text:
+        `🔍 [제안] ${suggester?.name} — 용의자: ${label(suggestion.suspect)}` +
+        ` · 수법: ${label(suggestion.weapon)} · 장소: ${label(suggestion.room)}`,
+      kind: "suggest",
+      sid,
     });
+
+    // 지목된 용의자 토큰을 그 방으로 소환 (다음 본인 턴에 그 방에서 시작)
+    const target = [...this.state.players.values()].find(
+      (p) => p.suspect === suggestion.suspect,
+    );
+    if (target) {
+      const c = roomCenter(suggestion.room);
+      target.x = c.x;
+      target.y = c.y;
+      target.room = suggestion.room;
+      this.broadcast("log", {
+        text: `${label(suggestion.suspect)}가 ${label(
+          suggestion.room,
+        )}(으)로 불려왔습니다.`,
+        kind: "move",
+      });
+    }
 
     const order = [...this.state.turnOrder] as string[];
     const start = order.indexOf(suggesterId);
@@ -342,12 +373,20 @@ export class ClueRoom extends Room<GameState> {
       if (match) {
         const other = this.state.players.get(otherId);
         this.broadcast("log", {
-          text: `${other?.name} 님이 반증했습니다.`,
+          text: `🛡 ${other?.name} 님이 반증했습니다.`,
+          kind: "disprove",
+          sid,
+          disproved: true,
         });
         return { by: other?.name ?? otherId, card: match };
       }
     }
-    this.broadcast("log", { text: "아무도 반증하지 못했습니다 — 정답 후보!" });
+    this.broadcast("log", {
+      text: "❗ 아무도 반증하지 못함 — 정답 후보!",
+      kind: "disprove",
+      sid,
+      disproved: false,
+    });
     return { by: null, card: null };
   }
 
@@ -397,11 +436,13 @@ export class ClueRoom extends Room<GameState> {
         text: `🎉 ${player.name} 사건 해결! 정답: ${label(
           this.solution.suspect,
         )} · ${label(this.solution.weapon)} · ${label(this.solution.room)}`,
+        kind: "win",
       });
     } else {
       player.eliminated = true;
       this.broadcast("log", {
-        text: `❌ ${player.name} 고발 실패 — 탈락(반증만 가능).`,
+        text: `❌ [고발 실패] ${player.name} 탈락(반증만 가능).`,
+        kind: "accuse",
       });
       this.advanceTurn();
     }
@@ -573,7 +614,10 @@ export class ClueRoom extends Room<GameState> {
       this.state.phase = "ended";
       this.state.winner = order[0];
       const w = this.state.players.get(order[0]);
-      this.broadcast("log", { text: `🎉 ${w?.name} 최후 생존 — 승리!` });
+      this.broadcast("log", {
+        text: `🎉 ${w?.name} 최후 생존 — 승리!`,
+        kind: "win",
+      });
       return;
     }
     const cur = order.indexOf(this.state.currentTurn);
@@ -586,14 +630,15 @@ export class ClueRoom extends Room<GameState> {
     this.scheduleBotIfNeeded();
   }
 
+  // 사람 플레이어 초기 위치 = 중앙 잔치상 주변 (봇은 addBot에서 방 스폰)
   private spawnPoint(index: number): { x: number; y: number } {
     const pts = [
-      { x: 0, y: 0 },
-      { x: GRID_WIDTH - 1, y: 0 },
-      { x: 0, y: GRID_HEIGHT - 1 },
-      { x: GRID_WIDTH - 1, y: GRID_HEIGHT - 1 },
-      { x: Math.floor(GRID_WIDTH / 2), y: 0 },
-      { x: Math.floor(GRID_WIDTH / 2), y: GRID_HEIGHT - 1 },
+      { x: 11, y: 11 },
+      { x: 13, y: 11 },
+      { x: 11, y: 13 },
+      { x: 13, y: 13 },
+      { x: 12, y: 10 },
+      { x: 12, y: 14 },
     ];
     return pts[index % pts.length];
   }
