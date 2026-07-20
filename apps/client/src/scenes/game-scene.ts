@@ -82,6 +82,8 @@ export class GameScene extends Phaser.Scene {
     this.cam = cam;
 
     this.room.onStateChange((state) => this.render(state));
+    // 씬 생성 시점엔 상태가 이미 적용돼 있으므로 즉시 1회 렌더(입력 전 오브젝트 표시)
+    this.render(this.room.state);
 
     // 휠 줌 (1.0=선명 근접, 축소하며 전체 조망)
     this.input.on(
@@ -193,10 +195,13 @@ export class GameScene extends Phaser.Scene {
     feast.lineStyle(3, 0xb8933f, 1);
     feast.strokeRoundedRect(fx, fy, fw, fh, 16);
     this.add
-      .text(fx + fw / 2, fy + fh / 2 - 20, "🎁", { fontSize: "52px" })
+      .text(fx + fw / 2, fy + fh / 2 - 18, "🎁", {
+        fontSize: "48px",
+        padding: { x: 6, y: 12 },
+      })
       .setOrigin(0.5);
     this.add
-      .text(fx + fw / 2, fy + fh / 2 + 34, "잔치상", {
+      .text(fx + fw / 2, fy + fh / 2 + 36, "잔치상", {
         fontSize: "22px",
         color: "#d8c188",
       })

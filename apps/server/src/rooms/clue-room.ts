@@ -8,6 +8,7 @@ import {
   SUSPECTS,
   WEAPONS,
   canCross,
+  inFeast,
   label,
   persona,
   roomAt,
@@ -167,8 +168,6 @@ export class ClueRoom extends Room<GameState> {
     if (!player || player.eliminated) return;
     // 자기 턴이 아니면 이동 불가
     if (this.state.currentTurn !== client.sessionId) return;
-    // 이번 턴 이동 한도 소진 시 불가
-    if (this.state.stepsLeft <= 0) return;
 
     const nx = Math.max(
       0,
@@ -183,11 +182,13 @@ export class ClueRoom extends Room<GameState> {
     // 방 경계는 입구로만 출입 (벽)
     if (!canCross(player.x, player.y, nx, ny)) return;
 
-    // 이동 수는 복도에서 출발할 때만 소모(방 안 이동은 무료)
-    const fromCorridor = roomAt(player.x, player.y) === null;
+    // 방 안·잔치상 위 이동은 자유(한도 무관). 복도 이동만 한도 소모.
+    const free =
+      roomAt(player.x, player.y) !== null || inFeast(player.x, player.y);
+    if (!free && this.state.stepsLeft <= 0) return;
     player.x = nx;
     player.y = ny;
-    if (fromCorridor) this.state.stepsLeft -= 1;
+    if (!free) this.state.stepsLeft -= 1;
 
     const nextRoom = roomAt(nx, ny) ?? "";
     if (nextRoom !== player.room) {

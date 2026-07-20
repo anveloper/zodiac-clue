@@ -31,6 +31,16 @@ export const ROOM_REGIONS: RoomRegion[] = [
   { name: "byeoldang", x: 18, y: 20, w: 5, h: 3, door: { x: 20, y: 20 } },
 ];
 
+/** 중앙 잔치상(시작 구역) — 방처럼 이동 소모 없는 자유 구역. */
+export const FEAST = { x: 9, y: 9, w: 6, h: 6 };
+
+/** (x,y)가 중앙 잔치상 위인지. */
+export const inFeast = (x: number, y: number): boolean =>
+  x >= FEAST.x &&
+  x < FEAST.x + FEAST.w &&
+  y >= FEAST.y &&
+  y < FEAST.y + FEAST.h;
+
 /** (x,y)가 속한 방 이름을 반환, 없으면 null. */
 export const roomAt = (x: number, y: number): string | null => {
   for (const r of ROOM_REGIONS) {
