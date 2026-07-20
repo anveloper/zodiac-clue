@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>게임 엔진 & AI 개발 협업 플랜 — zodiac-clue</title>
+<style>
+  :root { --bg:#16130f; --card:#211c16; --edge:#3a3126; --ink:#f0e9dc; --dim:#a89778; --gold:#f0d9a8; --accent:#b4622b; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink);
+    font-family: system-ui,-apple-system,"Apple SD Gothic Neo",sans-serif; line-height:1.6; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { color:var(--gold); font-size:26px; margin:0 0 4px; }
+  .sub { color:var(--dim); font-size:13px; margin:0 0 28px; }
+  h2 { color:var(--gold); font-size:19px; margin:34px 0 10px; border-bottom:1px solid var(--edge); padding-bottom:6px; }
+  h3 { font-size:15px; margin:18px 0 6px; }
+  p, li { font-size:14px; }
+  code { background:#2c2519; border:1px solid var(--edge); border-radius:4px; padding:1px 5px; font-size:13px; }
+  .card { background:var(--card); border:1px solid var(--edge); border-radius:10px; padding:18px 22px; margin:14px 0; }
+  .badge { display:inline-block; font-size:11px; padding:2px 8px; border-radius:20px; vertical-align:middle; margin-left:6px; }
+  .b-done { background:#1f3d24; color:#7ee29a; }
+  .b-partial { background:#3d3410; color:#e0c25a; }
+  .b-todo { background:#3a2b1a; color:#e0a35a; }
+  ul { margin:6px 0 6px; padding-left:20px; }
+  .note { color:var(--dim); font-size:13px; }
+  .pill { background:#2c2519; border:1px solid var(--edge); border-radius:6px; padding:2px 8px; font-size:12px; color:var(--dim); }
+  ol { padding-left:22px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>게임 엔진 &amp; AI 개발 협업 플랜</h1>
+  <p class="sub">zodiac-clue · 2026-07-20 · 주제 미확정, 엔진 우선 · <span class="pill">사람용 .html</span></p>
+
+  <div class="card">
+    <h2 style="margin-top:0;border:0;padding:0;">0. 배경 / 방향 전환</h2>
+    <ul>
+      <li><b>게임 주제는 확정이 아니다.</b> "클루"는 현재 프로토타입일 뿐, 바뀔 수 있다.</li>
+      <li>전략: <b>재사용 가능한 "게임 엔진"</b>과 <b>교체 가능한 "게임 콘텐츠(주제)"</b>를 분리한다. 주제가 바뀌어도 엔진(멀티/방/NPC/딜레이/문서체계)은 그대로 재사용.</li>
+    </ul>
+  </div>
+
+  <h2>1. 게임 플레이 엔진 (확정 룰 — 주제 불문 유지)</h2>
+
+  <h3>1.1 1인도 가능한 멀티 환경 <span class="badge b-done">구현됨</span></h3>
+  <p>방장 혼자여도 시작 가능, 부족 인원은 NPC 충원. Colyseus 권위 서버 + 상태동기화.</p>
+
+  <h3>1.2 방 만들기 + 캐릭터 선택 <span class="badge b-done">구현됨</span></h3>
+  <p>방 생성 / 초대 링크(<code>/room/&lt;코드&gt;</code>) / 대기실 / 호스트 시작. 캐릭터 선택은 선택 사항, <b>중복 검증은 방 안(대기실)</b>에서 실시간.</p>
+
+  <h3>1.3 룰 기반 NPC + LLM 표현 레이어 <span class="badge b-partial">일부 · 확장</span></h3>
+  <ul>
+    <li><b>결정(무엇을)</b>은 <b>결정론적 규칙 엔진</b>이 계산 — 이동·제안·반증·추리·판정. 환각 차단 · 무료티어 안전.</li>
+    <li><b>대사·연출(어떻게 보이나)</b>은 <b>LLM 경유</b>. 규칙 엔진이 확정한 "결정된 정보"만 입력 → 자연어 대사/제스처 생성. <b>LLM은 진실값을 만들지 않는다(표현 전용).</b></li>
+    <li><b>딜레이 = 사용자 평균 플레이 시간의 절반.</b> 사용자 턴 소요시간을 이동평균으로 측정 → NPC 지연을 그 <b>1/2</b>로. (사람다운 템포 + 호출 분산 + 무료티어 절약)</li>
+    <li><b>폴백</b>: LLM 실패/한도(429) 시 규칙 기반 정적 대사로 대체 → 게임 안 끊김.</li>
+  </ul>
+
+  <h3>1.4 엔진 추상화 (게임 교체 대응) <span class="badge b-todo">예정</span></h3>
+  <ul>
+    <li>게임별 요소를 <code>GameDefinition</code> 인터페이스로 분리: 구성물(카드/역할/맵), 승리조건, <b>NPC 결정 정책</b>(decideTurn), 초기 배치, 표현 라벨/이모지.</li>
+    <li><b>엔진 코어</b>(방/턴/동기화/NPC 스케줄/LLM 표현/딜레이/재접속)는 <b>게임 독립</b>.</li>
+    <li>현재 "클루"는 첫 <code>GameDefinition</code> 구현으로 이관. 새 주제 = 새 GameDefinition만 작성.</li>
+  </ul>
+
+  <h2>2. AI 개발 협업 규칙 (문서 체계)</h2>
+
+  <h3>2.1 plans 워크플로우 (active → done)</h3>
+  <ul>
+    <li>작업 단위 = <code>docs/plans/active/&lt;task&gt;.md</code> (압축 체크리스트).</li>
+    <li>완료 시 <code>docs/plans/done/</code>으로 이동(<code>git mv</code>).</li>
+    <li><b>CLAUDE / CODEX 등 모든 AI 도구가 동일 문서 기반</b>으로 작업 → <code>CLAUDE.md</code>와 <code>AGENTS.md</code>가 같은 규칙 참조.</li>
+  </ul>
+
+  <h3>2.2 문서 이원화 (.md = AI / .html = 사람)</h3>
+  <ul>
+    <li><code>docs/plans/*</code> = <b>AI 전용, 압축 .md</b>.</li>
+    <li>그 외 문서(설계/기능/가이드) = <b>.md + .html 2중 작성</b>. AI는 .md, 작업자는 .html.</li>
+  </ul>
+
+  <h3>2.3 문서 공개 (추후)</h3>
+  <p>도메인 구매 후 <b><code>도메인/docs</code>에 .html 개발 문서 공개</b>(작업자용). .html은 자체 완결(inline CSS)로 정적 서빙만으로 열람 가능.</p>
+
+  <h2>3. 실행 순서 (마일스톤)</h2>
+  <ol>
+    <li><b>문서 체계 도입</b> (2.1~2.2): 폴더·규칙, <code>CLAUDE.md</code>/<code>AGENTS.md</code> 반영. ← 다음 단계</li>
+    <li><b>엔진/콘텐츠 분리 리팩터</b> (1.4): <code>GameDefinition</code> 도입, 클루 이관.</li>
+    <li><b>NPC LLM 표현 + 절반 딜레이</b> (1.3).</li>
+    <li><b>주제 재검토</b>: 클루 확정 또는 새 GameDefinition.</li>
+  </ol>
+  <p class="note">파생 체크리스트: <code>docs/plans/active/01-docs-workflow.md</code>, <code>02-engine-content-separation.md</code>, <code>03-npc-llm-expression.md</code></p>
+
+  <h2>4. 무료티어 / 리스크</h2>
+  <ul>
+    <li><b>LLM은 표현 전용</b> → 호출 최소화, 절반 딜레이 분산, 캐시/폴백. 프레임 호출 0.</li>
+    <li><b>주제 미확정 리스크</b> → 엔진/콘텐츠 분리로 교체 비용 최소화.</li>
+    <li><b>문서 드리프트</b> → .md(AI)/.html(사람) 동기화 방식 확정 필요(수기 vs md→html 빌드).</li>
+  </ul>
+</div>
+</body>
+</html>
