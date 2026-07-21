@@ -12,9 +12,11 @@
   "dependencies": {
     "@zodiac-clue/shared": "workspace:*",
     "colyseus.js": "^0.15.28",
-    "phaser": "^3.80.1"
+    "phaser": "^3.80.1",
+    "three": "^0.185.1"
   },
   "devDependencies": {
+    "@types/three": "^0.185.1",
     "typescript": "^5.4.5",
     "vite": "^5.4.0"
   }

@@ -13,6 +13,7 @@ import {
 import type { Room } from "colyseus.js";
 import { client, createRoom, joinRoomById } from "./network";
 import { GameScene } from "./scenes/game-scene";
+import { IsoView } from "./scenes/iso-view";
 
 /** 재접속 토큰 저장 키. sessionStorage = 탭 단위(새로고침엔 유지, 새 탭엔 없음). */
 const RECONNECT_KEY = "zc_reconnect";
@@ -147,6 +148,8 @@ const openPicker = (title: string, needRoom: boolean): Promise<Pick | null> =>
 // ── 상태 ─────────────────────────────
 let room: Room | null = null;
 let game: Phaser.Game | null = null;
+let iso: IsoView | null = null;
+let viewMode: "2d" | "iso" = "2d";
 let phaserStarted = false;
 let selectedCharacter: string | null = null;
 /** 내 손패 카드값 집합 — 정답일 수 없으므로 제안·증거노트에서 자동 비활성화. */
@@ -231,8 +234,12 @@ const wireRoom = (r: Room): void => {
   });
   r.onMessage("say", (m: { id: string; from: string; text: string }) => {
     addLog(`💬 ${m.from}: ${m.text}`, { kind: "info" });
-    const scene = game?.scene.getScene("game") as GameScene | undefined;
-    scene?.showBubble(m.id, m.text);
+    if (viewMode === "iso") {
+      iso?.showBubble(m.id, m.text);
+    } else {
+      const scene = game?.scene.getScene("game") as GameScene | undefined;
+      scene?.showBubble(m.id, m.text);
+    }
   });
   r.onMessage("peek", (m: { from: string; cards: Card[] }) => {
     addLog(
@@ -566,6 +573,38 @@ const enterGame = (): void => {
   });
   game.registry.set("room", room);
   if (room) buildEvidence(room.roomId);
+
+  // 2D(Phaser) ↔ 2.5D(Three.js) 시점 토글. 서버·HUD·입력 규칙은 동일.
+  const setView = (mode: "2d" | "iso"): void => {
+    viewMode = mode;
+    const gameDiv = $("game");
+    const toggleBtn = $("viewToggle") as HTMLButtonElement;
+    if (mode === "iso") {
+      if (!iso && room) iso = new IsoView(room, $("gameScreen"));
+      iso?.setActive(true);
+      gameDiv.style.display = "none";
+      if (game?.input.keyboard) game.input.keyboard.enabled = false;
+      toggleBtn.textContent = "2D";
+    } else {
+      iso?.setActive(false);
+      gameDiv.style.display = "block";
+      if (game?.input.keyboard) game.input.keyboard.enabled = true;
+      toggleBtn.textContent = "2.5D";
+    }
+    try {
+      localStorage.setItem("zc_view", mode);
+    } catch {
+      /* noop */
+    }
+  };
+  ($("viewToggle") as HTMLButtonElement).onclick = () =>
+    setView(viewMode === "2d" ? "iso" : "2d");
+  // 저장된 선호 시점 복원
+  try {
+    if (localStorage.getItem("zc_view") === "iso") setView("iso");
+  } catch {
+    /* noop */
+  }
 
   ($("suggest") as HTMLButtonElement).onclick = async () => {
     // 방 안에서만 제안 가능 — 밖이면 안내(제안이 거부돼 턴이 안 넘어가는 혼동 방지)
