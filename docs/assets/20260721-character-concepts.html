@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>12지신 캐릭터 컨셉 — zodiac-clue</title>
+<style>
+  :root { --bg:#16130f; --card:#211c16; --edge:#3a3126; --ink:#f0e9dc; --dim:#a89778; --gold:#f0d9a8; --accent:#b4622b; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink);
+    font-family: system-ui,-apple-system,"Apple SD Gothic Neo",sans-serif; line-height:1.65; }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { color:var(--gold); font-size:25px; margin:0 0 2px; }
+  .sub { color:var(--dim); font-size:13px; margin:0 0 22px; }
+  h2 { color:var(--gold); font-size:17px; margin:30px 0 10px; border-bottom:1px solid var(--edge); padding-bottom:6px; }
+  p, li { font-size:14px; }
+  code { background:#2c2519; border:1px solid var(--edge); border-radius:4px; padding:1px 5px; font-size:13px; }
+  .pill { background:#2c2519; border:1px solid var(--edge); border-radius:6px; padding:2px 8px; font-size:12px; color:var(--dim); }
+  .world { background:var(--card); border:1px solid var(--edge); border-radius:10px; padding:14px 18px; margin:12px 0 8px; }
+  .world li { margin:3px 0; }
+  .chr { background:var(--card); border:1px solid var(--edge); border-radius:12px; padding:16px 20px; margin:14px 0; }
+  .chr .top { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
+  .chr .em { font-size:30px; line-height:1; }
+  .chr .nm { color:var(--gold); font-size:18px; font-weight:700; }
+  .chr .one { color:#e7c98c; font-size:13.5px; font-style:italic; }
+  .chr dl { margin:10px 0 0; display:grid; grid-template-columns:74px 1fr; gap:6px 12px; }
+  .chr dt { color:var(--accent); font-size:12.5px; font-weight:700; padding-top:1px; }
+  .chr dd { margin:0; font-size:13.5px; }
+  .todo { color:var(--dim); font-size:13px; font-style:italic; margin-top:18px; }
+  b.g { color:var(--gold); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🀄 12지신 캐릭터 컨셉</h1>
+  <p class="sub">zodiac-clue · 2026-07-21 · 배경·외형·성격·상관관계 (4개×3군) · <span class="pill">사람용 .html</span></p>
+
+  <div class="world">
+    <b class="g">세계관</b>
+    <ul>
+      <li>무대: <b>호랑이 대감의 생신 잔치</b>가 열린 한옥 대감집. 십이지 손님이 모였다.</li>
+      <li>사건: 누군가 <b>잔치 음식·선물(장물)을 훔쳤다</b> → 누가·무엇을·어디서 추리(절도극, 살인 아님).</li>
+      <li>톤: 조선 사극풍 해학·의뭉. 손님은 신분·생업 제각각, 호랑이만 주최자.</li>
+      <li>외형 프리셋(정합용): 한복 기반 + 동물 특징을 얼굴·귀·소품으로 은은히, 먹·주홍·황금 팔레트, 사극 채색화 톤.</li>
+    </ul>
+  </div>
+
+  <h2>1군 <span class="pill">쥐 · 소 · 호랑이 · 토끼</span></h2>
+
+  <div class="chr">
+    <div class="top"><span class="em">🐭</span><span class="nm">생쥐 서생</span><span class="one">약삭빠르고 잔꾀 많은 책상물림. 매사 이문부터 따진다.</span></div>
+    <dl>
+      <dt>배경</dt><dd>과거 준비하는 가난한 서생이나 셈·문서에 밝아 대감집 장부 일을 봐주며 드나든다. 잔치엔 축하 겸 인맥을 노리고 왔다. 경주 설화처럼 큰 것(소) 등에 올라타 이문을 챙기는 처세가 몸에 뱄다.</dd>
+      <dt>외형</dt><dd>왜소한 체구, 회청색 도포에 먹물 얼룩. 큼직한 앞니·쫑긋한 귀, 붓과 주판을 품음. 눈이 재빠르게 굴러간다.</dd>
+      <dt>성격</dt><dd>계산적·기회주의. 위험은 피하고 이득엔 민첩. 겁 많지만 머리는 빠르다.</dd>
+      <dt>상관관계</dt><dd><b>소</b>: 경주 앙금+신세, 겉굽신 속얕봄. <b>돼지 객주</b>: 셈이 맞는 장사 파트너·흥정 라이벌. <b>호랑이 대감</b>: 무서워하며 비위 맞춤.</dd>
+    </dl>
+  </div>
+
+  <div class="chr">
+    <div class="top"><span class="em">🐮</span><span class="nm">황소 역사</span><span class="one">우직하고 뚝심 있는 장사. 말수 적고 직설적이다.</span></div>
+    <dl>
+      <dt>배경</dt><dd>대감집 곳간·행사에 힘을 보태는 짐꾼·역사(力士). 성실해 신망이 두텁다. 잔치 준비에 무거운 상을 나른 당사자라 장물 사건에 억울하게 지목되기 쉽다.</dd>
+      <dt>외형</dt><dd>거대한 체구, 무명 저고리에 굵은 팔뚝. 뿔 상징 두건, 코뚜레 장신구. 뚝뚝하나 선한 눈매.</dd>
+      <dt>성격</dt><dd>정직·인내. 말보다 행동. 화는 늦지만 한번 나면 무섭다.</dd>
+      <dt>상관관계</dt><dd><b>쥐</b>: 얍삽함에 이용당해도 미워 못함. <b>호랑이 대감</b>: 충직히 받듦. <b>삽살 포교(개)</b>: 우직함이 통하는 벗.</dd>
+    </dl>
+  </div>
+
+  <div class="chr">
+    <div class="top"><span class="em">🐯</span><span class="nm">호랑이 대감</span><span class="one">위엄 넘치고 오만한 잔치 주최자. 호령하듯 말한다.</span></div>
+    <dl>
+      <dt>배경</dt><dd>대감집 주인이자 오늘 생신의 주인공. 권세·재물이 대단해 십이지를 손님으로 부른다. 도둑맞은 잔치 선물의 <b>피해자</b>로서 손님을 붙잡아 사건을 파헤친다.</dd>
+      <dt>외형</dt><dd>장대한 풍채, 호피 배자에 금박 갓끈. 위엄 있는 수염·부리부리한 눈, 손엔 장죽.</dd>
+      <dt>성격</dt><dd>오만·엄격하나 체면·법도 중시. 호령 뒤엔 손님을 지키는 주최자의 책임감.</dd>
+      <dt>상관관계</dt><dd>손님의 <b>좌장</b>. <b>토끼</b>: 잔꾀에 번번이 당해 벼름. <b>소·개</b>: 부리는 충복. 주최자=<b>피해자</b>, 도둑 취급 금물.</dd>
+    </dl>
+  </div>
+
+  <div class="chr">
+    <div class="top"><span class="em">🐰</span><span class="nm">토끼 낭자</span><span class="one">영민하고 새침한 낭자. 말이 빠르고 눈치가 밝다.</span></div>
+    <dl>
+      <dt>배경</dt><dd>약방집 딸로 잔치 다과·약과를 맡아 부엌을 자주 드나든다. 눈썰미가 밝아 누가 어디서 뭘 집었는지 곧잘 본다 → 목격자도 용의자도 될 위치.</dd>
+      <dt>외형</dt><dd>고운 다홍 치마저고리, 길고 쫑긋한 귀 장식(가체). 총기 도는 큰 눈, 손엔 약과 소반·부채.</dd>
+      <dt>성격</dt><dd>재기발랄·새침. 눈치·말솜씨로 곤경을 잘 빠져나간다. 강자에게도 겁 없이 쏘아붙임.</dd>
+      <dt>상관관계</dt><dd><b>호랑이 대감</b>: 잔꾀로 골탕 먹인 전적, 겁 없이 대듦. <b>뱀 무녀</b>: 속 읽기 신경전. <b>잔나비 광대</b>: 재담 통하는 장난 짝.</dd>
+    </dl>
+  </div>
+
+  <p class="todo">2군 게코·뱀·말·양, 3군 잔나비·닭·개·돼지는 다음 세그먼트에서 이어서 작성.</p>
+</div>
+</body>
+</html>
