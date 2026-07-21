@@ -21,7 +21,7 @@ export const ZODIAC = [
 ] as const;
 export type Zodiac = (typeof ZODIAC)[number];
 
-/** 잔치 주최자 = 호랑이. (후속 AI 증인/진범 반전 단계에서 특수 역할 예정.) */
+/** 잔치 주최자 = 호랑이. 다른 십이지와 동일하게 플레이 가능한 손님. */
 export const HOST: Zodiac = "tiger";
 
 /**
