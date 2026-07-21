@@ -113,7 +113,10 @@
       }
       .end-title { font-size: 26px; color: #f0d9a8; font-weight: 700; }
       .end-sub { font-size: 14px; color: #a89778; margin: 10px 0 20px; }
+      .end-actions { display: flex; gap: 10px; justify-content: center; }
       .end-btn { padding: 10px 22px; font-size: 14px; }
+      .end-btn.ghost { background: #3a3126; }
+      .end-btn.ghost:hover { background: #493d2d; }
       /* 화면 중앙 주사위 오버레이 */
       .dice-overlay {
         position: fixed; inset: 0; z-index: 30; pointer-events: none;
@@ -338,7 +341,10 @@
         <div class="end-card">
           <div id="endTitle" class="end-title"></div>
           <div id="endSub" class="end-sub"></div>
-          <button id="endHome" class="end-btn">메인으로</button>
+          <div class="end-actions">
+            <button id="endRematch" class="end-btn">다시 하기</button>
+            <button id="endHome" class="end-btn ghost">메인으로</button>
+          </div>
         </div>
       </div>
 

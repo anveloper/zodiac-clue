@@ -93,6 +93,7 @@ export class ClueRoom extends Room<GameState> {
     );
     this.onMessage("endTurn", (client) => this.handleEndTurn(client));
     this.onMessage("passage", (client) => this.handlePassage(client));
+    this.onMessage("rematch", (client) => this.handleRematch(client));
   }
 
   // ── 비밀 통로: 현재 방 → 연결된 방으로 이동(주사위 없이) → 턴 종료 ──
@@ -274,6 +275,42 @@ export class ClueRoom extends Room<GameState> {
       if (!this.addBot()) break;
     }
     void this.lock();
+    this.startGame();
+  }
+
+  // ── 다시 하기(리매치): 종료 상태에서 같은 방으로 새 판 ──
+  private handleRematch(client: Client): void {
+    if (this.state.phase !== "ended") return;
+    const p = this.state.players.get(client.sessionId);
+    this.broadcast("log", {
+      text: `🔄 ${p?.name ?? "누군가"} 님이 다시 하기 — 새 판을 시작합니다.`,
+      kind: "info",
+    });
+    this.startGame();
+  }
+
+  // ── 판 시작 코어(최초 시작·리매치 공용): 위치/상태 리셋 + 딜 + 턴 개시 ──
+  private startGame(): void {
+    // 위치·탈락 상태 리셋 (사람=중앙 잔치상, 봇=방)
+    let hIdx = 0;
+    let bIdx = 0;
+    this.state.players.forEach((p) => {
+      p.eliminated = false;
+      if (p.isBot) {
+        const r = ROOM_REGIONS[bIdx % ROOM_REGIONS.length];
+        p.x = r.x + Math.floor(r.w / 2);
+        p.y = r.y + Math.floor(r.h / 2);
+        p.room = r.name;
+        bIdx++;
+      } else {
+        const s = this.spawnPoint(hIdx);
+        p.x = s.x;
+        p.y = s.y;
+        p.room = "";
+        hIdx++;
+      }
+    });
+    this.state.winner = "";
 
     const ids = [...this.state.players.keys()];
     // 용의자 후보 = 실제 참여자 6명의 캐릭터만 (경우의 수 축소 · 정통 클루)

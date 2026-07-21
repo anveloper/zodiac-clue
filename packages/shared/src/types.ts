@@ -32,6 +32,8 @@ export type ClientMessages = {
   endTurn: Record<string, never>;
   /** 현재 방의 비밀 통로로 이동(턴 종료) */
   passage: Record<string, never>;
+  /** 종료 후 같은 방으로 새 판 시작 */
+  rematch: Record<string, never>;
 };
 
 // ── 서버 → 클라 메시지 (개별/브로드캐스트) ───────────

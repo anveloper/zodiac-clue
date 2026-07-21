@@ -151,6 +151,8 @@ let phaserStarted = false;
 let selectedCharacter: string | null = null;
 /** 내 손패 카드값 집합 — 정답일 수 없으므로 제안·증거노트에서 자동 비활성화. */
 let myCards = new Set<string>();
+/** 직전 게임 페이즈 — 리매치(ended→playing) 감지용. */
+let lastPhase = "";
 
 // ── 십이지신 캐릭터 선택 그리드 ─────────────────────────────
 const showPersona = (z: string): void => {
@@ -234,6 +236,17 @@ const wireRoom = (r: Room): void => {
   });
 
   r.onStateChange((state) => {
+    // 리매치(종료→진행 전환) 시 증거노트 초기화
+    if (lastPhase === "ended" && state.phase === "playing") {
+      try {
+        localStorage.removeItem(eviKey(r.roomId));
+      } catch {
+        /* noop */
+      }
+      buildEvidence(r.roomId);
+    }
+    lastPhase = state.phase;
+
     renderLobby(state);
     updateTurnInfo(state);
     updateEndState(state);
@@ -549,6 +562,8 @@ const enterGame = (): void => {
     room?.send("passage", {});
   ($("endHome") as HTMLButtonElement).onclick = exitToMain;
   ($("specHome") as HTMLButtonElement).onclick = exitToMain;
+  ($("endRematch") as HTMLButtonElement).onclick = () =>
+    room?.send("rematch", {});
 
   // 우측 컬럼: 좌측 모서리 드래그=너비, 노트↔기록 사이 드래그=높이
   const rightCol = $("rightPanel");
