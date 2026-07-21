@@ -419,15 +419,16 @@ export class GameScene extends Phaser.Scene {
 
   /** NPC 대사 말풍선을 해당 말 위에 타이핑 효과로 띄운다. */
   showBubble(id: string, text: string): void {
-    const token = this.tokens.get(id);
-    if (!token) return;
+    // 플레이어 토큰 또는 고정 NPC(계략) 스프라이트 위에 말풍선을 띄운다.
+    const anchor = this.tokens.get(id)?.c ?? this.helperSprites.get(id);
+    if (!anchor) return;
     // 이전 말풍선/타이머 정리
     this.bubbleTimers.get(id)?.remove();
     this.bubbleTimers.delete(id);
     this.bubbles.get(id)?.destroy();
 
     const bubble = this.add
-      .text(token.c.x, token.c.y - CELL * 0.95, "", {
+      .text(anchor.x, anchor.y - CELL * 0.95, "", {
         fontSize: "15px",
         color: "#2a2118",
         backgroundColor: "#f0e0c0",

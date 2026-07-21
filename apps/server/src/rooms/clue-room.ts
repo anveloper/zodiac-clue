@@ -197,6 +197,51 @@ export class ClueRoom extends Room<GameState> {
       )}의 계략(엿보기 ${n}·이동 +${refund}) 사용`,
       kind: "info",
     });
+    // 계략 NPC의 귓속말: 당사자에게만 전문, 타인에겐 "(귓속말)"만 보인다.
+    void this.helperWhisper(client, helper.value, seen);
+  }
+
+  /**
+   * 계략을 준 고정 NPC가 은밀히 대사를 흘린다.
+   * - 계략을 쓴 당사자(client)에게만 실제 대사(+엿본 단서)를 `say`로 보냄
+   *   → 헬퍼 토큰(id=zodiac 값) 위에 말풍선. 헬퍼는 인접해 있어 카메라는 그대로.
+   * - 나머지 참가자에겐 "(귓속말)"만 브로드캐스트(내용 비공개).
+   */
+  private async helperWhisper(
+    client: Client,
+    value: string,
+    seen: Card[],
+  ): Promise<void> {
+    const v = voice(value);
+    const hint = seen.map((c) => label(c.value)).join(" · ");
+    const input: NarrationInput = {
+      name: label(value),
+      action: "scheme",
+      suspect: "",
+      weapon: "",
+      room: "",
+      hint,
+      persona: persona(value),
+      tone: v?.tone,
+      intro: v?.intro,
+      outro: v?.outro,
+    };
+    let text: string | null = null;
+    try {
+      text = await narrate(input);
+    } catch {
+      text = null;
+    }
+    if (!text) text = fallbackLine(input);
+    if (this.state.phase !== "playing") return;
+    // 당사자: 전문 (헬퍼 토큰 위 말풍선)
+    client.send("say", { id: value, from: label(value), text });
+    // 타인: 귓속말 표시만
+    this.broadcast(
+      "say",
+      { id: value, from: label(value), text: "(귓속말)" },
+      { except: client },
+    );
   }
 
   onJoin(client: Client, options: JoinOptions = {}): void {

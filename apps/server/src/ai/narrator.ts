@@ -5,11 +5,13 @@
 export type NarrationInput = {
   /** 캐릭터 표시명 (예: "생쥐 서생") */
   name: string;
-  action: "suggest" | "accuse";
+  action: "suggest" | "accuse" | "scheme";
   /** 라벨(한글) */
   suspect: string;
   weapon: string;
   room: string;
+  /** 계략(귓속말) 시 은밀히 흘릴 단서(엿본 카드 라벨 등) */
+  hint?: string;
   /** 캐릭터 성격 (말투에 반영) */
   persona?: string;
   /** 말투 지시 (LLM 프롬프트용, 예: "훈계조로 꾸짖듯") */
@@ -47,6 +49,17 @@ export const fallbackLine = (i: NarrationInput): string => {
       ]),
     );
   }
+  if (i.action === "scheme") {
+    const h = i.hint ?? "";
+    return deco(
+      rand([
+        `쉿… ${h}, 이건 자네만 알게`,
+        `가까이 오게. ${h} — 못 들은 걸로 하고`,
+        `은밀히 일러주지. ${h}`,
+        `${h}… 내 입에서 나온 말은 아닐세`,
+      ]),
+    );
+  }
   const base = rand([
     `흠… ${i.room}에서 ${i.suspect}가 ${i.weapon}을? 수상쩍구먼`,
     `내 짐작엔 ${i.suspect}, ${i.weapon}, ${i.room}`,
@@ -64,9 +77,16 @@ export const fallbackLine = (i: NarrationInput): string => {
 const CACHE_MAX = 200;
 const cache = new Map<string, string>();
 const cacheKey = (i: NarrationInput): string =>
-  [i.action, i.suspect, i.weapon, i.room, i.persona, i.tone, i.disproved].join(
-    "|",
-  );
+  [
+    i.action,
+    i.suspect,
+    i.weapon,
+    i.room,
+    i.persona,
+    i.tone,
+    i.disproved,
+    i.hint,
+  ].join("|");
 const cacheGet = (k: string): string | undefined => {
   const v = cache.get(k);
   if (v !== undefined) {
@@ -96,9 +116,11 @@ export const narrate = async (i: NarrationInput): Promise<string | null> => {
   const act =
     i.action === "accuse"
       ? `행동: 고발 — 도둑 ${i.suspect}, 훔친 것 ${i.weapon}, 장소 ${i.room}.`
-      : `행동: 제안 — ${i.suspect} / ${i.weapon} / ${i.room}${
-          i.disproved ? " (반증당함)" : ""
-        }.`;
+      : i.action === "scheme"
+        ? `행동: 계략(귓속말) — 은밀히 정보를 흘린다. 단서: ${i.hint ?? ""}. 상대에게만 소곤대듯 한 문장.`
+        : `행동: 제안 — ${i.suspect} / ${i.weapon} / ${i.room}${
+            i.disproved ? " (반증당함)" : ""
+          }.`;
   const userText =
     `NPC: ${i.name} (성격: ${i.persona ?? "무난함"}` +
     `${i.tone ? `; 말투: ${i.tone}` : ""}). ${act}`;
