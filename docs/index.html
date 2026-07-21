@@ -6,7 +6,11 @@
 <title>zodiac-clue 문서</title>
 <style>
   :root { --bg:#16130f; --panel:#1a1611; --card:#211c16; --edge:#3a3126; --ink:#f0e9dc; --dim:#a89778; --gold:#f0d9a8; --accent:#b4622b; }
-  * { box-sizing: border-box; }
+  * { box-sizing: border-box; scrollbar-width: thin; scrollbar-color: #4a3d2b #16130f; }
+  ::-webkit-scrollbar { width:9px; height:9px; }
+  ::-webkit-scrollbar-track { background:#16130f; border-radius:5px; }
+  ::-webkit-scrollbar-thumb { background:#4a3d2b; border-radius:5px; border:2px solid #16130f; }
+  ::-webkit-scrollbar-thumb:hover { background:#6b5838; }
   html, body { height:100%; }
   body { margin:0; background:var(--bg); color:var(--ink); display:flex; overflow:hidden;
     font-family: system-ui,-apple-system,"Apple SD Gothic Neo",sans-serif; line-height:1.7; }

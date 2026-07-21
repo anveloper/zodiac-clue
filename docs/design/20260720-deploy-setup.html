@@ -38,6 +38,12 @@
   .warn { background:#2b1f12; border:1px solid #7c5a2a; border-radius:8px; padding:10px 14px; font-size:13px; }
   .chk { list-style:none; padding-left:0; }
   .chk li::before { content:"☐ "; color:var(--dim); }
+  /* scrollbar-theme */
+  * { scrollbar-width: thin; scrollbar-color: #4a3d2b #16130f; }
+  ::-webkit-scrollbar { width:9px; height:9px; }
+  ::-webkit-scrollbar-track { background:#16130f; }
+  ::-webkit-scrollbar-thumb { background:#4a3d2b; border-radius:5px; border:2px solid #16130f; }
+  ::-webkit-scrollbar-thumb:hover { background:#6b5838; }
 </style>
 </head>
 <body>
