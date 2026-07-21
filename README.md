@@ -4,8 +4,8 @@ NHN NAN 2026 사전과제 — 웹 기반 멀티플레이 **클루(Cluedo)형 추
 테마: **호랑이 생신 잔치**(십이지 손님 중 잔치 선물을 훔친 자를 추리). NPC 대사는 LLM으로 표현.
 
 - 🎮 **라이브(플레이)**: https://zodiac-clue.vercel.app
+- 📚 **문서 대시보드(공개)**: https://zodiac-clue.vercel.app/docs/ — 설계·플랜·개발일지
 - 🖥 **서버**: `wss://141-147-157-219.sslip.io` (OCI, Colyseus)
-- 📚 **문서 대시보드**: [`docs/index.html`](docs/index.html) — 설계·플랜·개발일지 링크
 
 ## 구조 (pnpm 모노레포)
 
