@@ -2,7 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
   "installCommand": "pnpm install",
-  "buildCommand": "VITE_SERVER_URL=wss://141-147-157-219.sslip.io pnpm --filter @zodiac-clue/client build && cp -r docs apps/client/dist/docs",
+  "buildCommand": "node scripts/gen-docs-manifest.mjs && VITE_SERVER_URL=wss://141-147-157-219.sslip.io pnpm --filter @zodiac-clue/client build && cp -r docs apps/client/dist/docs",
   "outputDirectory": "apps/client/dist",
   "redirects": [{ "source": "/docs", "destination": "/docs/", "permanent": false }],
   "rewrites": [{ "source": "/((?!docs/).*)", "destination": "/index.html" }]

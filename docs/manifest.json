@@ -1,0 +1,110 @@
+[
+  {
+    "label": "📐 설계",
+    "dir": "design",
+    "items": [
+      {
+        "path": "design/20260720-engine-and-workflow-plan.html",
+        "title": "게임 엔진 & AI 개발 협업 플랜"
+      },
+      {
+        "path": "design/20260720-deploy-setup.html",
+        "title": "배포 세팅 (프리티어 지향)"
+      },
+      {
+        "path": "design/20260720-clue-gap-analysis.html",
+        "title": "정통 클루 갭 분석"
+      },
+      {
+        "path": "design/20260720-camera-and-hud.html",
+        "title": "게임형 카메라 & 플로팅 HUD"
+      },
+      {
+        "path": "design/20260720-ai-tech-doc.html",
+        "title": "제출물 ④ AI 기술 문서"
+      }
+    ]
+  },
+  {
+    "label": "🗂 플랜 · 진행",
+    "dir": "plans/active",
+    "items": [
+      {
+        "path": "plans/active/02-engine-content-separation.md",
+        "title": "plan: 게임 엔진 / 콘텐츠 분리"
+      }
+    ]
+  },
+  {
+    "label": "✅ 플랜 · 완료",
+    "dir": "plans/done",
+    "items": [
+      {
+        "path": "plans/done/08-loop-backlog.md",
+        "title": "plan: 자동 루프 백로그 (10분 간격, 1항목씩)"
+      },
+      {
+        "path": "plans/done/07-clue-rules-and-log.md",
+        "title": "plan: 클루 규칙 정교화 + 상호작용 + 로그 시스템 (라이브 피드백 2026-07-20)"
+      },
+      {
+        "path": "plans/done/06-core-bugfixes.md",
+        "title": "plan: 코어 기본 버그 3종 (라이브 테스트 2026-07-20)"
+      },
+      {
+        "path": "plans/done/05-camera-and-hud.md",
+        "title": "plan: 게임형 카메라(탑뷰 추적·줌·자유시점) + 플로팅 HUD"
+      },
+      {
+        "path": "plans/done/04-endgame-and-polish.md",
+        "title": "plan: 엔드게임 · 폴리시 · 제출물 소재"
+      },
+      {
+        "path": "plans/done/03-npc-llm-expression.md",
+        "title": "plan: NPC LLM 표현 + 절반 딜레이"
+      },
+      {
+        "path": "plans/done/01-docs-workflow.md",
+        "title": "plan: 문서 체계 도입 (docs/plans + .md/.html 이중화)"
+      }
+    ]
+  },
+  {
+    "label": "📓 개발일지",
+    "dir": "logs",
+    "items": [
+      {
+        "path": "logs/20260720-server-deploy.md",
+        "title": "20260720 — 서버/클라 실배포 (OCI + Vercel)"
+      },
+      {
+        "path": "logs/20260720-npc-players.md",
+        "title": "20260720 — NPC(봇) 플레이어 + 초대 참가 UX"
+      },
+      {
+        "path": "logs/20260720-npc-llm-persona.md",
+        "title": "20260720 — NPC 대사 LLM(Gemini) + 캐릭터 성격(페르소나)"
+      },
+      {
+        "path": "logs/20260720-clue-rules-fixes-autoloop.md",
+        "title": "20260720 — 클루 규칙 정교화 · UI/버그 픽스 · 자동 루프"
+      },
+      {
+        "path": "logs/20260720-camera-and-hud.md",
+        "title": "20260720 — 게임형 카메라(탑뷰 추적·줌·자유시점) + 플로팅 HUD"
+      },
+      {
+        "path": "logs/20260719-zodiac-theme-reskin.md",
+        "title": "20260719 — 조디악(십이지) 테마 리스킨"
+      },
+      {
+        "path": "logs/20260719-monorepo-clue-setup.md",
+        "title": "20260719 — 모노레포 & 기본 클루(6인) 초기 세팅"
+      },
+      {
+        "path": "logs/20260719-lobby-character-reconnect.md",
+        "title": "20260719 — 메인 로비 흐름 (캐릭터 선택·초대 링크·대기실·세션 유지)"
+      }
+    ]
+  }
+]
