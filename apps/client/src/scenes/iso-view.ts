@@ -176,6 +176,7 @@ export class IsoView {
     this.onPointerDown = this.onPointerDown.bind(this);
     this.onPointerMove = this.onPointerMove.bind(this);
     this.onPointerUp = this.onPointerUp.bind(this);
+    this.onContextMenu = this.onContextMenu.bind(this);
     this.onResize = this.onResize.bind(this);
     this.loop = this.loop.bind(this);
   }
@@ -192,6 +193,7 @@ export class IsoView {
       window.addEventListener("keyup", this.onKeyUp);
       this.canvas.addEventListener("wheel", this.onWheel, { passive: false });
       this.canvas.addEventListener("pointerdown", this.onPointerDown);
+      this.canvas.addEventListener("contextmenu", this.onContextMenu);
       window.addEventListener("pointermove", this.onPointerMove);
       window.addEventListener("pointerup", this.onPointerUp);
       window.addEventListener("resize", this.onResize);
@@ -201,6 +203,7 @@ export class IsoView {
       window.removeEventListener("keyup", this.onKeyUp);
       this.canvas.removeEventListener("wheel", this.onWheel);
       this.canvas.removeEventListener("pointerdown", this.onPointerDown);
+      this.canvas.removeEventListener("contextmenu", this.onContextMenu);
       window.removeEventListener("pointermove", this.onPointerMove);
       window.removeEventListener("pointerup", this.onPointerUp);
       window.removeEventListener("resize", this.onResize);
@@ -265,10 +268,39 @@ export class IsoView {
       plaque.position.set(box.position.x, 0.9, worldZ(r.y) - 0.1);
       this.scene.add(plaque);
 
-      // 문
-      const door = makeSprite("🚪", { fontPx: 90, worldH: 0.9 });
-      door.position.set(worldX(r.door.x), 0.5, worldZ(r.door.y));
+      // 문(입구) — 이 칸으로만 출입. 밝은 바닥 타일 + 문기둥 + "입구" 라벨로 명확히.
+      const dx = worldX(r.door.x);
+      const dz = worldZ(r.door.y);
+      const mark = new THREE.Mesh(
+        new THREE.PlaneGeometry(0.94, 0.94),
+        new THREE.MeshBasicMaterial({
+          color: 0xffd479,
+          transparent: true,
+          opacity: 0.85,
+        }),
+      );
+      mark.rotation.x = -Math.PI / 2;
+      mark.position.set(dx, 0.24, dz);
+      this.scene.add(mark);
+      const post = new THREE.MeshStandardMaterial({ color: 0x8a5a2a });
+      for (const sx of [-0.42, 0.42]) {
+        const pillar = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.7, 0.14), post);
+        pillar.position.set(dx + sx, 0.35, dz);
+        this.scene.add(pillar);
+      }
+      const door = makeSprite("🚪", { fontPx: 90, worldH: 0.8 });
+      door.position.set(dx, 0.66, dz);
       this.scene.add(door);
+      const doorLabel = makeSprite("입구", {
+        fontPx: 30,
+        color: "#2a2118",
+        bg: "#ffd479",
+        padX: 8,
+        padY: 4,
+        worldH: 0.3,
+      });
+      doorLabel.position.set(dx, 1.15, dz);
+      this.scene.add(doorLabel);
     }
 
     // 중앙 잔치상
@@ -439,6 +471,7 @@ export class IsoView {
         () => {
           this.followId = followCand;
           this.switchTimer = 0;
+          this.panOffset.set(0, 0, 0); // 새 턴 대상으로 리센터
         },
         isMe ? 150 : CAM_SWITCH_DELAY,
       );
@@ -478,7 +511,7 @@ export class IsoView {
         worldZ(ft.cur.y) + this.panOffset.z,
       );
       const l = this.followId === this.myId ? LERP_ME : LERP_OTHER;
-      this.look.lerp(desired, this.freeLook ? 1 : l);
+      this.look.lerp(desired, this.freeLook || this.dragging ? 1 : l);
     }
     const off = new THREE.Vector3(
       0,
@@ -572,13 +605,16 @@ export class IsoView {
   }
 
   private onPointerDown(e: PointerEvent): void {
-    if (!this.freeLook) return;
+    // 우클릭/휠클릭 드래그 = 화면 팬(자유시점 아니어도). 좌클릭은 자유시점(Space) 중에만.
+    const rightOrMid = e.button === 1 || e.button === 2;
+    if (!this.freeLook && !rightOrMid) return;
     this.dragging = true;
     this.lastPointer.set(e.clientX, e.clientY);
+    if (rightOrMid) e.preventDefault();
   }
 
   private onPointerMove(e: PointerEvent): void {
-    if (!this.freeLook || !this.dragging) return;
+    if (!this.dragging) return;
     const dx = e.clientX - this.lastPointer.x;
     const dy = e.clientY - this.lastPointer.y;
     this.lastPointer.set(e.clientX, e.clientY);
@@ -589,6 +625,10 @@ export class IsoView {
 
   private onPointerUp(): void {
     this.dragging = false;
+  }
+
+  private onContextMenu(e: MouseEvent): void {
+    e.preventDefault();
   }
 
   private onKeyDown(e: KeyboardEvent): void {

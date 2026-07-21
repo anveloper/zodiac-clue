@@ -590,6 +590,8 @@ const enterGame = (): void => {
       gameDiv.style.display = "block";
       if (game?.input.keyboard) game.input.keyboard.enabled = true;
       toggleBtn.textContent = "2.5D";
+      // Scale.RESIZE가 숨김 동안 캔버스를 0으로 줄여둠 → 다시 보일 때 리프레시.
+      requestAnimationFrame(() => game?.scale.refresh());
     }
     try {
       localStorage.setItem("zc_view", mode);

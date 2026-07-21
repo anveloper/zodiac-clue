@@ -65,6 +65,8 @@ export class GameScene extends Phaser.Scene {
   private cam!: Phaser.Cameras.Scene2D.Camera;
   private myId = "";
   private freeLook = false;
+  private spaceHeld = false;
+  private rightPan = false;
   private followId = "";
   private followTarget?: Phaser.GameObjects.Container;
   private camSwitchTimer?: Phaser.Time.TimerEvent;
@@ -104,16 +106,38 @@ export class GameScene extends Phaser.Scene {
       },
     );
 
-    // 자유시점 중 드래그 팬
+    // 우클릭 메뉴 차단(우클릭 드래그 팬용)
+    this.input.mouse?.disableContextMenu();
+
+    // 드래그 팬: 자유시점(Space) 중 또는 우클릭 드래그
     this.input.on("pointermove", (p: Phaser.Input.Pointer) => {
       if (!this.freeLook || !p.isDown) return;
       cam.scrollX -= (p.x - p.prevPosition.x) / cam.zoom;
       cam.scrollY -= (p.y - p.prevPosition.y) / cam.zoom;
     });
+    // 우클릭(또는 휠클릭) 누르는 동안 자유시점 팬
+    this.input.on("pointerdown", (p: Phaser.Input.Pointer) => {
+      if (p.rightButtonDown() || p.middleButtonDown()) {
+        this.rightPan = true;
+        this.applyFreeLook();
+      }
+    });
+    this.input.on("pointerup", (p: Phaser.Input.Pointer) => {
+      if (this.rightPan && !p.rightButtonDown() && !p.middleButtonDown()) {
+        this.rightPan = false;
+        this.applyFreeLook();
+      }
+    });
 
     // 특수키(Space, hold) = 자유시점 토글
-    this.input.keyboard?.on("keydown-SPACE", () => this.setFreeLook(true));
-    this.input.keyboard?.on("keyup-SPACE", () => this.setFreeLook(false));
+    this.input.keyboard?.on("keydown-SPACE", () => {
+      this.spaceHeld = true;
+      this.applyFreeLook();
+    });
+    this.input.keyboard?.on("keyup-SPACE", () => {
+      this.spaceHeld = false;
+      this.applyFreeLook();
+    });
 
     // 이동 / (자유시점 중엔) 방향키 팬
     // e.code(물리키)로 처리 → 한글 IME(ㅈㅁㄴㅇ)·WASD·화살표 모두 동작.
@@ -193,6 +217,11 @@ export class GameScene extends Phaser.Scene {
     if (this.cam) this.cam.followOffset.x = this.insetOffset();
   }
 
+  /** Space 또는 우클릭 팬 상태를 합쳐 자유시점 on/off. */
+  private applyFreeLook(): void {
+    this.setFreeLook(this.spaceHeld || this.rightPan);
+  }
+
   /** 자유시점 on/off — off 시 현재 추적 대상으로 복귀. */
   private setFreeLook(on: boolean): void {
     if (this.freeLook === on) return;
@@ -264,14 +293,24 @@ export class GameScene extends Phaser.Scene {
         })
         .setOrigin(0.5);
 
-      // 입구(door) — 이 칸으로만 출입
+      // 입구(door) — 이 칸으로만 출입. 밝은 금색 타일 + 🚪 + "입구" 라벨로 명확히.
       const dcx = r.door.x * CELL + CELL / 2;
       const dcy = r.door.y * CELL + CELL / 2;
       this.add
-        .rectangle(dcx, dcy, CELL * 0.9, CELL * 0.9, 0x2a2118, 1)
-        .setStrokeStyle(2, C_GOLD);
+        .rectangle(dcx, dcy, CELL * 0.94, CELL * 0.94, 0x6b4a1e, 1)
+        .setStrokeStyle(3, C_GOLD);
       this.add
-        .text(dcx, dcy, "🚪", { fontSize: `${Math.floor(CELL * 0.6)}px` })
+        .text(dcx, dcy - CELL * 0.08, "🚪", {
+          fontSize: `${Math.floor(CELL * 0.55)}px`,
+        })
+        .setOrigin(0.5);
+      this.add
+        .text(dcx, dcy + CELL * 0.34, "입구", {
+          fontSize: "11px",
+          color: "#2a2118",
+          backgroundColor: "#ffd479",
+          padding: { x: 3, y: 1 },
+        })
         .setOrigin(0.5);
     }
   }

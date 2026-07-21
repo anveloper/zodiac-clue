@@ -133,6 +133,7 @@
       .dice-overlay .dice-label { font-size: 24px; color: #f0d9a8; margin-top: 12px; font-weight: 700; letter-spacing: 1px; }
       .dice-overlay.done .dice-label { color: #ffd479; }
       .hud-hand { left: 16px; bottom: 16px; max-width: 300px; }
+      .hud-view { left: 16px; bottom: 72px; padding: 6px 8px; }
       #hand { min-height: 18px; }
       /* ── 우측 컬럼 (바닥부터 재구현) ── */
       .rp-col {
@@ -328,6 +329,9 @@
         <button id="passage" title="비밀 통로로 이동" disabled>통로</button>
         <button id="bonus" title="가까운 고정 NPC의 계략(엿보기)" disabled>계략</button>
         <button id="endTurn">턴 종료</button>
+      </div>
+
+      <div class="hud hud-view">
         <button id="viewToggle" title="2D / 2.5D 시점 전환">2.5D</button>
       </div>
 
@@ -369,7 +373,7 @@
       </div>
 
       <div class="hud hud-help">
-        이동 <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> · 줌 <kbd>휠</kbd> · 자유시점 <kbd>Space</kbd>(꾹) · 방에서 [제안]
+        이동 <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> · 줌 <kbd>휠</kbd> · 화면이동 <kbd>우클릭</kbd>드래그 / <kbd>Space</kbd>(꾹) · 방 <kbd>입구</kbd>로 진입 후 [제안]
       </div>
     </section>
 
