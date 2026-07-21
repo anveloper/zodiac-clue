@@ -6,6 +6,7 @@ import { join } from "node:path";
 const GROUPS = [
   { dir: "submission", label: "📤 제출물", ext: "pair" },
   { dir: "design", label: "📐 설계", ext: ".html" },
+  { dir: "assets", label: "🎨 에셋·컨셉", ext: "pair" },
   { dir: "plans/active", label: "🗂 플랜 · 진행", ext: ".md" },
   { dir: "plans/hold", label: "⏸ 플랜 · 보류", ext: ".md" },
   { dir: "plans/done", label: "✅ 플랜 · 완료", ext: ".md" },

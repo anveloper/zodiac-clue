@@ -40,9 +40,23 @@
     ]
   },
   {
+    "label": "🎨 에셋·컨셉",
+    "dir": "assets",
+    "items": [
+      {
+        "path": "assets/20260721-asset-catalog.html",
+        "title": "에셋 카탈로그"
+      }
+    ]
+  },
+  {
     "label": "🗂 플랜 · 진행",
     "dir": "plans/active",
     "items": [
+      {
+        "path": "plans/active/11-asset-concept-pipeline.md",
+        "title": "plan: 에셋 파이프라인 + 12지신 컨셉 + 이미지 프롬프트"
+      },
       {
         "path": "plans/active/10-view-2.5d-toggle.md",
         "title": "plan: 2.5D 시점 토글 (Three.js)"

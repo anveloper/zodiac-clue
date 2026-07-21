@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>에셋 카탈로그 — zodiac-clue</title>
+<style>
+  :root { --bg:#16130f; --card:#211c16; --edge:#3a3126; --ink:#f0e9dc; --dim:#a89778; --gold:#f0d9a8; --accent:#b4622b; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink);
+    font-family: system-ui,-apple-system,"Apple SD Gothic Neo",sans-serif; line-height:1.65; }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { color:var(--gold); font-size:25px; margin:0 0 2px; }
+  .sub { color:var(--dim); font-size:13px; margin:0 0 22px; }
+  h2 { color:var(--gold); font-size:18px; margin:30px 0 8px; border-bottom:1px solid var(--edge); padding-bottom:6px; }
+  p, li { font-size:14px; }
+  code { background:#2c2519; border:1px solid var(--edge); border-radius:4px; padding:1px 5px; font-size:13px; }
+  .pill { background:#2c2519; border:1px solid var(--edge); border-radius:6px; padding:2px 8px; font-size:12px; color:var(--dim); }
+  .legend { display:flex; flex-wrap:wrap; gap:10px; margin:10px 0 4px; }
+  .legend span { font-size:12.5px; color:var(--dim); }
+  .scroll { overflow-x:auto; }
+  table { border-collapse:collapse; width:100%; margin:10px 0; font-size:13.5px; min-width:520px; }
+  th, td { border:1px solid var(--edge); padding:7px 10px; text-align:left; }
+  th { background:#2a2318; color:var(--gold); font-weight:600; }
+  td.n { text-align:center; white-space:nowrap; }
+  .lo { color:#7fb069; } .mi { color:#e0c05a; } .hi { color:#e08a5a; }
+  .card { background:var(--card); border:1px solid var(--edge); border-radius:10px; padding:14px 18px; margin:12px 0; }
+  b.g { color:var(--gold); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🎨 에셋 카탈로그</h1>
+  <p class="sub">zodiac-clue · 2026-07-21 · <b class="g">목적: 생성이 아니라 소요 확인(목록화)</b> · <span class="pill">사람용 .html</span></p>
+
+  <div class="card">
+    게임에 필요한 에셋을 <b>종류·수량·형식·소요·우선순위</b>로 정리. 이미지 생성은 별도(추후 <b>GPT 이미지 2.0</b>로 개별). 캐릭터 시드 = <code>packages/shared/src/cards.ts</code>(LABELS/PERSONA/VOICE).
+    <div class="legend">
+      <span><b>형식</b>: PNG·SVG·스프라이트시트·GLB(3D)·애니(리깅)</span>
+      <span>소요 <span class="lo">🟢 낮음</span> · <span class="mi">🟡 중</span> · <span class="hi">🔴 높음(3D/모션 별도)</span></span>
+      <span><b>경로</b>: IMG=GPT이미지 · 3D=모델링 · CODE=현재 대체</span>
+    </div>
+  </div>
+
+  <h2>1. 캐릭터 에셋 <span class="pill">12지신 전원</span></h2>
+  <div class="scroll"><table>
+    <tr><th>종류</th><th>수량</th><th>형식</th><th>용도</th><th>경로</th><th>소요</th></tr>
+    <tr><td>얼굴 아이콘</td><td class="n">12</td><td>PNG 512²</td><td>선택창·토큰·로그·증거노트</td><td class="n">IMG</td><td class="n lo">🟢</td></tr>
+    <tr><td>전신 컨셉(살짝 자세)</td><td class="n">12</td><td>PNG 세로</td><td>캐릭터 소개·도감</td><td class="n">IMG</td><td class="n mi">🟡</td></tr>
+    <tr><td>SD 캐릭터(2~3등신)</td><td class="n">12</td><td>PNG 투명</td><td>선택창</td><td class="n">IMG</td><td class="n mi">🟡</td></tr>
+    <tr><td>보드 말 2D(쿼터뷰)</td><td class="n">12</td><td>PNG 투명</td><td>2D/2.5D 말</td><td class="n">IMG</td><td class="n mi">🟡</td></tr>
+    <tr><td>3D 모델(저폴리)</td><td class="n">12</td><td>GLB</td><td>2.5D/3D 말</td><td class="n">3D</td><td class="n hi">🔴</td></tr>
+    <tr><td>4방 이동 모션 2D</td><td class="n">12시트</td><td>스프라이트시트</td><td>2D 이동 애니</td><td class="n">IMG/3D</td><td class="n hi">🔴</td></tr>
+    <tr><td>4방 이동 모션 3D</td><td class="n">12</td><td>애니(walk)</td><td>3D 이동 애니</td><td class="n">3D</td><td class="n hi">🔴</td></tr>
+  </table></div>
+  <p><b>현재(CODE)</b>: 얼굴=이모지, 말=색 원+이모지 대체 중 → 교체 예정. <b>캐릭터 IMG 소계 = 48장</b>(얼굴12+전신12+SD12+말12). 3D/모션은 별도 파이프라인(후순위).</p>
+
+  <h2>2. 장소 에셋 <span class="pill">방 9 + 잔치상</span></h2>
+  <p class="sub" style="margin:0 0 6px">정지·대청마루·후원·사랑방·사랑채·서재·안방·행랑채·별당 + 잔치상.</p>
+  <div class="scroll"><table>
+    <tr><th>종류</th><th>수량</th><th>형식</th><th>용도</th><th>경로</th><th>소요</th></tr>
+    <tr><td>장소 배경 일러스트</td><td class="n">10</td><td>PNG 와이드</td><td>방 소개·컨셉·진입 컷</td><td class="n">IMG</td><td class="n mi">🟡</td></tr>
+    <tr><td>바닥/타일 텍스처</td><td class="n">10</td><td>PNG 타일러블</td><td>보드 방 바닥</td><td class="n">IMG</td><td class="n lo">🟢</td></tr>
+    <tr><td>방 소품(방별 1~2)</td><td class="n">~16</td><td>PNG 투명</td><td>방 분위기</td><td class="n">IMG</td><td class="n mi">🟡</td></tr>
+    <tr><td>잔치상(중앙)</td><td class="n">1</td><td>PNG/GLB</td><td>중앙 오브젝트</td><td class="n">IMG/3D</td><td class="n mi">🟡</td></tr>
+  </table></div>
+  <p><b>장소 IMG 소계 ≈ 36장</b>(배경10+타일10+소품~16).</p>
+
+  <h2>3. 도구(장물) 에셋 <span class="pill">6종</span></h2>
+  <p class="sub" style="margin:0 0 6px">잡채·잔치 선물·금고·젓가락·술동이·떡시루.</p>
+  <div class="scroll"><table>
+    <tr><th>종류</th><th>수량</th><th>형식</th><th>용도</th><th>경로</th><th>소요</th></tr>
+    <tr><td>장물 아이콘</td><td class="n">6</td><td>PNG 512²</td><td>증거노트·모달·로그</td><td class="n">IMG</td><td class="n lo">🟢</td></tr>
+    <tr><td>보드 토큰 2D</td><td class="n">6</td><td>PNG 투명</td><td>보드 위 장물 말</td><td class="n">IMG</td><td class="n lo">🟢</td></tr>
+    <tr><td>3D 모델(옵션)</td><td class="n">6</td><td>GLB</td><td>2.5D/3D 보드</td><td class="n">3D</td><td class="n hi">🔴</td></tr>
+  </table></div>
+  <p><b>도구 IMG 소계 = 12장</b>(아이콘6+토큰6).</p>
+
+  <h2>4. 배경 / UI 에셋</h2>
+  <div class="scroll"><table>
+    <tr><th>종류</th><th>수량</th><th>형식</th><th>용도</th><th>경로</th><th>소요</th></tr>
+    <tr><td>보드 복도/바닥 텍스처</td><td class="n">2~3</td><td>PNG 타일러블</td><td>보드 기본 바닥</td><td class="n">IMG</td><td class="n lo">🟢</td></tr>
+    <tr><td>벽/경계·문(입구)</td><td class="n">3</td><td>PNG 투명</td><td>방 경계·입구</td><td class="n">IMG</td><td class="n lo">🟢</td></tr>
+    <tr><td>랜딩/로비 배경</td><td class="n">2</td><td>PNG 와이드</td><td>시작·대기실</td><td class="n">IMG</td><td class="n mi">🟡</td></tr>
+    <tr><td>결과(승/패) 배경</td><td class="n">2</td><td>PNG 와이드</td><td>종료 오버레이</td><td class="n">IMG</td><td class="n mi">🟡</td></tr>
+    <tr><td>UI 프레임/버튼 톤</td><td class="n">1세트</td><td>SVG/PNG</td><td>HUD·모달 스킨</td><td class="n">IMG/CODE</td><td class="n lo">🟢</td></tr>
+  </table></div>
+  <p><b>배경 IMG 소계 ≈ 12장</b>.</p>
+
+  <h2>5. 소요 요약</h2>
+  <div class="scroll"><table>
+    <tr><th>묶음</th><th>이미지(IMG)</th><th>별도 3D/모션</th><th>우선순위</th></tr>
+    <tr><td>캐릭터</td><td class="n">48</td><td>모델12+모션12</td><td>얼굴&gt;SD&gt;전신&gt;말</td></tr>
+    <tr><td>장소</td><td class="n">~36</td><td>잔치상 모델</td><td>타일&gt;배경&gt;소품</td></tr>
+    <tr><td>도구</td><td class="n">12</td><td>모델6(옵션)</td><td>아이콘&gt;토큰</td></tr>
+    <tr><td>배경/UI</td><td class="n">~12</td><td>—</td><td>바닥/문&gt;배경</td></tr>
+    <tr><td><b class="g">합계</b></td><td class="n"><b class="g">~108장</b></td><td>3D 30여 개</td><td>—</td></tr>
+  </table></div>
+  <div class="card">
+    <ul>
+      <li><b class="g">IMG(GPT 이미지 2.0) 대상 ≈ 108장</b> — 프롬프트 문서(S5·S6)로 개별 생성.</li>
+      <li><b>3D/모션은 별도 파이프라인</b>(모델링·리깅) → 소요 큼, 2.5D/3D 정식화 시 착수(현재는 이모지 빌보드 대체).</li>
+      <li><b>MVP 우선순위</b>: ①얼굴12 ②장물6 ③SD 선택창12 ④장소 타일10 → 이후 전신·배경·3D.</li>
+      <li><b>정합성</b>: 한 캐릭터의 얼굴/SD/전신/말은 동일 스타일·팔레트. 스타일 가이드는 프롬프트 문서 상단 고정 프리셋으로.</li>
+    </ul>
+  </div>
+
+  <p class="sub">다음: S2~S4 12지신 컨셉(<code>character-concepts</code>) · S5~S6 생성 프롬프트(<code>image-prompts</code>).</p>
+</div>
+</body>
+</html>
