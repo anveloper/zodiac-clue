@@ -1,6 +1,8 @@
 # plan: 게임 엔진 / 콘텐츠 분리
 
-status: active · created: 2026-07-20 · ref: docs/design/20260720-engine-and-workflow-plan §1.4
+status: hold(보류) · created: 2026-07-20 · held: 2026-07-21 · ref: docs/design/20260720-engine-and-workflow-plan §1.4
+
+> 보류 사유: 현재 주제(클루/십이지)로 제출·완성도에 집중. 주제 교체가 확정되면 재개.
 
 ## goal
 주제(클루)가 바뀌어도 재사용되도록 엔진 코어와 GameDefinition을 분리.

@@ -44,7 +44,21 @@
     "dir": "plans/active",
     "items": [
       {
-        "path": "plans/active/02-engine-content-separation.md",
+        "path": "plans/active/10-view-2.5d-toggle.md",
+        "title": "plan: 2.5D 시점 토글 (Three.js)"
+      },
+      {
+        "path": "plans/active/09-helper-npcs.md",
+        "title": "plan: 고정 NPC(계략) + 보너스 능력"
+      }
+    ]
+  },
+  {
+    "label": "⏸ 플랜 · 보류",
+    "dir": "plans/hold",
+    "items": [
+      {
+        "path": "plans/hold/02-engine-content-separation.md",
         "title": "plan: 게임 엔진 / 콘텐츠 분리"
       }
     ]

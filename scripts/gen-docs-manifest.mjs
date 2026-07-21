@@ -7,6 +7,7 @@ const GROUPS = [
   { dir: "submission", label: "📤 제출물", ext: "pair" },
   { dir: "design", label: "📐 설계", ext: ".html" },
   { dir: "plans/active", label: "🗂 플랜 · 진행", ext: ".md" },
+  { dir: "plans/hold", label: "⏸ 플랜 · 보류", ext: ".md" },
   { dir: "plans/done", label: "✅ 플랜 · 완료", ext: ".md" },
   { dir: "logs", label: "📓 개발일지", ext: ".md" },
 ];

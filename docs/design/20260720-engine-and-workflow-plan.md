@@ -63,11 +63,11 @@
 ## 3. 실행 순서 (마일스톤)
 
 1. ~~**문서 체계 도입** (2.1~2.2)~~ ✅ **완료**: 폴더·규칙 확립, `CLAUDE.md`/`AGENTS.md` single-source, `docs/index.html` 대시보드까지.
-2. **엔진/콘텐츠 분리 리팩터** (1.4): `GameDefinition` 도입, 클루를 구현체로 이관. (미착수 — `plans/active/02`)
+2. **엔진/콘텐츠 분리 리팩터** (1.4): `GameDefinition` 도입, 클루를 구현체로 이관. (**보류** — `plans/hold/02`, 주제 확정 시 재개)
 3. ~~**NPC LLM 표현 + 절반 딜레이** (1.3)~~ ✅ **완료**: 결정→표현 파이프라인, EMA 절반 딜레이.
 4. **주제 재검토**: 클루 확정 또는 새 GameDefinition 작성.
 
-> 파생 체크리스트(갱신 2026-07-21): 완료 → `docs/plans/done/01-docs-workflow.md`·`03-npc-llm-expression.md`. 진행중 → `docs/plans/active/02-engine-content-separation.md`·`09-helper-npcs.md`.
+> 파생 체크리스트(갱신 2026-07-21): 완료 → `docs/plans/done/01-docs-workflow.md`·`03-npc-llm-expression.md`. 진행중 → `docs/plans/active/09-helper-npcs.md`·`10-view-2.5d-toggle.md`. 보류 → `docs/plans/hold/02-engine-content-separation.md`.
 
 ---
 

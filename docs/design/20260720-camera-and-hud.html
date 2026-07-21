@@ -118,10 +118,14 @@
       <li><b>우측 — 증거 체크리스트</b>: 용의자/<del>흉기</del> 장물/장소 전 항목 표, 클릭 토글(있음/의심/모름). <b>개인 추리 노트라 서버 전송 X</b>(로컬스토리지 캐시). <span style="opacity:.7">(갱신 2026-07-21: 흉기→장물)</span></li>
       <li><b>우하 — 기록/알림</b>: 제안·반증·NPC 대사. 접이식.</li>
       <li><b>NPC 말풍선(구현 추가)</b>: 캐릭터 위 <b>타자기 효과</b>(<code>TYPE_MS=55ms</code>/글자, 완료 후 <code>2600ms</code> 유지). 봇 제안 대사가 타이핑되는 동안 턴을 넘기지 않아 카메라가 안 튐(서버 <code>SPEAK_HOLD</code>). 계략 귓속말은 당사자만 전문.</li>
+      <li><b>마우스 팬(구현 추가)</b>: <kbd>우클릭</kbd>/휠클릭 드래그로 화면 이동(Space 없이). 컨텍스트메뉴 차단. 2D·2.5D 공통.</li>
     </ul>
 
     <h3>6. 조작 안내 + 반응형</h3>
-    <p>하단 얇은 바로 <kbd>WASD/방향키/ㅈㅁㄴㅇ</kbd> 이동 · <kbd>휠</kbd> 줌 · <kbd>Space</kbd> 자유시점 · 제안/고발 안내. 모바일에서 HUD 접힘/토글, 리사이즈 시 HUD 위치 재계산.</p>
+    <p>하단 얇은 바로 <kbd>WASD/방향키/ㅈㅁㄴㅇ</kbd> 이동 · <kbd>휠</kbd> 줌 · <kbd>우클릭</kbd>드래그/<kbd>Space</kbd> 화면이동 · 입구로 진입 후 제안/고발. 모바일에서 HUD 접힘/토글, 리사이즈 시 HUD 위치 재계산.</p>
+
+    <h3>7. 2.5D 시점 토글 <span class="badge b-key">Three.js</span></h3>
+    <p>좌하단 <kbd>2.5D</kbd> 버튼으로 <b>2D(Phaser) ↔ 2.5D(Three.js)</b> 즉시 전환. 서버 상태가 정수 그리드라 렌더 독립 → 2.5D는 <code>(gx,gy)→(x,0,z)</code> 매핑만, <b>서버·HUD·입력 규칙 무변경</b>. 카메라 피치 42°, 방=낮은 박스(깊이감)·문(발광 타일+문기둥+"입구"), 토큰/장물/계략=이모지 빌보드. 두 렌더러 공존하되 <b>활성 뷰만 입력 처리</b>, 선호 시점 <code>localStorage(zc_view)</code> 저장. 상세: <code>plans/active/10-view-2.5d-toggle.md</code>.</p>
   </div>
 
   <h2>주의</h2>
