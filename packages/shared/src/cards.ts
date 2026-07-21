@@ -1,6 +1,6 @@
 // 조디악(십이지신) 테마 카드 데이터 — "호랑이 생신 잔치" 컨셉.
 // 무대: 호랑이 대감의 생신 잔치가 열린 대감집. 십이지 손님들 중
-// 누군가 잔치 선물을 훔쳤다. 누가(동물) · 무엇으로(수법) · 어디서(장소)를 추리.
+// 누군가 잔치 선물을 훔쳤다. 누가(동물) · 무엇을(훔친 것) · 어디서(장소)를 추리.
 //
 // 카드 ID는 로마자(ascii)로 유지하고, 화면 표기는 LABELS(한글)/EMOJI로만.
 
@@ -31,14 +31,14 @@ export const HOST: Zodiac = "tiger";
 export const SUSPECTS = ZODIAC;
 export type Suspect = (typeof SUSPECTS)[number];
 
-/** 수법(흉기) — 대감집에 있을 법한 물건 6종. */
+/** 훔친 것(범죄 내용·장물) — 잔치에서 도둑맞은 물건 6종. */
 export const WEAPONS = [
-  "candle",
-  "dagger",
-  "club",
-  "gun",
-  "rope",
-  "poker",
+  "japchae",
+  "gift",
+  "safe",
+  "chopstick",
+  "liquor",
+  "tteok",
 ] as const;
 export type Weapon = (typeof WEAPONS)[number];
 
@@ -70,6 +70,13 @@ export const EMOJI: Record<string, string> = {
   rooster: "🐔",
   dog: "🐶",
   pig: "🐷",
+  // 훔친 것(장물) — 보드 토큰 표시용
+  japchae: "🍜",
+  gift: "🎁",
+  safe: "💰",
+  chopstick: "🥢",
+  liquor: "🍶",
+  tteok: "🍡",
 };
 
 export const emoji = (value: string): string => EMOJI[value] ?? "";
@@ -89,13 +96,13 @@ export const LABELS: Record<string, string> = {
   rooster: "닭 훈장",
   dog: "삽살 포교",
   pig: "돼지 객주",
-  // 수법(흉기)
-  candle: "놋촛대",
-  dagger: "은장도",
-  club: "다듬잇방망이",
-  gun: "화승총",
-  rope: "오랏줄",
-  poker: "부지깽이",
+  // 훔친 것(장물)
+  japchae: "잡채",
+  gift: "잔치 선물",
+  safe: "금고",
+  chopstick: "젓가락",
+  liquor: "술동이",
+  tteok: "떡시루",
   // 장소(대감집)
   jeongji: "정지(부엌)",
   daecheong: "대청마루",

@@ -25,8 +25,10 @@ export type NarrationInput = {
 const NARRATE_TIMEOUT_MS = 4000;
 
 const SYSTEM =
-  "너는 조선 사극풍 추리 보드게임 NPC다. 사용자가 주는 '결정된 행동'을 사극 말투 대사 " +
-  "한 문장으로만 바꾼다. **주어진 NPC 성격이 말투와 태도에 뚜렷이 드러나야 한다.** " +
+  "너는 조선 사극풍 추리 보드게임 NPC다. 배경: 호랑이 대감의 생신 잔치에서 누군가 잔치 음식·선물을 훔쳤다. " +
+  "누가(도둑)·무엇을(훔친 것)·어디서(장소)를 추리한다(살인·흉기 아님). " +
+  "사용자가 주는 '결정된 행동'을 사극 말투 대사 한 문장으로만 바꾼다. " +
+  "**주어진 NPC 성격이 말투와 태도에 뚜렷이 드러나야 한다.** " +
   "규칙: 오직 대사 한 문장만 출력. 머리말/설명/선택지/마크다운/따옴표 전부 금지. " +
   "12~40자. 게임의 정답이나 남의 손패를 아는 척 금지, 주어진 정보만 사용.";
 
@@ -39,16 +41,16 @@ export const fallbackLine = (i: NarrationInput): string => {
   if (i.action === "accuse") {
     return deco(
       rand([
-        `이건 필시 ${i.suspect}의 소행! ${i.weapon}로 ${i.room}에서 벌인 짓이야`,
-        `범인은 ${i.suspect}! ${i.room}의 ${i.weapon}이 증거다`,
+        `이건 필시 ${i.suspect}의 소행! ${i.room}에서 ${i.weapon}을 훔쳤어`,
+        `도둑은 ${i.suspect}! ${i.room}의 ${i.weapon}이 증거다`,
         `더 볼 것도 없다. ${i.suspect}, ${i.weapon}, ${i.room}`,
       ]),
     );
   }
   const base = rand([
-    `흠… ${i.room}에서 ${i.suspect}가 ${i.weapon}로? 수상쩍구먼`,
+    `흠… ${i.room}에서 ${i.suspect}가 ${i.weapon}을? 수상쩍구먼`,
     `내 짐작엔 ${i.suspect}, ${i.weapon}, ${i.room}`,
-    `${i.room} 쪽을 살피니 ${i.weapon}이 눈에 밟히는걸`,
+    `${i.room} 쪽을 살피니 ${i.weapon}이 사라졌던걸`,
     `${i.suspect}, 자네 ${i.room}엔 왜 갔는가`,
   ]);
   return deco(i.disproved ? `${base} …아니라니 하나 지웠군` : base);
@@ -93,7 +95,7 @@ export const narrate = async (i: NarrationInput): Promise<string | null> => {
 
   const act =
     i.action === "accuse"
-      ? `행동: 고발 — 범인 ${i.suspect}, 흉기 ${i.weapon}, 장소 ${i.room}.`
+      ? `행동: 고발 — 도둑 ${i.suspect}, 훔친 것 ${i.weapon}, 장소 ${i.room}.`
       : `행동: 제안 — ${i.suspect} / ${i.weapon} / ${i.room}${
           i.disproved ? " (반증당함)" : ""
         }.`;

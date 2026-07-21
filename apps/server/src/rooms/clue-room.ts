@@ -20,7 +20,7 @@ import {
   type Solution,
   type Suggestion,
 } from "@zodiac-clue/shared";
-import { GameState, Player } from "../schema/game-state";
+import { GameState, Player, WeaponToken } from "../schema/game-state";
 import { fallbackLine, narrate, type NarrationInput } from "../ai/narrator";
 
 type JoinOptions = { character?: string };
@@ -312,6 +312,18 @@ export class ClueRoom extends Room<GameState> {
     });
     this.state.winner = "";
 
+    // 장물(훔친 것) 토큰을 서로 다른 방 구석에 배치 (제안 시 해당 방으로 이동)
+    this.state.weapons.clear();
+    WEAPONS.forEach((w, idx) => {
+      const r = ROOM_REGIONS[idx % ROOM_REGIONS.length];
+      const t = new WeaponToken();
+      t.value = w;
+      t.x = r.x + 1;
+      t.y = r.y + 1;
+      t.room = r.name;
+      this.state.weapons.set(w, t);
+    });
+
     const ids = [...this.state.players.keys()];
     // 용의자 후보 = 실제 참여자 6명의 캐릭터만 (경우의 수 축소 · 정통 클루)
     const suspectPool = ids.map(
@@ -469,8 +481,8 @@ export class ClueRoom extends Room<GameState> {
     // 카테고리별 명확 표기
     this.broadcast("log", {
       text:
-        `🔍 [제안] ${suggester?.name} — 용의자: ${label(suggestion.suspect)}` +
-        ` · 수법: ${label(suggestion.weapon)} · 장소: ${label(suggestion.room)}`,
+        `🔍 [제안] ${suggester?.name} — 도둑: ${label(suggestion.suspect)}` +
+        ` · 훔친 것: ${label(suggestion.weapon)} · 장소: ${label(suggestion.room)}`,
       kind: "suggest",
       sid,
     });
@@ -490,6 +502,14 @@ export class ClueRoom extends Room<GameState> {
         )}(으)로 불려왔습니다.`,
         kind: "move",
       });
+    }
+    // 지목된 장물(훔친 것) 토큰도 그 방으로 이동 (용의자 소환과 대칭)
+    const wt = this.state.weapons.get(suggestion.weapon);
+    const wr = regionOf(suggestion.room);
+    if (wt && wr) {
+      wt.x = wr.x + wr.w - 2;
+      wt.y = wr.y + wr.h - 2;
+      wt.room = suggestion.room;
     }
 
     const order = [...this.state.turnOrder] as string[];
@@ -606,8 +626,11 @@ export class ClueRoom extends Room<GameState> {
       return;
     }
 
-    // 1) 아직 후보인 방을 우선 노려 이동(수렴 가속). 없으면 임의 방.
-    const targetRoom = pickFromSet(k.rooms) ?? pick(ROOMS);
+    // 1) 소환/현재 방이 아직 후보면 거기서 진행(소환 존중). 아니면 후보 방을 노려 이동.
+    const targetRoom =
+      bot.room && k.rooms.has(bot.room)
+        ? bot.room
+        : (pickFromSet(k.rooms) ?? pick(ROOMS));
     const region = regionOf(targetRoom) ?? pick(ROOM_REGIONS);
     const cell = this.freeCellIn(region.name, id);
     bot.x = cell.x;

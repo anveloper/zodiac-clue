@@ -15,6 +15,14 @@ export class Player extends Schema {
   @type("string") room = "";
 }
 
+/** 장물(훔친 것) 토큰 — 보드 위 위치(동기화). 제안 시 지목된 장물이 해당 방으로 이동. */
+export class WeaponToken extends Schema {
+  @type("string") value = "";
+  @type("number") x = 0;
+  @type("number") y = 0;
+  @type("string") room = "";
+}
+
 /** 방 전체 동기화 상태. 정답 봉투·손패는 서버 전용이라 여기 없음. */
 export class GameState extends Schema {
   /** lobby | playing | ended */
@@ -31,4 +39,6 @@ export class GameState extends Schema {
   @type("number") stepsLeft = 0;
   /** 공통 단서(모두 공개·정답 아님). 솔로(사람1)일 때 추리 보조로 일부 공개. */
   @type(["string"]) commonCards = new ArraySchema<string>();
+  /** 장물(훔친 것) 토큰들(보드 위 위치). */
+  @type({ map: WeaponToken }) weapons = new MapSchema<WeaponToken>();
 }

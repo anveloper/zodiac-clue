@@ -69,6 +69,7 @@ export class GameScene extends Phaser.Scene {
   private followTarget?: Phaser.GameObjects.Container;
   private camSwitchTimer?: Phaser.Time.TimerEvent;
   private bubbleTimers = new Map<string, Phaser.Time.TimerEvent>();
+  private weaponSprites = new Map<string, Phaser.GameObjects.Text>();
 
   constructor() {
     super("game");
@@ -303,6 +304,30 @@ export class GameScene extends Phaser.Scene {
       token.disc.setAlpha(alpha);
       token.face.setAlpha(alpha);
       token.name.setAlpha(alpha);
+    });
+
+    // ── 장물(훔친 것) 토큰 렌더 ──
+    const weapons = state.weapons as Map<
+      string,
+      { value: string; x: number; y: number }
+    >;
+    weapons.forEach((w, key) => {
+      const cx = w.x * CELL + CELL / 2;
+      const cy = w.y * CELL + CELL / 2;
+      let s = this.weaponSprites.get(key);
+      if (!s) {
+        s = this.add
+          .text(cx, cy, emoji(w.value), {
+            fontSize: `${Math.floor(CELL * 0.5)}px`,
+          })
+          .setOrigin(0.5)
+          .setDepth(2);
+        s.setStroke("#2a2118", 4);
+        this.weaponSprites.set(key, s);
+      } else if (s.x !== cx || s.y !== cy) {
+        this.tweens.killTweensOf(s);
+        this.tweens.add({ targets: s, x: cx, y: cy, duration: 260, ease: "Quad.Out" });
+      }
     });
 
     // 카메라: 현재 턴 캐릭터로 이동. 전환은 잠깐 지연(반증 먼저 인지 → 덜 어지러움).

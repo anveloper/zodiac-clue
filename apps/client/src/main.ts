@@ -115,7 +115,7 @@ const openPicker = (title: string, needRoom: boolean): Promise<Pick | null> =>
     };
 
     modal.appendChild(row("용의자", suspectSel));
-    modal.appendChild(row("수법", weaponSel));
+    modal.appendChild(row("훔친 것", weaponSel));
     if (roomSel) modal.appendChild(row("장소", roomSel));
 
     const actions = document.createElement("div");
@@ -461,7 +461,7 @@ const buildEvidence = (roomId: string): void => {
   );
   const groups: [string, readonly string[]][] = [
     ["용의자", participantSuspects()],
-    ["수법", WEAPONS],
+    ["훔친 것", WEAPONS],
     ["장소", ROOMS],
   ];
   for (const [cat, values] of groups) {
