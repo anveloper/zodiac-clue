@@ -367,18 +367,32 @@ const updateTurnInfo = (state: Room["state"]): void => {
   el.classList.remove("hidden");
   const players = state.players as Map<
     string,
-    { suspect: string; name: string; room?: string; x: number; y: number }
+    {
+      suspect: string;
+      name: string;
+      room?: string;
+      x: number;
+      y: number;
+      eliminated?: boolean;
+    }
   >;
   const cur = players.get(state.currentTurn);
   const mine = room !== null && state.currentTurn === room.sessionId;
   const me = room ? players.get(room.sessionId) : undefined;
-  // 비밀 통로 버튼: 내 턴 + 현재 방에 통로가 있을 때만 활성
+  // 내 턴 + 탈락(관전) 아닐 때만 행동 가능. 아니면 모든 액션 버튼 비활성화.
+  const canAct = mine && !me?.eliminated;
+  // 제안: 행동 가능 + 방 안일 때만
+  ($("suggest") as HTMLButtonElement).disabled = !(canAct && !!me?.room);
+  // 고발·턴 종료: 행동 가능할 때만
+  ($("accuse") as HTMLButtonElement).disabled = !canAct;
+  ($("endTurn") as HTMLButtonElement).disabled = !canAct;
+  // 비밀 통로 버튼: 행동 가능 + 현재 방에 통로가 있을 때만 활성
   ($("passage") as HTMLButtonElement).disabled = !(
-    mine && !!me?.room && !!passageOf(me.room)
+    canAct && !!me?.room && !!passageOf(me.room)
   );
-  // 계략 버튼: 내 턴 + 인접(체비셰프≤1)에 미사용 고정 NPC가 있을 때만 활성
+  // 계략 버튼: 행동 가능 + 인접(체비셰프≤1)에 미사용 고정 NPC가 있을 때만 활성
   let nearHelper = false;
-  if (mine && me) {
+  if (canAct && me) {
     (
       state.helpers as Map<string, { x: number; y: number; used: boolean }>
     ).forEach((h) => {

@@ -124,7 +124,7 @@ export class ClueRoom extends Room<GameState> {
     this.onMessage("useBonus", (client) => this.handleUseBonus(client));
   }
 
-  // ── 비밀 통로: 현재 방 → 연결된 방으로 이동(주사위 없이) → 턴 종료 ──
+  // ── 비밀 통로: 현재 방 → 연결된 방으로 이동(주사위 없이). 이동만 소진, 턴은 유지해 그 방에서 제안 가능 ──
   private handlePassage(client: Client): void {
     if (this.state.phase !== "playing") return;
     const player = this.state.players.get(client.sessionId);
@@ -142,11 +142,11 @@ export class ClueRoom extends Room<GameState> {
     player.x = c.x;
     player.y = c.y;
     player.room = dest;
+    this.state.stepsLeft = 0; // 통로로 방 도착 = 이동 소진(방 진입 턴엔 이탈 불가). 턴은 유지.
     this.broadcast("log", {
-      text: `🚪 ${player.name} 님이 비밀 통로로 ${label(dest)}에 이동!`,
+      text: `🚪 ${player.name} 님이 비밀 통로로 ${label(dest)}에 이동! (제안 또는 턴 종료)`,
       kind: "move",
     });
-    this.advanceTurn(); // 통로 사용은 턴을 소비
   }
 
   // ── 고정 NPC(계략): 인접 시 보너스 사용 — 엿보기 + 이동 보너스(거리 비례). 턴 유지. ──
