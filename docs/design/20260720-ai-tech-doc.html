@@ -103,7 +103,7 @@
 
   <h2>주요 프롬프트·지시 (실제)</h2>
   <div class="card">
-    <p><b>systemInstruction</b>: "조선 사극풍 추리 보드게임 NPC. 배경: 호랑이 대감 생신 잔치에서 누군가 음식·선물을 훔침. 누가(도둑)·무엇을(훔친 것)·어디서(장소)를 추리(살인·흉기 아님). … 오직 대사 한 문장만 출력 … 정답·남의 손패 아는 척 금지, 주어진 정보만."</p>
+    <p><b>systemInstruction</b>: "조선 사극풍 추리 보드게임 NPC. 배경: 호랑이 대감 생신 잔치에서 누군가 음식·선물을 훔침. 누가(도둑)·무엇을(훔친 것)·어디서(장소)를 추리. … 오직 대사 한 문장만 출력 … 정답·남의 손패 아는 척 금지, 주어진 정보만."</p>
     <p><b>userText</b>(결정된 정보만): <code>NPC: {이름} (성격: {persona}; 말투: {tone}). 행동: 고발 — 도둑 {도둑}, 훔친 것 {장물}, 장소 {장소}.</code></p>
     <p><b>generationConfig</b>: <code>temperature 0.95</code> · <code>maxOutputTokens 64</code> · <code>thinkingConfig.thinkingBudget 0</code> · 4초 타임아웃. 프롬프트에 <b>정답·손패 미포함</b> → 치트 불가.</p>
   </div>
