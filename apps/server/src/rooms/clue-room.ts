@@ -20,7 +20,12 @@ import {
   type Solution,
   type Suggestion,
 } from "@zodiac-clue/shared";
-import { GameState, Player, WeaponToken } from "../schema/game-state";
+import {
+  GameState,
+  HelperToken,
+  Player,
+  WeaponToken,
+} from "../schema/game-state";
 import { fallbackLine, narrate, type NarrationInput } from "../ai/narrator";
 
 type JoinOptions = { character?: string };
@@ -39,6 +44,25 @@ const NPC_DELAY_MIN = 1800;
 const NPC_DELAY_MAX = 7000;
 // 봇 턴 내 '이동 → (쉬고) → 제안' 사이 간격 (카메라 이동·인지 시간)
 const BOT_ACT_GAP = 1300;
+
+// 고정 NPC(계략) 배치 후보. 모서리(강한 이익) 1~2 + 건물 사이 중앙 근처에서 랜덤.
+const HELPER_CORNERS = [
+  { x: 0, y: 0 },
+  { x: GRID_WIDTH - 1, y: 0 },
+  { x: 0, y: GRID_HEIGHT - 1 },
+  { x: GRID_WIDTH - 1, y: GRID_HEIGHT - 1 },
+];
+const HELPER_MIDS = [
+  { x: 7, y: 7 },
+  { x: 16, y: 7 },
+  { x: 7, y: 16 },
+  { x: 16, y: 16 },
+  { x: 7, y: 11 },
+  { x: 16, y: 11 },
+  { x: 11, y: 7 },
+  { x: 11, y: 16 },
+];
+const CENTER = { x: 11, y: 11 };
 
 const pick = <T>(arr: readonly T[]): T =>
   arr[Math.floor(Math.random() * arr.length)];
@@ -94,6 +118,7 @@ export class ClueRoom extends Room<GameState> {
     this.onMessage("endTurn", (client) => this.handleEndTurn(client));
     this.onMessage("passage", (client) => this.handlePassage(client));
     this.onMessage("rematch", (client) => this.handleRematch(client));
+    this.onMessage("useBonus", (client) => this.handleUseBonus(client));
   }
 
   // ── 비밀 통로: 현재 방 → 연결된 방으로 이동(주사위 없이) → 턴 종료 ──
@@ -119,6 +144,57 @@ export class ClueRoom extends Room<GameState> {
       kind: "move",
     });
     this.advanceTurn(); // 통로 사용은 턴을 소비
+  }
+
+  // ── 고정 NPC(계략): 인접 시 보너스 사용 — 엿보기 + 이동 보너스(거리 비례). 턴 유지. ──
+  private handleUseBonus(client: Client): void {
+    if (this.state.phase !== "playing") return;
+    const player = this.state.players.get(client.sessionId);
+    if (!player || player.eliminated) return;
+    if (this.state.currentTurn !== client.sessionId) {
+      client.send("log", { text: "당신의 턴이 아닙니다." });
+      return;
+    }
+    let helper: HelperToken | undefined;
+    this.state.helpers.forEach((h) => {
+      if (
+        !h.used &&
+        Math.max(Math.abs(h.x - player.x), Math.abs(h.y - player.y)) <= 1
+      ) {
+        helper = h;
+      }
+    });
+    if (!helper) {
+      client.send("log", { text: "가까이에 계략을 줄 이가 없습니다." });
+      return;
+    }
+    helper.used = true;
+
+    // 이동 보너스: 중앙에서 먼 거리에 비례(멀수록 크게 → 돌아올 껀덕지)
+    const dist = Math.max(
+      Math.abs(helper.x - CENTER.x),
+      Math.abs(helper.y - CENTER.y),
+    );
+    const refund = Math.max(2, Math.round(dist / 2));
+    this.state.stepsLeft += refund;
+
+    // 엿보기: 상대들이 가진(정답 아닌) 카드 중 랜덤 공개 (모서리=2장)
+    const n = helper.bonus === "peek2" ? 2 : 1;
+    const pool: Card[] = [];
+    this.state.players.forEach((_p, id) => {
+      if (id !== client.sessionId) {
+        (this.hands.get(id) ?? []).forEach((c) => pool.push(c));
+      }
+    });
+    shuffle(pool);
+    const seen = pool.slice(0, n);
+    client.send("peek", { from: label(helper.value), cards: seen });
+    this.broadcast("log", {
+      text: `🃏 ${player.name} 님이 ${label(
+        helper.value,
+      )}의 계략(엿보기 ${n}·이동 +${refund}) 사용`,
+      kind: "info",
+    });
   }
 
   onJoin(client: Client, options: JoinOptions = {}): void {
@@ -334,6 +410,34 @@ export class ClueRoom extends Room<GameState> {
       (id) => this.state.players.get(id)?.suspect ?? "",
     );
     this.suspectPool = suspectPool;
+
+    // 고정 NPC(계략): 선택 안 된 십이지(12−참여6) 배치. 모서리 강함 + 중앙근처 랜덤.
+    this.state.helpers.clear();
+    const leftover = (SUSPECTS as readonly string[]).filter(
+      (z) => !suspectPool.includes(z),
+    );
+    const corners = [...HELPER_CORNERS];
+    shuffle(corners);
+    const mids = [...HELPER_MIDS];
+    shuffle(mids);
+    const nCorner = Math.min(2, leftover.length);
+    const spots = [
+      ...corners.slice(0, nCorner).map((s) => ({ ...s, strong: true })),
+      ...mids
+        .slice(0, leftover.length - nCorner)
+        .map((s) => ({ ...s, strong: false })),
+    ];
+    leftover.forEach((z, i) => {
+      const spot = spots[i];
+      if (!spot) return;
+      const h = new HelperToken();
+      h.value = z;
+      h.x = spot.x;
+      h.y = spot.y;
+      h.bonus = spot.strong ? "peek2" : "peek";
+      this.state.helpers.set(z, h);
+    });
+
     const solution: Solution = {
       suspect: pick(suspectPool) as Solution["suspect"],
       weapon: pick(WEAPONS),

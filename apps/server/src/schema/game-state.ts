@@ -23,6 +23,15 @@ export class WeaponToken extends Schema {
   @type("string") room = "";
 }
 
+/** 고정 NPC(선택 안 된 십이지 6명) — 모서리에 배치, 다가가면 보너스(계략) 제공. */
+export class HelperToken extends Schema {
+  @type("string") value = ""; // 십이지 id
+  @type("number") x = 0;
+  @type("number") y = 0;
+  @type("string") bonus = "peek"; // 보너스 종류(추후 확장)
+  @type("boolean") used = false; // 이번 판 사용 여부
+}
+
 /** 방 전체 동기화 상태. 정답 봉투·손패는 서버 전용이라 여기 없음. */
 export class GameState extends Schema {
   /** lobby | playing | ended */
@@ -41,4 +50,6 @@ export class GameState extends Schema {
   @type(["string"]) commonCards = new ArraySchema<string>();
   /** 장물(훔친 것) 토큰들(보드 위 위치). */
   @type({ map: WeaponToken }) weapons = new MapSchema<WeaponToken>();
+  /** 고정 NPC(계략 제공) — 선택 안 된 십이지 6명, 모서리 배치. */
+  @type({ map: HelperToken }) helpers = new MapSchema<HelperToken>();
 }

@@ -34,6 +34,8 @@ export type ClientMessages = {
   passage: Record<string, never>;
   /** 종료 후 같은 방으로 새 판 시작 */
   rematch: Record<string, never>;
+  /** 인접한 고정 NPC(계략)의 보너스 사용 */
+  useBonus: Record<string, never>;
 };
 
 // ── 서버 → 클라 메시지 (개별/브로드캐스트) ───────────
@@ -56,6 +58,8 @@ export type ServerMessages = {
   accuseResult: { player: string; correct: boolean };
   /** NPC 대사 (브로드캐스트) — 말풍선/로그용 */
   say: { id: string; from: string; text: string };
+  /** 계략 엿보기 결과 (사용자 본인에게만) — 상대가 가진(정답 아닌) 카드 */
+  peek: { from: string; cards: Card[] };
 };
 
 export type MessageType = keyof ClientMessages | keyof ServerMessages;

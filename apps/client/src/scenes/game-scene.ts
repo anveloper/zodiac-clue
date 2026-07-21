@@ -70,6 +70,7 @@ export class GameScene extends Phaser.Scene {
   private camSwitchTimer?: Phaser.Time.TimerEvent;
   private bubbleTimers = new Map<string, Phaser.Time.TimerEvent>();
   private weaponSprites = new Map<string, Phaser.GameObjects.Text>();
+  private helperSprites = new Map<string, Phaser.GameObjects.Container>();
 
   constructor() {
     super("game");
@@ -335,6 +336,41 @@ export class GameScene extends Phaser.Scene {
         this.tweens.killTweensOf(s);
         this.tweens.add({ targets: s, x: cx, y: cy, duration: 260, ease: "Quad.Out" });
       }
+    });
+
+    // ── 고정 NPC(계략) 렌더 ──
+    const helpers = state.helpers as Map<
+      string,
+      { value: string; x: number; y: number; used: boolean }
+    >;
+    helpers.forEach((h, key) => {
+      const cx = h.x * CELL + CELL / 2;
+      const cy = h.y * CELL + CELL / 2;
+      let c = this.helperSprites.get(key);
+      if (!c) {
+        const disc = this.add
+          .circle(0, 0, CELL * 0.42, 0x2b2013)
+          .setStrokeStyle(2, 0x8a6a3a);
+        const face = this.add
+          .text(0, 0, emoji(h.value), {
+            fontSize: `${Math.floor(CELL * 0.5)}px`,
+          })
+          .setOrigin(0.5);
+        const mark = this.add
+          .text(CELL * 0.3, -CELL * 0.3, "🃏", { fontSize: "15px" })
+          .setOrigin(0.5);
+        const tag = this.add
+          .text(0, CELL * 0.52, "계략", {
+            fontSize: "10px",
+            color: "#e0a35a",
+            backgroundColor: "#000000aa",
+            padding: { x: 3, y: 1 },
+          })
+          .setOrigin(0.5, 0);
+        c = this.add.container(cx, cy, [disc, face, mark, tag]).setDepth(1);
+        this.helperSprites.set(key, c);
+      }
+      c.setAlpha(h.used ? 0.3 : 1);
     });
 
     // 카메라: 현재 턴 캐릭터로 이동. 전환은 잠깐 지연(반증 먼저 인지 → 덜 어지러움).

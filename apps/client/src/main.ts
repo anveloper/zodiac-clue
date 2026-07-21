@@ -234,6 +234,23 @@ const wireRoom = (r: Room): void => {
     const scene = game?.scene.getScene("game") as GameScene | undefined;
     scene?.showBubble(m.id, m.text);
   });
+  r.onMessage("peek", (m: { from: string; cards: Card[] }) => {
+    addLog(
+      `🃏 ${m.from}의 계략 — 엿본 카드: ${m.cards
+        .map((c) => label(c.value))
+        .join(", ")} (정답 아님·나만 봄)`,
+      { kind: "info" },
+    );
+    // 엿본 카드는 정답 아님 → 증거노트에 자동 '제외' 표시
+    if (room) {
+      const data = loadEvi(room.roomId);
+      m.cards.forEach((c) => {
+        data[c.value] = "cleared";
+      });
+      saveEvi(room.roomId, data);
+      buildEvidence(room.roomId);
+    }
+  });
 
   r.onStateChange((state) => {
     // 리매치(종료→진행 전환) 시 증거노트 초기화
@@ -350,15 +367,30 @@ const updateTurnInfo = (state: Room["state"]): void => {
   el.classList.remove("hidden");
   const players = state.players as Map<
     string,
-    { suspect: string; name: string; room?: string }
+    { suspect: string; name: string; room?: string; x: number; y: number }
   >;
   const cur = players.get(state.currentTurn);
   const mine = room !== null && state.currentTurn === room.sessionId;
+  const me = room ? players.get(room.sessionId) : undefined;
   // 비밀 통로 버튼: 내 턴 + 현재 방에 통로가 있을 때만 활성
-  const myRoom = room ? players.get(room.sessionId)?.room : undefined;
   ($("passage") as HTMLButtonElement).disabled = !(
-    mine && !!myRoom && !!passageOf(myRoom)
+    mine && !!me?.room && !!passageOf(me.room)
   );
+  // 계략 버튼: 내 턴 + 인접(체비셰프≤1)에 미사용 고정 NPC가 있을 때만 활성
+  let nearHelper = false;
+  if (mine && me) {
+    (
+      state.helpers as Map<string, { x: number; y: number; used: boolean }>
+    ).forEach((h) => {
+      if (
+        !h.used &&
+        Math.max(Math.abs(h.x - me.x), Math.abs(h.y - me.y)) <= 1
+      ) {
+        nearHelper = true;
+      }
+    });
+  }
+  ($("bonus") as HTMLButtonElement).disabled = !nearHelper;
   const turnChanged = state.currentTurn !== lastTurn;
   lastTurn = state.currentTurn;
   el.classList.toggle("mine", mine);
@@ -560,6 +592,7 @@ const enterGame = (): void => {
   ($("endTurn") as HTMLButtonElement).onclick = () => room?.send("endTurn", {});
   ($("passage") as HTMLButtonElement).onclick = () =>
     room?.send("passage", {});
+  ($("bonus") as HTMLButtonElement).onclick = () => room?.send("useBonus", {});
   ($("endHome") as HTMLButtonElement).onclick = exitToMain;
   ($("specHome") as HTMLButtonElement).onclick = exitToMain;
   ($("endRematch") as HTMLButtonElement).onclick = () =>
