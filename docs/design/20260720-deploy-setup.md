@@ -31,14 +31,14 @@
 - 클라를 https로 배포하면 **반드시 wss**(브라우저가 ws:// 혼합콘텐츠 차단).
 - 서버 CORS/allowed origins에 클라 도메인 등록.
 
-## 체크리스트
-- [ ] 서버 호스트 선택(Oracle/EC2/Fly)
-- [ ] 도메인/서브도메인 + DNS A레코드
-- [ ] Caddy 자동 TLS 동작(wss 접속 확인)
-- [ ] pm2/systemd 상시 기동 + 재부팅 복원
-- [ ] .env 시크릿 주입(키 커밋 금지)
-- [ ] 클라 운영 빌드에 wss 주소 주입 + 배포(Vercel/CF Pages)
-- [ ] 방화벽 443/22만 개방
+## 체크리스트 (실배포 완료)
+- [x] 서버 호스트 선택 → **OCI Always Free**(E2.1.Micro)
+- [x] 도메인/DNS → **sslip.io**로 대체(커스텀 도메인 미구매). 이후 정식 도메인은 선택
+- [x] Caddy 자동 TLS(wss 접속 확인)
+- [x] systemd 상시 기동 + 재부팅 복원
+- [x] .env 시크릿 주입(키 커밋 금지)
+- [x] 클라 운영 빌드에 wss 주소 주입 + Vercel 배포
+- [x] 방화벽 443/80/22 (Security List + OS iptables)
 
 ## 주의
 - 무료 scale-to-zero 호스팅은 WS 게임에 부적합.
