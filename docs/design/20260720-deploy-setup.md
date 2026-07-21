@@ -47,7 +47,7 @@
 
 ## 실배포 기록 (2026-07-20) — 현재 라이브 구성
 - **클라(정적)**: Vercel → **https://zodiac-clue.vercel.app**
-  - 모노레포 루트 `vercel.json`: `outputDirectory=apps/client/dist`, buildCommand로 `VITE_SERVER_URL` 주입, SPA rewrite(`/(.*)`→`/index.html`).
+  - 모노레포 루트 `vercel.json`: `outputDirectory=apps/client/dist`. buildCommand = `gen-docs-manifest.mjs` 생성 → `VITE_SERVER_URL` 주입 빌드 → `cp -r docs apps/client/dist/docs`(문서 대시보드 정적 호스팅). SPA rewrite는 **docs 제외** `/((?!docs/).*)`→`/index.html` + `/docs`→`/docs/` redirect.
   - 클라 접속 주소는 `VITE_SERVER_URL` env(빌드타임 인라인). 미설정 시 `ws://localhost:2567`.
 - **서버(WS)**: Oracle Cloud Always Free VM(Osaka, Ubuntu 22.04) → **wss://141-147-157-219.sslip.io**
   - shape: A1(ARM)가 `out of host capacity`라 **VM.Standard.E2.1.Micro**(x86, 1 OCPU/1GB)로 진행. swap 2GB 부여.
@@ -65,7 +65,7 @@
 - **ARM 용량**: A1.Flex는 수시로 out-of-capacity → 재시도하거나 E2.1.Micro로 우회.
 
 ### 재배포/업데이트
-- **서버: 자동(CI)** — main에 `apps/server/**`·`packages/shared/**`·`pnpm-lock.yaml` push 시 GitHub Actions(`.github/workflows/deploy-server.yml`)가 SSH로 `git pull && pnpm i && systemctl restart` 실행. `workflow_dispatch`로 수동 실행도 가능.
+- **서버: 자동(CI)** — main에 `apps/server/**`·`packages/shared/**`·`package.json`·`pnpm-lock.yaml`·워크플로 파일 push 시 GitHub Actions(`.github/workflows/deploy-server.yml`)가 SSH로 `git pull && pnpm i && systemctl restart` + `sleep 3` 후 `systemctl is-active` 헬스체크. `workflow_dispatch`로 수동 실행도 가능.
   - Secret: `SSH_HOST`/`SSH_USER`/`SSH_PRIVATE_KEY`(CI 전용 배포키, `authorized_keys`에 등록). `ubuntu`는 passwordless sudo.
   - 수동 폴백: VM에서 `cd ~/zodiac-clue && git pull && pnpm i && sudo systemctl restart zodiac-server`.
-- 클라 갱신: 루트에서 `vercel --prod`(또는 GitHub 연동 시 push).
+- **클라: 자동** — Vercel Git 연동으로 main push 시 자동 빌드·배포. 수동은 루트에서 `vercel --prod`.

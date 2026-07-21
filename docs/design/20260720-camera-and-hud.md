@@ -1,6 +1,8 @@
 # 설계: 게임형 카메라 + 플로팅 HUD
 
 > ref plan: docs/plans/active/05-camera-and-hud.md · human view: 20260720-camera-and-hud.html
+>
+> **갱신 2026-07-21**: 초기 설계안이라 실제 구현과 어긋난 부분을 ~~취소선~~ + 갱신줄로 반영. 구현 상수는 `apps/client/src/scenes/game-scene.ts` 기준.
 
 ## 문제
 현재는 왼쪽 보드 + 오른쪽 사이드패널(단서/로그) 레이아웃이라 "게임"보다 "대시보드"처럼 보인다. 보드가 뷰포트에 다 들어와 몰입감이 없다.
@@ -12,23 +14,28 @@
 4. **특수키(hold) 자유시점** — 놓으면 내 캐릭터로 복귀.
 5. 단서 패/증거 체크/로그는 **화면 모서리 플로팅 UI**로만 노출(사이드패널 제거).
 
-## 접근(Phaser 3)
-- **레이아웃**: `Scale.RESIZE`, `#game`을 100vw×100vh. index.html의 사이드패널을 DOM 오버레이(position:fixed)로 대체.
-- **카메라 추적**: `cam.setBounds(0,0,BOARD_W,BOARD_H)` + `cam.startFollow(myDisc, true, 0.12, 0.12)`. 내 토큰은 `room.sessionId`로 식별(현재 render는 id 순회만 하므로 내 id 저장 필요).
-- **줌**: `this.input.on('wheel', (_,__,___,dy)=> cam.setZoom(clamp(cam.zoom * (dy>0?0.9:1.1), MIN, MAX)))`. 기본 1.6~2.0배, MIN≈0.6, MAX≈3.
-- **자유시점**: 특수키(예: Space 또는 Alt) keydown → `cam.stopFollow()`, 드래그 팬(pointermove while down) + 방향키 팬. keyup → `cam.startFollow(myDisc,...)`로 부드럽게 복귀. 자유시점 동안 이동키는 팬으로, 캐릭터 이동은 잠금(혼동 방지).
+## 접근(Phaser 3) — 구현 반영
+- **레이아웃**: `Scale.RESIZE`, `#game`을 100vw×100vh. index.html의 사이드패널을 DOM 오버레이(position:fixed)로 대체. ✅
+- **카메라 추적**: ~~`cam.setBounds(...)` + `startFollow(myDisc, 0.12, 0.12)`(내 토큰만 추적)~~
+  - (구현) **setBounds 미사용**(우측 패널만큼 화면을 밀어도 되도록). 시작 시 `setZoom(INIT_ZOOM)`·`centerOn(중앙)`. `startFollow`로 추적하되 **추적 대상 = 현재 턴 캐릭터**(내 턴이면 나, 아니면 그 NPC/상대). 내 토큰은 `room.sessionId`로 식별.
+  - **턴 전환 시 지연 팬**: 턴이 바뀌면 바로 스냅하지 않고 `CAM_SWITCH_DELAY=900ms`(내 턴은 150ms) 뒤 `cam.pan()`으로 부드럽게 이동 → 반증을 먼저 인지하고 덜 어지럽게. 추적 lerp = 내 턴 `CAM_LERP=0.12`, 남 턴 `SLOW_LERP=0.06`.
+  - **우측 패널 인셋 보정**: `followOffset.x`를 우측 패널 폭만큼 줘서 대상이 "보이는 영역" 중앙에 오게.
+- **줌**: 휠로 `clamp(zoom*(dy>0?0.9:1.1), MIN, MAX)`. ~~기본 1.6~2.0배, MIN≈0.6, MAX≈3~~
+  - (구현) **INIT_ZOOM=1.0, MIN_ZOOM=0.3, MAX_ZOOM=1.25**.
+- **자유시점**: `Space`(hold) keydown → `cam.stopFollow()`, 드래그 팬(pointermove while down) + 방향키 팬. keyup → 현재 대상으로 `startFollow` 복귀. 자유시점 동안 이동키는 팬, 캐릭터 이동은 잠금. ✅
 - **HUD(DOM)**: Phaser 텍스트 대신 DOM 플로팅이 리스트/토글에 유리.
   - 좌하: **내 단서 패**(받은 카드 이모지+라벨).
   - 우측: **증거 체크리스트** — 용의자/~~흉기~~장물/장소 전 항목을 표로, 클릭 토글(있음/없음/의심) 로컬 메모(서버 전송 X, 개인 추리 노트). <!-- 갱신 2026-07-21: 흉기 → 장물(훔친 것) -->
 
   - 우하: **로그/알림**(제안·반증·대사), 접이식.
-- **조작 안내**: 최초 진입 시 하단 얇은 바 — 이동(WASD/방향키) · 줌(휠) · 자유시점(Space) · 제안/고발.
+- **NPC 말풍선(구현 추가)**: 캐릭터 위에 **타자기 효과 말풍선**(`TYPE_MS=55ms`/글자, 완료 후 `BUBBLE_HOLD_MS=2600ms` 유지). 봇 제안 대사가 타이핑되는 동안엔 턴을 넘기지 않아 카메라가 튀지 않음(서버 `SPEAK_HOLD`). 계략 귓속말은 당사자에게만 전문 말풍선.
+- **조작 안내**: 최초 진입 시 하단 얇은 바 — 이동(WASD/방향키/ㅈㅁㄴㅇ) · 줌(휠) · 자유시점(Space) · 제안/고발.
 
 ## 주의
 - 자유시점과 이동키 충돌: 자유시점 활성 중에는 `room.send("move")` 억제.
 - 줌·팬은 클라 로컬 상태(서버 무관) → 네트워크 영향 없음.
 - 증거 체크는 개인 노트라 서버 스키마에 넣지 않음(로컬스토리지 캐시 가능).
-- 리사이즈 시 카메라 bounds/HUD 위치 재계산.
+- 리사이즈 시 HUD 위치 재계산(카메라는 setBounds 미사용).
 
 ## 롤아웃 순서
 풀스크린 캔버스 → 추적 카메라 → 줌 → 자유시점 → HUD(단서/증거/로그) → 조작안내 → 반응형.

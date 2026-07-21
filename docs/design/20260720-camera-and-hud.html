@@ -103,23 +103,25 @@
     <p><code>Scale.FIT</code> → <code>Scale.RESIZE</code>, <code>#game</code>을 <code>100vw×100vh</code>로. 사이드패널 DOM은 제거하고 플로팅 오버레이로 대체.</p>
 
     <h3>2. 추적 카메라 <span class="badge b-key">Phaser Camera</span></h3>
-    <p><code>cam.setBounds(0,0,BOARD_W,BOARD_H)</code> + <code>cam.startFollow(myDisc, true, 0.12, 0.12)</code>. 내 토큰은 <code>room.sessionId</code>로 식별(현재 렌더는 전체 id 순회만 하므로 <b>내 id 저장</b> 추가 필요).</p>
+    <p><del><code>cam.setBounds(...)</code> + <code>startFollow(myDisc)</code>(내 토큰만 추적)</del> <span style="opacity:.7">(갱신 2026-07-21)</span></p>
+    <p><b>구현</b>: <code>setBounds</code> 미사용(우측 패널만큼 밀 수 있게), 시작 시 <code>setZoom(INIT_ZOOM)·centerOn(중앙)</code>. 추적 대상은 <b>현재 턴 캐릭터</b>(내 턴이면 나, 아니면 그 상대). 턴 전환 시 <code>CAM_SWITCH_DELAY=900ms</code>(내 턴 150ms) 뒤 <code>cam.pan()</code>으로 부드럽게 이동(반증 먼저 인지). lerp = 내 턴 <code>0.12</code>/남 턴 <code>0.06</code>. 우측 패널만큼 <code>followOffset.x</code> 인셋 보정.</p>
 
     <h3>3. 줌 (휠)</h3>
-    <p><code>input.on('wheel', …)</code> → <code>cam.setZoom(clamp(zoom×배율, MIN, MAX))</code>. 기본 1.6~2.0배, 축소 MIN≈0.6(보드 전체 조망), 확대 MAX≈3.</p>
+    <p><code>input.on('wheel', …)</code> → <code>cam.setZoom(clamp(zoom×배율, MIN, MAX))</code>. <del>기본 1.6~2.0배, MIN≈0.6, MAX≈3.</del> <span style="opacity:.7">(갱신 2026-07-21)</span> <b>구현: INIT_ZOOM=1.0, MIN_ZOOM=0.3, MAX_ZOOM=1.25.</b></p>
 
     <h3>4. 자유시점 (특수키 hold)</h3>
-    <p><kbd>Space</kbd>(또는 <kbd>Alt</kbd>) keydown → <code>cam.stopFollow()</code>, 드래그 팬 + 방향키 팬. keyup → <code>startFollow</code>로 부드럽게 복귀. <b>자유시점 중에는 캐릭터 이동(<code>move</code> 전송) 잠금</b>(키 충돌 방지).</p>
+    <p><kbd>Space</kbd> keydown → <code>cam.stopFollow()</code>, 드래그 팬 + 방향키 팬. keyup → <code>startFollow</code>로 현재 대상에 부드럽게 복귀. <b>자유시점 중에는 캐릭터 이동(<code>move</code> 전송) 잠금</b>(키 충돌 방지).</p>
 
     <h3>5. 플로팅 HUD (DOM 오버레이)</h3>
     <ul>
       <li><b>좌하 — 내 단서 패</b>: 받은 카드 이모지+라벨.</li>
       <li><b>우측 — 증거 체크리스트</b>: 용의자/<del>흉기</del> 장물/장소 전 항목 표, 클릭 토글(있음/의심/모름). <b>개인 추리 노트라 서버 전송 X</b>(로컬스토리지 캐시). <span style="opacity:.7">(갱신 2026-07-21: 흉기→장물)</span></li>
       <li><b>우하 — 기록/알림</b>: 제안·반증·NPC 대사. 접이식.</li>
+      <li><b>NPC 말풍선(구현 추가)</b>: 캐릭터 위 <b>타자기 효과</b>(<code>TYPE_MS=55ms</code>/글자, 완료 후 <code>2600ms</code> 유지). 봇 제안 대사가 타이핑되는 동안 턴을 넘기지 않아 카메라가 안 튐(서버 <code>SPEAK_HOLD</code>). 계략 귓속말은 당사자만 전문.</li>
     </ul>
 
     <h3>6. 조작 안내 + 반응형</h3>
-    <p>하단 얇은 바로 <kbd>WASD</kbd> 이동 · <kbd>휠</kbd> 줌 · <kbd>Space</kbd> 자유시점 · 제안/고발 안내. 모바일에서 HUD 접힘/토글, 리사이즈 시 카메라 bounds·HUD 위치 재계산.</p>
+    <p>하단 얇은 바로 <kbd>WASD/방향키/ㅈㅁㄴㅇ</kbd> 이동 · <kbd>휠</kbd> 줌 · <kbd>Space</kbd> 자유시점 · 제안/고발 안내. 모바일에서 HUD 접힘/토글, 리사이즈 시 HUD 위치 재계산.</p>
   </div>
 
   <h2>주의</h2>
