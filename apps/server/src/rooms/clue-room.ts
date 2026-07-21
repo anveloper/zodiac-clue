@@ -44,6 +44,8 @@ const NPC_DELAY_MIN = 1800;
 const NPC_DELAY_MAX = 7000;
 // 봇 턴 내 '이동 → (쉬고) → 제안' 사이 간격 (카메라 이동·인지 시간)
 const BOT_ACT_GAP = 1300;
+// 제안 대사가 타이핑되는 동안 턴을 넘기지 않고 대기 (카메라 튐 방지)
+const SPEAK_HOLD = 2400;
 
 // 고정 NPC(계략) 배치 후보. 모서리(강한 이익) 1~2 + 건물 사이 중앙 근처에서 랜덤.
 const HELPER_CORNERS = [
@@ -549,10 +551,15 @@ export class ClueRoom extends Room<GameState> {
     this.state.players.forEach((p, id) => {
       if (id !== excludeId) occ.add(`${p.x},${p.y}`);
     });
-    for (let yy = r.y; yy < r.y + r.h; yy++) {
+    // 최상단 행(r.y)은 방 이름 명패가 그려지는 자리 → 소환/이동 토큰이 가리지 않게
+    // 둘째 행(r.y+1)부터 좌상단→안쪽으로 채우고, 방이 꽉 차면 최상단 행으로 폴백.
+    for (let yy = r.y + 1; yy < r.y + r.h; yy++) {
       for (let xx = r.x; xx < r.x + r.w; xx++) {
         if (!occ.has(`${xx},${yy}`)) return { x: xx, y: yy };
       }
+    }
+    for (let xx = r.x; xx < r.x + r.w; xx++) {
+      if (!occ.has(`${xx},${r.y}`)) return { x: xx, y: r.y };
     }
     return roomCenter(name);
   }
@@ -791,51 +798,57 @@ export class ClueRoom extends Room<GameState> {
       disproved: !!result.card,
     });
 
-    if (result.card) {
-      // 반증받은 카드는 정답 아님 → 후보에서 제거
-      this.eliminate(k, result.card);
-    } else {
-      // 아무도 반증 못했고 내가 3장 다 안 갖고 있으면 → 그 셋이 정답
-      const holdsAny = (this.hands.get(id) ?? []).some((c) =>
-        cardMatches(c, suggestion),
-      );
-      if (!holdsAny) {
+    // 제안 대사가 타이핑되는 동안엔 턴을 넘기지 않는다(카메라 튐 방지).
+    // 결정/고발/턴넘김은 대사 표시 시간 뒤에 수행.
+    this.clock.setTimeout(() => {
+      if (this.state.phase !== "playing" || this.state.currentTurn !== id) return;
+
+      if (result.card) {
+        // 반증받은 카드는 정답 아님 → 후보에서 제거
+        this.eliminate(k, result.card);
+      } else {
+        // 아무도 반증 못했고 내가 3장 다 안 갖고 있으면 → 그 셋이 정답
+        const holdsAny = (this.hands.get(id) ?? []).some((c) =>
+          cardMatches(c, suggestion),
+        );
+        if (!holdsAny) {
+          void this.speak(id, {
+            name: bot.name,
+            persona: persona(bot.suspect),
+            action: "accuse",
+            suspect: label(suggestion.suspect),
+            weapon: label(suggestion.weapon),
+            room: label(suggestion.room),
+          });
+          this.doAccusation(id, suggestion);
+          return;
+        }
+      }
+
+      // 3) 유효 후보(공유 지식 반영)가 각 1개로 좁혀졌으면 고발
+      const fs = eff(k.suspects);
+      const fw = eff(k.weapons);
+      const fr = eff(k.rooms);
+      if (fs.length === 1 && fw.length === 1 && fr.length === 1) {
+        const acc: Suggestion = {
+          suspect: fs[0] as Suggestion["suspect"],
+          weapon: fw[0] as Suggestion["weapon"],
+          room: fr[0] as Suggestion["room"],
+        };
         void this.speak(id, {
           name: bot.name,
           persona: persona(bot.suspect),
           action: "accuse",
-          suspect: label(suggestion.suspect),
-          weapon: label(suggestion.weapon),
-          room: label(suggestion.room),
+          suspect: label(acc.suspect),
+          weapon: label(acc.weapon),
+          room: label(acc.room),
         });
-        this.doAccusation(id, suggestion);
+        this.doAccusation(id, acc);
         return;
       }
-    }
 
-    // 3) 유효 후보(공유 지식 반영)가 각 1개로 좁혀졌으면 고발
-    const fs = eff(k.suspects);
-    const fw = eff(k.weapons);
-    const fr = eff(k.rooms);
-    if (fs.length === 1 && fw.length === 1 && fr.length === 1) {
-      const acc: Suggestion = {
-        suspect: fs[0] as Suggestion["suspect"],
-        weapon: fw[0] as Suggestion["weapon"],
-        room: fr[0] as Suggestion["room"],
-      };
-      void this.speak(id, {
-        name: bot.name,
-        persona: persona(bot.suspect),
-        action: "accuse",
-        suspect: label(acc.suspect),
-        weapon: label(acc.weapon),
-        room: label(acc.room),
-      });
-      this.doAccusation(id, acc);
-      return;
-    }
-
-    this.advanceTurn();
+      this.advanceTurn();
+    }, SPEAK_HOLD);
   }
 
   // NPC 대사: 결정된 정보만 넘겨 LLM 대사 생성, 실패 시 규칙 폴백 → 브로드캐스트.
