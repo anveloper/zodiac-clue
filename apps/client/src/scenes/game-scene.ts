@@ -153,9 +153,16 @@ export class GameScene extends Phaser.Scene {
       };
       if (s.currentTurn !== this.myId) return;
       const me = s.players.get(this.myId);
-      const free =
-        !!me && (roomAt(me.x, me.y) !== null || inFeast(me.x, me.y));
-      if (!free && (s.stepsLeft ?? 0) <= 0) return;
+      const inRoom = !!me && roomAt(me.x, me.y) !== null;
+      const free = !!me && (inRoom || inFeast(me.x, me.y));
+      const steps = s.stepsLeft ?? 0;
+      if (!free && steps <= 0) return;
+      // 방에 들어간 턴엔 못 나감: 방+스텝0이면 방 밖으로 나가는 이동 차단
+      if (me && inRoom && steps <= 0) {
+        const tx = me.x + dx;
+        const ty = me.y + dy;
+        if (roomAt(tx, ty) === null && !inFeast(tx, ty)) return;
+      }
       const now = this.time.now;
       if (now - this.lastMove < MOVE_COOLDOWN_MS) return;
       this.lastMove = now;

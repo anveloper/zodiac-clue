@@ -218,9 +218,13 @@ export class ClueRoom extends Room<GameState> {
     );
     if (occupied) return;
 
+    // 방에 들어간 턴엔 그 방에서 나가지 못한다(정통 클루). 방 안 이동은 자유.
+    const fromRoom = roomAt(player.x, player.y) !== null;
+    const toCorridor = roomAt(nx, ny) === null && !inFeast(nx, ny);
+    if (fromRoom && toCorridor && this.state.stepsLeft <= 0) return;
+
     // 방 안·잔치상 위 이동은 자유(한도 무관). 복도 이동만 한도 소모.
-    const free =
-      roomAt(player.x, player.y) !== null || inFeast(player.x, player.y);
+    const free = fromRoom || inFeast(player.x, player.y);
     if (!free && this.state.stepsLeft <= 0) return;
     player.x = nx;
     player.y = ny;
