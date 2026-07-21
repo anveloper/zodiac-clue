@@ -101,6 +101,29 @@
     <li>무료티어: thinking off + 캐시 + 타임아웃 + 이벤트당 1콜.</li>
   </ul>
 
+  <h2>주요 프롬프트·지시 (실제)</h2>
+  <div class="card">
+    <p><b>systemInstruction</b>: "조선 사극풍 추리 보드게임 NPC. 배경: 호랑이 대감 생신 잔치에서 누군가 음식·선물을 훔침. 누가(도둑)·무엇을(훔친 것)·어디서(장소)를 추리(살인·흉기 아님). … 오직 대사 한 문장만 출력 … 정답·남의 손패 아는 척 금지, 주어진 정보만."</p>
+    <p><b>userText</b>(결정된 정보만): <code>NPC: {이름} (성격: {persona}; 말투: {tone}). 행동: 고발 — 도둑 {도둑}, 훔친 것 {장물}, 장소 {장소}.</code></p>
+    <p><b>generationConfig</b>: <code>temperature 0.95</code> · <code>maxOutputTokens 64</code> · <code>thinkingConfig.thinkingBudget 0</code> · 4초 타임아웃. 프롬프트에 <b>정답·손패 미포함</b> → 치트 불가.</p>
+  </div>
+
+  <h2>외부 에셋·오픈소스 출처</h2>
+  <table>
+    <tr><th>항목</th><th>출처/라이선스</th></tr>
+    <tr><td>실시간 서버 / 클라 네트워크</td><td>Colyseus 0.15 · colyseus.js (MIT)</td></tr>
+    <tr><td>렌더 / 빌드 / 언어</td><td>Phaser 3 (MIT) · Vite (MIT) · TypeScript (Apache-2.0)</td></tr>
+    <tr><td>NPC 대사</td><td>Google Gemini API (<code>gemini-flash-lite-latest</code>)</td></tr>
+    <tr><td>그래픽·아이콘</td><td>별도 이미지 에셋 <b>없음</b> — 보드/토큰은 코드(Phaser Graphics), 아이콘은 시스템 유니코드 이모지, 시스템 폰트</td></tr>
+    <tr><td>인프라</td><td>Oracle Cloud(Always Free) · Vercel · Caddy+Let's Encrypt · sslip.io</td></tr>
+  </table>
+
+  <h2>AI 도구 사용내역 (심사 요건)</h2>
+  <ul>
+    <li>개발 보조로 <b>Claude Code</b>(에이전트) 사용 — 코드 작성·리팩터·문서화. 최종 판단·구조 설계는 사람 검토.</li>
+    <li>게임 내 AI는 <b>Gemini(NPC 대사)</b>뿐. 결정/판정에는 LLM 미사용.</li>
+  </ul>
+
   <h2>파일 맵</h2>
   <ul>
     <li>결정: <code>apps/server/src/rooms/clue-room.ts</code>, <code>schema/game-state.ts</code>, <code>packages/shared</code></li>

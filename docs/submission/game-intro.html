@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>제출물 ③ 게임 소개 — zodiac-clue</title>
+<style>
+  :root { --bg:#16130f; --card:#211c16; --edge:#3a3126; --ink:#f0e9dc; --dim:#a89778; --gold:#f0d9a8; --accent:#b4622b; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink);
+    font-family: system-ui,-apple-system,"Apple SD Gothic Neo",sans-serif; line-height:1.7; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { color:var(--gold); font-size:26px; margin:0 0 2px; }
+  .one { color:var(--ink); font-size:15px; margin:0 0 4px; }
+  .sub { color:var(--dim); font-size:13px; margin:0 0 26px; }
+  h2 { color:var(--gold); font-size:18px; margin:28px 0 8px; border-bottom:1px solid var(--edge); padding-bottom:6px; }
+  p, li { font-size:14px; }
+  a { color:#e0a35a; }
+  code { background:#2c2519; border:1px solid var(--edge); border-radius:4px; padding:1px 5px; font-size:13px; }
+  .card { background:var(--card); border:1px solid var(--edge); border-radius:10px; padding:16px 20px; margin:12px 0; }
+  ul { padding-left:20px; }
+  .cta { display:inline-block; margin:4px 8px 4px 0; padding:8px 14px; background:var(--accent); color:#fff;
+    border-radius:8px; text-decoration:none; font-size:14px; }
+  .pill { background:#2c2519; border:1px solid var(--edge); border-radius:6px; padding:2px 8px; font-size:12px; color:var(--dim); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🐯 zodiac-clue — 호랑이 생신 잔치</h1>
+  <p class="one">십이지 손님 중 <b>잔치 음식·선물을 훔친 도둑</b>을 추리하는 <b>웹 멀티플레이 추리 게임</b>. 빈자리는 <b>AI NPC</b>가 채운다.</p>
+  <p class="sub">NHN NAN 2026 사전과제 · 제출물 ③ 게임 소개 · <span class="pill">사람용 .html</span></p>
+
+  <p>
+    <a class="cta" href="https://zodiac-clue.vercel.app">🎮 지금 플레이</a>
+    <a class="cta" href="https://github.com/anveloper/zodiac-clue" style="background:#3a3126">GitHub 소스</a>
+    <a class="cta" href="https://zodiac-clue.vercel.app/docs/" style="background:#3a3126">문서</a>
+  </p>
+
+  <h2>목표</h2>
+  <div class="card">
+    <p>봉인된 정답 <b>누가(도둑) · 무엇을(훔친 것) · 어디서(장소)</b>를 추리해 <b>가장 먼저 정확히 고발</b>하면 승리.</p>
+    <p class="sub" style="margin:0;">예) "게코 도령이 사랑방에서 잡채를 훔쳤다."</p>
+  </div>
+
+  <h2>조작</h2>
+  <ul>
+    <li><b>이동</b>: 방향키/WASD/ㅈㅁㄴㅇ — 턴 시작 시 <b>주사위(2d6)</b>만큼 복도 이동(방 안·잔치상은 무료).</li>
+    <li><b>줌</b> 마우스 휠 · <b>자유시점</b> <code>Space</code>(꾹) 드래그.</li>
+    <li>방에서 <b>[제안]</b> → 도둑·훔친 것 지목(용의자·장물 소환) → 시계방향 <b>반증</b>. <b>[고발]</b>·<b>[통로]</b>·<b>[턴 종료]</b>.</li>
+  </ul>
+
+  <h2>종료 조건</h2>
+  <ul>
+    <li><b>정답 고발 성공 → 승리</b>(결과 화면 + 다시 하기/메인으로).</li>
+    <li><b>오답 고발 → 탈락</b>(관전, 반증만 가능). 최후 1인 생존 시 승리.</li>
+  </ul>
+
+  <h2>실행 방법</h2>
+  <ul>
+    <li><b>웹 즉시 플레이(설치 불필요·무료)</b>: <a href="https://zodiac-clue.vercel.app">zodiac-clue.vercel.app</a>. 방 만들기 → 초대 링크 공유.</li>
+    <li><b>6인 미만이면 NPC 자동 충원</b> — 1인도 시작 가능.</li>
+    <li>로컬: <code>pnpm install &amp;&amp; pnpm dev</code> → <code>localhost:5173</code></li>
+  </ul>
+
+  <h2>AI 활용 요약</h2>
+  <p>NPC의 <b>행동·판정(결정)은 결정론적 규칙엔진</b>, <b>대사(표현)만 LLM(Gemini)</b>. → 상세는 <a href="../design/20260720-ai-tech-doc.html">제출물 ④ AI 기술문서</a>.</p>
+
+  <h2>링크</h2>
+  <ul>
+    <li>플레이: <a href="https://zodiac-clue.vercel.app">https://zodiac-clue.vercel.app</a></li>
+    <li>소스: <a href="https://github.com/anveloper/zodiac-clue">github.com/anveloper/zodiac-clue</a></li>
+    <li>플레이 영상: (제출 전 업로드 예정)</li>
+  </ul>
+</div>
+</body>
+</html>

@@ -1,5 +1,19 @@
 [
   {
+    "label": "📤 제출물",
+    "dir": "submission",
+    "items": [
+      {
+        "path": "submission/game-intro.html",
+        "title": "제출물 ③ 게임 소개"
+      },
+      {
+        "path": "submission/submission-checklist.md",
+        "title": "제출물 체크리스트 (NHN NAN 2026 사전과제, 마감 2026-08-10)"
+      }
+    ]
+  },
+  {
     "label": "📐 설계",
     "dir": "design",
     "items": [

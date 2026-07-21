@@ -4,11 +4,26 @@ import { readdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 
 const GROUPS = [
+  { dir: "submission", label: "📤 제출물", ext: "pair" },
   { dir: "design", label: "📐 설계", ext: ".html" },
   { dir: "plans/active", label: "🗂 플랜 · 진행", ext: ".md" },
   { dir: "plans/done", label: "✅ 플랜 · 완료", ext: ".md" },
   { dir: "logs", label: "📓 개발일지", ext: ".md" },
 ];
+
+// pair 모드: 같은 basename의 .html이 있으면 .html만, 없으면 .md.
+const pickPairFiles = (files) => {
+  const htmls = new Set(
+    files.filter((f) => f.endsWith(".html")).map((f) => f.replace(/\.html$/, "")),
+  );
+  return files
+    .filter(
+      (f) =>
+        f.endsWith(".html") ||
+        (f.endsWith(".md") && !htmls.has(f.replace(/\.md$/, ""))),
+    )
+    .sort();
+};
 
 const titleOf = (abs, ext) => {
   try {
@@ -28,13 +43,15 @@ const out = [];
 for (const g of GROUPS) {
   const base = join("docs", g.dir);
   if (!existsSync(base)) continue;
-  const files = readdirSync(base)
-    .filter((f) => f.endsWith(g.ext))
-    .sort()
-    .reverse(); // 최신 날짜 위로
+  const all = readdirSync(base);
+  const files =
+    g.ext === "pair"
+      ? pickPairFiles(all)
+      : all.filter((f) => f.endsWith(g.ext)).sort().reverse(); // 최신 날짜 위로
   const items = files.map((f) => {
     const path = `${g.dir}/${f}`;
-    return { path, title: titleOf(join(base, f), g.ext) || f };
+    const ext = f.endsWith(".html") ? ".html" : ".md";
+    return { path, title: titleOf(join(base, f), ext) || f };
   });
   if (items.length) out.push({ label: g.label, dir: g.dir, items });
 }
