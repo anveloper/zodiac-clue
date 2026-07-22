@@ -5,8 +5,10 @@ import {
   WEAPONS,
   ZODIAC,
   emoji,
+  job,
   label,
   passageOf,
+  persona,
   type Card,
 } from "@zodiac-clue/shared";
 import type { Room } from "colyseus.js";
@@ -365,6 +367,72 @@ const updateEndState = (state: Room["state"]): void => {
   }
 };
 
+type TurnPlayer = { suspect: string; name: string; eliminated?: boolean };
+
+/** 턴 순서 스트립 — 현재부터 다음·다음… 순으로 칩 나열(→ 방향, 끝에 순환 ↺). */
+const renderTurnStrip = (state: Room["state"]): string => {
+  const players = state.players as Map<string, TurnPlayer>;
+  const order = [...(state.turnOrder as unknown as string[])];
+  if (order.length === 0) return "";
+  const curId = state.currentTurn;
+  const start = Math.max(0, order.indexOf(curId));
+  const seq = order.map((_, i) => order[(start + i) % order.length]);
+  const chips = seq
+    .map((id, i) => {
+      const p = players.get(id);
+      if (!p) return "";
+      const cls =
+        "ti-chip" + (id === curId ? " cur" : "") + (p.eliminated ? " elim" : "");
+      const tag = id === curId ? " (현재)" : i === 1 ? " (다음)" : "";
+      const chip = `<span class="${cls}" title="${label(p.suspect)}${tag}">${emoji(p.suspect)}</span>`;
+      const arrow =
+        i < seq.length - 1
+          ? `<span class="ti-arrow">→</span>`
+          : `<span class="ti-arrow ti-wrap" title="처음으로 순환">↺</span>`;
+      return chip + arrow;
+    })
+    .join("");
+  return `<div class="ti-order">${chips}</div>`;
+};
+
+/** 턴 순서를 원형(라운드 테이블)으로 표시하는 오버레이. 현재/다음 강조, 시계방향. */
+const openTurnCircle = (): void => {
+  if (!room) return;
+  const state = room.state;
+  const players = state.players as Map<string, TurnPlayer>;
+  const order = [...(state.turnOrder as unknown as string[])];
+  const curId = state.currentTurn;
+  const curIdx = order.indexOf(curId);
+  const ring = $("tcRing");
+  ring.innerHTML = `<div class="tc-center">↻<span>시계방향</span></div>`;
+  const n = order.length;
+  const R = 118;
+  order.forEach((id, i) => {
+    const p = players.get(id);
+    if (!p) return;
+    const ang = -Math.PI / 2 + (i / n) * Math.PI * 2;
+    const x = 150 + R * Math.cos(ang);
+    const y = 150 + R * Math.sin(ang);
+    const isCur = id === curId;
+    const isNext = i === (curIdx + 1) % n;
+    const node = document.createElement("div");
+    node.className =
+      "tc-node" + (isCur ? " cur" : "") + (p.eliminated ? " elim" : "");
+    node.style.left = `${x}px`;
+    node.style.top = `${y}px`;
+    const badge = isCur
+      ? `<div class="tc-badge cur">현재</div>`
+      : isNext
+        ? `<div class="tc-badge next">다음</div>`
+        : `<div class="tc-badge">${i + 1}</div>`;
+    node.innerHTML =
+      `<div class="tc-em">${emoji(p.suspect)}</div>` +
+      `<div class="tc-name">${p.name}</div>${badge}`;
+    ring.appendChild(node);
+  });
+  $("turnCircle").classList.remove("hidden");
+};
+
 const updateTurnInfo = (state: Room["state"]): void => {
   const el = $("turnInfo");
   if (state.phase !== "playing") {
@@ -416,13 +484,16 @@ const updateTurnInfo = (state: Room["state"]): void => {
   const turnChanged = state.currentTurn !== lastTurn;
   lastTurn = state.currentTurn;
   el.classList.toggle("mine", mine);
+  el.classList.add("clickable");
 
-  if (mine) {
-    el.innerHTML = myTurnText(state.stepsLeft ?? 0);
-    if (turnChanged) showDiceRoll(); // 턴 시작 → 중앙 주사위
-  } else {
-    el.textContent = cur ? `⏳ ${emoji(cur.suspect)} ${cur.name} 님의 턴` : "";
-  }
+  // 상태 줄 + 턴 순서 스트립(현재→다음… 방향). 클릭 시 원형 순서 오버레이.
+  const status = mine
+    ? `<div class="ti-status">${myTurnText(state.stepsLeft ?? 0)}</div>`
+    : `<div class="ti-status">${cur ? `⏳ ${emoji(cur.suspect)} ${cur.name} 님의 턴` : ""}</div>`;
+  el.innerHTML = status + renderTurnStrip(state);
+  el.title = "클릭: 전체 턴 순서(원형) 보기";
+  el.onclick = openTurnCircle;
+  if (mine && turnChanged) showDiceRoll(); // 내 턴 시작 → 중앙 주사위
 };
 
 const renderLobby = (state: Room["state"]): void => {
@@ -452,6 +523,16 @@ const renderLobby = (state: Room["state"]): void => {
   renderLobbyChars(state);
 };
 
+// 캐릭터 직업 풀이 + 성격을 대기실 하단 패널에 표시(생소한 사극 용어 설명).
+const showCharInfo = (z: string): void => {
+  const j = job(z);
+  const jobHtml = j
+    ? ` <span class="ci-job">· ${j.term}: ${j.gloss}</span>`
+    : "";
+  $("lobbyPersona").innerHTML =
+    `${emoji(z)} <b>${label(z)}</b>${jobHtml}<br>${persona(z)}`;
+};
+
 // 대기실 캐릭터 그리드 — 선택됨/사용중(다른 사람) 실시간 반영, 클릭 시 변경.
 const renderLobbyChars = (state: Room["state"]): void => {
   const players = state.players as Map<
@@ -474,11 +555,19 @@ const renderLobbyChars = (state: Room["state"]): void => {
       "char" + (takenByOther ? " locked" : "") + (mine ? " selected" : "");
     cell.innerHTML =
       `<span class="em">${emoji(z)}</span>` + `<span>${label(z)}</span>`;
+    // 직업 뜻풀이를 툴팁으로도 노출(생소한 단어 설명).
+    const j = job(z);
+    cell.title = j
+      ? `${label(z)} — ${j.term}: ${j.gloss}\n${persona(z)}`
+      : label(z);
+    cell.onmouseenter = () => showCharInfo(z);
     if (!takenByOther && !mine) {
       cell.onclick = () => room?.send("character", { value: z });
     }
     grid.appendChild(cell);
   }
+  // 기본 표시 = 내 캐릭터(있으면).
+  if (mySuspect) showCharInfo(mySuspect);
 };
 
 // ── 증거 노트 (개인 추리 메모 · 서버 전송 X · 로컬 저장) ─────────────
@@ -670,6 +759,13 @@ const enterGame = (): void => {
   ($("specHome") as HTMLButtonElement).onclick = exitToMain;
   ($("endRematch") as HTMLButtonElement).onclick = () =>
     room?.send("rematch", {});
+
+  // 턴 순서(원형) 오버레이 닫기 — 버튼 또는 바깥 클릭.
+  const closeTurnCircle = (): void => $("turnCircle").classList.add("hidden");
+  ($("tcClose") as HTMLButtonElement).onclick = closeTurnCircle;
+  $("turnCircle").onclick = (e) => {
+    if (e.target === $("turnCircle")) closeTurnCircle();
+  };
 
   // 우측 컬럼: 좌측 모서리 드래그=너비, 노트↔기록 사이 드래그=높이
   const rightCol = $("rightPanel");

@@ -117,6 +117,29 @@ export const LABELS: Record<string, string> = {
 
 export const label = (value: string): string => LABELS[value] ?? value;
 
+/**
+ * 캐릭터 직업(생소한 사극 용어) 풀이 — UI·도감·문서에 "설명"으로 노출한다.
+ * term = 라벨의 직업 단어, gloss = 한 줄 뜻풀이.
+ */
+export const JOB: Record<string, { term: string; gloss: string }> = {
+  rat: { term: "서생", gloss: "글공부하는 선비(학생)" },
+  ox: { term: "역사(力士)", gloss: "힘이 아주 센 장사" },
+  tiger: { term: "대감", gloss: "높은 벼슬아치·귀족 어른" },
+  rabbit: { term: "낭자", gloss: "젊은 여인·아가씨" },
+  gecko: { term: "도령", gloss: "장가 안 든 양반집 도련님" },
+  snake: { term: "무녀", gloss: "굿을 하는 여자 무당" },
+  horse: { term: "장수", gloss: "물건을 파는 장사꾼(말 장수=말 상인)" },
+  sheep: { term: "목동", gloss: "가축을 치는 아이(목자)" },
+  monkey: { term: "광대", gloss: "재주·연희를 펼치는 놀이꾼(배우)" },
+  rooster: { term: "훈장", gloss: "서당의 글 선생님" },
+  dog: { term: "포교", gloss: "죄인을 잡던 포도청 관리(순검)" },
+  pig: { term: "객주", gloss: "상인에게 숙식·중개를 해주던 상인" },
+};
+
+export const job = (
+  value: string,
+): { term: string; gloss: string } | undefined => JOB[value];
+
 /** 캐릭터별 성격 — 도감 표시 + NPC 대사 프롬프트에 공용으로 쓰인다. */
 export const PERSONA: Record<string, string> = {
   rat: "약삭빠르고 잔꾀 많은 책상물림. 매사 이문부터 따진다.",

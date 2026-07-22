@@ -54,6 +54,7 @@
         padding: 8px 10px; min-height: 40px;
       }
       .persona b { color: #f0d9a8; }
+      .persona .ci-job { color: #e0a35a; font-size: 11px; }
       /* 게임 선택(현재 1종, 추후 여러 게임 카드로 확장) */
       .game-select { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
       .game-item {
@@ -131,9 +132,64 @@
         left: 50%; top: 14px; transform: translateX(-50%);
         color: #cbbfa8; font-size: 13px; padding: 7px 16px; white-space: nowrap;
       }
-      .hud-turn.mine {
-        color: #16130f; background: #e0a35a; border-color: #e0a35a; font-weight: 600;
+      .hud-turn.mine .ti-status {
+        color: #16130f; background: #e0a35a; border-radius: 6px;
+        padding: 2px 10px; font-weight: 600;
       }
+      .hud-turn.clickable { cursor: pointer; }
+      .hud-turn .ti-status { display: inline-block; }
+      /* 턴 순서 스트립 (현재→다음… 방향) */
+      .ti-order {
+        display: flex; align-items: center; justify-content: center;
+        gap: 2px; margin-top: 5px;
+      }
+      .ti-chip { font-size: 15px; line-height: 1; opacity: 0.8; transition: transform .15s; }
+      .ti-chip.cur {
+        transform: scale(1.35); opacity: 1;
+        filter: drop-shadow(0 0 3px #ffd479);
+      }
+      .ti-chip.elim { opacity: 0.28; }
+      .ti-arrow { color: #9a8a6a; font-size: 10px; }
+      .ti-arrow.ti-wrap { color: #b4622b; }
+      /* 턴 순서 원형 오버레이 */
+      .tc-overlay {
+        position: fixed; inset: 0; z-index: 45; background: rgba(0, 0, 0, 0.6);
+        display: flex; align-items: center; justify-content: center;
+      }
+      .tc-box {
+        background: #211c16; border: 1px solid #3a3126; border-radius: 16px;
+        padding: 20px 24px; text-align: center; box-shadow: 0 16px 60px rgba(0, 0, 0, 0.7);
+      }
+      .tc-title { color: #f0d9a8; font-size: 14px; margin-bottom: 6px; }
+      .tc-ring { position: relative; width: 300px; height: 300px; margin: 6px auto; }
+      .tc-center {
+        position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+        font-size: 40px; color: #b4622b; display: flex; flex-direction: column;
+        align-items: center; line-height: 1;
+      }
+      .tc-center span { font-size: 11px; color: #a89778; margin-top: 2px; }
+      .tc-node {
+        position: absolute; transform: translate(-50%, -50%);
+        width: 72px; text-align: center;
+      }
+      .tc-node .tc-em { font-size: 30px; line-height: 1; }
+      .tc-node .tc-name {
+        font-size: 11px; color: #cbbfa8; white-space: nowrap;
+        overflow: hidden; text-overflow: ellipsis;
+      }
+      .tc-node.cur .tc-em { transform: scale(1.18); filter: drop-shadow(0 0 6px #ffd479); }
+      .tc-node.cur .tc-name { color: #f0d9a8; font-weight: 600; }
+      .tc-node.elim { opacity: 0.35; }
+      .tc-badge {
+        display: inline-block; margin-top: 2px; padding: 0 6px; border-radius: 8px;
+        font-size: 9px; background: #3a3126; color: #cbbfa8;
+      }
+      .tc-badge.cur { background: #e0a35a; color: #16130f; font-weight: 700; }
+      .tc-badge.next { background: #5b9bd5; color: #16130f; font-weight: 600; }
+      .tc-close {
+        margin-top: 10px; padding: 8px 22px; background: #3a3126;
+      }
+      .tc-close:hover { background: #493d2d; }
       .hud-spectate {
         left: 50%; top: 56px; transform: translateX(-50%);
         display: flex; gap: 10px; align-items: center; color: #e0736b; font-weight: 600;
@@ -390,7 +446,10 @@
         <div style="font-size: 12px; color: #a89778; margin-bottom: 4px;">
           내 캐릭터 (선택됨 🟡 / 사용중 🔒)
         </div>
-        <div id="lobbyChars" class="char-grid" style="margin-bottom: 16px;"></div>
+        <div id="lobbyChars" class="char-grid" style="margin-bottom: 8px;"></div>
+        <div id="lobbyPersona" class="persona" style="margin-bottom: 16px;">
+          캐릭터에 올리면 <b>직업 풀이</b>와 성격이 표시됩니다.
+        </div>
         <button id="startBtn" class="full" disabled>잔치 시작</button>
         <div id="hostHint" class="host-hint"></div>
       </div>
@@ -420,6 +479,15 @@
       </div>
 
       <div id="diceOverlay" class="dice-overlay hidden"></div>
+
+      <!-- 턴 순서(원형) — turnInfo 클릭 시 표시 -->
+      <div id="turnCircle" class="tc-overlay hidden">
+        <div class="tc-box">
+          <div class="tc-title">🔄 턴 순서 (시계방향으로 진행)</div>
+          <div id="tcRing" class="tc-ring"></div>
+          <button id="tcClose" class="tc-close">닫기</button>
+        </div>
+      </div>
 
       <div id="endOverlay" class="end-overlay hidden">
         <div class="end-card">
