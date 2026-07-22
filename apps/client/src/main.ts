@@ -12,6 +12,7 @@ import {
 import type { Room } from "colyseus.js";
 import { client, createRoom, joinRoomById } from "./network";
 import { GameScene } from "./scenes/game-scene";
+import { PixelScene } from "./scenes/pixel-scene";
 import { IsoView } from "./scenes/iso-view";
 
 /** 재접속 토큰 저장 키. sessionStorage = 탭 단위(새로고침엔 유지, 새 탭엔 없음). */
@@ -156,14 +157,15 @@ let phaserStarted = false;
 type Stage = {
   id: string;
   label: string;
-  kind: "phaser" | "three";
+  kind: "phaser" | "three" | "pixel";
   assets: boolean;
 };
 const STAGES: Stage[] = [
   { id: "2d-emoji", label: "뷰1 · 2D", kind: "phaser", assets: false },
   { id: "three-emoji", label: "뷰2 · 2.5D", kind: "three", assets: false },
   { id: "three-asset", label: "뷰3 · 에셋", kind: "three", assets: true },
-  // 미래: { id: "three-3d", label: "뷰4 · 3D", kind: "three", assets: true } 등 append
+  { id: "pixel", label: "뷰4 · 도트", kind: "pixel", assets: false },
+  // 미래: { id: "three-3d", label: "뷰5 · 3D", kind: "three", assets: true } 등 append
 ];
 let stageIndex = 0;
 /** 내 손패 카드값 집합 — 정답일 수 없으므로 제안·증거노트에서 자동 비활성화. */
@@ -222,10 +224,15 @@ const wireRoom = (r: Room): void => {
   });
   r.onMessage("say", (m: { id: string; from: string; text: string }) => {
     addLog(`💬 ${m.from}: ${m.text}`, { kind: "info" });
-    if (STAGES[stageIndex].kind === "three") {
+    const kind = STAGES[stageIndex].kind;
+    if (kind === "three") {
       iso?.showBubble(m.id, m.text);
     } else {
-      const scene = game?.scene.getScene("game") as GameScene | undefined;
+      const key = kind === "pixel" ? "pixel" : "game";
+      const scene = game?.scene.getScene(key) as
+        | GameScene
+        | PixelScene
+        | undefined;
       scene?.showBubble(m.id, m.text);
     }
   });
@@ -557,7 +564,7 @@ const enterGame = (): void => {
       mode: Phaser.Scale.RESIZE,
       autoCenter: Phaser.Scale.NO_CENTER,
     },
-    scene: [GameScene],
+    scene: [GameScene, PixelScene],
   });
   game.registry.set("room", room);
   if (room) buildEvidence(room.roomId);
@@ -571,15 +578,23 @@ const enterGame = (): void => {
   const setStage = (i: number): void => {
     stageIndex = ((i % STAGES.length) + STAGES.length) % STAGES.length;
     const st = STAGES[stageIndex];
-    if (st.kind === "three") {
+    const three = st.kind === "three";
+    const pixel = st.kind === "pixel";
+    if (three) {
       if (!iso && room) iso = new IsoView(room, $("gameScreen"));
       iso?.setActive(true); // three 캔버스가 Phaser 위를 덮음(HUD는 그 위)
       iso?.setAssets(st.assets); // 뷰2=이모지 / 뷰3=에셋 아트
-      if (game?.input.keyboard) game.input.keyboard.enabled = false;
     } else {
       iso?.setActive(false); // 캔버스 숨김 → 아래 Phaser가 그대로 보임
-      if (game?.input.keyboard) game.input.keyboard.enabled = true;
     }
+    // Phaser 씬 표시 전환: 뷰1=GameScene / 뷰4=PixelScene. GameScene은 뷰4에서도
+    // 계속 active(입력·카메라 담당)이되 invisible — PixelScene이 카메라를 미러링.
+    // PixelScene은 config 배열의 2번째라 자동 시작되지 않음 → 처음 필요할 때 run.
+    if (pixel && game && !game.scene.isActive("pixel")) game.scene.run("pixel");
+    game?.scene.getScene("game")?.sys.setVisible(st.kind === "phaser");
+    game?.scene.getScene("pixel")?.sys.setVisible(pixel);
+    // three에선 iso가 입력 담당 → Phaser 키보드 off. phaser/pixel은 GameScene이 담당.
+    if (game?.input.keyboard) game.input.keyboard.enabled = !three;
     viewBtn.textContent = st.label + " ▲";
     [...viewList.children].forEach((li, idx) =>
       (li as HTMLElement).classList.toggle("active", idx === stageIndex),
