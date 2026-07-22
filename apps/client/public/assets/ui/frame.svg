@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+<rect width="1024" height="1024" fill="none"/>
+<rect x="40" y="40" width="944" height="944" rx="28" fill="#211c16" opacity="0.85" stroke="#f0d9a8" stroke-width="8"/>
+<rect x="70" y="70" width="884" height="884" rx="18" fill="none" stroke="#7c6238" stroke-width="3" stroke-dasharray="4 8"/>
+<text x="512" y="540" font-family="'Apple SD Gothic Neo','Noto Sans KR',system-ui,sans-serif" font-size="52" fill="#f0d9a8" text-anchor="middle">UI 프레임</text>
+<g opacity="0.9"><rect x="906" y="14" width="104" height="26" rx="6" fill="#000" opacity="0.45"/><text x="958" y="32" font-family="'Apple SD Gothic Neo','Noto Sans KR',system-ui,sans-serif" font-size="14" fill="#f0d9a8" text-anchor="middle" letter-spacing="1">PLACEHOLDER</text></g></svg>

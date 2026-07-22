@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1536" height="1024" viewBox="0 0 1536 1024">
+<defs><linearGradient id="v" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#181410"/><stop offset="100%" stop-color="#16130f"/></linearGradient></defs>
+<rect width="1536" height="1024" fill="url(#v)"/>
+<text x="768" y="470" font-size="220" text-anchor="middle">🌫</text>
+<text x="768" y="640" font-family="'Apple SD Gothic Neo','Noto Sans KR',system-ui,sans-serif" font-size="60" fill="#f0d9a8" text-anchor="middle">도둑은 사라졌다</text>
+<g opacity="0.9"><rect x="1418" y="14" width="104" height="26" rx="6" fill="#000" opacity="0.45"/><text x="1470" y="32" font-family="'Apple SD Gothic Neo','Noto Sans KR',system-ui,sans-serif" font-size="14" fill="#f0d9a8" text-anchor="middle" letter-spacing="1">PLACEHOLDER</text></g></svg>
