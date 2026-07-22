@@ -54,6 +54,19 @@
         padding: 8px 10px; min-height: 40px;
       }
       .persona b { color: #f0d9a8; }
+      /* 게임 선택(현재 1종, 추후 여러 게임 카드로 확장) */
+      .game-select { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
+      .game-item {
+        display: flex; align-items: center; gap: 10px;
+        padding: 12px 14px; background: #16130f; border: 1px solid #3a3126;
+        border-radius: 8px; cursor: default; color: #cbbfa8;
+      }
+      .game-item .em { font-size: 24px; line-height: 1; }
+      .game-item .gi-body { display: flex; flex-direction: column; gap: 2px; }
+      .game-item .gi-body b { color: #f0d9a8; font-size: 14px; }
+      .game-item .gi-sub { font-size: 11px; color: #a89778; }
+      .game-item.selected { border-color: #e0a35a; background: #2c2317; }
+      .hint-sm { font-size: 11px; color: #6b6355; margin: 6px 0 14px; text-align: center; }
       .divider { text-align: center; color: #6b6355; font-size: 11px; margin: 16px 0; }
       .join-row { display: flex; gap: 8px; }
       .join-row input { flex: 1; }
@@ -280,13 +293,20 @@
       <div class="card">
         <h1>🐯 호랑이 생신 잔치</h1>
         <p class="subtitle">대감집 손님들 중 잔치 선물을 훔친 자를 추리하라</p>
+        <!-- 게임 선택 슬롯: 현재 1종. 다른 게임 컨텐츠가 추가되면 선택 UI로 확장. -->
         <div class="field">
-          <label>캐릭터 선택 (선택 사항 · 대기실에서 변경 가능)</label>
-          <div id="charGrid" class="char-grid"></div>
+          <label>게임</label>
+          <div id="gameSelect" class="game-select">
+            <div class="game-item selected" data-game="zodiac-clue">
+              <span class="em">🐯</span>
+              <span class="gi-body">
+                <b>호랑이 생신 잔치</b>
+                <span class="gi-sub">클루형 추리 · 2~6인</span>
+              </span>
+            </div>
+          </div>
         </div>
-        <div id="personaPanel" class="persona">
-          캐릭터에 마우스를 올리면 <b>성격</b>이 표시됩니다. 이 성격은 NPC 대사에도 반영돼요.
-        </div>
+        <p class="hint-sm">캐릭터는 대기실에서 고릅니다.</p>
         <button id="createBtn" class="full">방 만들기</button>
         <div class="divider">— 또는 초대받았다면 —</div>
         <div class="join-row">

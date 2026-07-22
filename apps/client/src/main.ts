@@ -7,7 +7,6 @@ import {
   emoji,
   label,
   passageOf,
-  persona,
   type Card,
 } from "@zodiac-clue/shared";
 import type { Room } from "colyseus.js";
@@ -167,39 +166,12 @@ const STAGES: Stage[] = [
   // 미래: { id: "three-3d", label: "뷰4 · 3D", kind: "three", assets: true } 등 append
 ];
 let stageIndex = 0;
-let selectedCharacter: string | null = null;
 /** 내 손패 카드값 집합 — 정답일 수 없으므로 제안·증거노트에서 자동 비활성화. */
 let myCards = new Set<string>();
 /** 직전 게임 페이즈 — 리매치(ended→playing) 감지용. */
 let lastPhase = "";
 
-// ── 십이지신 캐릭터 선택 그리드 ─────────────────────────────
-const showPersona = (z: string): void => {
-  $("personaPanel").innerHTML =
-    `${emoji(z)} <b>${label(z)}</b> — ${persona(z)}`;
-};
-
-const selectCharacter = (z: string, grid: HTMLElement): void => {
-  selectedCharacter = z;
-  [...grid.children].forEach((c, i) =>
-    c.classList.toggle("selected", ZODIAC[i] === z),
-  );
-  showPersona(z);
-};
-
-const buildCharGrid = (): void => {
-  const grid = $("charGrid");
-  grid.innerHTML = "";
-  for (const z of ZODIAC) {
-    const cell = document.createElement("div");
-    cell.className = "char";
-    cell.innerHTML =
-      `<span class="em">${emoji(z)}</span>` + `<span>${label(z)}</span>`;
-    cell.onclick = () => selectCharacter(z, grid);
-    cell.onmouseenter = () => showPersona(z);
-    grid.appendChild(cell);
-  }
-};
+// 캐릭터 선택은 대기실(renderLobbyChars)에서만 수행 — 랜딩엔 방 만들기/참여만.
 
 // ── 방 연결 후 공통 배선 ─────────────────────────────
 const storeToken = (r: Room): void => {
@@ -741,8 +713,6 @@ const goMain = (): void => {
 };
 
 const init = async (): Promise<void> => {
-  buildCharGrid();
-
   // 초대 링크(/room/CODE, 구형 ?room=CODE)로 들어온 경우 코드 자동 채움
   const pathMatch = location.pathname.match(/\/room\/([^/]+)/);
   const invited =
@@ -755,7 +725,7 @@ const init = async (): Promise<void> => {
   ($("createBtn") as HTMLButtonElement).onclick = async () => {
     setLandingMsg("방 만드는 중…");
     try {
-      wireRoom(await createRoom(selectedCharacter ?? undefined));
+      wireRoom(await createRoom());
     } catch (e) {
       setLandingMsg("방 생성 실패: " + errMsg(e));
     }
@@ -769,7 +739,7 @@ const init = async (): Promise<void> => {
     }
     setLandingMsg("참가하는 중…");
     try {
-      wireRoom(await joinRoomById(code, selectedCharacter ?? undefined));
+      wireRoom(await joinRoomById(code));
     } catch (e) {
       goMain();
       setLandingMsg(
