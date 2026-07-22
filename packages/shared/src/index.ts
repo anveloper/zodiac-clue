@@ -17,18 +17,21 @@ export type RoomRegion = {
   h: number;
   /** 입구 칸(방 경계). 방 출입은 이 칸으로만 가능. */
   door: { x: number; y: number };
+  /** 소환 앵커 — 제안 시 용의자·장물이 모이는 지정 칸. 문 반대쪽 안쪽 구석에
+   * 둬서 이동·출입을 방해하지 않는다. freeCellIn이 이 칸에서 가까운 순으로 채운다. */
+  summon: { x: number; y: number };
 };
 
 export const ROOM_REGIONS: RoomRegion[] = [
-  { name: "jeongji", x: 1, y: 1, w: 5, h: 5, door: { x: 3, y: 5 } },
-  { name: "daecheong", x: 9, y: 1, w: 6, h: 5, door: { x: 11, y: 5 } },
-  { name: "huwon", x: 18, y: 1, w: 5, h: 5, door: { x: 20, y: 5 } },
-  { name: "sarangbang", x: 1, y: 9, w: 5, h: 6, door: { x: 5, y: 11 } },
-  { name: "sarangchae", x: 18, y: 9, w: 5, h: 4, door: { x: 18, y: 10 } },
-  { name: "seojae", x: 18, y: 15, w: 5, h: 4, door: { x: 18, y: 16 } },
-  { name: "anbang", x: 1, y: 18, w: 5, h: 5, door: { x: 3, y: 18 } },
-  { name: "haengnang", x: 9, y: 18, w: 6, h: 5, door: { x: 11, y: 18 } },
-  { name: "byeoldang", x: 18, y: 20, w: 5, h: 3, door: { x: 20, y: 20 } },
+  { name: "jeongji", x: 1, y: 1, w: 5, h: 5, door: { x: 3, y: 5 }, summon: { x: 4, y: 2 } },
+  { name: "daecheong", x: 9, y: 1, w: 6, h: 5, door: { x: 11, y: 5 }, summon: { x: 13, y: 2 } },
+  { name: "huwon", x: 18, y: 1, w: 5, h: 5, door: { x: 20, y: 5 }, summon: { x: 21, y: 2 } },
+  { name: "sarangbang", x: 1, y: 9, w: 5, h: 6, door: { x: 5, y: 11 }, summon: { x: 2, y: 13 } },
+  { name: "sarangchae", x: 18, y: 9, w: 5, h: 4, door: { x: 18, y: 10 }, summon: { x: 21, y: 11 } },
+  { name: "seojae", x: 18, y: 15, w: 5, h: 4, door: { x: 18, y: 16 }, summon: { x: 21, y: 17 } },
+  { name: "anbang", x: 1, y: 18, w: 5, h: 5, door: { x: 3, y: 18 }, summon: { x: 2, y: 21 } },
+  { name: "haengnang", x: 9, y: 18, w: 6, h: 5, door: { x: 11, y: 18 }, summon: { x: 12, y: 21 } },
+  { name: "byeoldang", x: 18, y: 20, w: 5, h: 3, door: { x: 20, y: 20 }, summon: { x: 21, y: 21 } },
 ];
 
 /** 중앙 잔치상(시작 구역) — 방처럼 이동 소모 없는 자유 구역. */

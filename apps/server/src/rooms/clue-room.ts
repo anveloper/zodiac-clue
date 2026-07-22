@@ -600,15 +600,28 @@ export class ClueRoom extends Room<GameState> {
     // 문(입구) 칸엔 소환하지 않는다 — 소환 토큰이 문에 앉으면 그 방의 모두가
     // 못 나가는 봉쇄가 생긴다(문은 유일한 출구, 점유 칸은 이동 불가).
     occ.add(`${r.door.x},${r.door.y}`);
-    // 최상단 행(r.y)은 방 이름 명패가 그려지는 자리 → 소환/이동 토큰이 가리지 않게
-    // 둘째 행(r.y+1)부터 좌상단→안쪽으로 채우고, 방이 꽉 차면 최상단 행으로 폴백.
-    for (let yy = r.y + 1; yy < r.y + r.h; yy++) {
+    // 방마다 지정된 소환 앵커(문 반대쪽 구석)에서 가까운 순으로 채운다 → 소환
+    // 토큰이 한곳에 모여 이동·출입을 방해하지 않음. 명패행(r.y)은 뒤로 미룸.
+    const a = r.summon;
+    const cells: { x: number; y: number; d: number }[] = [];
+    for (let yy = r.y; yy < r.y + r.h; yy++) {
       for (let xx = r.x; xx < r.x + r.w; xx++) {
-        if (!occ.has(`${xx},${yy}`)) return { x: xx, y: yy };
+        const plaque = yy === r.y ? 100 : 0; // 명패행은 최후순위
+        // 벽(방 외곽 링)은 뒤로 미룸 → 내부 칸부터 채워 벽에 붙지 않게.
+        const wall =
+          xx === r.x || xx === r.x + r.w - 1 || yy === r.y || yy === r.y + r.h - 1
+            ? 10
+            : 0;
+        cells.push({
+          x: xx,
+          y: yy,
+          d: Math.abs(xx - a.x) + Math.abs(yy - a.y) + plaque + wall,
+        });
       }
     }
-    for (let xx = r.x; xx < r.x + r.w; xx++) {
-      if (!occ.has(`${xx},${r.y}`)) return { x: xx, y: r.y };
+    cells.sort((p, q) => p.d - q.d);
+    for (const c of cells) {
+      if (!occ.has(`${c.x},${c.y}`)) return { x: c.x, y: c.y };
     }
     return roomCenter(name);
   }
