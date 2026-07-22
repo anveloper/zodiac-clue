@@ -565,10 +565,12 @@ const enterGame = (): void => {
   // 뷰 진화 단계 전환(순서형). 서버·HUD·입력 규칙은 단계와 무관하게 동일.
   // 핵심: #game(Phaser)은 절대 display:none 하지 않는다. three는 위에 얹어
   // 가리기만 하고(z-index), 뷰1로 오면 three 캔버스만 숨겨 아래 Phaser를 보인다.
+  const viewBtn = $("viewToggle") as HTMLButtonElement;
+  const viewList = $("viewList");
+  const closeViewMenu = (): void => viewList.classList.add("hidden");
   const setStage = (i: number): void => {
     stageIndex = ((i % STAGES.length) + STAGES.length) % STAGES.length;
     const st = STAGES[stageIndex];
-    const toggleBtn = $("viewToggle") as HTMLButtonElement;
     if (st.kind === "three") {
       if (!iso && room) iso = new IsoView(room, $("gameScreen"));
       iso?.setActive(true); // three 캔버스가 Phaser 위를 덮음(HUD는 그 위)
@@ -578,14 +580,29 @@ const enterGame = (): void => {
       iso?.setActive(false); // 캔버스 숨김 → 아래 Phaser가 그대로 보임
       if (game?.input.keyboard) game.input.keyboard.enabled = true;
     }
-    // 버튼은 "다음에 갈 단계"를 안내(누르면 그 단계로).
-    const next = STAGES[(stageIndex + 1) % STAGES.length];
-    toggleBtn.textContent = "▶ " + next.label;
-    toggleBtn.title = `현재: ${st.label} · 클릭하면 ${next.label}`;
+    viewBtn.textContent = st.label + " ▲";
+    [...viewList.children].forEach((li, idx) =>
+      (li as HTMLElement).classList.toggle("active", idx === stageIndex),
+    );
   };
-  ($("viewToggle") as HTMLButtonElement).onclick = () =>
-    setStage(stageIndex + 1);
-  // 진화 서사는 항상 뷰1(2D)에서 시작 — 매 게임 진입 시 처음부터 넘겨보게.
+  // 위로 열리는 드롭다운으로 단계 직접 선택.
+  viewList.innerHTML = "";
+  STAGES.forEach((s, i) => {
+    const li = document.createElement("li");
+    li.textContent = s.label;
+    li.onclick = (e) => {
+      e.stopPropagation();
+      setStage(i);
+      closeViewMenu();
+    };
+    viewList.appendChild(li);
+  });
+  viewBtn.onclick = (e) => {
+    e.stopPropagation();
+    viewList.classList.toggle("hidden");
+  };
+  document.addEventListener("click", closeViewMenu);
+  // 진화 서사는 항상 뷰1(2D)에서 시작 — 매 게임 진입 시 처음부터.
   setStage(0);
 
   ($("suggest") as HTMLButtonElement).onclick = async () => {

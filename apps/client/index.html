@@ -146,7 +146,24 @@
       .dice-overlay .dice-label { font-size: 24px; color: #f0d9a8; margin-top: 12px; font-weight: 700; letter-spacing: 1px; }
       .dice-overlay.done .dice-label { color: #ffd479; }
       .hud-hand { left: 16px; bottom: 16px; max-width: 300px; }
-      .hud-view { left: 16px; bottom: 72px; padding: 6px 8px; }
+      .hud-view { left: 16px; bottom: 72px; padding: 6px 8px; position: fixed; }
+      .hud-view #viewToggle { min-width: 110px; }
+      /* 위로 열리는 뷰 선택 드롭다운 */
+      .view-list {
+        position: absolute; left: 8px; right: 8px; bottom: calc(100% + 4px);
+        list-style: none; margin: 0; padding: 4px;
+        background: rgba(13, 11, 8, 0.96); border: 1px solid #3a3126;
+        border-radius: 10px; box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(3px);
+      }
+      .view-list li {
+        padding: 8px 10px; border-radius: 6px; font-size: 12px; color: #cbbfa8;
+        cursor: pointer; white-space: nowrap; user-select: none;
+      }
+      .view-list li:hover { background: #2c2317; color: #f0d9a8; }
+      .view-list li.active { background: #3a2b1a; color: #f0d9a8; }
+      .view-list li.soon { opacity: 0.5; cursor: default; }
+      .view-list li.soon:hover { background: transparent; color: #cbbfa8; }
       #hand { min-height: 18px; }
       /* ── 우측 컬럼 (바닥부터 재구현) ── */
       .rp-col {
@@ -352,7 +369,8 @@
       </div>
 
       <div class="hud hud-view">
-        <button id="viewToggle" title="2D / 2.5D 시점 전환">2.5D</button>
+        <ul id="viewList" class="view-list hidden"></ul>
+        <button id="viewToggle" title="화면 방식 선택">뷰1 · 2D ▲</button>
       </div>
 
       <div class="hud hud-turn hidden" id="turnInfo"></div>
