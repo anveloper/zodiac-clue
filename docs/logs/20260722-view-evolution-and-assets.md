@@ -53,7 +53,16 @@
 ## fix — 소환 토큰 문·벽 봉쇄
 - 제안 소환 토큰이 **문 칸**에 앉아 방 전체가 못 나가던 버그 → 방마다 `summon` 앵커(문 반대쪽 **내부** 구석) 지정. `freeCellIn`이 앵커 근처부터 채우되 **문 제외·명패행/벽 후순위** → 소환이 문·벽을 안 막고 안쪽에 모임. (shared `ROOM_REGIONS.summon` 9방 + server `freeCellIn`)
 
+## feat — 캐릭터 직업 용어 풀이
+- 이름의 직업(서생·역사·낭자·도령·무녀·장수·목동·광대·훈장·포교·객주·대감)이 생소한 사극 용어라 **뜻풀이** 추가. shared `JOB`(term+gloss)·`job()` 시드.
+- 대기실: 캐릭터에 올리면 `#lobbyPersona` 패널에 **직업 뜻 + 성격**, 셀 `title` 툴팁도.
+- 문서: character-concepts에 "직업 용어 풀이" 글로서리(md+html), README/game-intro 반영.
+
+## feat — 턴 순서 UI (스트립 + 원형)
+- 상단 턴 배너에 상태 + **순서 스트립**(현재→다음… 이모지 칩, 현재 강조, 끝 `↺` 순환). `state.turnOrder` 사용(서버 무변경).
+- 배너 클릭 → **원형 순서 오버레이**(`#turnCircle` — 라운드 테이블·중앙 시계방향 ↻·현재/다음 배지·순번). 브라우저 e2e 검증.
+
 ## deploy
-- 클라이언트: Vercel Git 연동 자동 배포(main push) — 뷰 진화·드롭다운·뷰4·공개방 UI.
+- 클라이언트: Vercel Git 연동 자동 배포(main push) — 뷰 진화·드롭다운·뷰4·공개방·직업 풀이·턴 순서 UI.
 - 서버: GitHub Actions(SSH→OCI) — 소환 앵커·문 봉쇄 수정, 방 공개/비공개·메타데이터. (apps/server·packages/shared 변경 시 트리거)
 - 라이브: https://zodiac-clue.vercel.app · 배포 모두 성공(server GH Actions success, client Vercel Ready).

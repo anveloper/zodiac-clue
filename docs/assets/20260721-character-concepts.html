@@ -28,6 +28,10 @@
   .chr dd { margin:0; font-size:13.5px; }
   .todo { color:var(--dim); font-size:13px; font-style:italic; margin-top:18px; }
   b.g { color:var(--gold); }
+  .scroll { overflow-x:auto; }
+  table { border-collapse:collapse; width:100%; margin:8px 0 18px; font-size:13.5px; min-width:420px; }
+  th, td { border:1px solid var(--edge); padding:7px 10px; text-align:left; }
+  th { background:#2a2318; color:var(--gold); }
 </style>
 </head>
 <body>
@@ -44,6 +48,24 @@
       <li>외형 프리셋(정합용): 한복 기반 + 동물 특징을 얼굴·귀·소품으로 은은히, 먹·주홍·황금 팔레트, 사극 채색화 톤.</li>
     </ul>
   </div>
+
+  <h2>직업 용어 풀이 <span class="pill">생소한 사극 단어</span></h2>
+  <p class="sub" style="margin:0 0 6px">캐릭터 이름의 <b>직업</b>이 조선 시대 용어라 생소할 수 있어 뜻을 함께 둔다(시드=<code>cards.ts</code>의 <code>JOB</code>). 게임 <b>대기실 패널·툴팁</b>에도 노출.</p>
+  <div class="scroll"><table>
+    <tr><th>캐릭터</th><th>직업</th><th>뜻</th></tr>
+    <tr><td>🐭 생쥐 서생</td><td>서생</td><td>글공부하는 선비(학생)</td></tr>
+    <tr><td>🐮 황소 역사</td><td>역사(力士)</td><td>힘이 아주 센 장사</td></tr>
+    <tr><td>🐯 호랑이 대감</td><td>대감</td><td>높은 벼슬아치·귀족 어른</td></tr>
+    <tr><td>🐰 토끼 낭자</td><td>낭자</td><td>젊은 여인·아가씨</td></tr>
+    <tr><td>🦎 게코 도령</td><td>도령</td><td>장가 안 든 양반집 도련님</td></tr>
+    <tr><td>🐍 뱀 무녀</td><td>무녀</td><td>굿을 하는 여자 무당</td></tr>
+    <tr><td>🐴 말 장수</td><td>장수</td><td>물건을 파는 장사꾼(말 장수=말 상인)</td></tr>
+    <tr><td>🐑 양 목동</td><td>목동</td><td>가축을 치는 아이(목자)</td></tr>
+    <tr><td>🐵 잔나비 광대</td><td>광대</td><td>재주·연희를 펼치는 놀이꾼(배우)</td></tr>
+    <tr><td>🐔 닭 훈장</td><td>훈장</td><td>서당의 글 선생님</td></tr>
+    <tr><td>🐶 삽살 포교</td><td>포교</td><td>죄인을 잡던 포도청 관리(순검)</td></tr>
+    <tr><td>🐷 돼지 객주</td><td>객주</td><td>상인에게 숙식·중개를 해주던 상인</td></tr>
+  </table></div>
 
   <h2>1군 <span class="pill">쥐 · 소 · 호랑이 · 토끼</span></h2>
 
