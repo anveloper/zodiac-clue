@@ -151,11 +151,14 @@ export class IsoView {
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.canvas = this.renderer.domElement;
+    // z-index 확정: Phaser(#game, 0) < three 캔버스(2) < 버블(3) < HUD(5).
+    // three는 Phaser '위에 얹어 가리기만' 한다 — #game은 절대 숨기지 않는다
+    // (RESIZE로 0크기가 되면 되돌아왔을 때 빈 화면이 되던 버그 방지).
     this.canvas.style.cssText =
-      "position:fixed; inset:0; width:100%; height:100%; display:none;";
+      "position:fixed; inset:0; width:100%; height:100%; z-index:2; display:none;";
     this.bubbleLayer = document.createElement("div");
     this.bubbleLayer.style.cssText =
-      "position:fixed; inset:0; pointer-events:none; display:none;";
+      "position:fixed; inset:0; pointer-events:none; z-index:3; display:none;";
 
     // #game(2D 캔버스) 바로 뒤·HUD 앞에 삽입 → HUD가 항상 위에 쌓이도록.
     const gameDiv = document.getElementById("game");

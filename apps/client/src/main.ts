@@ -563,50 +563,30 @@ const enterGame = (): void => {
   if (room) buildEvidence(room.roomId);
 
   // 뷰 진화 단계 전환(순서형). 서버·HUD·입력 규칙은 단계와 무관하게 동일.
+  // 핵심: #game(Phaser)은 절대 display:none 하지 않는다. three는 위에 얹어
+  // 가리기만 하고(z-index), 뷰1로 오면 three 캔버스만 숨겨 아래 Phaser를 보인다.
   const setStage = (i: number): void => {
     stageIndex = ((i % STAGES.length) + STAGES.length) % STAGES.length;
     const st = STAGES[stageIndex];
-    const gameDiv = $("game");
     const toggleBtn = $("viewToggle") as HTMLButtonElement;
     if (st.kind === "three") {
       if (!iso && room) iso = new IsoView(room, $("gameScreen"));
-      iso?.setActive(true);
+      iso?.setActive(true); // three 캔버스가 Phaser 위를 덮음(HUD는 그 위)
       iso?.setAssets(st.assets); // 뷰2=이모지 / 뷰3=에셋 아트
-      gameDiv.style.display = "none";
       if (game?.input.keyboard) game.input.keyboard.enabled = false;
     } else {
-      iso?.setActive(false);
-      gameDiv.style.display = "block";
+      iso?.setActive(false); // 캔버스 숨김 → 아래 Phaser가 그대로 보임
       if (game?.input.keyboard) game.input.keyboard.enabled = true;
-      // Scale.RESIZE가 숨김 동안 캔버스를 0으로 줄여둠 → 다시 보일 때 리프레시.
-      requestAnimationFrame(() => game?.scale.refresh());
     }
     // 버튼은 "다음에 갈 단계"를 안내(누르면 그 단계로).
     const next = STAGES[(stageIndex + 1) % STAGES.length];
     toggleBtn.textContent = "▶ " + next.label;
     toggleBtn.title = `현재: ${st.label} · 클릭하면 ${next.label}`;
-    try {
-      localStorage.setItem("zc_stage", st.id);
-    } catch {
-      /* noop */
-    }
   };
   ($("viewToggle") as HTMLButtonElement).onclick = () =>
     setStage(stageIndex + 1);
-  // 저장된 선호 단계 복원(구 zc_view=iso → 뷰2로 이관).
-  let restore = 0;
-  try {
-    const saved = localStorage.getItem("zc_stage");
-    if (saved) {
-      const idx = STAGES.findIndex((s) => s.id === saved);
-      if (idx >= 0) restore = idx;
-    } else if (localStorage.getItem("zc_view") === "iso") {
-      restore = 1;
-    }
-  } catch {
-    /* noop */
-  }
-  setStage(restore);
+  // 진화 서사는 항상 뷰1(2D)에서 시작 — 매 게임 진입 시 처음부터 넘겨보게.
+  setStage(0);
 
   ($("suggest") as HTMLButtonElement).onclick = async () => {
     // 방 안에서만 제안 가능 — 밖이면 안내(제안이 거부돼 턴이 안 넘어가는 혼동 방지)
