@@ -138,6 +138,12 @@ export class IsoView {
   private active = false;
   private raf = 0;
 
+  // 뷰3(에셋 모드): 이모지 대신 /assets/의 정면 아트를 로드. 실패 시 이모지 폴백.
+  private useAssets = false;
+  private loader = new THREE.TextureLoader();
+  private roomMats = new Map<string, THREE.MeshStandardMaterial>();
+  private feastMat?: THREE.MeshStandardMaterial;
+
   constructor(room: Room, host: HTMLElement) {
     this.room = room;
     this.myId = room.sessionId;
@@ -211,6 +217,105 @@ export class IsoView {
     }
   }
 
+  // ── 뷰3(에셋 모드) 토글 ──
+  // 이모지 스프라이트/색 슬랩 ↔ /assets/ 정면 아트/룸 텍스처. 로더는 정적 파일만
+  // 부르므로 스토리지·CORS·요금 없음(같은 오리진). 실패 시 이모지로 폴백.
+  setAssets(on: boolean): void {
+    if (this.useAssets === on) return;
+    this.useAssets = on;
+
+    // 방 바닥 텍스처(룸 종횡비=박스 UV). 없으면 원래 단색으로 복귀.
+    this.roomMats.forEach((mat, name) => {
+      if (on) this.applyTexture(mat, `/assets/room/${name}-floor.svg`, 0xcbb489);
+      else this.clearTexture(mat, 0xcbb489);
+    });
+    if (this.feastMat) {
+      if (on) this.applyTexture(this.feastMat, "/assets/room/feast.svg", 0x3a2b1a);
+      else this.clearTexture(this.feastMat, 0x3a2b1a);
+    }
+
+    // 토큰·장물·NPC 스프라이트는 지워두면 다음 syncState에서 새 플래그로 재생성.
+    this.tokens.forEach((t) => this.scene.remove(t.group));
+    this.tokens.clear();
+    this.weapons.forEach((s) => this.scene.remove(s));
+    this.weapons.clear();
+    this.helpers.forEach((g) => this.scene.remove(g));
+    this.helpers.clear();
+  }
+
+  private applyTexture(
+    mat: THREE.MeshStandardMaterial,
+    url: string,
+    fallbackColor: number,
+  ): void {
+    this.loader.load(
+      url,
+      (tex) => {
+        tex.colorSpace = THREE.SRGBColorSpace;
+        mat.map = tex;
+        mat.color.set(0xffffff); // 텍스처 원색 보존
+        mat.needsUpdate = true;
+      },
+      undefined,
+      () => this.clearTexture(mat, fallbackColor),
+    );
+  }
+
+  private clearTexture(mat: THREE.MeshStandardMaterial, color: number): void {
+    mat.map = null;
+    mat.color.set(color);
+    mat.needsUpdate = true;
+  }
+
+  /** 캐릭터 정면 얼굴 스프라이트(에셋 모드면 /assets, 아니면 이모지). */
+  private charFace(id: string, worldH: number, fontPx: number): THREE.Sprite {
+    const fallback = (): THREE.Sprite => makeSprite(emoji(id), { fontPx, worldH });
+    if (!this.useAssets) return fallback();
+    return this.assetSprite(`/assets/char/${id}-face.svg`, worldH, fallback);
+  }
+
+  /** 장물 정면 아이콘 스프라이트. */
+  private lootSprite(id: string, worldH: number): THREE.Sprite {
+    const fallback = (): THREE.Sprite =>
+      makeSprite(emoji(id), { fontPx: 96, worldH });
+    if (!this.useAssets) return fallback();
+    return this.assetSprite(`/assets/loot/${id}-icon.svg`, worldH, fallback);
+  }
+
+  /** 정사각 이미지 스프라이트(비동기 로드). 실패하면 폴백 스프라이트 텍스처로 교체. */
+  private assetSprite(
+    url: string,
+    worldH: number,
+    fallback: () => THREE.Sprite,
+  ): THREE.Sprite {
+    const mat = new THREE.SpriteMaterial({
+      transparent: true,
+      depthTest: false,
+      depthWrite: false,
+    });
+    const sprite = new THREE.Sprite(mat);
+    sprite.scale.set(worldH, worldH, 1); // 아이콘은 정사각
+    sprite.renderOrder = 10;
+    this.loader.load(
+      url,
+      (tex) => {
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.minFilter = THREE.LinearFilter;
+        mat.map = tex;
+        mat.needsUpdate = true;
+      },
+      undefined,
+      () => {
+        const fb = fallback();
+        const fbMat = fb.material as THREE.SpriteMaterial;
+        mat.map = fbMat.map;
+        mat.needsUpdate = true;
+        sprite.scale.copy(fb.scale);
+      },
+    );
+    return sprite;
+  }
+
   private buildLights(): void {
     this.scene.add(new THREE.AmbientLight(0xffffff, 0.85));
     const dir = new THREE.DirectionalLight(0xfff2d8, 0.6);
@@ -239,10 +344,9 @@ export class IsoView {
 
     // 방(살짝 높은 박스 → 2.5D 깊이감) + 명패 + 문
     for (const r of ROOM_REGIONS) {
-      const box = new THREE.Mesh(
-        new THREE.BoxGeometry(r.w, 0.2, r.h),
-        new THREE.MeshStandardMaterial({ color: 0xcbb489 }),
-      );
+      const roomMat = new THREE.MeshStandardMaterial({ color: 0xcbb489 });
+      this.roomMats.set(r.name, roomMat);
+      const box = new THREE.Mesh(new THREE.BoxGeometry(r.w, 0.2, r.h), roomMat);
       box.position.set(
         worldX(r.x) + (r.w - 1) / 2,
         0.1,
@@ -304,9 +408,11 @@ export class IsoView {
     }
 
     // 중앙 잔치상
+    const feastMat = new THREE.MeshStandardMaterial({ color: 0x3a2b1a });
+    this.feastMat = feastMat;
     const feast = new THREE.Mesh(
       new THREE.BoxGeometry(FEAST.w, 0.34, FEAST.h),
-      new THREE.MeshStandardMaterial({ color: 0x3a2b1a }),
+      feastMat,
     );
     feast.position.set(
       worldX(FEAST.x) + (FEAST.w - 1) / 2,
@@ -359,7 +465,7 @@ export class IsoView {
     ring.renderOrder = 9;
     group.add(ring);
 
-    const face = makeSprite(emoji(p.suspect), { fontPx: 110, worldH: 0.95 });
+    const face = this.charFace(p.suspect, 0.95, 110);
     face.position.set(0, 0.85, 0);
     group.add(face);
 
@@ -417,7 +523,7 @@ export class IsoView {
     state.weapons.forEach((w, key) => {
       let s = this.weapons.get(key);
       if (!s) {
-        s = makeSprite(emoji(w.value), { fontPx: 96, worldH: 0.8 });
+        s = this.lootSprite(w.value, 0.8);
         this.scene.add(s);
         this.weapons.set(key, s);
       }
@@ -436,7 +542,7 @@ export class IsoView {
         disc.rotation.x = -Math.PI / 2;
         disc.position.y = 0.22;
         g.add(disc);
-        const face = makeSprite(emoji(h.value), { fontPx: 100, worldH: 0.85 });
+        const face = this.charFace(h.value, 0.85, 100);
         face.position.set(0, 0.8, 0);
         g.add(face);
         const mark = makeSprite("🃏", { fontPx: 48, worldH: 0.4 });

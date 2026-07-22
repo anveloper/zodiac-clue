@@ -149,8 +149,24 @@ const openPicker = (title: string, needRoom: boolean): Promise<Pick | null> =>
 let room: Room | null = null;
 let game: Phaser.Game | null = null;
 let iso: IsoView | null = null;
-let viewMode: "2d" | "iso" = "2d";
 let phaserStarted = false;
+
+// ── 뷰 진화 단계(순서형·확장형) ─────────────────────────────
+// 버튼을 누를 때마다 다음 단계로 순환. 새 단계는 배열에 push만 하면 UI에 자동 편입.
+// (이름이 아마존 S3와 헷갈려서 "뷰1/뷰2/뷰3"로 통일.)
+type Stage = {
+  id: string;
+  label: string;
+  kind: "phaser" | "three";
+  assets: boolean;
+};
+const STAGES: Stage[] = [
+  { id: "2d-emoji", label: "뷰1 · 2D", kind: "phaser", assets: false },
+  { id: "three-emoji", label: "뷰2 · 2.5D", kind: "three", assets: false },
+  { id: "three-asset", label: "뷰3 · 에셋", kind: "three", assets: true },
+  // 미래: { id: "three-3d", label: "뷰4 · 3D", kind: "three", assets: true } 등 append
+];
+let stageIndex = 0;
 let selectedCharacter: string | null = null;
 /** 내 손패 카드값 집합 — 정답일 수 없으므로 제안·증거노트에서 자동 비활성화. */
 let myCards = new Set<string>();
@@ -234,7 +250,7 @@ const wireRoom = (r: Room): void => {
   });
   r.onMessage("say", (m: { id: string; from: string; text: string }) => {
     addLog(`💬 ${m.from}: ${m.text}`, { kind: "info" });
-    if (viewMode === "iso") {
+    if (STAGES[stageIndex].kind === "three") {
       iso?.showBubble(m.id, m.text);
     } else {
       const scene = game?.scene.getScene("game") as GameScene | undefined;
@@ -574,39 +590,51 @@ const enterGame = (): void => {
   game.registry.set("room", room);
   if (room) buildEvidence(room.roomId);
 
-  // 2D(Phaser) ↔ 2.5D(Three.js) 시점 토글. 서버·HUD·입력 규칙은 동일.
-  const setView = (mode: "2d" | "iso"): void => {
-    viewMode = mode;
+  // 뷰 진화 단계 전환(순서형). 서버·HUD·입력 규칙은 단계와 무관하게 동일.
+  const setStage = (i: number): void => {
+    stageIndex = ((i % STAGES.length) + STAGES.length) % STAGES.length;
+    const st = STAGES[stageIndex];
     const gameDiv = $("game");
     const toggleBtn = $("viewToggle") as HTMLButtonElement;
-    if (mode === "iso") {
+    if (st.kind === "three") {
       if (!iso && room) iso = new IsoView(room, $("gameScreen"));
       iso?.setActive(true);
+      iso?.setAssets(st.assets); // 뷰2=이모지 / 뷰3=에셋 아트
       gameDiv.style.display = "none";
       if (game?.input.keyboard) game.input.keyboard.enabled = false;
-      toggleBtn.textContent = "2D";
     } else {
       iso?.setActive(false);
       gameDiv.style.display = "block";
       if (game?.input.keyboard) game.input.keyboard.enabled = true;
-      toggleBtn.textContent = "2.5D";
       // Scale.RESIZE가 숨김 동안 캔버스를 0으로 줄여둠 → 다시 보일 때 리프레시.
       requestAnimationFrame(() => game?.scale.refresh());
     }
+    // 버튼은 "다음에 갈 단계"를 안내(누르면 그 단계로).
+    const next = STAGES[(stageIndex + 1) % STAGES.length];
+    toggleBtn.textContent = "▶ " + next.label;
+    toggleBtn.title = `현재: ${st.label} · 클릭하면 ${next.label}`;
     try {
-      localStorage.setItem("zc_view", mode);
+      localStorage.setItem("zc_stage", st.id);
     } catch {
       /* noop */
     }
   };
   ($("viewToggle") as HTMLButtonElement).onclick = () =>
-    setView(viewMode === "2d" ? "iso" : "2d");
-  // 저장된 선호 시점 복원
+    setStage(stageIndex + 1);
+  // 저장된 선호 단계 복원(구 zc_view=iso → 뷰2로 이관).
+  let restore = 0;
   try {
-    if (localStorage.getItem("zc_view") === "iso") setView("iso");
+    const saved = localStorage.getItem("zc_stage");
+    if (saved) {
+      const idx = STAGES.findIndex((s) => s.id === saved);
+      if (idx >= 0) restore = idx;
+    } else if (localStorage.getItem("zc_view") === "iso") {
+      restore = 1;
+    }
   } catch {
     /* noop */
   }
+  setStage(restore);
 
   ($("suggest") as HTMLButtonElement).onclick = async () => {
     // 방 안에서만 제안 가능 — 밖이면 안내(제안이 거부돼 턴이 안 넘어가는 혼동 방지)
