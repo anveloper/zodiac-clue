@@ -44,16 +44,17 @@
 
   <h2>0. 뷰 진화 단계 <span class="pill">에셋 소비처 ⭐</span></h2>
   <div class="card">
-    에셋은 <b class="g">"개발 진화 서사" 뷰 선택기</b>의 단계별 페이로드다. 버튼을 누를 때마다 다음 단계로 넘어가며, 새 단계는 개발되는 대로 <b>뒤에 append</b>. (실코드 검수 결과 현재 렌더러는 이미지·모델을 <b>하나도</b> 로드하지 않음 — 전부 이모지+지오메트리 절차적 생성.)
+    에셋은 <b class="g">"개발 진화 서사" 뷰 선택기</b>의 단계별 페이로드다. <b>위로 열리는 드롭다운</b>으로 단계를 직접 선택하며, 새 단계는 개발되는 대로 <b>뒤에 append</b>. (렌더러는 절차적 생성이 기본 — 뷰3만 에셋 로드.) <span style="opacity:.7">아래 표의 <code>S3</code>=뷰3, <code>S4+</code>=뷰5+(3D).</span>
   </div>
   <div class="scroll"><table>
     <tr><th>단계</th><th>렌더</th><th>캐릭터/장물 표현</th><th>필요 에셋</th><th>상태</th></tr>
-    <tr><td class="n"><b>S1</b> 2d-emoji</td><td>Phaser 2D(탑다운)</td><td>이모지 + 색 원/벡터</td><td>없음</td><td>✅ 현재·기본</td></tr>
-    <tr><td class="n"><b>S2</b> three-emoji</td><td>Three.js(42° 원근·빌보드)</td><td>이모지 스프라이트</td><td>없음</td><td>✅ 현재</td></tr>
-    <tr><td class="n"><b>S3</b> three-asset</td><td>Three.js 빌보드/2D 스프라이트</td><td><b class="g">정면 아트 PNG</b> + 룸 배경</td><td>얼굴12·장물6·룸배경·UI</td><td>🔜 에셋 생성 후</td></tr>
-    <tr><td class="n"><b>S4+</b> (미래)</td><td>3D 씬 등</td><td>3D 모델·방향 모션</td><td>3D모델·4방모션</td><td>⏸ 그 단계 개발 시 append</td></tr>
+    <tr><td class="n"><b>뷰1</b> 2d-emoji</td><td>Phaser 2D(탑다운)</td><td>이모지 + 색 원/벡터</td><td>없음</td><td>✅ 구현·기본</td></tr>
+    <tr><td class="n"><b>뷰2</b> three-emoji</td><td>Three.js(42° 원근·빌보드)</td><td>이모지 스프라이트</td><td>없음</td><td>✅ 구현</td></tr>
+    <tr><td class="n"><b>뷰3</b> three-asset</td><td>Three.js 빌보드/2D 스프라이트</td><td><b class="g">정면 아트 PNG</b> + 룸 배경</td><td>얼굴12·장물6·룸배경·UI</td><td>✅ 구현(placeholder)</td></tr>
+    <tr><td class="n"><b>뷰4</b> pixel</td><td>Phaser 도트(탑다운 픽셀)</td><td>절차적 픽셀 타일·도트 크리터</td><td>없음(코드 생성)</td><td>✅ 구현(첫 버전)</td></tr>
+    <tr><td class="n"><b>뷰5+</b> (미래)</td><td>3D 씬 등</td><td>3D 모델·방향 모션</td><td>3D모델·4방모션</td><td>⏸ 그 단계 개발 시 append</td></tr>
   </table></div>
-  <p><b>핵심 제약</b>: S2/S3는 <b>빌보드 스프라이트</b>(항상 카메라 정면) → 캐릭터·장물 아트는 <b>쿼터뷰가 아니라 정면</b>. 방향 전환·모션은 S4+ 3D 단계에서만 의미. <b>지금 생성 = S3 소비분</b>, 3D/모션은 삭제가 아니라 S4+용 보존.</p>
+  <p><b>핵심 제약</b>: 뷰2/뷰3은 <b>빌보드 스프라이트</b>(항상 카메라 정면) → 캐릭터·장물 아트는 <b>쿼터뷰가 아니라 정면</b>. 뷰4(도트)는 절차적이라 이미지 에셋 불필요. 방향 전환·모션은 뷰5+ 3D 단계에서만 의미. <b>지금 생성 = 뷰3 소비분</b>, 3D/모션은 삭제가 아니라 뷰5+용 보존.</p>
 
   <h2>1. 캐릭터 에셋 <span class="pill">12지신 전원</span></h2>
   <div class="scroll"><table>

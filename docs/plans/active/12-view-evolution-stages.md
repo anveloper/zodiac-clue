@@ -18,29 +18,36 @@ status: active · created: 2026-07-22 · src: 라이브 요청(에셋 검수 후
 | 뷰1 | `2d-emoji` | Phaser 2D(탑다운) | 이모지 + 색 원/벡터 | 없음 | ✅ 구현·기본 |
 | 뷰2 | `three-emoji` | Three.js(42° 원근·빌보드) | 이모지 스프라이트 | 없음 | ✅ 구현 |
 | 뷰3 | `three-asset` | Three.js 빌보드 + 룸 텍스처 | **정면 아트** + 룸 바닥 | 얼굴12·장물6·룸바닥·UI | ✅ 구현(placeholder 로드 중, PNG 교체 대기) |
-| 뷰4+ | (미래) | 3D 씬 등 | 3D 모델·방향 모션 | 3D모델·4방모션 | ⏸ 그 단계 개발 시 append |
+| 뷰4 | `pixel` | Phaser 도트(탑다운 픽셀 오버레이) | 절차적 픽셀 타일·**도트 크리터**·장물 상자 | 없음(코드 생성) | ✅ 구현(첫 버전, 추후 픽셀 타일셋) |
+| 뷰5+ | (미래) | 3D 씬 등 | 3D 모델·방향 모션 | 3D모델·4방모션 | ⏸ 그 단계 개발 시 append |
 
-- **에셋은 정면 기준**(빌보드/탑다운 공통). 쿼터뷰 토큰·4방 모션·3D 모델은 S4+ 전용.
+- **에셋은 정면 기준**(빌보드/탑다운 공통). 쿼터뷰 토큰·4방 모션·3D 모델은 뷰5+ 전용.
 - 에셋 상세 = `docs/assets/20260721-asset-catalog.md` (0. 뷰 진화 단계), 프롬프트 = `20260721-image-prompts.md`.
 
 ## 아키텍처 설계
-- 단계를 배열로: `const STAGES = [{id:"2d-emoji", kind:"phaser"}, {id:"three-emoji", kind:"three", assets:false}, {id:"three-asset", kind:"three", assets:true}, ...]`.
-- 버튼(현 `#viewToggle`)은 `stageIndex = (stageIndex + 1) % STAGES.length` 로 순환. **복원 없음 — 매 진입 시 `setStage(0)`로 항상 뷰1에서 시작**(진화 서사를 처음부터).
-- 렌더러 활성화: `kind` 가 phaser면 Phaser 활성/Three 비활성, three면 반대. **단, `#game`은 절대 숨기지 않고** Three 캔버스를 z-index로 위에 얹어 가리기만. `assets` 플래그로 Three 뷰가 이모지 대신 텍스처 스프라이트를 만들도록 분기.
-- 버튼 라벨에 "다음 갈 단계" 표기(예: `▶ 뷰2 · 2.5D`), 진화 서사 강조.
+- 단계를 배열로: `const STAGES = [{id,label,kind:"phaser"|"three"|"pixel",assets}]`. 새 단계는 push만 하면 UI 자동 편입.
+- **UI = 위로 열리는 드롭다운**(`#viewToggle` 버튼 + `#viewList`). 현재 뷰를 버튼에 표시(`뷰N · 라벨 ▲`), 항목 클릭 시 해당 단계로 **직접 점프**(순환 아님). 바깥 클릭 시 닫힘. **복원 없음 — 매 진입 시 `setStage(0)`로 항상 뷰1에서 시작**.
+- 렌더러 활성화(`setStage`): `three`면 IsoView 오버레이(캔버스를 z-index로 위에 얹음), `phaser`(뷰1)/`pixel`(뷰4)이면 IsoView 끔. **`#game`(Phaser)은 절대 숨기지 않음**. Phaser 씬 표시는 `sys.setVisible` — 뷰1=GameScene, 뷰4=PixelScene. three에선 Phaser 키보드 off(iso가 입력), phaser/pixel은 GameScene이 입력·카메라 담당.
 
 ### 뷰3 렌더 분기 (three-asset)
 - `iso-view.ts`의 `makeSprite(emoji(...))` 자리에 **텍스처 로더 경로** 추가: `THREE.TextureLoader`로 `/assets/char/<id>-face.svg`(placeholder, 추후 PNG) 로드해 스프라이트 텍스처로, 없으면 이모지 폴백. (구현: `assetSprite`/`charFace`/`lootSprite`)
 - 룸 슬랩(`BoxGeometry`) 윗면에 방 바닥 텍스처 매핑(룸 종횡비 텍스처, UV 타일).
 - 로더 실패/미존재 시 **graceful fallback → 이모지**(에셋 생성 전에도 단계는 살아 있음).
 
+### 뷰4 렌더 (pixel · 도트풍)
+- `PixelScene`(신규, `scenes/pixel-scene.ts`) = 탑다운 픽셀 오버레이 씬. 절차적 잔디 타일(`generateTexture`)·픽셀 룸/문·**도트 크리터(몸통+귀+눈)**·장물 상자·잔치상 궤짝. 외부 에셋 0.
+- config `scene:[GameScene, PixelScene]`의 2번째라 자동 시작 안 됨 → 처음 필요할 때 `scene.run("pixel")`.
+- **GameScene이 입력·카메라·로직 담당**(뷰4에선 invisible), PixelScene은 GameScene 카메라를 매 프레임 미러링 + `room.state` 위치 동기화 → 입력/동기화 중복 없음.
+- 첫 버전은 절차적 도트. 추후 실제 픽셀 타일셋(풍문상회 스타일)으로 크리터·타일 업그레이드.
+
 ## 작업 순서
-- [x] `STAGES` 배열 + `stageIndex` 상태로 토글 리팩터(바이너리 → 순서형). 렌더러 활성화 로직 재사용. (`main.ts`)
-- [x] 버튼 라벨을 "다음 갈 단계"(`▶ 뷰N`) 표기로. **복원 제거 — 항상 뷰1 시작**(localStorage 미사용).
-- [x] 뷰3 골격: `three-asset` 분기 + `TextureLoader` 경로 + 이모지/단색 폴백(에셋 0장이어도 동작). (`iso-view.ts` `setAssets`/`assetSprite`/`applyTexture`)
-- [x] placeholder 에셋 44개 생성 + `public/assets/` 배선(SVG). 생성기 `scripts/gen-placeholder-assets.mjs`.
+- [x] `STAGES` 배열 + `stageIndex` 상태로 토글 리팩터(바이너리 → 순서형). (`main.ts`)
+- [x] **위로 열리는 드롭다운**으로 단계 직접 선택(`#viewList`). 복원 제거 — 항상 뷰1 시작.
+- [x] 뷰3 골격: `three-asset` 분기 + `TextureLoader` + 이모지/단색 폴백. (`iso-view.ts`)
+- [x] placeholder 에셋 44개 생성 + `public/assets/` 배선(SVG). `scripts/gen-placeholder-assets.mjs`.
+- [x] **뷰4 도트풍**: `PixelScene` 절차적 픽셀 렌더 + GameScene 카메라 미러링. (`scenes/pixel-scene.ts`)
 - [ ] 상세 아트(PNG)를 같은 경로에 덮어 실교체(GPT 이미지 2.0 산출물).
-- [ ] (미래) 뷰4 `three-3d`: GLTFLoader + 모델/모션 단계 append.
+- [ ] (미래) 뷰5 `three-3d`: GLTFLoader + 모델/모션. 또는 뷰4 픽셀 타일셋 업그레이드.
 
 ## 구현 메모 (2026-07-22)
 - 뷰2↔뷰3 전환은 IsoView 인스턴스 유지. `setAssets(on)`이 룸/잔치상 머티리얼에 텍스처를 입히고, 토큰·장물·NPC 스프라이트를 비워 다음 `syncState`에서 새 플래그로 재생성.
@@ -49,9 +56,9 @@ status: active · created: 2026-07-22 · src: 라이브 요청(에셋 검수 후
 - 타입체크·프로덕션 빌드 통과.
 
 ## done-criteria
-- 버튼 반복 클릭으로 S1→S2→S3(→순환) 전환. 각 단계가 독립 동작.
-- S3는 에셋이 없어도 이모지 폴백으로 깨지지 않음. 에셋 배선 시 정면 아트로 교체.
-- 새 단계(S4+)를 배열에 push만 하면 UI에 자동 편입.
+- **드롭다운에서 뷰1~뷰4 직접 선택**·전환. 각 단계 독립 동작, 뷰4↔뷰1 복귀 정상(브라우저 e2e 검증).
+- 뷰3은 에셋 없어도 이모지 폴백. 뷰4는 외부 에셋 0(절차적 도트).
+- 새 단계를 `STAGES`에 push만 하면 드롭다운·전환에 자동 편입.
 
 ## 관련
 - 렌더 검수 원본: 2D=`apps/client/src/scenes/game-scene.ts`, 2.5D=`apps/client/src/scenes/iso-view.ts`, 토글=`apps/client/src/main.ts`.
