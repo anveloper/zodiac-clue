@@ -62,6 +62,10 @@
     "dir": "plans/active",
     "items": [
       {
+        "path": "plans/active/12-view-evolution-stages.md",
+        "title": "plan: 뷰 진화 단계 선택기 (개발 진화를 기능으로)"
+      },
+      {
         "path": "plans/active/11-asset-concept-pipeline.md",
         "title": "plan: 에셋 파이프라인 + 12지신 컨셉 + 이미지 프롬프트"
       },

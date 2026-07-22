@@ -42,39 +42,52 @@
     </div>
   </div>
 
+  <h2>0. 뷰 진화 단계 <span class="pill">에셋 소비처 ⭐</span></h2>
+  <div class="card">
+    에셋은 <b class="g">"개발 진화 서사" 뷰 선택기</b>의 단계별 페이로드다. 버튼을 누를 때마다 다음 단계로 넘어가며, 새 단계는 개발되는 대로 <b>뒤에 append</b>. (실코드 검수 결과 현재 렌더러는 이미지·모델을 <b>하나도</b> 로드하지 않음 — 전부 이모지+지오메트리 절차적 생성.)
+  </div>
+  <div class="scroll"><table>
+    <tr><th>단계</th><th>렌더</th><th>캐릭터/장물 표현</th><th>필요 에셋</th><th>상태</th></tr>
+    <tr><td class="n"><b>S1</b> 2d-emoji</td><td>Phaser 2D(탑다운)</td><td>이모지 + 색 원/벡터</td><td>없음</td><td>✅ 현재·기본</td></tr>
+    <tr><td class="n"><b>S2</b> three-emoji</td><td>Three.js(42° 원근·빌보드)</td><td>이모지 스프라이트</td><td>없음</td><td>✅ 현재</td></tr>
+    <tr><td class="n"><b>S3</b> three-asset</td><td>Three.js 빌보드/2D 스프라이트</td><td><b class="g">정면 아트 PNG</b> + 룸 배경</td><td>얼굴12·장물6·룸배경·UI</td><td>🔜 에셋 생성 후</td></tr>
+    <tr><td class="n"><b>S4+</b> (미래)</td><td>3D 씬 등</td><td>3D 모델·방향 모션</td><td>3D모델·4방모션</td><td>⏸ 그 단계 개발 시 append</td></tr>
+  </table></div>
+  <p><b>핵심 제약</b>: S2/S3는 <b>빌보드 스프라이트</b>(항상 카메라 정면) → 캐릭터·장물 아트는 <b>쿼터뷰가 아니라 정면</b>. 방향 전환·모션은 S4+ 3D 단계에서만 의미. <b>지금 생성 = S3 소비분</b>, 3D/모션은 삭제가 아니라 S4+용 보존.</p>
+
   <h2>1. 캐릭터 에셋 <span class="pill">12지신 전원</span></h2>
   <div class="scroll"><table>
-    <tr><th>종류</th><th>수량</th><th>형식</th><th>용도</th><th>경로</th><th>소요</th></tr>
-    <tr><td>얼굴 아이콘</td><td class="n">12</td><td>PNG 512²</td><td>선택창·토큰·로그·증거노트</td><td class="n">IMG</td><td class="n lo">🟢</td></tr>
-    <tr><td>전신 컨셉(살짝 자세)</td><td class="n">12</td><td>PNG 세로</td><td>캐릭터 소개·도감</td><td class="n">IMG</td><td class="n mi">🟡</td></tr>
-    <tr><td>SD 캐릭터(2~3등신)</td><td class="n">12</td><td>PNG 투명</td><td>선택창</td><td class="n">IMG</td><td class="n mi">🟡</td></tr>
-    <tr><td>보드 말 2D(쿼터뷰)</td><td class="n">12</td><td>PNG 투명</td><td>2D/2.5D 말</td><td class="n">IMG</td><td class="n mi">🟡</td></tr>
-    <tr><td>3D 모델(저폴리)</td><td class="n">12</td><td>GLB</td><td>2.5D/3D 말</td><td class="n">3D</td><td class="n hi">🔴</td></tr>
-    <tr><td>4방 이동 모션 2D</td><td class="n">12시트</td><td>스프라이트시트</td><td>2D 이동 애니</td><td class="n">IMG/3D</td><td class="n hi">🔴</td></tr>
-    <tr><td>4방 이동 모션 3D</td><td class="n">12</td><td>애니(walk)</td><td>3D 이동 애니</td><td class="n">3D</td><td class="n hi">🔴</td></tr>
+    <tr><th>종류</th><th>수량</th><th>형식</th><th>용도</th><th>경로</th><th>소요</th><th>단계</th></tr>
+    <tr><td>얼굴 아이콘</td><td class="n">12</td><td>PNG 512²</td><td>선택창·토큰(빌보드 정면)·로그·증거노트</td><td class="n">IMG</td><td class="n lo">🟢</td><td class="n">S3</td></tr>
+    <tr><td>SD 캐릭터(2~3등신)</td><td class="n">12</td><td>PNG 투명</td><td>선택창</td><td class="n">IMG</td><td class="n mi">🟡</td><td class="n">S3</td></tr>
+    <tr><td>전신 컨셉(살짝 자세)</td><td class="n">12</td><td>PNG 세로</td><td>캐릭터 소개·도감·제출</td><td class="n">IMG</td><td class="n mi">🟡</td><td class="n">S3/제출</td></tr>
+    <tr><td><s>보드 말 2D(쿼터뷰)</s></td><td class="n">—</td><td>—</td><td><s>별도 토큰</s> → <b class="g">얼굴 아이콘(정면)으로 통합</b></td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+    <tr><td>3D 모델(저폴리)</td><td class="n">12</td><td>GLB</td><td>3D 씬 말</td><td class="n">3D</td><td class="n hi">🔴</td><td class="n"><b>S4+</b></td></tr>
+    <tr><td>4방 이동 모션 2D</td><td class="n">12시트</td><td>스프라이트시트</td><td>방향 이동 애니</td><td class="n">IMG/3D</td><td class="n hi">🔴</td><td class="n"><b>S4+</b></td></tr>
+    <tr><td>4방 이동 모션 3D</td><td class="n">12</td><td>애니(walk)</td><td>3D 이동 애니</td><td class="n">3D</td><td class="n hi">🔴</td><td class="n"><b>S4+</b></td></tr>
   </table></div>
-  <p><b>현재(CODE)</b>: 얼굴=이모지, 말=색 원+이모지 대체 중 → 교체 예정. <b>캐릭터 IMG 소계 = 48장</b>(얼굴12+전신12+SD12+말12). 3D/모션은 별도 파이프라인(후순위).</p>
+  <p><b>검수 반영</b>: <s>보드 말(쿼터뷰)</s> 삭제 — 2D는 탑다운, 2.5D는 정면 빌보드라 쿼터뷰가 안 맞고 토큰 얼굴=정면 아트=얼굴 아이콘이라 통합. <b>캐릭터 IMG 소계 = 36장</b>(얼굴12+SD12+전신12, 정면·투명). 3D/모션은 S4+.</p>
 
   <h2>2. 장소 에셋 <span class="pill">방 9 + 잔치상</span></h2>
   <p class="sub" style="margin:0 0 6px">정지·대청마루·후원·사랑방·사랑채·서재·안방·행랑채·별당 + 잔치상.</p>
   <div class="scroll"><table>
     <tr><th>종류</th><th>수량</th><th>형식</th><th>용도</th><th>경로</th><th>소요</th></tr>
-    <tr><td>장소 배경 일러스트</td><td class="n">10</td><td>PNG 와이드</td><td>방 소개·컨셉·진입 컷</td><td class="n">IMG</td><td class="n mi">🟡</td></tr>
-    <tr><td>바닥/타일 텍스처</td><td class="n">10</td><td>PNG 타일러블</td><td>보드 방 바닥</td><td class="n">IMG</td><td class="n lo">🟢</td></tr>
+    <tr><td>방 바닥 텍스처</td><td class="n">10</td><td>PNG <b>룸별 종횡비</b>(대략 정사각)</td><td>보드 방 바닥(S3 룸 슬랩 매핑)</td><td class="n">IMG</td><td class="n mi">🟡</td></tr>
+    <tr><td>장소 배경 일러스트</td><td class="n">10</td><td>PNG 와이드</td><td>방 소개·컨셉·제출(인게임 아님)</td><td class="n">IMG</td><td class="n mi">🟡</td></tr>
     <tr><td>방 소품(방별 1~2)</td><td class="n">~16</td><td>PNG 투명</td><td>방 분위기</td><td class="n">IMG</td><td class="n mi">🟡</td></tr>
-    <tr><td>잔치상(중앙)</td><td class="n">1</td><td>PNG/GLB</td><td>중앙 오브젝트</td><td class="n">IMG/3D</td><td class="n mi">🟡</td></tr>
+    <tr><td>잔치상(중앙)</td><td class="n">1</td><td>PNG 정면</td><td>중앙 오브젝트(빌보드)</td><td class="n">IMG</td><td class="n mi">🟡</td></tr>
   </table></div>
-  <p><b>장소 IMG 소계 ≈ 36장</b>(배경10+타일10+소품~16).</p>
+  <p><b>장소 IMG 소계 ≈ 36장</b>(바닥10+배경10+소품~16). <b class="g">인게임 룸 바닥은 와이드가 아니라 룸 종횡비</b>(정사각 슬랩). 와이드 배경은 소개·제출용.</p>
 
   <h2>3. 도구(장물) 에셋 <span class="pill">6종</span></h2>
   <p class="sub" style="margin:0 0 6px">잡채·잔치 선물·금고·젓가락·술동이·떡시루.</p>
   <div class="scroll"><table>
-    <tr><th>종류</th><th>수량</th><th>형식</th><th>용도</th><th>경로</th><th>소요</th></tr>
-    <tr><td>장물 아이콘</td><td class="n">6</td><td>PNG 512²</td><td>증거노트·모달·로그</td><td class="n">IMG</td><td class="n lo">🟢</td></tr>
-    <tr><td>보드 토큰 2D</td><td class="n">6</td><td>PNG 투명</td><td>보드 위 장물 말</td><td class="n">IMG</td><td class="n lo">🟢</td></tr>
-    <tr><td>3D 모델(옵션)</td><td class="n">6</td><td>GLB</td><td>2.5D/3D 보드</td><td class="n">3D</td><td class="n hi">🔴</td></tr>
+    <tr><th>종류</th><th>수량</th><th>형식</th><th>용도</th><th>경로</th><th>소요</th><th>단계</th></tr>
+    <tr><td>장물 아이콘</td><td class="n">6</td><td>PNG 512²(정면·투명)</td><td>증거노트·모달·로그·보드(빌보드)</td><td class="n">IMG</td><td class="n lo">🟢</td><td class="n">S3</td></tr>
+    <tr><td><s>보드 토큰 2D</s></td><td class="n">—</td><td>—</td><td><s>별도 토큰</s> → <b class="g">아이콘(정면)으로 통합</b></td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+    <tr><td>3D 모델(옵션)</td><td class="n">6</td><td>GLB</td><td>3D 씬</td><td class="n">3D</td><td class="n hi">🔴</td><td class="n"><b>S4+</b></td></tr>
   </table></div>
-  <p><b>도구 IMG 소계 = 12장</b>(아이콘6+토큰6).</p>
+  <p><b>도구 IMG 소계 = 6장</b>(아이콘, 정면·투명). 보드 토큰은 아이콘과 통합.</p>
 
   <h2>4. 배경 / UI 에셋</h2>
   <div class="scroll"><table>
@@ -87,21 +100,21 @@
   </table></div>
   <p><b>배경 IMG 소계 ≈ 12장</b>.</p>
 
-  <h2>5. 소요 요약</h2>
+  <h2>5. 소요 요약 <span class="pill">단계별</span></h2>
   <div class="scroll"><table>
-    <tr><th>묶음</th><th>이미지(IMG)</th><th>별도 3D/모션</th><th>우선순위</th></tr>
-    <tr><td>캐릭터</td><td class="n">48</td><td>모델12+모션12</td><td>얼굴&gt;SD&gt;전신&gt;말</td></tr>
-    <tr><td>장소</td><td class="n">~36</td><td>잔치상 모델</td><td>타일&gt;배경&gt;소품</td></tr>
-    <tr><td>도구</td><td class="n">12</td><td>모델6(옵션)</td><td>아이콘&gt;토큰</td></tr>
+    <tr><th>묶음</th><th>S3 IMG</th><th>S4+ (미래 append)</th><th>우선순위</th></tr>
+    <tr><td>캐릭터</td><td class="n">36</td><td>3D모델12+4방모션</td><td>얼굴&gt;SD&gt;전신</td></tr>
+    <tr><td>장소</td><td class="n">~36</td><td>잔치상 3D</td><td>바닥&gt;배경&gt;소품</td></tr>
+    <tr><td>도구</td><td class="n">6</td><td>3D모델6</td><td>아이콘</td></tr>
     <tr><td>배경/UI</td><td class="n">~12</td><td>—</td><td>바닥/문&gt;배경</td></tr>
-    <tr><td><b class="g">합계</b></td><td class="n"><b class="g">~108장</b></td><td>3D 30여 개</td><td>—</td></tr>
+    <tr><td><b class="g">S3 합계</b></td><td class="n"><b class="g">~90장</b></td><td>3D 30여 개</td><td>—</td></tr>
   </table></div>
   <div class="card">
     <ul>
-      <li><b class="g">IMG(GPT 이미지 2.0) 대상 ≈ 108장</b> — 프롬프트 문서(S5·S6)로 개별 생성.</li>
-      <li><b>3D/모션은 별도 파이프라인</b>(모델링·리깅) → 소요 큼, 2.5D/3D 정식화 시 착수(현재는 이모지 빌보드 대체).</li>
-      <li><b>MVP 우선순위</b>: ①얼굴12 ②장물6 ③SD 선택창12 ④장소 타일10 → 이후 전신·배경·3D.</li>
-      <li><b>정합성</b>: 한 캐릭터의 얼굴/SD/전신/말은 동일 스타일·팔레트. 스타일 가이드는 프롬프트 문서 상단 고정 프리셋으로.</li>
+      <li><b class="g">S3 IMG(GPT 이미지 2.0) 대상 ≈ 90장</b> — 프롬프트 문서(S5·S6)로 개별 생성. (쿼터뷰 보드말12·장물토큰6 통합 제거로 108→90.)</li>
+      <li><b>3D/모션은 S4+ 미래 단계</b>(모델링·리깅) — 그 단계 개발 시 착수, 지금 생성 대상 아님(현재는 이모지 빌보드 대체).</li>
+      <li><b>MVP(S3 진입) 우선순위</b>: ①얼굴12 ②장물6 ③방 바닥 텍스처10 ④SD 선택창12 → 이후 전신·배경.</li>
+      <li><b>모두 정면</b>(빌보드/탑다운 공통). 한 캐릭터의 얼굴/SD/전신은 동일 스타일·팔레트. 스타일 가이드는 프롬프트 문서 상단 고정 프리셋으로.</li>
     </ul>
   </div>
 
