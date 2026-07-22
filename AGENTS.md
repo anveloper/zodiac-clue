@@ -5,7 +5,7 @@
 
 ## 프로젝트
 - 웹 멀티플레이 추리 게임. **주제는 가변** → "게임 엔진"과 "게임 콘텐츠(주제)"를 분리해 개발.
-- pnpm 모노레포: `apps/server`(Colyseus) · `apps/client`(Phaser+Vite) · `packages/shared`.
+- pnpm 모노레포: `apps/server`(Colyseus) · `apps/client`(Phaser+Three.js+Vite) · `packages/shared`.
 - 실행 `pnpm dev` · 검증 `pnpm -r typecheck`.
 
 ## 개발 워크플로우

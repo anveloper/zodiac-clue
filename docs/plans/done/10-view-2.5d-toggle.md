@@ -1,6 +1,8 @@
 # plan: 2.5D 시점 토글 (Three.js)
 
-status: active · created: 2026-07-21 · src: 라이브 제안(2.5D 살짝 회전 뷰)
+status: **done(superseded)** · created: 2026-07-21 · done: 2026-07-22 · src: 라이브 제안(2.5D 살짝 회전 뷰)
+
+> ⚠️ 이 바이너리 2D↔2.5D 토글은 **`12-view-evolution-stages.md`(순서형 3단계 뷰 선택기)로 대체**됨. 아래 내용은 초기 구현 기록이며, 현재 코드는 `#game`을 숨기지 않고(z-index 오버레이) 항상 뷰1에서 시작한다. 최신 스펙은 플랜 12 참조.
 
 ## goal
 2D(Phaser) 보드를 유지한 채, 토글 버튼으로 **살짝 내려다보는 2.5D(Three.js)** 뷰로 전환. 서버·HUD·입력 규칙 무변경(렌더러만 교체).

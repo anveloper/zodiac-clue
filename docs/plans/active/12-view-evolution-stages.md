@@ -8,7 +8,7 @@ status: active · created: 2026-07-22 · src: 라이브 요청(에셋 검수 후
 ## 배경 (실코드 검수 결론)
 - 현재 렌더러는 이미지·모델을 **하나도 로드하지 않음**. 2D(Phaser)·2.5D(Three.js) 모두 이모지+벡터/지오메트리를 런타임에 그림. `TextureLoader`/`GLTFLoader`/`load.image` 없음.
 - 2.5D 카메라 = 42° 원근, 캐릭터·장물은 **빌보드 스프라이트**(항상 카메라 정면). → 방향 전환·3D 모델은 현재 구조에 코드 경로 없음.
-- 현재 토글은 `viewMode: "2d" | "iso"` **바이너리**(`apps/client/src/main.ts`). 이걸 순서형 배열로 확장해야 함.
+- 기존 토글은 `viewMode: "2d" | "iso"` **바이너리**였음(`apps/client/src/main.ts`). → `STAGES` 순서형 배열로 확장 완료.
 
 ## 단계 정의 (순서형·확장형)
 > 코드/UI 명칭 = **뷰1·뷰2·뷰3**(아마존 S3와 혼동 방지). id는 `STAGES` 배열의 값.
@@ -25,18 +25,18 @@ status: active · created: 2026-07-22 · src: 라이브 요청(에셋 검수 후
 
 ## 아키텍처 설계
 - 단계를 배열로: `const STAGES = [{id:"2d-emoji", kind:"phaser"}, {id:"three-emoji", kind:"three", assets:false}, {id:"three-asset", kind:"three", assets:true}, ...]`.
-- 버튼(현 `#viewToggle`)은 `stageIndex = (stageIndex + 1) % STAGES.length` 로 순환(또는 마지막에서 정지 + 라벨 "처음으로"). localStorage `zc_stage`로 유지.
-- 렌더러 활성화는 기존 `setView` 로직 재사용: `kind` 가 phaser면 Phaser 활성/Three 비활성, three면 반대. `assets` 플래그로 Three 뷰가 이모지 스프라이트 대신 텍스처 스프라이트를 만들도록 분기.
-- 버튼 라벨/뱃지에 현재 단계 표기(예: `S2 · three-emoji ▶`), 진화 서사 강조.
+- 버튼(현 `#viewToggle`)은 `stageIndex = (stageIndex + 1) % STAGES.length` 로 순환. **복원 없음 — 매 진입 시 `setStage(0)`로 항상 뷰1에서 시작**(진화 서사를 처음부터).
+- 렌더러 활성화: `kind` 가 phaser면 Phaser 활성/Three 비활성, three면 반대. **단, `#game`은 절대 숨기지 않고** Three 캔버스를 z-index로 위에 얹어 가리기만. `assets` 플래그로 Three 뷰가 이모지 대신 텍스처 스프라이트를 만들도록 분기.
+- 버튼 라벨에 "다음 갈 단계" 표기(예: `▶ 뷰2 · 2.5D`), 진화 서사 강조.
 
-### S3 렌더 분기 (three-asset)
-- `iso-view.ts`의 `makeSprite(emoji(...))` 자리에 **텍스처 로더 경로** 추가: 에셋이 있으면 `THREE.TextureLoader`로 `char/<id>-face.png` 로드해 스프라이트 텍스처로, 없으면 이모지 폴백.
+### 뷰3 렌더 분기 (three-asset)
+- `iso-view.ts`의 `makeSprite(emoji(...))` 자리에 **텍스처 로더 경로** 추가: `THREE.TextureLoader`로 `/assets/char/<id>-face.svg`(placeholder, 추후 PNG) 로드해 스프라이트 텍스처로, 없으면 이모지 폴백. (구현: `assetSprite`/`charFace`/`lootSprite`)
 - 룸 슬랩(`BoxGeometry`) 윗면에 방 바닥 텍스처 매핑(룸 종횡비 텍스처, UV 타일).
 - 로더 실패/미존재 시 **graceful fallback → 이모지**(에셋 생성 전에도 단계는 살아 있음).
 
 ## 작업 순서
 - [x] `STAGES` 배열 + `stageIndex` 상태로 토글 리팩터(바이너리 → 순서형). 렌더러 활성화 로직 재사용. (`main.ts`)
-- [x] 버튼 라벨을 단계 표기(`▶ 뷰N`)로. localStorage `zc_view`→`zc_stage` 이전(하위호환: 구 `iso`→뷰2).
+- [x] 버튼 라벨을 "다음 갈 단계"(`▶ 뷰N`) 표기로. **복원 제거 — 항상 뷰1 시작**(localStorage 미사용).
 - [x] 뷰3 골격: `three-asset` 분기 + `TextureLoader` 경로 + 이모지/단색 폴백(에셋 0장이어도 동작). (`iso-view.ts` `setAssets`/`assetSprite`/`applyTexture`)
 - [x] placeholder 에셋 44개 생성 + `public/assets/` 배선(SVG). 생성기 `scripts/gen-placeholder-assets.mjs`.
 - [ ] 상세 아트(PNG)를 같은 경로에 덮어 실교체(GPT 이미지 2.0 산출물).

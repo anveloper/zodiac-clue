@@ -70,10 +70,6 @@
         "title": "plan: 에셋 파이프라인 + 12지신 컨셉 + 이미지 프롬프트"
       },
       {
-        "path": "plans/active/10-view-2.5d-toggle.md",
-        "title": "plan: 2.5D 시점 토글 (Three.js)"
-      },
-      {
         "path": "plans/active/09-helper-npcs.md",
         "title": "plan: 고정 NPC(계략) + 보너스 능력"
       }
@@ -93,6 +89,10 @@
     "label": "✅ 플랜 · 완료",
     "dir": "plans/done",
     "items": [
+      {
+        "path": "plans/done/10-view-2.5d-toggle.md",
+        "title": "plan: 2.5D 시점 토글 (Three.js)"
+      },
       {
         "path": "plans/done/08-loop-backlog.md",
         "title": "plan: 자동 루프 백로그 (10분 간격, 1항목씩)"
@@ -127,6 +127,10 @@
     "label": "📓 개발일지",
     "dir": "logs",
     "items": [
+      {
+        "path": "logs/20260722-view-evolution-and-assets.md",
+        "title": "20260722 — 뷰 진화 단계 + 에셋 파이프라인 + 랜딩 정리"
+      },
       {
         "path": "logs/20260720-server-deploy.md",
         "title": "20260720 — 서버/클라 실배포 (OCI + Vercel)"

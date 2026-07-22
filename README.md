@@ -21,7 +21,7 @@ zodiac-clue/
 ## 기술 스택
 
 - **서버**: [Colyseus](https://colyseus.io) 0.15 — 방/로비/상태동기화. 비밀정보(손패·정답 봉투)는 동기화하지 않고 개별 private 전송.
-- **클라**: [Phaser 3](https://phaser.io) + [Vite](https://vitejs.dev) + `colyseus.js` — 탑뷰 추적 카메라·줌·트윈 이동·플로팅 HUD.
+- **클라**: [Phaser 3](https://phaser.io)(2D) + [Three.js](https://threejs.org)(2.5D · 뷰2/뷰3) + [Vite](https://vitejs.dev) + `colyseus.js` — 탑뷰 추적 카메라·줌·트윈 이동·플로팅 HUD.
 - **AI(NPC 대사)**: Google **Gemini**(`gemini-flash-lite-latest`). 원칙 — **결정·진실값은 규칙엔진, 표현(대사)만 LLM**. 실패 시 규칙 폴백. → [AI 기술문서](docs/design/20260720-ai-tech-doc.html)
 - **배포**: 서버 GitHub Actions(SSH→OCI), 클라 Vercel(Git 연동). main push 자동배포. → [배포 세팅](docs/design/20260720-deploy-setup.html)
 
@@ -41,7 +41,7 @@ pnpm -r typecheck # 타입체크
 - [x] 모노레포 · Colyseus 방(최대 6인, 부족분 NPC 충원) · 재접속(탭 기준)
 - [x] 십이지 테마 리스킨(호랑이 생신 잔치) · 캐릭터 선택/중복검증 · 성격 도감
 - [x] 보드: 탑뷰 추적 카메라·줌·자유시점, 방/입구(🚪)·중앙 잔치상, 플로팅 HUD·증거노트
-- [x] **2.5D 시점 토글**(Three.js): 살짝 내려다보는 뷰로 전환(서버 무변경), 마우스 우클릭 드래그 팬(2D·2.5D 공통)
+- [x] **뷰 진화 단계 선택기**(개발 진화를 기능으로): 뷰1 `2d-emoji`(Phaser) → 뷰2 `three-emoji`(Three.js 빌보드) → 뷰3 `three-asset`(Three.js + 에셋 아트), 버튼 순환(▶ 뷰N)·항상 뷰1 시작. 마우스 우클릭 드래그 팬(전 단계 공통)
 - [x] 정통 클루 턴: **주사위 2d6**·턴 게이팅·방 안 무료이동·문 봉쇄·**방 진입 턴엔 이탈 불가**·제안 시 용의자/장물 소환·**비밀 통로**
 - [x] 추리 3요소 = **도둑(용의자) · 훔친 것(장물: 잡채·선물·금고 등) · 장소**. 제안·시계방향 반증·고발·탈락 관전·종료 결과·**리매치**
 - [x] **NPC**: 규칙기반 추리(공유 공개카드로 수렴) + **LLM 대사·페르소나(말투)**, 절반 딜레이

@@ -4,7 +4,7 @@
 배경·목표·로드맵: `docs/design/20260720-engine-and-workflow-plan.md` (사람용 `.html` 동봉).
 
 ## 스택
-- pnpm 모노레포: `apps/server`(Colyseus/TS) · `apps/client`(Phaser + Vite/TS) · `packages/shared`(공용 타입·데이터)
+- pnpm 모노레포: `apps/server`(Colyseus/TS) · `apps/client`(Phaser 2D + Three.js 2.5D + Vite/TS) · `packages/shared`(공용 타입·데이터)
 - 실행: `pnpm dev` (서버 `:2567` + 클라 `:5173`) · 검증: `pnpm -r typecheck`, `pnpm --filter @zodiac-clue/client build`
 
 ## 개발 워크플로우 (모든 AI 도구 공통)
