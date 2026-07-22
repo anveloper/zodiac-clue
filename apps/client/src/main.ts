@@ -10,7 +10,13 @@ import {
   type Card,
 } from "@zodiac-clue/shared";
 import type { Room } from "colyseus.js";
-import { client, createRoom, joinRoomById } from "./network";
+import {
+  client,
+  createRoom,
+  joinRoomById,
+  listPublicRooms,
+  type PublicRoom,
+} from "./network";
 import { GameScene } from "./scenes/game-scene";
 import { PixelScene } from "./scenes/pixel-scene";
 import { IsoView } from "./scenes/iso-view";
@@ -724,6 +730,60 @@ const goMain = (): void => {
   }
 };
 
+// ── 공개/비공개 선택 + 공개방 목록 ─────────────────────────────
+let createPublic = true;
+
+const wireVisibilityToggle = (): void => {
+  const seg = $("visSeg");
+  [...seg.children].forEach((btn) => {
+    (btn as HTMLElement).onclick = () => {
+      createPublic = (btn as HTMLElement).dataset.pub === "1";
+      [...seg.children].forEach((b) =>
+        b.classList.toggle("active", b === btn),
+      );
+    };
+  });
+};
+
+const loadPublicRooms = async (): Promise<void> => {
+  const list = $("roomList");
+  let rooms: PublicRoom[] = [];
+  try {
+    rooms = await listPublicRooms();
+  } catch {
+    list.innerHTML = `<li class="room-empty">목록을 불러오지 못했어요.</li>`;
+    return;
+  }
+  if (rooms.length === 0) {
+    list.innerHTML = `<li class="room-empty">열린 공개방이 없어요. 방을 만들어보세요.</li>`;
+    return;
+  }
+  list.innerHTML = "";
+  for (const r of rooms) {
+    const full = r.clients >= r.maxClients;
+    const host = r.metadata?.hostName || "대기 중";
+    const li = document.createElement("li");
+    li.className = "room-item";
+    li.innerHTML =
+      `<span class="ri-body"><b>${host}</b>님의 방` +
+      `<span class="ri-sub"> · ${r.clients}/${r.maxClients}인</span></span>`;
+    const btn = document.createElement("button");
+    btn.textContent = full ? "만석" : "참여";
+    btn.disabled = full;
+    btn.onclick = async () => {
+      setLandingMsg("참여하는 중…");
+      try {
+        wireRoom(await joinRoomById(r.roomId));
+      } catch (e) {
+        setLandingMsg("참여 실패: " + errMsg(e));
+        void loadPublicRooms();
+      }
+    };
+    li.appendChild(btn);
+    list.appendChild(li);
+  }
+};
+
 const init = async (): Promise<void> => {
   // 초대 링크(/room/CODE, 구형 ?room=CODE)로 들어온 경우 코드 자동 채움
   const pathMatch = location.pathname.match(/\/room\/([^/]+)/);
@@ -734,10 +794,19 @@ const init = async (): Promise<void> => {
     setLandingMsg("초대 링크로 들어왔어요. [참가] 후 대기실에서 캐릭터를 고르세요.");
   }
 
+  wireVisibilityToggle();
+  ($("refreshRooms") as HTMLButtonElement).onclick = () =>
+    void loadPublicRooms();
+  void loadPublicRooms();
+  // 랜딩이 보이는 동안 주기적으로 공개방 목록 갱신.
+  window.setInterval(() => {
+    if (!$("landing").classList.contains("hidden")) void loadPublicRooms();
+  }, 5000);
+
   ($("createBtn") as HTMLButtonElement).onclick = async () => {
-    setLandingMsg("방 만드는 중…");
+    setLandingMsg(createPublic ? "공개방 만드는 중…" : "비공개방 만드는 중…");
     try {
-      wireRoom(await createRoom());
+      wireRoom(await createRoom(createPublic));
     } catch (e) {
       setLandingMsg("방 생성 실패: " + errMsg(e));
     }

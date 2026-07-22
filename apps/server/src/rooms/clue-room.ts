@@ -29,6 +29,7 @@ import {
 import { fallbackLine, narrate, type NarrationInput } from "../ai/narrator";
 
 type JoinOptions = { character?: string };
+type CreateOptions = { isPublic?: boolean };
 
 /** 봇의 추리 노트 — 각 카테고리에서 아직 남은(정답 후보) 값들. */
 type BotKnowledge = {
@@ -102,8 +103,14 @@ export class ClueRoom extends Room<GameState> {
   private avgHumanTurnMs = 0;
   private turnStartedAt = 0;
 
-  onCreate(): void {
+  onCreate(options: CreateOptions = {}): void {
     this.setState(new GameState());
+
+    // 공개/비공개: 비공개면 목록(getAvailableRooms)에서 숨김(코드 참가는 가능).
+    // 공개방은 기본 노출. 시작 시 lock()으로 목록에서 자동 제외된다.
+    const isPublic = options.isPublic !== false;
+    if (!isPublic) void this.setPrivate(true);
+    void this.setMetadata({ hostName: "", count: 0, isPublic });
 
     this.onMessage("move", (client, msg: { dx: number; dy: number }) =>
       this.handleMove(client, msg),
@@ -122,6 +129,17 @@ export class ClueRoom extends Room<GameState> {
     this.onMessage("passage", (client) => this.handlePassage(client));
     this.onMessage("rematch", (client) => this.handleRematch(client));
     this.onMessage("useBonus", (client) => this.handleUseBonus(client));
+  }
+
+  // 공개방 목록(getAvailableRooms) 표시용 메타데이터 갱신 — 방장명·인원.
+  private syncMeta(): void {
+    const host = this.state.host
+      ? this.state.players.get(this.state.host)
+      : undefined;
+    void this.setMetadata({
+      hostName: host?.name ?? "",
+      count: this.state.players.size,
+    });
   }
 
   // ── 비밀 통로: 현재 방 → 연결된 방으로 이동(주사위 없이). 이동만 소진, 턴은 유지해 그 방에서 제안 가능 ──
@@ -275,6 +293,7 @@ export class ClueRoom extends Room<GameState> {
       this.state.host = client.sessionId;
     }
     this.broadcast("log", { text: `${player.name} 입장.` });
+    this.syncMeta();
   }
 
   async onLeave(client: Client, consented: boolean): Promise<void> {
@@ -314,6 +333,7 @@ export class ClueRoom extends Room<GameState> {
     ) {
       this.advanceTurn();
     }
+    this.syncMeta();
   }
 
   // ── 이동 (그리드 한 칸, 서버 검증) — 정통 클루: 자기 턴 + 이동 한도 내에서만 ──

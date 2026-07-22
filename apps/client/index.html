@@ -28,7 +28,7 @@
       /* ── 랜딩 / 로비 공통 카드 ── */
       .center { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px; }
       .card {
-        width: 340px; background: #211c16; border: 1px solid #3a3126;
+        width: 380px; background: #211c16; border: 1px solid #3a3126;
         border-radius: 12px; padding: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.4);
       }
       .card h1 { font-size: 20px; margin: 0 0 4px; }
@@ -67,6 +67,31 @@
       .game-item .gi-sub { font-size: 11px; color: #a89778; }
       .game-item.selected { border-color: #e0a35a; background: #2c2317; }
       .hint-sm { font-size: 11px; color: #6b6355; margin: 6px 0 14px; text-align: center; }
+      /* 공개/비공개 세그먼트 토글 */
+      .seg { display: flex; gap: 6px; }
+      .seg-btn {
+        flex: 1; background: #16130f; border: 1px solid #3a3126; color: #cbbfa8;
+        border-radius: 8px; padding: 9px 0; font-size: 13px; cursor: pointer;
+      }
+      .seg-btn:hover { background: #16130f; border-color: #b4622b; }
+      .seg-btn.active { background: #2c2317; border-color: #e0a35a; color: #f0d9a8; }
+      /* 공개방 목록 */
+      .rooms-label { display: flex; align-items: center; justify-content: space-between; }
+      .mini { background: #3a3126; padding: 2px 8px; font-size: 11px; }
+      .mini:hover { background: #493d2d; }
+      .room-list {
+        list-style: none; margin: 6px 0 0; padding: 0; max-height: 156px;
+        overflow-y: auto; display: flex; flex-direction: column; gap: 6px;
+      }
+      .room-item {
+        display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+        background: #16130f; border: 1px solid #2c251c; border-radius: 8px; font-size: 12px;
+      }
+      .room-item .ri-body { flex: 1; min-width: 0; }
+      .room-item .ri-body b { color: #f0d9a8; }
+      .room-item .ri-sub { color: #a89778; font-size: 11px; }
+      .room-item button { padding: 5px 12px; font-size: 12px; }
+      .room-empty { padding: 12px; text-align: center; color: #6b6355; font-size: 12px; }
       .divider { text-align: center; color: #6b6355; font-size: 11px; margin: 16px 0; }
       .join-row { display: flex; gap: 8px; }
       .join-row input { flex: 1; }
@@ -323,12 +348,27 @@
             </div>
           </div>
         </div>
-        <p class="hint-sm">캐릭터는 대기실에서 고릅니다.</p>
+        <div class="field">
+          <label>공개 설정</label>
+          <div class="seg" id="visSeg">
+            <button type="button" class="seg-btn active" data-pub="1">🌐 공개</button>
+            <button type="button" class="seg-btn" data-pub="0">🔒 비공개</button>
+          </div>
+        </div>
+        <p class="hint-sm">캐릭터는 대기실에서 고릅니다. 공개방은 목록에 노출됩니다.</p>
         <button id="createBtn" class="full">방 만들기</button>
-        <div class="divider">— 또는 초대받았다면 —</div>
+        <div class="divider">— 또는 초대 코드로 —</div>
         <div class="join-row">
           <input id="codeInput" placeholder="초대 코드" />
           <button id="joinBtn">참가</button>
+        </div>
+        <div class="field" style="margin-top: 16px">
+          <label class="rooms-label">
+            공개방 <button type="button" id="refreshRooms" class="mini">↻ 새로고침</button>
+          </label>
+          <ul id="roomList" class="room-list">
+            <li class="room-empty">불러오는 중…</li>
+          </ul>
         </div>
         <div id="landingMsg" class="msg"></div>
       </div>
