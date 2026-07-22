@@ -597,6 +597,9 @@ export class ClueRoom extends Room<GameState> {
     this.state.players.forEach((p, id) => {
       if (id !== excludeId) occ.add(`${p.x},${p.y}`);
     });
+    // 문(입구) 칸엔 소환하지 않는다 — 소환 토큰이 문에 앉으면 그 방의 모두가
+    // 못 나가는 봉쇄가 생긴다(문은 유일한 출구, 점유 칸은 이동 불가).
+    occ.add(`${r.door.x},${r.door.y}`);
     // 최상단 행(r.y)은 방 이름 명패가 그려지는 자리 → 소환/이동 토큰이 가리지 않게
     // 둘째 행(r.y+1)부터 좌상단→안쪽으로 채우고, 방이 꽉 차면 최상단 행으로 폴백.
     for (let yy = r.y + 1; yy < r.y + r.h; yy++) {
