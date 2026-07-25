@@ -23,3 +23,6 @@
 
 ## 커밋
 - Conventional Commits, 기능별 커밋, **AI 협력 문구 제외.**
+
+## 기획 아카이브 (docs/planning)
+- 구 `nan-2026`에서 이관한 상류 문서(NHN 공고 분석·아이디어·엔진 비교·회의록·원페이저). 출처: `docs/planning/README.md`.
