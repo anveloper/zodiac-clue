@@ -284,9 +284,17 @@
       .end-card {
         background: #211c16; border: 2px solid #e0a35a; border-radius: 16px;
         padding: 32px 44px; text-align: center; box-shadow: 0 16px 60px rgba(0, 0, 0, 0.7);
+        /* 결과 6종(ui-copy §7.1) 중 2·3·4·5의 부제는 44자 상한을 넘어 2행이 된다.
+           상한이 없으면 카드가 부제 길이만큼 옆으로 늘어나 좁은 화면에서 잘린다. */
+        max-width: min(92vw, 520px);
       }
       .end-title { font-size: 26px; color: #f0d9a8; font-weight: 700; }
-      .end-sub { font-size: 14px; color: #a89778; margin: 10px 0 20px; }
+      /* `word-break: keep-all` — 한국어를 어절 단위로 끊는다. 없으면 「정답 봉투」가
+         「정답 봉/투」로 쪼개져 클라이맥스 화면에서 가장 중요한 줄이 읽히지 않는다. */
+      .end-sub {
+        font-size: 14px; color: #a89778; margin: 10px auto 20px;
+        max-width: 420px; line-height: 1.6; word-break: keep-all;
+      }
       .end-actions { display: flex; gap: 10px; justify-content: center; }
       .end-btn { padding: 10px 22px; font-size: 14px; }
       .end-btn.ghost { background: #3a3126; }

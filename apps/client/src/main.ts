@@ -723,6 +723,56 @@ let myCards = new Set<string>();
 /** 직전 게임 페이즈 — 리매치(ended→playing) 감지용. */
 let lastPhase = "";
 
+// ── 판 종료 정보(서버 `solution` 메시지) ─────────────────────────────
+// **진실값은 전부 서버가 만든 것**이다. 클라는 정답도, 승패도, 종료 사유도 계산하지 않는다.
+// `state.winner`만으로는 「고발 성공」과 「최후 생존」이 구분되지 않아(둘 다 승자가 있다)
+// 서버가 `reason`을 실어 보낸다(ui-copy §7.0 선행 조건).
+// 서버는 `phase === "ended"`에서만 이 메시지를 보낸다 → 진행 중에는 `endInfo`가 항상 `null`.
+type CardTriple = { suspect: string; weapon: string; room: string };
+type EndReason = "accuse" | "survivor" | "draw";
+type EndInfo = CardTriple & {
+  reason: EndReason;
+  /** 무승부 부제의 «제안 N회» — 서버 상수 `SUGGEST_CAP`. 클라가 베껴 두지 않는다. */
+  suggestCap: number;
+  /** 내가 오답 고발로 탈락했을 때의 **내** 지목(§7.1 4번). 남의 것은 서버가 담지 않는다. */
+  mine: CardTriple | null;
+};
+const END_REASONS: readonly EndReason[] = ["accuse", "survivor", "draw"];
+let endInfo: EndInfo | null = null;
+
+const readTriple = (v: unknown): CardTriple | null => {
+  if (v === null || typeof v !== "object") return null;
+  const o = v as Partial<CardTriple>;
+  if (typeof o.suspect !== "string" || typeof o.weapon !== "string") return null;
+  if (typeof o.room !== "string") return null;
+  return { suspect: o.suspect, weapon: o.weapon, room: o.room };
+};
+
+const readEndInfo = (v: unknown): EndInfo | null => {
+  const triple = readTriple(v);
+  if (!triple) return null;
+  const o = v as { reason?: unknown; suggestCap?: unknown; mine?: unknown };
+  if (!END_REASONS.includes(o.reason as EndReason)) return null;
+  return {
+    ...triple,
+    reason: o.reason as EndReason,
+    suggestCap:
+      typeof o.suggestCap === "number" && Number.isFinite(o.suggestCap)
+        ? o.suggestCap
+        : 0,
+    mine: readTriple(o.mine),
+  };
+};
+
+/**
+ * 카드 3장 표기 — ui-copy §7.0 «정답 표기(공용)». 결과 오버레이의 봉투와 «내 지목»이
+ * 같은 함수를 쓴다(표기가 두 벌 생기지 않게). 변수 뒤에 조사를 붙이지 않는다(§1.2 R2/R4).
+ */
+const cardTriple = (t: CardTriple): string =>
+  `${emoji(t.suspect)} ${label(t.suspect)} · ${emoji(t.weapon)} ${label(
+    t.weapon,
+  )} · 📍 ${label(t.room)}`;
+
 // ── 활성 뷰 접근자 (spec §3 "`say` 라우팅 3분기 → `activeView()` 하나로 축약") ──
 // `main.ts`는 **뷰를 모른다.** 어떤 렌더러가 떠 있든 `ViewContract` 한 타입으로만 말한다.
 // 그래서 뷰5를 추가해도 여기 분기가 늘지 않는다(계약 원칙 4).
@@ -937,6 +987,15 @@ const wireRoom = (r: Room): void => {
       activeView()?.bubble(m.id, m.text, whisper ? { whisper: true } : undefined);
     },
   );
+  // 정답 봉투 개봉 — **판이 끝난 뒤에만** 서버가 보낸다(clue-room `sendSolutionTo`).
+  // 결과 오버레이 6종(§7.1)이 전부 이 값을 쓴다. 상태 패치와 메시지는 서로 다른 채널이라
+  // 도착 순서가 보장되지 않는다 → 받는 즉시 결과 화면을 한 번 더 그린다(빈 부제 방지).
+  r.onMessage("solution", (m: unknown) => {
+    const info = readEndInfo(m);
+    if (!info) return;
+    endInfo = info;
+    updateEndState(r.state);
+  });
   // AI 누적 집계(§7.7) — 서버가 권위. 없는 빌드면 이 핸들러가 영영 안 불릴 뿐이다.
   r.onMessage("aiStats", (s: unknown) => applyAiStats(s));
   // 제안 기록표(§1.2) — 실시간 1건 / 재접속 시 전체.
@@ -978,6 +1037,9 @@ const wireRoom = (r: Room): void => {
       }
       buildEvidence(r.roomId);
       resetFxState(); // 승리 연출·살펴본 방·위치 스냅샷을 새 판 기준으로 되돌린다
+      // 지난 판의 정답 봉투·내 지목이 새 판 결과 화면에 섞이지 않게 버린다.
+      // (서버도 `startGame`에서 같은 값을 비운다 — 양쪽 다 판 단위다.)
+      endInfo = null;
       // 제안 기록표도 판 단위다 — 지난 판의 제안이 새 판 표에 섞이지 않게 비운다.
       // (AI 카운터는 서버 누적치를 그대로 비추므로 여기서 건드리지 않는다.)
       sugEntries.clear();
@@ -1387,7 +1449,29 @@ const exitToMain = (): void => {
   location.href = "/";
 };
 
-// 탈락(관전) 배너 + 종료 결과 오버레이
+/**
+ * 탈락(관전) 배너 + 종료 결과 오버레이 6종(ui-copy §7.1).
+ *
+ * **판정은 전부 서버 값**이다 — `state.phase` · `state.winner` · 내 좌석의 `eliminated` ·
+ * 서버가 종료 시에만 보내는 `endInfo.reason`. 클라는 이 넷을 읽어 **문안을 고르기만** 한다.
+ *
+ * 분기(위에서부터 먼저 이긴다):
+ *  | 조건                                   | 행  | 제목        |
+ *  |---------------------------------------|-----|-------------|
+ *  | 내가 탈락(= 오답 고발) 상태로 종료          | 4   | ❌ 고발 실패 |
+ *  | `winner === ""`                        | 5   | 🏳 무승부   |
+ *  | `reason === "survivor"` · 내가 승자      | 3   | 🏅 최후의 1인 |
+ *  | `reason === "survivor"` · 남이 승자      | 3′  | 🏅 판 종료  |
+ *  | `reason === "accuse"` · 내가 승자        | 1   | 🎉 사건 해결! |
+ *  | `reason === "accuse"` · 남이 승자        | 2   | 🔍 사건 종결 |
+ *
+ * 4번을 맨 위에 두는 근거는 §7.1 «5(무승부) 확정 근거» 4번째 항목이다 —
+ * *"나에게 일어난 일이 판 전체의 결과보다 구체적이고, 4번만이 «내 지목 / 정답 봉투» 대조를
+ * 보여준다"*. 문서는 이 우선을 무승부에 대해 명시하지만, 같은 근거가 다른 종료에도 그대로
+ * 적용되고 §7.1이 그 대조를 **"패배 화면의 유일한 정보 가치… 생략하지 말 것"**이라고 못박는다.
+ * (탈락은 오답 고발로만 발생하므로 4번의 조건문 «내가 오답 탈락 후 종료»와 정확히 같다.)
+ * 3′·2는 **좌석이 없는 관전자**와 살아남은 채 진 사람이 본다 — 여섯 행 모두 도달 가능하다.
+ */
 const updateEndState = (state: Room["state"]): void => {
   const players = state.players as Map<
     string,
@@ -1400,16 +1484,57 @@ const updateEndState = (state: Room["state"]): void => {
   );
 
   const overlay = $("endOverlay");
-  if (state.phase === "ended") {
-    const w = players.get(state.winner);
-    $("endTitle").textContent = w ? `🎉 ${w.name} 승리!` : "게임 종료";
-    $("endSub").textContent =
-      "사건이 종결되었습니다. 정답은 기록(우측)을 확인하세요.";
-    // 결과도 전면 오버레이 → 버스가 소유. 주사위·목표 카드를 밀어내고 그 자리를 차지한다.
-    if (!isOverlayShown("end")) showOverlay({ id: "end", el: overlay });
-  } else {
+  if (state.phase !== "ended") {
     closeOverlay("end");
+    return;
   }
+
+  const winnerId = (state.winner as string) ?? "";
+  const iWon = !!room && winnerId !== "" && winnerId === room.sessionId;
+  const winnerName = players.get(winnerId)?.name ?? "";
+  // 봉투는 서버가 개봉해 준 값만 쓴다. 아직 안 왔으면(메시지 유실·구버전 서버) 빈 문자열로
+  // 두고 **지어내지 않는다** — 뒤의 `join`이 문장을 그만큼만 짧게 만든다.
+  const envelope = endInfo ? `정답 봉투 — ${cardTriple(endInfo)}` : "";
+  const join = (...parts: string[]): string =>
+    parts.filter((p) => p !== "").join(" ");
+
+  let title: string;
+  let sub: string;
+  if (meElim && endInfo?.mine) {
+    // 4 — 내가 오답 탈락 후 종료. 부제 뒤에 «· 무승부로 종료»를 덧붙이지 않는다(3행 방지).
+    title = "❌ 고발 실패";
+    sub = `내 지목 — ${cardTriple(endInfo.mine)} / ${envelope}`;
+  } else if (winnerId === "") {
+    // 5 — 무승부(제안 상한 도달). 승자가 없으므로 승리 연출도 없다(`applyFx` ⑤가 이미 그렇다).
+    title = "🏳 무승부";
+    sub = endInfo
+      ? join(
+          `제안 ${endInfo.suggestCap}회에 이르도록 아무도 해결하지 못했어요.`,
+          envelope,
+        )
+      : "";
+  } else if (endInfo?.reason === "survivor") {
+    // 3 / 3′ — 최후 생존
+    title = iWon ? "🏅 최후의 1인" : "🏅 판 종료";
+    sub = iWon
+      ? join("모두 오답으로 탈락했어요.", envelope)
+      : join(winnerName === "" ? "" : `${winnerName} 님만 남았어요.`, envelope);
+  } else {
+    // 1 / 2 — 고발 성공. `reason`이 없는(=봉투가 안 온) 경우도 여기로 떨어진다.
+    title = iWon ? "🎉 사건 해결!" : "🔍 사건 종결";
+    sub = iWon
+      ? envelope
+      : join(
+          winnerName === "" ? "" : `${winnerName} 님이 먼저 맞혔어요.`,
+          envelope,
+        );
+  }
+
+  $("endTitle").textContent = title;
+  $("endSub").textContent = sub;
+  // 결과도 전면 오버레이 → 버스가 소유. 주사위·목표 카드를 밀어내고 그 자리를 차지한다.
+  // 이미 떠 있으면 **다시 띄우지 않는다** — 위에서 문안만 갈아 끼운다(봉투가 늦게 와도 무해).
+  if (!isOverlayShown("end")) showOverlay({ id: "end", el: overlay });
 };
 
 type TurnPlayer = { suspect: string; name: string; eliminated?: boolean };
@@ -1925,6 +2050,10 @@ const enterGame = async (): Promise<void> => {
     scene: [mod.GameScene, mod.PixelScene],
   });
   game.registry.set("room", room);
+  // 런타임 게이트(§9.6) 측정 훅 — `__zcIso`와 짝. 콘솔에서
+  // `__zcGame.loop.running` / `__zcGame.loop.actualFps`로 «뷰2·3에서 Phaser가 멈췄는가»를
+  // 직접 확인한다(§9.2). CLI로는 잴 수 없는 항목이라 브라우저 쪽 확인 통로를 남긴다.
+  (window as unknown as { __zcGame?: Phaser.Game }).__zcGame = game;
   if (room) buildEvidence(room.roomId);
   // Phaser 씬은 첫 `step`이 끝나야 `create()`가 돌아 있다(그 전엔 보드 사각형이 없어
   // `setPassages`가 조용히 실패한다). 부팅 직후 1회 전량 주입 지점.
@@ -1955,6 +2084,26 @@ const enterGame = async (): Promise<void> => {
     // (렌더러 `pixel-scene.ts` `setActive` 주석의 `TODO(main.ts)`가 이 한 줄이다.
     //  시작되지 않은 씬에는 계약 메서드가 존재하지 않으므로 씬 밖에서 해야 한다.)
     if (pixel && game && !game.scene.isActive("pixel")) game.scene.run("pixel");
+    // ── §9.2 «보이지 않는 뷰가 계속 돈다» ─────────────────────────────
+    // Phaser `SceneManager.update()`는 `visible`을 보지 않는다 → 뷰2·3에서도 씬 루프가
+    // 계속 돌아 RAF 2개·프레임당 강제 레이아웃 2회가 된다. 축은 **"three 뷰인가"** 하나다.
+    //
+    // ⚠️ 씬 쪽에 `isVisible()` 가드를 넣는 해법은 **틀렸다.** 뷰4(PixelScene)는 뷰1
+    //   (GameScene)의 카메라를 `mirrorCamera()`로 베껴 쓰는데, 뷰4에서 GameScene은
+    //   invisible이다 — 씬 가드를 넣으면 카메라를 돌리는 쪽이 멈춰 뷰4가 얼어붙는다.
+    //   반대로 `game.loop`를 재우는 것은 three 뷰에서만 일어나고, 그때 Phaser 캔버스는
+    //   two 개 다 화면에 없으므로 미러링할 대상 자체가 없다.
+    // ⚠️ 브라우저 탭 전환(`Game.onHidden/onVisible`)은 `loop.pause()/resume()`를 부르며
+    //   `running` 플래그를 건드리지 않는다 → 탭을 오갔다고 잠든 루프가 되살아나지 않는다.
+    if (game) {
+      if (three) {
+        game.loop.sleep();
+      } else if (!game.loop.running) {
+        game.loop.wake();
+        // 잠든 동안 창 크기가 바뀌었으면 ScaleManager가 그 변화를 못 봤다 → 깨자마자 되맞춘다.
+        game.scale.refresh();
+      }
+    }
     // 표시/은닉은 **계약 `setActive` 하나로만** 한다. 숨을 때 타이머·리스너·루프를
     // 정리하는 책임이 뷰에 있어 `sys.setVisible` 직접 호출로는 그 계약이 실행되지 않는다.
     // (뷰1은 뷰4에서도 계속 active — 입력·카메라 담당이고 표시만 꺼진다.)
@@ -1969,9 +2118,13 @@ const enterGame = async (): Promise<void> => {
       (li as HTMLElement).classList.toggle("active", idx === stageIndex),
     );
     // 새 뷰가 현재 상태(조사한 방·통로·현재 턴·탈락·승리)를 그대로 이어받는다.
+    // 잠들어 있던 Phaser 씬은 이 한 줄로 낡은 화면을 벗는다 — 이어서 깨어난 `update()`가
+    // 매 프레임 서버 상태를 다시 읽으므로(`syncTokens`) 토큰 위치도 곧바로 따라잡는다.
     syncActiveView(true);
     // 방금 `run`한 씬은 다음 step에야 `create()`가 끝난다 → 그 프레임에 한 번 더.
-    game?.events.once(P.Core.Events.POST_STEP, () => syncActiveView(true));
+    // 루프를 재웠다면 POST_STEP은 오지 않는다 → 리스너를 걸지 않는다(깨어난 뒤 엉뚱한
+    // 시점에 터지는 것을 막는다. three 뷰는 어차피 Phaser 씬을 그리지 않는다).
+    if (!three) game?.events.once(P.Core.Events.POST_STEP, () => syncActiveView(true));
   };
 
   /**
