@@ -9,6 +9,7 @@ import {
   label,
   roomAt,
 } from "@zodiac-clue/shared";
+import { acquireHudInset, hudInset, releaseHudInset } from "./hud-inset";
 
 // 셀 크기 = 근접(줌 1.0) 기준 해상도. 크게 잡아 줌 1.0에서 선명하게 보이도록.
 export const CELL = 40;
@@ -73,6 +74,7 @@ export class GameScene extends Phaser.Scene {
   private bubbleTimers = new Map<string, Phaser.Time.TimerEvent>();
   private weaponSprites = new Map<string, Phaser.GameObjects.Text>();
   private helperSprites = new Map<string, Phaser.GameObjects.Container>();
+  private insetHeld = false;
 
   constructor() {
     super("game");
@@ -81,6 +83,10 @@ export class GameScene extends Phaser.Scene {
   create(): void {
     this.room = this.registry.get("room") as Room;
     this.myId = this.room.sessionId;
+    // HUD 인셋 캐시 구독 — 씬이 내려갈 때 반드시 해제(ResizeObserver 누수 금지).
+    this.holdInset();
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.dropInset());
+    this.events.once(Phaser.Scenes.Events.DESTROY, () => this.dropInset());
     this.drawBoard();
 
     // ── 카메라: 내 캐릭터 추적 탑뷰 (bounds 없음 → 캐릭터가 항상 중앙, 보드 밖 여백 허용) ──
@@ -195,26 +201,42 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  /** 우측 패널(기록/노트)이 가리는 폭(px). 그만큼 카메라 중심을 왼쪽으로 보정. */
-  private rightInset(): number {
-    const el = document.getElementById("rightPanel");
-    if (!el) return 0;
-    const r = el.getBoundingClientRect();
-    return Math.max(0, window.innerWidth - r.left);
-  }
-
-  /** 보이는 영역 중앙에 대상이 오도록 하는 followOffset.x (월드 단위). */
+  /**
+   * 보이는 영역 중앙에 대상이 오도록 하는 followOffset (월드 단위).
+   * 인셋은 `hud-inset`이 ResizeObserver로 캐시한 값 — 여기서 측정하지 않는다(리플로우 0).
+   */
   private insetOffset(): number {
-    return -this.rightInset() / 2 / this.cam.zoom;
+    return -hudInset().right / 2 / this.cam.zoom;
   }
 
-  /** 매 프레임: 말풍선 위치 + 우측 패널 보정(줌·드래그에 실시간 반응). */
+  /** 하단 시트 레이아웃일 때의 세로 보정. 우측 컬럼 레이아웃에서는 항상 0. */
+  private insetOffsetY(): number {
+    return -hudInset().bottom / 2 / this.cam.zoom;
+  }
+
+  /** 매 프레임: 말풍선 위치 + HUD 패널 보정(줌·드래그에 실시간 반응). */
   update(): void {
     this.bubbles.forEach((b, id) => {
       const t = this.tokens.get(id);
       if (t) b.setPosition(t.c.x, t.c.y - CELL * 0.95);
     });
-    if (this.cam) this.cam.followOffset.x = this.insetOffset();
+    if (this.cam) {
+      this.cam.followOffset.x = this.insetOffset();
+      this.cam.followOffset.y = this.insetOffsetY();
+    }
+  }
+
+  /** 인셋 캐시 참조 획득/해제 — 씬 종료 시 ResizeObserver가 남지 않도록. */
+  private holdInset(): void {
+    if (this.insetHeld) return;
+    this.insetHeld = true;
+    acquireHudInset();
+  }
+
+  private dropInset(): void {
+    if (!this.insetHeld) return;
+    this.insetHeld = false;
+    releaseHudInset();
   }
 
   /** Space 또는 우클릭 팬 상태를 합쳐 자유시점 on/off. */
@@ -429,7 +451,7 @@ export class GameScene extends Phaser.Scene {
             this.cam.stopFollow();
             this.cam.pan(
               t.x - this.insetOffset(),
-              t.y,
+              t.y - this.insetOffsetY(),
               isMe ? 350 : 1000,
               "Sine.easeInOut",
               true,
