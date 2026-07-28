@@ -25,6 +25,7 @@ import {
   type MotionProfile,
   type ViewTiming,
   type ZodiacCue,
+  doorSideOf,
   PASSAGE_ALPHA_HOVER,
   PASSAGE_ALPHA_IDLE,
   PASSAGE_FADE_MS,
@@ -642,38 +643,42 @@ export class IsoView implements ViewContract {
       // 문(입구) — 이 칸으로만 출입. 밝은 바닥 타일 + 문기둥 + "입구" 라벨로 명확히.
       const dx = worldX(r.door.x);
       const dz = worldZ(r.door.y);
-      const mark = new THREE.Mesh(
+      // 예전에는 밝은 금색 바닥판(0.94×0.94, 불투명 0.85) + 기둥 2개 +
+      // **90px 🚪 빌보드** + "입구" 라벨을 한 칸에 겹쳐 세웠다. 문이 아니라 표지판 더미였다.
+      // 이제 실제 문틀(문지방 + 문설주 + 상인방)로 세운다 — 42° 시점에서 형태만으로 읽힌다.
+      const side = doorSideOf(r);
+      const alongX = side === "top" || side === "bottom"; // 개구부가 x축으로 열린다
+      // ① 문지방 — 개구부 폭으로 좁게 깔린 띠. 칸 전체를 칠하지 않는다.
+      const sill = new THREE.Mesh(
         UNIT_PLANE,
         new THREE.MeshBasicMaterial({
           color: BOARD.gold,
           transparent: true,
-          opacity: 0.85,
+          opacity: 0.42,
         }),
       );
-      mark.scale.set(0.94, 0.94, 1);
-      mark.rotation.x = -Math.PI / 2;
-      mark.position.set(dx, 0.24, dz);
-      this.scene.add(mark);
+      sill.scale.set(alongX ? 0.88 : 0.26, alongX ? 0.26 : 0.88, 1);
+      sill.rotation.x = -Math.PI / 2;
+      sill.position.set(dx, 0.205, dz);
+      this.scene.add(sill);
       const post = new THREE.MeshStandardMaterial({ color: BOARD.wood });
-      for (const sx of [-0.42, 0.42]) {
+      // ② 문설주 2개 — 개구부 양 끝.
+      for (const sgn of [-1, 1]) {
         const pillar = new THREE.Mesh(UNIT_BOX, post);
-        pillar.scale.set(0.14, 0.7, 0.14);
-        pillar.position.set(dx + sx, 0.35, dz);
+        pillar.scale.set(0.13, 0.78, 0.13);
+        pillar.position.set(
+          dx + (alongX ? sgn * 0.42 : 0),
+          0.39,
+          dz + (alongX ? 0 : sgn * 0.42),
+        );
         this.scene.add(pillar);
       }
-      const door = makeSprite("🚪", { fontPx: 90, worldH: 0.8 });
-      door.position.set(dx, 0.66, dz);
-      this.scene.add(door);
-      const doorLabel = makeSprite("입구", {
-        fontPx: 30,
-        color: hexString(BOARD.corridor),
-        bg: hexString(BOARD.gold),
-        padX: 8,
-        padY: 4,
-        worldH: 0.3,
-      });
-      doorLabel.position.set(dx, 1.15, dz);
-      this.scene.add(doorLabel);
+      // ③ 상인방 — 두 기둥을 잇는 가로 보. 비밀 통로 아치와 같은 어휘라
+      //    "지나갈 수 있는 자리"로 함께 읽힌다.
+      const lintel = new THREE.Mesh(UNIT_BOX, post);
+      lintel.scale.set(alongX ? 0.97 : 0.16, 0.14, alongX ? 0.16 : 0.97);
+      lintel.position.set(dx, 0.82, dz);
+      this.scene.add(lintel);
 
       // ── 소환 앵커(§5 행 18) ──
       // 제안이 성립하면 지목된 인물이 **이 칸을 기준으로** 방 안에 선다.

@@ -18,6 +18,8 @@ import {
   SUMMON_ANCHOR_ALPHA,
   SUMMON_ANCHOR_ICON,
   bubbleLifeMs,
+  doorOutward,
+  doorSideOf,
   emoji,
   hexString,
   inFeast,
@@ -535,25 +537,63 @@ export class GameScene extends Phaser.Scene implements ViewContract {
         .setOrigin(0.5)
         .setAlpha(SUMMON_ANCHOR_ALPHA);
 
-      // 입구(door) — 이 칸으로만 출입. 밝은 금색 타일 + 🚪 + "입구" 라벨로 명확히.
+      // ── 입구(door) ──────────────────────────────────────────────
+      // 예전에는 40px 칸 하나에 **밝은 타일 + 🚪 + "입구" 뱃지 3겹**을 쌓았다.
+      // 벽은 닫힌 채라 문이 "벽에 난 구멍"으로 읽히지 않았고, 세 요소가 서로를 가렸다.
+      // 이제 실제로 **벽을 끊고** 문지방·문설주로 그린다 — 라벨 없이도 읽히는 형태다.
+      const side = doorSideOf(r);
+      const out = doorOutward(side);
+      const horiz = out.y !== 0; // 위/아래 벽이면 개구부가 가로로 열린다
       const dcx = r.door.x * CELL + CELL / 2;
       const dcy = r.door.y * CELL + CELL / 2;
+      // 벽선 위의 개구부 중심(문 칸이 접한 방 경계)
+      const wx = horiz ? dcx : (out.x < 0 ? r.x : r.x + r.w) * CELL;
+      const wy = horiz ? (out.y < 0 ? r.y : r.y + r.h) * CELL : dcy;
+      const half = CELL * 0.42;
+      const doorG = this.add.graphics().setDepth(1);
+      // ① 벽 끊기 — 방 테두리(3px)를 바닥색으로 덮어 개구부를 만든다.
+      doorG.lineStyle(5, BOARD.room, 1);
+      doorG.beginPath();
+      if (horiz) {
+        doorG.moveTo(wx - half, wy);
+        doorG.lineTo(wx + half, wy);
+      } else {
+        doorG.moveTo(wx, wy - half);
+        doorG.lineTo(wx, wy + half);
+      }
+      doorG.strokePath();
+      // ② 문지방 — 개구부 안쪽에 낮게 깔린 금색 띠(칸 전체를 칠하지 않는다).
+      const tw = horiz ? half * 2 : CELL * 0.22;
+      const th = horiz ? CELL * 0.22 : half * 2;
+      doorG.fillStyle(BOARD.gold, 0.5);
+      doorG.fillRect(
+        wx - tw / 2 - (horiz ? 0 : (out.x * CELL * 0.22) / 2),
+        wy - th / 2 - (horiz ? (out.y * CELL * 0.22) / 2 : 0),
+        tw,
+        th,
+      );
+      // ③ 문설주 — 개구부 양 끝에 세운 짧은 기둥. 문틀로 읽히게 하는 핵심 요소.
+      doorG.fillStyle(BOARD.wood, 1);
+      for (const sgn of [-1, 1]) {
+        const jw = horiz ? CELL * 0.12 : CELL * 0.3;
+        const jh = horiz ? CELL * 0.3 : CELL * 0.12;
+        doorG.fillRect(
+          (horiz ? wx + sgn * half : wx) - jw / 2,
+          (horiz ? wy : wy + sgn * half) - jh / 2,
+          jw,
+          jh,
+        );
+      }
+      // ④ 🚪는 **복도 쪽 바깥**에 작게. 방 안에 두면 명패·✓·토큰과 자리를 다툰다.
       this.add
-        .rectangle(dcx, dcy, CELL * 0.94, CELL * 0.94, BOARD.doorTile, 1)
-        .setStrokeStyle(3, BOARD.gold);
-      this.add
-        .text(dcx, dcy - CELL * 0.08, "🚪", {
-          fontSize: `${Math.floor(CELL * 0.55)}px`,
-        })
-        .setOrigin(0.5);
-      this.add
-        .text(dcx, dcy + CELL * 0.34, "입구", {
-          fontSize: "11px",
-          color: hexString(BOARD.corridor),
-          backgroundColor: hexString(BOARD.gold),
-          padding: { x: 3, y: 1 },
-        })
-        .setOrigin(0.5);
+        .text(
+          wx + out.x * CELL * 0.42,
+          wy + out.y * CELL * 0.42,
+          "🚪",
+          { fontSize: `${Math.floor(CELL * 0.38)}px` },
+        )
+        .setOrigin(0.5)
+        .setAlpha(0.9);
     }
   }
 

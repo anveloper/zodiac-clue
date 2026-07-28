@@ -25,6 +25,8 @@ import {
   PASSAGE_FADE_MS,
   PASSAGE_HOVER_PX,
   SUMMON_ANCHOR_ALPHA,
+  doorOutward,
+  doorSideOf,
 } from "@zodiac-clue/shared";
 import { currentTiming, cvdMode } from "./view-motion";
 import {
@@ -258,26 +260,50 @@ export class PixelScene extends Phaser.Scene implements ViewContract {
         .setOrigin(0)
         .setDepth(3);
 
-      // 문(입구)
+      // ── 문(입구) ──
+      // 뷰1과 같은 형태 규칙: **벽을 끊고** 문지방·문설주로 그린다.
+      // 예전에는 나무 타일 + 문짝 + "입구" 뱃지 3겹이라 도트 격자 위에서 뭉쳤다.
+      const side = doorSideOf(r);
+      const out = doorOutward(side);
+      const horiz = out.y !== 0;
       const dcx = r.door.x * CELL + CELL / 2;
       const dcy = r.door.y * CELL + CELL / 2;
+      const wx = horiz ? dcx : (out.x < 0 ? r.x : r.x + r.w) * CELL;
+      const wy = horiz ? (out.y < 0 ? r.y : r.y + r.h) * CELL : dcy;
+      const half = Math.round((CELL * 0.42) / DOT) * DOT;
+      // ① 벽 끊기 — 방 테두리를 바닥색 도트로 덮는다.
       this.add
-        .rectangle(dcx, dcy, CELL * 0.9, CELL * 0.9, PAL.wood)
-        .setStrokeStyle(3, PAL.gold)
+        .rectangle(
+          wx,
+          wy,
+          horiz ? half * 2 : DOT * 2,
+          horiz ? DOT * 2 : half * 2,
+          PAL.room,
+        )
         .setDepth(1);
+      // ② 문지방 — 개구부 폭의 금색 띠(도트 격자에 맞춘 두께).
       this.add
-        .rectangle(dcx, dcy, CELL * 0.34, CELL * 0.62, PAL.woodDark)
-        .setDepth(2); // 문짝
-      this.add
-        .text(dcx, dcy + CELL * 0.5, "입구", {
-          fontFamily: "monospace",
-          fontSize: "11px",
-          color: hexString(PAL.ink),
-          backgroundColor: hexString(PAL.gold),
-          padding: { x: 3, y: 1 },
-        })
-        .setOrigin(0.5, 0)
-        .setDepth(3);
+        .rectangle(
+          wx - (horiz ? 0 : (out.x * DOT * 2) / 2),
+          wy - (horiz ? (out.y * DOT * 2) / 2 : 0),
+          horiz ? half * 2 : DOT * 2,
+          horiz ? DOT * 2 : half * 2,
+          PAL.gold,
+        )
+        .setAlpha(0.55)
+        .setDepth(2);
+      // ③ 문설주 — 개구부 양 끝의 나무 기둥.
+      for (const sgn of [-1, 1]) {
+        this.add
+          .rectangle(
+            horiz ? wx + sgn * half : wx,
+            horiz ? wy : wy + sgn * half,
+            horiz ? DOT : DOT * 3,
+            horiz ? DOT * 3 : DOT,
+            PAL.woodDark,
+          )
+          .setDepth(3);
+      }
 
       // ── 소환 앵커(§5 행 18) ──
       // ⚠ 좌표는 만들지 않는다 — `r.summon`은 서버 `freeCellIn()`이 자리 배정의 정렬

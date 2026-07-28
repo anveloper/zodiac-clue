@@ -35,6 +35,34 @@ export const ROOM_REGIONS: RoomRegion[] = [
   { name: "byeoldang", x: 18, y: 20, w: 5, h: 3, door: { x: 20, y: 20 }, summon: { x: 21, y: 21 } },
 ];
 
+/**
+ * 문이 방의 **어느 벽에 뚫려 있는가**. 문 칸은 방 경계 행/열 위에 있으므로
+ * 좌표 비교만으로 결정된다(데이터상 모서리에 놓인 문은 없다).
+ *
+ * 4뷰가 문을 "벽에 난 구멍"으로 그리려면 어느 벽을 끊을지 알아야 하는데,
+ * 그 판단을 뷰마다 따로 하면 세 벌이 갈린다.
+ */
+export type DoorSide = "top" | "bottom" | "left" | "right";
+
+export const doorSideOf = (r: RoomRegion): DoorSide =>
+  r.door.y === r.y
+    ? "top"
+    : r.door.y === r.y + r.h - 1
+      ? "bottom"
+      : r.door.x === r.x
+        ? "left"
+        : "right";
+
+/** 문이 뚫린 벽의 바깥 방향(복도 쪽) 단위 벡터. */
+export const doorOutward = (side: DoorSide): { x: number; y: number } =>
+  side === "top"
+    ? { x: 0, y: -1 }
+    : side === "bottom"
+      ? { x: 0, y: 1 }
+      : side === "left"
+        ? { x: -1, y: 0 }
+        : { x: 1, y: 0 };
+
 /** 중앙 잔치상(시작 구역) — 방처럼 이동 소모 없는 자유 구역. */
 export const FEAST = { x: 9, y: 9, w: 6, h: 6 };
 
