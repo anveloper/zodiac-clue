@@ -37,7 +37,7 @@
 | `WARP_MS` | 420 | 0 | 없음 — 일반 이동과 구분 불가 |
 | `WARP_BANNER_MS` | 1200 | 1800 | 없음 (연출이 없어진 만큼 배너를 길게) |
 | `TYPE_MS` | 55 | 0 | 뷰4만 타자기 자체가 없음 |
-| `BUBBLE_HOLD_MS` | 2600 | 3400 | 뷰4 3200 인라인 |
+| `BUBBLE_HOLD_MS` | **1200** | 3400 | 뷰4 3200 인라인 · **07-28 정정: full 2600 → 1200** |
 | `BUBBLE_MIN_TOTAL_MS` | 1800 | 1800 | 짧은 대사 깜빡임 방지 |
 | `CAM_SWITCH_SELF/OTHER_MS` | 150 / 900 | 0 / 600 | 두 파일에 900 중복 |
 | `CAM_PAN_SELF/OTHER_MS` | 350 / 1000 | 0 / 0 | reduced는 팬 대신 컷 |

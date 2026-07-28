@@ -433,6 +433,21 @@
     <code>SPEAK_HOLD</code>를 공용 <code>bubbleLifeMs(text)</code>로 대체하는 것이 해법(shared 함수는 DOM 의존 없이 작성돼 서버가 import 가능).</p>
     <p class="part">🚧 <b>문안 미확정</b> — 상한 도달 무승부 종료 로그가 <code>20260727-ui-copy.md</code>에 없다. 임시 문구 + 코드 주석으로 표시해 뒀다.</p>
 
+    <h3 class="ok" style="margin-top:18px">✅ 07-28 3차 — 대사 길이·상한 재산정으로 해소</h3>
+    <div class="scroll"><table>
+      <tr><th>항목</th><th>전</th><th>후</th><th>근거</th></tr>
+      <tr><td>폴백 제안 대사</td><td class="no">47.1자 (최대 71)</td><td class="ok"><b>21.3자</b> (최대 25)</td><td>④ §2.3 규약 "12~40자". 홀드를 거는 것은 제안뿐이라 제안만 조이고 고발·계략은 40자까지 열었다</td></tr>
+      <tr><td><code>BUBBLE_HOLD_MS</code></td><td>2600</td><td class="ok"><b>1200</b></td><td>2600은 뷰별 인라인 리터럴을 옮겨 적은 값이라 유도 근거가 없었다. 읽기 속도 12자/초에서 <code>(83−55)×40 = 1120</code> → 1200</td></tr>
+      <tr><td><b>봇 1턴</b></td><td class="no"><b>7.6초</b></td><td class="ok"><b>3.8초</b></td><td>실측 80표본 평균 3,784ms(계산식과 11ms 오차)</td></tr>
+      <tr><td>제안 상한</td><td class="no">60 (도달 17.0%)</td><td class="ok"><b>75</b> (도달 0.1%)</td><td>자연 분포 p99.5=74·최대 76. 80 이상은 자연 최대를 넘어 백스톱 구실을 못 한다</td></tr>
+    </table></div>
+    <p>승률 23.0% → <b>21.5%</b>. 상한 60이 공통 단서를 뿌려 <b>사람을 돕고 있었다</b>는 뜻이다 — 여전히 공정 몫 16.7%를 넘는다.</p>
+    <p class="part">⚠️ <b>남은 간극</b> — LLM이 켜져 있으면 Gemini 왕복(~1.2초)이 홀드 <b>앞에</b> 붙어 봇 1턴이 5.7초가 된다.
+    대사 길이가 아니라 <code>narrate()</code>를 await한 뒤 방송하는 <b>구조 비용</b>이며 캐시 히트 시엔 사라진다(④ §6.2).</p>
+    <p class="part">⚠️ <b><code>20260727-ui-copy.md</code> §8.2의 폴백 템플릿 확정 문안이 코드와 갈라졌다.</b>
+    같은 문서 §1.4가 "폴백 템플릿은 이 문서가 확정한다"고 못박고 있는데, 그 확정 문안이 ④ §2.3의 길이 규약을 <b>71~79% 위반</b>하고 있었다.
+    <b>규약 쪽을 살렸다</b> — ui-copy §8.2는 코드 기준으로 갱신이 필요하다.</p>
+
     <h3 class="no" style="margin-top:18px">🔴 07-28 2차 실측 — 재진입 규칙(§7.5.2) 투입 후 · <b>판 길이가 목표를 넘었다</b></h3>
     <div class="scroll"><table>
       <tr><th>변형</th><th>사람 승률</th><th>평균 라운드</th><th>제안 p95</th><th>방문 방/9</th><th>상한 도달</th></tr>
