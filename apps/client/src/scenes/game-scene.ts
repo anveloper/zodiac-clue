@@ -16,6 +16,7 @@ import {
   hexString,
   inFeast,
   label,
+  regionOf,
   roomAt,
   timingOf,
   zodiacColor,
@@ -24,6 +25,25 @@ import {
 } from "@zodiac-clue/shared";
 import { acquireHudInset, hudInset, releaseHudInset } from "./hud-inset";
 import { currentTiming } from "./view-motion";
+import {
+  beginReveal,
+  destroyReveal,
+  finishReveal,
+  paintReveal,
+  type TypeReveal,
+} from "./typewriter";
+import type {
+  ActorSnapshot,
+  BubbleOpts,
+  FocusMode,
+  PassageLink,
+  PulseTone,
+  ViewCell,
+  ViewContract,
+  ViewId,
+  ViewOutcome,
+  WarpReason,
+} from "./view-contract";
 
 // 셀 크기 = 근접(줌 1.0) 기준 해상도. 크게 잡아 줌 1.0에서 선명하게 보이도록.
 // 값의 단일 소스는 shared의 `CELL_PX` — 여기서는 호환용으로 재수출만 한다.
@@ -42,9 +62,21 @@ const PAN_STEP = 48;
 /** 이름표 좌측 색 스트라이프 두께(px) — 색과 이름을 같은 픽셀에(§4.2). */
 const NAME_STRIPE_PX = 3;
 
+/** `pulseCell`의 의미 → 뷰1 팔레트 번역(색이 아니라 의미를 받는다). */
+const TONE_COLOR: Record<PulseTone, number> = {
+  neutral: BOARD.plaqueText,
+  suggest: BOARD.gold,
+  alert: 0xff6b5e,
+};
+
+const cellCenter = (c: ViewCell): { x: number; y: number } => ({
+  x: c.x * CELL + CELL / 2,
+  y: c.y * CELL + CELL / 2,
+});
+
 /**
- * 파선 사각형 — 탈락 2차 표기(§1.2 `ELIM_NEEDS_SECOND_CUE`).
- * 알파만으로는 저대비·회색조에서 탈락이 사라지므로 이름표에 파선을 두른다.
+ * 파선 사각형 — 탈락 2차 표기(§1.2 `ELIM_NEEDS_SECOND_CUE`)와 귓속말 테두리에 공용.
+ * 알파만으로는 저대비·회색조에서 탈락이 사라진다.
  */
 const drawDashedRect = (
   g: Phaser.GameObjects.Graphics,
@@ -71,6 +103,26 @@ const drawDashedRect = (
   seg(x, y + h, x, y);
 };
 
+/** 두 점 사이 파선(비밀 통로 표기). */
+const drawDashedLine = (
+  g: Phaser.GameObjects.Graphics,
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+  dash = 10,
+  gap = 8,
+): void => {
+  const len = Math.hypot(x2 - x1, y2 - y1);
+  if (len === 0) return;
+  const ux = (x2 - x1) / len;
+  const uy = (y2 - y1) / len;
+  for (let d = 0; d < len; d += dash + gap) {
+    const e = Math.min(d + dash, len);
+    g.lineBetween(x1 + ux * d, y1 + uy * d, x1 + ux * e, y1 + uy * e);
+  }
+};
+
 type Token = {
   c: Phaser.GameObjects.Container;
   ring: Phaser.GameObjects.Arc;
@@ -81,7 +133,21 @@ type Token = {
   stripe: Phaser.GameObjects.Rectangle;
   /** 탈락 파선 테두리(2차 표기). */
   elimDash: Phaser.GameObjects.Graphics;
+  /** 색·이모지의 파생 키(§4). `identity()`가 이 키로 표기를 되맞춘다. */
+  suspect: string;
   placed: boolean;
+  eliminated: boolean;
+};
+
+/** 말풍선 1건이 소유한 오브젝트·타이머 전부. 정리 경로를 한 곳으로 모은다. */
+type BubbleRec = {
+  txt: Phaser.GameObjects.Text;
+  /** 귓속말 파선 테두리(공개 대사와 구분 — 계약 §2). */
+  deco?: Phaser.GameObjects.Graphics;
+  /** 타자기 마스크(§9.3 — `setText` 재업로드 금지). */
+  reveal?: TypeReveal;
+  tick?: Phaser.Time.TimerEvent;
+  hold?: Phaser.Time.TimerEvent;
 };
 
 type PlayerView = {
@@ -93,10 +159,18 @@ type PlayerView = {
   eliminated: boolean;
 };
 
-export class GameScene extends Phaser.Scene {
+export class GameScene extends Phaser.Scene implements ViewContract {
+  /** 뷰1 = 2D 이모지. */
+  readonly viewId: ViewId = "2d-emoji";
+  /**
+   * Phaser 게임 인스턴스 1개 = WebGL 컨텍스트 1개. 뷰1과 뷰4가 **그 하나를 공유**하므로
+   * 두 stage가 같은 비용 1을 나눠 갖는다(§9.5 — 인스턴스를 쪼개면 컨텍스트가 는다).
+   */
+  readonly contextCost = 1;
+
   private room!: Room;
   private tokens = new Map<string, Token>();
-  private bubbles = new Map<string, Phaser.GameObjects.Text>();
+  private bubbles = new Map<string, BubbleRec>();
   private lastMove = 0;
   private cam!: Phaser.Cameras.Scene2D.Camera;
   private myId = "";
@@ -106,10 +180,19 @@ export class GameScene extends Phaser.Scene {
   private followId = "";
   private followTarget?: Phaser.GameObjects.Container;
   private camSwitchTimer?: Phaser.Time.TimerEvent;
-  private bubbleTimers = new Map<string, Phaser.Time.TimerEvent>();
   private weaponSprites = new Map<string, Phaser.GameObjects.Text>();
   private helperSprites = new Map<string, Phaser.GameObjects.Container>();
   private insetHeld = false;
+  /** 지금 턴(계약 `setCurrent`). 진실값은 서버 상태이며 여기엔 사본만 둔다. */
+  private currentId: string | null = null;
+  /** 방 명패의 "살펴봄" ✓ 스탬프 — `setSurveyed`가 켠다. */
+  private surveyMarks = new Map<string, Phaser.GameObjects.Text>();
+  /** 방 강조 사각형(포커스/서베이 공용). */
+  private roomRects = new Map<string, Phaser.Geom.Rectangle>();
+  /** 비밀 통로 정적 표기 레이어. */
+  private passageLayer?: Phaser.GameObjects.Container;
+  /** 승리 연출 오브젝트 — `setOutcome(null)`이 걷는다. */
+  private outcomeFx: Phaser.GameObjects.GameObject[] = [];
   /** 감속 프로파일 타이밍(§1.3). 보간 길이는 매번 여기서 재조회한다. */
   private timing: ViewTiming = currentTiming();
 
@@ -122,8 +205,9 @@ export class GameScene extends Phaser.Scene {
     this.myId = this.room.sessionId;
     // HUD 인셋 캐시 구독 — 씬이 내려갈 때 반드시 해제(ResizeObserver 누수 금지).
     this.holdInset();
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.dropInset());
-    this.events.once(Phaser.Scenes.Events.DESTROY, () => this.dropInset());
+    // 씬 종료·파괴에서 GPU 자원·타이머를 회수한다(§9.3 — dispose 0건이던 지점).
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.dispose());
+    this.events.once(Phaser.Scenes.Events.DESTROY, () => this.dispose());
     this.drawBoard();
 
     // ── 카메라: 내 캐릭터 추적 탑뷰 (bounds 없음 → 캐릭터가 항상 중앙, 보드 밖 여백 허용) ──
@@ -254,13 +338,27 @@ export class GameScene extends Phaser.Scene {
   /** 매 프레임: 말풍선 위치 + HUD 패널 보정(줌·드래그에 실시간 반응). */
   update(): void {
     this.bubbles.forEach((b, id) => {
-      const t = this.tokens.get(id);
-      if (t) b.setPosition(t.c.x, t.c.y - CELL * 0.95);
+      const anchor = this.tokens.get(id)?.c ?? this.helperSprites.get(id);
+      if (!anchor) return;
+      b.txt.setPosition(anchor.x, anchor.y - CELL * 0.95);
+      this.layoutBubbleDeco(b);
+      // 마스크는 월드 좌표라 말풍선이 움직이면 다시 칠해야 한다(텍스처 업로드는 없다).
+      if (b.reveal) paintReveal(b.reveal);
     });
     if (this.cam) {
       this.cam.followOffset.x = this.insetOffset();
       this.cam.followOffset.y = this.insetOffsetY();
     }
+  }
+
+  // ── 계약: 표시/은닉 · 감속 프로파일 ───────────────────────
+  /**
+   * 뷰1은 씬을 계속 active로 두고 **표시만** 끈다 — 입력·카메라를 뷰4가 미러링하기
+   * 때문이다(spec §2 표). 숨을 때 보이지 않는 말풍선 타이머는 정리한다.
+   */
+  setActive(on: boolean): void {
+    this.sys.setVisible(on);
+    if (!on) this.clearBubbles();
   }
 
   /** 감속 프로파일 전환(§1.3). 이후 보간 길이를 이 표에서 재조회한다. */
@@ -339,6 +437,7 @@ export class GameScene extends Phaser.Scene {
       const y = r.y * CELL;
       const w = r.w * CELL;
       const h = r.h * CELL;
+      this.roomRects.set(r.name, new Phaser.Geom.Rectangle(x, y, w, h));
       const g = this.add.graphics();
       g.fillStyle(BOARD.room, 1);
       g.fillRoundedRect(x, y, w, h, 12);
@@ -356,6 +455,15 @@ export class GameScene extends Phaser.Scene {
           color: hexString(BOARD.plaqueText),
         })
         .setOrigin(0.5);
+      // "이미 살펴본 방" ✓ 스탬프 — 기본 숨김, `setSurveyed`가 켠다(§5 행 16).
+      const check = this.add
+        .text(x + 10 + plW + 6, y + 25, "✓", {
+          fontSize: "18px",
+          color: hexString(BOARD.gold),
+        })
+        .setOrigin(0, 0.5)
+        .setVisible(false);
+      this.surveyMarks.set(r.name, check);
 
       // 입구(door) — 이 칸으로만 출입. 밝은 금색 타일 + 🚪 + "입구" 라벨로 명확히.
       const dcx = r.door.x * CELL + CELL / 2;
@@ -385,52 +493,29 @@ export class GameScene extends Phaser.Scene {
     const current = (state.currentTurn as string) ?? "";
     const seen = new Set<string>();
 
+    // 계약 경로로만 그린다 — 렌더 루프가 곧 `syncActor`의 호출부다.
     players.forEach((p, id) => {
       seen.add(id);
-      const token = this.tokens.get(id) ?? this.createToken(id, p);
-      // 칸 정중앙에 정렬(겹침 방지는 서버가 빈 칸 배치로 처리)
-      const cx = p.x * CELL + CELL / 2;
-      const cy = p.y * CELL + CELL / 2;
-
-      if (!token.placed) {
-        token.c.setPosition(cx, cy);
-        token.placed = true;
-      } else if (token.c.x !== cx || token.c.y !== cy) {
-        this.tweens.killTweensOf(token.c);
-        this.tweens.add({
-          targets: token.c,
-          x: cx,
-          y: cy,
-          duration: this.timing.MOVE_TWEEN_MS,
-          ease: "Quad.Out",
-        });
-      }
-
-      const isCurrent = id === current;
-      token.ring.setVisible(isCurrent);
-      token.disc.setStrokeStyle(
-        TOKEN_OUTLINE_PX,
-        isCurrent ? RING_CURRENT : TOKEN_OUTLINE_COLOR,
-      );
-      // 탈락 감쇠는 ring을 포함한 **토큰 전체**에(뷰2·3·4와 같은 정보 강도).
-      const alpha = p.eliminated ? ELIM_ALPHA : 1;
-      token.ring.setAlpha(alpha);
-      token.disc.setAlpha(alpha);
-      token.face.setAlpha(alpha);
-      token.name.setAlpha(alpha);
-      token.stripe.setAlpha(alpha);
-      // 2차 표기(파선)는 감쇠 대상이 아니다 — 감쇠되면 2중 표기의 의미가 사라진다.
-      token.elimDash.setVisible(p.eliminated);
+      this.syncActor({
+        id,
+        suspect: p.suspect,
+        name: p.name,
+        isBot: p.isBot,
+        cell: { x: p.x, y: p.y },
+        eliminated: p.eliminated,
+      });
     });
+    this.setCurrent(current === "" ? null : current);
 
     // ── 장물(훔친 것) 토큰 렌더 ──
     const weapons = state.weapons as Map<
       string,
       { value: string; x: number; y: number }
     >;
+    const seenLoot = new Set<string>();
     weapons.forEach((w, key) => {
-      const cx = w.x * CELL + CELL / 2;
-      const cy = w.y * CELL + CELL / 2;
+      seenLoot.add(key);
+      const { x: cx, y: cy } = cellCenter({ x: w.x, y: w.y });
       let s = this.weaponSprites.get(key);
       if (!s) {
         s = this.add
@@ -452,15 +537,23 @@ export class GameScene extends Phaser.Scene {
         });
       }
     });
+    // 서버에서 사라진 장물 회수(§9.3 — 남겨두면 텍스트 텍스처가 그대로 산다).
+    for (const key of [...this.weaponSprites.keys()]) {
+      if (seenLoot.has(key)) continue;
+      this.tweens.killTweensOf(this.weaponSprites.get(key) as object);
+      this.weaponSprites.get(key)?.destroy();
+      this.weaponSprites.delete(key);
+    }
 
     // ── 고정 NPC(계략) 렌더 ──
     const helpers = state.helpers as Map<
       string,
       { value: string; x: number; y: number; used: boolean }
     >;
+    const seenHelpers = new Set<string>();
     helpers.forEach((h, key) => {
-      const cx = h.x * CELL + CELL / 2;
-      const cy = h.y * CELL + CELL / 2;
+      seenHelpers.add(key);
+      const { x: cx, y: cy } = cellCenter({ x: h.x, y: h.y });
       let c = this.helperSprites.get(key);
       if (!c) {
         const disc = this.add
@@ -487,6 +580,11 @@ export class GameScene extends Phaser.Scene {
       }
       c.setAlpha(h.used ? SPENT_ALPHA : 1);
     });
+    for (const key of [...this.helperSprites.keys()]) {
+      if (seenHelpers.has(key)) continue;
+      this.helperSprites.get(key)?.destroy();
+      this.helperSprites.delete(key);
+    }
 
     // 카메라: 현재 턴 캐릭터로 이동. 전환은 잠깐 지연(반증 먼저 인지 → 덜 어지러움).
     const followId = current && this.tokens.has(current) ? current : this.myId;
@@ -525,28 +623,213 @@ export class GameScene extends Phaser.Scene {
     }
 
     for (const id of [...this.tokens.keys()]) {
-      if (!seen.has(id)) {
-        this.tokens.get(id)?.c.destroy();
-        this.tokens.delete(id);
-        this.bubbles.get(id)?.destroy();
-        this.bubbles.delete(id);
-        this.bubbleTimers.get(id)?.remove();
-        this.bubbleTimers.delete(id);
-      }
+      if (!seen.has(id)) this.removeActor(id);
     }
   }
 
-  /** NPC 대사 말풍선을 해당 말 위에 타이핑 효과로 띄운다. */
+  // ── 계약: 액터 ───────────────────────────────────────────
+  /** 액터 1명의 현재 상태 반영. 없으면 만든다. */
+  syncActor(a: ActorSnapshot): void {
+    const token = this.tokens.get(a.id) ?? this.createToken(a.id, a);
+    const { x: cx, y: cy } = cellCenter(a.cell);
+
+    if (!token.placed) {
+      token.c.setPosition(cx, cy);
+      token.placed = true;
+    } else if (token.c.x !== cx || token.c.y !== cy) {
+      this.tweens.killTweensOf(token.c);
+      this.tweens.add({
+        targets: token.c,
+        x: cx,
+        y: cy,
+        duration: this.timing.MOVE_TWEEN_MS,
+        ease: "Quad.Out",
+      });
+    }
+    this.setElim(a.id, a.eliminated);
+  }
+
+  /** 퇴장 — 말풍선·타이머·트윈까지 뷰가 정리한다(계약 §2). */
+  removeActor(id: string): void {
+    const t = this.tokens.get(id);
+    if (t) {
+      this.tweens.killTweensOf(t.c);
+      t.c.destroy();
+      this.tokens.delete(id);
+    }
+    this.dropBubble(id);
+    if (this.currentId === id) this.currentId = null;
+  }
+
+  /** 지금 턴 — ring Arc + disc stroke(§5 행 1). */
+  setCurrent(id: string | null): void {
+    this.currentId = id;
+    this.tokens.forEach((t, tid) => {
+      const isCurrent = tid === id;
+      t.ring.setVisible(isCurrent);
+      t.disc.setStrokeStyle(
+        TOKEN_OUTLINE_PX,
+        isCurrent ? RING_CURRENT : TOKEN_OUTLINE_COLOR,
+      );
+    });
+  }
+
+  /**
+   * 탈락 — 감쇠는 ring을 포함한 **토큰 전체**에(뷰2·3·4와 같은 정보 강도) +
+   * 이름표 파선(2차 표기). 파선은 감쇠 대상이 아니다.
+   */
+  setElim(id: string, on: boolean): void {
+    const t = this.tokens.get(id);
+    if (!t) return;
+    t.eliminated = on;
+    const alpha = on ? ELIM_ALPHA : 1;
+    t.ring.setAlpha(alpha);
+    t.disc.setAlpha(alpha);
+    t.face.setAlpha(alpha);
+    t.name.setAlpha(alpha);
+    t.stripe.setAlpha(alpha);
+    t.elimDash.setVisible(on);
+  }
+
+  // ── 계약: 순간이동 ───────────────────────────────────────
+  /**
+   * 소환·비밀 통로 — Arc 잔상 3겹 + 금색 펄스(spec §2 뷰1 칸).
+   * 일반 이동(tween 110ms)과 **눈으로 구분**되는 것이 이 메서드의 존재 이유다.
+   */
+  warp(id: string, from: ViewCell, to: ViewCell, reason: WarpReason): void {
+    const a = cellCenter(from);
+    const b = cellCenter(to);
+    const ms = this.timing.WARP_MS;
+    const tint = reason === "summon" ? BOARD.gold : BOARD.wood;
+    const token = this.tokens.get(id);
+    if (token) {
+      // 워프는 걷는 것이 아니다 — 진행 중이던 이동 보간을 끊고 목적지에 둔다.
+      this.tweens.killTweensOf(token.c);
+      token.c.setPosition(b.x, b.y);
+      token.placed = true;
+    }
+    if (ms <= 0) return; // reduced: 잔상 없이 배너로만 알린다(§1.3)
+    for (let k = 0; k < 3; k++) {
+      const t = (k + 1) / 4;
+      const ghost = this.add
+        .circle(
+          a.x + (b.x - a.x) * t,
+          a.y + (b.y - a.y) * t,
+          CELL * 0.5,
+          0x000000,
+          0,
+        )
+        .setStrokeStyle(3, tint)
+        .setDepth(3)
+        .setAlpha(0.9);
+      this.tweens.add({
+        targets: ghost,
+        alpha: 0,
+        scale: 0.6,
+        duration: ms,
+        delay: k * (ms / 6),
+        onComplete: () => ghost.destroy(),
+      });
+    }
+    const pulse = this.add
+      .circle(b.x, b.y, CELL * 0.55, 0x000000, 0)
+      .setStrokeStyle(4, BOARD.gold)
+      .setDepth(3);
+    this.tweens.add({
+      targets: pulse,
+      alpha: 0,
+      scale: 1.8,
+      duration: ms,
+      onComplete: () => pulse.destroy(),
+    });
+  }
+
+  /** 장물 순간이동 — Text tween(spec §2 뷰1 칸). */
+  lootWarp(value: string, from: ViewCell, to: ViewCell): void {
+    const a = cellCenter(from);
+    const b = cellCenter(to);
+    const ms = this.timing.WARP_MS;
+    const ghost = this.add
+      .text(a.x, a.y, emoji(value), { fontSize: `${Math.floor(CELL * 0.5)}px` })
+      .setOrigin(0.5)
+      .setDepth(3);
+    ghost.setStroke(hexString(BOARD.gold), 4);
+    if (ms <= 0) {
+      ghost.destroy();
+      return;
+    }
+    this.tweens.add({
+      targets: ghost,
+      x: b.x,
+      y: b.y,
+      duration: ms,
+      ease: "Quad.InOut",
+      onComplete: () => ghost.destroy(),
+    });
+  }
+
+  // ── 계약: 무대·칸 주목 ───────────────────────────────────
+  /** 사건의 무대 — `cam.pan` 또는 방 스트로크 펄스(spec §2 뷰1 칸). */
+  focusRoom(room: string, mode: FocusMode): void {
+    const rect = this.roomRects.get(room);
+    const r = regionOf(room);
+    if (!rect || !r) return;
+    const cx = rect.x + rect.width / 2;
+    const cy = rect.y + rect.height / 2;
+    if (mode === "camera" && !this.freeLook) {
+      this.cam.stopFollow();
+      this.cam.pan(
+        cx - this.insetOffset(),
+        cy - this.insetOffsetY(),
+        Math.max(1, this.timing.CAM_PAN_OTHER_MS),
+        "Sine.easeInOut",
+        true,
+      );
+    }
+    const g = this.add.graphics().setDepth(3);
+    g.lineStyle(5, BOARD.gold, 1);
+    g.strokeRoundedRect(rect.x, rect.y, rect.width, rect.height, 12);
+    this.tweens.add({
+      targets: g,
+      alpha: 0,
+      duration: Math.max(1, this.timing.WARP_BANNER_MS),
+      onComplete: () => g.destroy(),
+    });
+  }
+
+  /** 특정 칸 주목 — Rectangle 알파 펄스(spec §2 뷰1 칸). */
+  pulseCell(cell: ViewCell, tone: PulseTone): void {
+    const { x, y } = cellCenter(cell);
+    const rect = this.add
+      .rectangle(x, y, CELL * 0.94, CELL * 0.94, TONE_COLOR[tone], 0.45)
+      .setDepth(3);
+    this.tweens.add({
+      targets: rect,
+      alpha: 0,
+      duration: Math.max(1, this.timing.WARP_BANNER_MS / 2),
+      onComplete: () => rect.destroy(),
+    });
+  }
+
+  // ── 계약: 대사 ───────────────────────────────────────────
+  /** `say` 라우팅의 기존 진입점. 계약 메서드로 넘긴다(이름 호환 유지). */
   showBubble(id: string, text: string): void {
+    this.bubble(id, text);
+  }
+
+  /**
+   * NPC 대사 말풍선. 타자기는 **텍스트를 1회만 그리고 마스크로** 드러낸다
+   * (§9.3 — 55ms마다 `setText`는 캔버스 재렌더 + 텍스처 재업로드였다).
+   */
+  bubble(id: string, text: string, opts: BubbleOpts = {}): void {
     // 플레이어 토큰 또는 고정 NPC(계략) 스프라이트 위에 말풍선을 띄운다.
     const anchor = this.tokens.get(id)?.c ?? this.helperSprites.get(id);
     if (!anchor) return;
-    // 이전 말풍선/타이머 정리
-    this.bubbleTimers.get(id)?.remove();
-    this.bubbleTimers.delete(id);
-    this.bubbles.get(id)?.destroy();
+    this.dropBubble(id); // 이전 말풍선/타이머/마스크 정리
 
-    const bubble = this.add
+    // 귓속말은 공개 대사와 반드시 구분된다(계약 §2) — 접두 + 파선 테두리.
+    const body = opts.whisper ? `(귓속말) ${text}` : text;
+    const txt = this.add
       .text(anchor.x, anchor.y - CELL * 0.95, "", {
         fontSize: "15px",
         color: hexString(BOARD.bubbleText),
@@ -557,49 +840,194 @@ export class GameScene extends Phaser.Scene {
       })
       .setOrigin(0.5, 1)
       .setDepth(100);
-    this.bubbles.set(id, bubble);
+    const rec: BubbleRec = { txt };
+    if (opts.whisper) rec.deco = this.add.graphics().setDepth(101);
+    this.bubbles.set(id, rec);
 
     // 총 수명은 shared `bubbleLifeMs`가 계산한다(서버 SPEAK_HOLD와 정합을 맞추는 지점).
-    const total = bubbleLifeMs(text, this.timing);
+    const total = bubbleLifeMs(body, this.timing);
     const typeMs = this.timing.TYPE_MS;
     const expire = (): void => {
-      if (this.bubbles.get(id) === bubble) {
-        this.bubbles.delete(id);
-        bubble.destroy();
-      }
+      if (this.bubbles.get(id) === rec) this.dropBubble(id);
     };
+
+    const reveal = beginReveal(this, txt, body);
+    rec.reveal = reveal;
+    this.layoutBubbleDeco(rec);
 
     // reduced 프로파일(TYPE_MS=0)은 타자기 없이 전문을 즉시 띄운다.
     if (typeMs <= 0) {
-      bubble.setText(text);
-      this.time.delayedCall(total, expire);
+      finishReveal(reveal);
+      rec.hold = this.time.delayedCall(total, expire);
       return;
     }
 
-    let i = 0;
-    const timer = this.time.addEvent({
+    rec.tick = this.time.addEvent({
       delay: typeMs,
       loop: true,
       callback: () => {
-        if (this.bubbles.get(id) !== bubble) {
-          timer.remove();
+        if (this.bubbles.get(id) !== rec) {
+          rec.tick?.remove();
           return;
         }
-        i += 1;
-        bubble.setText(text.slice(0, i));
-        if (i >= text.length) {
-          timer.remove();
-          this.bubbleTimers.delete(id);
-          this.time.delayedCall(Math.max(0, total - text.length * typeMs), expire);
+        reveal.shown += 1;
+        paintReveal(reveal);
+        if (reveal.shown >= reveal.total) {
+          rec.tick?.remove();
+          rec.tick = undefined;
+          rec.hold = this.time.delayedCall(
+            Math.max(0, total - reveal.total * typeMs),
+            expire,
+          );
         }
       },
     });
-    this.bubbleTimers.set(id, timer);
   }
 
-  private createToken(id: string, p: PlayerView): Token {
+  /** 귓속말 파선 테두리를 말풍선 위치에 맞춘다. */
+  private layoutBubbleDeco(rec: BubbleRec): void {
+    const g = rec.deco;
+    if (!g) return;
+    const tl = rec.txt.getTopLeft();
+    g.clear();
+    g.lineStyle(2, BOARD.gold, 0.95);
+    drawDashedRect(
+      g,
+      tl.x - 2,
+      tl.y - 2,
+      rec.txt.displayWidth + 4,
+      rec.txt.displayHeight + 4,
+    );
+  }
+
+  /** 말풍선 1건이 소유한 오브젝트·타이머·마스크를 전부 회수한다. */
+  private dropBubble(id: string): void {
+    const rec = this.bubbles.get(id);
+    if (!rec) return;
+    rec.tick?.remove();
+    rec.hold?.remove();
+    if (rec.reveal) destroyReveal(rec.reveal);
+    rec.deco?.destroy();
+    rec.txt.destroy();
+    this.bubbles.delete(id);
+  }
+
+  private clearBubbles(): void {
+    for (const id of [...this.bubbles.keys()]) this.dropBubble(id);
+  }
+
+  // ── 계약: 식별·파생 정보·종료 ────────────────────────────
+  /**
+   * 뷰1의 식별 표기는 **이모지 + 색 원 + 이름표 스트라이프**이고 셋 다 `suspect`에서
+   * 동기적으로 파생된다 — 미리 받아둘 에셋이 없다(뷰3만 프리로드가 의미 있다).
+   * 그래서 여기서는 이미 살아 있는 토큰의 표기를 그 키로 **되맞추는** 것으로 이행한다
+   * (팔레트가 바뀌어도 화면과 계약이 갈라지지 않는다).
+   */
+  identity(suspect: string): void {
+    const color = zodiacColor(suspect);
+    this.tokens.forEach((t) => {
+      if (t.suspect !== suspect) return;
+      t.face.setText(emoji(suspect));
+      t.disc.setFillStyle(color);
+      t.stripe.setFillStyle(color);
+    });
+  }
+
+  /** "이미 살펴본 방" — 명패에 ✓ 스탬프(§5 행 16). 진실값 아님(클라 파생). */
+  setSurveyed(rooms: readonly string[]): void {
+    const set = new Set(rooms);
+    this.surveyMarks.forEach((mark, name) => mark.setVisible(set.has(name)));
+  }
+
+  /** 비밀 통로 — 방 중심을 잇는 대각 점선 + 🚪 미니(§5 행 7). */
+  setPassages(links: readonly PassageLink[]): void {
+    this.passageLayer?.destroy(true);
+    this.passageLayer = undefined;
+    if (links.length === 0) return;
+    const layer = this.add.container(0, 0).setDepth(1);
+    const g = this.add.graphics();
+    g.lineStyle(3, BOARD.gold, 0.5);
+    layer.add(g);
+    for (const l of links) {
+      const a = this.roomRects.get(l.from);
+      const b = this.roomRects.get(l.to);
+      if (!a || !b) continue;
+      const ax = a.x + a.width / 2;
+      const ay = a.y + a.height / 2;
+      const bx = b.x + b.width / 2;
+      const by = b.y + b.height / 2;
+      drawDashedLine(g, ax, ay, bx, by);
+      for (const [px, py] of [
+        [ax, ay],
+        [bx, by],
+      ] as const) {
+        layer.add(
+          this.add.text(px, py, "🚪", { fontSize: "16px" }).setOrigin(0.5),
+        );
+      }
+    }
+    this.passageLayer = layer;
+  }
+
+  /** 승리 — 승자 토큰에 금색 링 확산(§5 행 22). `null`이면 연출 해제. */
+  setOutcome(o: ViewOutcome | null): void {
+    for (const fx of this.outcomeFx) {
+      this.tweens.killTweensOf(fx);
+      fx.destroy();
+    }
+    this.outcomeFx = [];
+    if (!o) return;
+    const t = this.tokens.get(o.winnerId);
+    if (!t) return;
+    for (let k = 0; k < 3; k++) {
+      const ring = this.add
+        .circle(t.c.x, t.c.y, CELL * 0.6, 0x000000, 0)
+        .setStrokeStyle(4, BOARD.gold)
+        .setDepth(50);
+      this.outcomeFx.push(ring);
+      this.tweens.add({
+        targets: ring,
+        scale: 3,
+        alpha: 0,
+        duration: 1400,
+        delay: k * 320,
+        repeat: -1,
+      });
+    }
+  }
+
+  // ── 계약: 자원 해제(§9.3) ────────────────────────────────
+  /**
+   * 씬 종료·파괴에서 호출된다. Phaser는 씬 파괴 시 표시 목록을 정리하지만
+   * **타이머·트윈·ResizeObserver 참조**는 우리가 건 것이라 우리가 회수한다.
+   */
+  dispose(): void {
+    this.clearBubbles();
+    this.camSwitchTimer?.remove();
+    this.camSwitchTimer = undefined;
+    this.tokens.forEach((t) => {
+      this.tweens.killTweensOf(t.c);
+      t.c.destroy();
+    });
+    this.tokens.clear();
+    this.weaponSprites.forEach((s) => {
+      this.tweens.killTweensOf(s);
+      s.destroy();
+    });
+    this.weaponSprites.clear();
+    this.helperSprites.forEach((c) => c.destroy());
+    this.helperSprites.clear();
+    this.setOutcome(null);
+    this.passageLayer?.destroy(true);
+    this.passageLayer = undefined;
+    this.surveyMarks.clear();
+    this.roomRects.clear();
+    this.dropInset();
+  }
+
+  private createToken(id: string, a: ActorSnapshot): Token {
     // 색은 접속 순서가 아니라 `suspect`로 결정된다 — 판 도중에도 불변(§4).
-    const color = zodiacColor(p.suspect);
+    const color = zodiacColor(a.suspect);
     const ring = this.add
       .circle(0, 0, CELL * 0.55, 0x000000, 0)
       .setStrokeStyle(3, RING_CURRENT)
@@ -610,12 +1038,12 @@ export class GameScene extends Phaser.Scene {
       .setStrokeStyle(TOKEN_OUTLINE_PX, TOKEN_OUTLINE_COLOR);
     // 이모지 = 색에 의존하지 않는 1차 식별자. 색은 보조 단서다.
     const face = this.add
-      .text(0, 0, emoji(p.suspect), {
+      .text(0, 0, emoji(a.suspect), {
         fontSize: `${Math.floor(CELL * 0.52)}px`,
       })
       .setOrigin(0.5);
     const name = this.add
-      .text(0, CELL * 0.55, `${p.isBot ? "🤖" : ""}${p.name}`, {
+      .text(0, CELL * 0.55, `${a.isBot ? "🤖" : ""}${a.name}`, {
         fontSize: "13px",
         color: hexString(BOARD.nameText),
         backgroundColor: "#000000aa",
@@ -659,7 +1087,9 @@ export class GameScene extends Phaser.Scene {
       name,
       stripe,
       elimDash,
+      suspect: a.suspect,
       placed: false,
+      eliminated: a.eliminated,
     };
     this.tokens.set(id, token);
     return token;

@@ -17,6 +17,7 @@ import {
   hexString,
   inFeast,
   label,
+  regionOf,
   roomAt,
   timingOf,
   zodiacColor,
@@ -25,12 +26,40 @@ import {
 } from "@zodiac-clue/shared";
 import { acquireHudInset, hudRightInset, releaseHudInset } from "./hud-inset";
 import { currentTiming } from "./view-motion";
+import {
+  OUTLINE_RING,
+  TURN_RING,
+  UNIT_BOX,
+  UNIT_BOX_EDGES,
+  UNIT_CIRCLE,
+  UNIT_PLANE,
+  WARP_RING,
+  disposeObject,
+  disposeScene,
+  isSharedTexture,
+  loadTextureCached,
+  releaseSharedResources,
+} from "./three-res";
+import type {
+  ActorSnapshot,
+  BubbleOpts,
+  FocusMode,
+  PassageLink,
+  PulseTone,
+  ViewCell,
+  ViewContract,
+  ViewId,
+  ViewOutcome,
+  WarpReason,
+} from "./view-contract";
 
 // 2.5D 뷰: 평면 보드를 카메라로 살짝 내려다보는(피치) 원근 뷰.
 // 서버 상태(그리드 x,y)를 그대로 읽어 3D 월드로 매핑한다. 룰/입력은 2D와 동일.
 //
 // ⚠ 표기 수치(알파·보간 길이·타자기 속도·팔레트)는 전부 shared의 view-consts에서 온다.
 //   여기서 리터럴로 다시 쓰면 뷰1·뷰4와 갈라진다.
+// ⚠ 지오메트리는 `three-res`의 **공유 단위 프리미티브 + scale**만 쓴다.
+//   여기서 `new THREE.XxxGeometry`를 다시 쓰면 뷰 왕복마다 GPU에 쌓인다(§9.3).
 
 const CAM_PITCH = (42 * Math.PI) / 180; // 내려다보는 각(수평 기준)
 const MIN_DIST = 9; // 근접
@@ -40,18 +69,19 @@ const LERP_ME = 0.14; // 내 턴 추적(빠름)
 const LERP_OTHER = 0.06; // 남 턴 추적(천천히)
 const PAN_STEP = 0.6; // 자유시점 방향키 팬
 
+/** `pulseCell`의 의미 → 뷰2·3 팔레트 번역(색이 아니라 의미를 받는다). */
+const TONE_COLOR: Record<PulseTone, number> = {
+  neutral: BOARD.plaqueText,
+  suggest: BOARD.gold,
+  alert: 0xff6b5e,
+};
+
+/** "이미 살펴본 방" 바닥 감광 계수(§2 계약 표 `setSurveyed` 뷰2·3 칸 — 30% 어둡게). */
+const SURVEYED_DIM = 0.7;
+
 // 그리드(gx,gy) → 월드(x,0,z). 보드 중심을 원점에.
 const worldX = (gx: number): number => gx - GRID_WIDTH / 2 + 0.5;
 const worldZ = (gy: number): number => gy - GRID_HEIGHT / 2 + 0.5;
-
-type PlayerView = {
-  name: string;
-  suspect: string;
-  isBot: boolean;
-  x: number;
-  y: number;
-  eliminated: boolean;
-};
 
 type Token = {
   group: THREE.Group;
@@ -60,7 +90,10 @@ type Token = {
   elimMark: THREE.Sprite; // 탈락 2차 표기(알파 단독 금지 — §1.2 ELIM_NEEDS_SECOND_CUE)
   cur: THREE.Vector2; // 현재 보간 위치(그리드 단위)
   target: THREE.Vector2; // 목표 위치
+  /** 색·아트의 파생 키(§4). `identity()`가 이 키로 표기를 되맞춘다. */
+  suspect: string;
   placed: boolean;
+  eliminated: boolean;
 };
 
 /** 장물 토큰 — 위치를 dt 기반 지수 보간으로 따라간다(스냅 금지). */
@@ -78,6 +111,17 @@ type Bubble = {
   shown: number;
   typeTimer: number;
   holdTimer: number;
+};
+
+/**
+ * 일회성 연출 오브젝트. 자기 rAF/타이머를 갖지 않고 `loop(dt)`가 진행시킨다
+ * (§9.4 — 프레임레이트 종속 제거). 끝나면 `disposeObject`로 반드시 해제된다.
+ */
+type Fx = {
+  obj: THREE.Object3D;
+  t: number;
+  dur: number;
+  step: (obj: THREE.Object3D, k: number) => void;
 };
 
 /** 이모지/텍스트를 캔버스 텍스처로 만들어 빌보드 스프라이트로 반환. */
@@ -171,7 +215,18 @@ const setGroupOpacity = (root: THREE.Object3D, opacity: number): void => {
   });
 };
 
-export class IsoView {
+export class IsoView implements ViewContract {
+  /**
+   * 한 인스턴스가 뷰2·뷰3을 겸한다 — `useAssets`가 어느 stage인지를 가른다.
+   * (인스턴스를 2개로 쪼개면 WebGL 컨텍스트가 늘어난다 — §9.5 경고.)
+   */
+  get viewId(): ViewId {
+    return this.useAssets ? "three-asset" : "three-emoji";
+  }
+
+  /** 뷰2·뷰3이 **같은 컨텍스트 1개를 공유**한다(§9.5). */
+  readonly contextCost = 1;
+
   private room: Room;
   private renderer: THREE.WebGLRenderer;
   private scene = new THREE.Scene();
@@ -184,6 +239,7 @@ export class IsoView {
   private weapons = new Map<string, LootToken>();
   private helpers = new Map<string, THREE.Group>();
   private bubbles = new Map<string, Bubble>();
+  private fx: Fx[] = [];
 
   private look = new THREE.Vector3(0, 0, 0); // 현재 카메라가 보는 지점(보간)
   private panOffset = new THREE.Vector3(0, 0, 0); // 자유시점 이동
@@ -193,10 +249,12 @@ export class IsoView {
   private lastPointer = new THREE.Vector2();
 
   private followId = "";
+  private currentId: string | null = null;
   private switchTimer = 0;
   private lastMove = 0;
   private active = false;
   private raf = 0;
+  private disposed = false;
   /** 감속 프로파일 타이밍(§1.3). 보간 길이는 매 프레임 여기서 재조회한다. */
   private timing: ViewTiming = currentTiming();
   /** 직전 프레임의 rAF 타임스탬프(ms). 0이면 "첫 프레임"(dt 기본값 사용). */
@@ -206,7 +264,20 @@ export class IsoView {
   private useAssets = false;
   private loader = new THREE.TextureLoader();
   private roomMats = new Map<string, THREE.MeshStandardMaterial>();
+  /** 방 바닥의 기본색(텍스처가 붙으면 0xffffff). 살펴봄 감광의 기준값. */
+  private roomBase = new Map<string, number>();
+  /** 명패 옆 "살펴봄" ✓ 스프라이트 — 기본 숨김. */
+  private surveyMarks = new Map<string, THREE.Sprite>();
+  private surveyed = new Set<string>();
   private feastMat?: THREE.MeshStandardMaterial;
+  /** 비밀 통로 정적 표기(아치 + 파선). `setPassages`가 통째로 교체한다. */
+  private passageGroup?: THREE.Group;
+  /** 승리 연출(PointLight). `setOutcome(null)`이 걷는다. */
+  private outcomeLight?: THREE.PointLight;
+  /** `focusRoom("camera")`가 잡아 둔 시선 목표와 만료 시각(ms). */
+  private focusPoint: THREE.Vector3 | null = null;
+  private focusUntil = 0;
+  private onPageHide: () => void;
 
   constructor(room: Room, host: HTMLElement) {
     this.room = room;
@@ -252,6 +323,17 @@ export class IsoView {
     this.onContextMenu = this.onContextMenu.bind(this);
     this.onResize = this.onResize.bind(this);
     this.loop = this.loop.bind(this);
+
+    // 페이지 이탈 = 이 뷰의 마지막. 여기서 dispose하지 않으면 §9.3의 누수가
+    // "탭을 닫을 때까지" 유지된다. main.ts가 dispose를 부르지 않아도 안전하게.
+    this.onPageHide = () => {
+      this.dispose();
+      releaseSharedResources();
+    };
+    window.addEventListener("pagehide", this.onPageHide);
+
+    // 런타임 게이트(§9.6) 측정 훅 — 콘솔에서 `__zcIso.debugInfo()`.
+    (window as unknown as { __zcIso?: IsoView }).__zcIso = this;
   }
 
   // ── 활성/비활성(토글) ──
@@ -288,6 +370,8 @@ export class IsoView {
       // 숨은 뷰에서 말풍선 타자기/유지 타이머가 계속 도는 것을 막는다.
       // (rAF는 멈췄으므로 위치 갱신도 없다 — 남겨두면 보이지 않는 DOM만 갱신된다.)
       this.clearBubbles();
+      // 진행 중이던 일회성 연출도 GPU 자원째 회수한다(§9.3).
+      this.clearFx();
       // 마지막 사용자면 hud-inset이 ResizeObserver를 disconnect 한다.
       releaseHudInset();
     }
@@ -317,20 +401,22 @@ export class IsoView {
 
     // 방 바닥 텍스처(룸 종횡비=박스 UV). 없으면 원래 단색으로 복귀.
     this.roomMats.forEach((mat, name) => {
-      if (on) this.applyTexture(mat, `/assets/room/${name}-floor.svg`, BOARD.room);
-      else this.clearTexture(mat, BOARD.room);
+      if (on) this.applyTexture(mat, `/assets/room/${name}-floor.svg`, BOARD.room, name);
+      else this.clearTexture(mat, BOARD.room, name);
     });
     if (this.feastMat) {
       if (on) this.applyTexture(this.feastMat, "/assets/room/feast.svg", BOARD.feast);
       else this.clearTexture(this.feastMat, BOARD.feast);
     }
 
-    // 토큰·장물·NPC 스프라이트는 지워두면 다음 syncState에서 새 플래그로 재생성.
-    this.tokens.forEach((t) => this.scene.remove(t.group));
+    // 토큰·장물·NPC는 **해제하고** 지운다 — 다음 syncState가 새 플래그로 재생성한다.
+    // (기존에는 scene.remove만 해서 왕복 1회당 geometry 18+/material 36+/texture 28+가
+    //  유출됐다 — §9.3의 핵심 지점.)
+    this.tokens.forEach((t) => disposeObject(t.group));
     this.tokens.clear();
-    this.weapons.forEach((lt) => this.scene.remove(lt.sprite));
+    this.weapons.forEach((lt) => disposeObject(lt.sprite));
     this.weapons.clear();
-    this.helpers.forEach((g) => this.scene.remove(g));
+    this.helpers.forEach((g) => disposeObject(g));
     this.helpers.clear();
   }
 
@@ -338,24 +424,49 @@ export class IsoView {
     mat: THREE.MeshStandardMaterial,
     url: string,
     fallbackColor: number,
+    roomName?: string,
   ): void {
-    this.loader.load(
+    loadTextureCached(
+      this.loader,
       url,
       (tex) => {
-        tex.colorSpace = THREE.SRGBColorSpace;
+        // 이전 맵이 캐시 공유본이 아니면 먼저 해제한다(덮어쓰기 = 조용한 누수였다).
+        if (mat.map && mat.map !== tex && !isSharedTexture(mat.map)) {
+          mat.map.dispose();
+        }
         mat.map = tex;
         mat.color.set(0xffffff); // 텍스처 원색 보존
         mat.needsUpdate = true;
+        if (roomName) {
+          this.roomBase.set(roomName, 0xffffff);
+          this.applyRoomTint(roomName);
+        }
       },
-      undefined,
-      () => this.clearTexture(mat, fallbackColor),
+      () => this.clearTexture(mat, fallbackColor, roomName),
     );
   }
 
-  private clearTexture(mat: THREE.MeshStandardMaterial, color: number): void {
+  private clearTexture(
+    mat: THREE.MeshStandardMaterial,
+    color: number,
+    roomName?: string,
+  ): void {
+    if (mat.map && !isSharedTexture(mat.map)) mat.map.dispose();
     mat.map = null;
     mat.color.set(color);
     mat.needsUpdate = true;
+    if (roomName) {
+      this.roomBase.set(roomName, color);
+      this.applyRoomTint(roomName);
+    }
+  }
+
+  /** 방 바닥 색 = 기본색 × (살펴봤으면 감광). 두 정보가 색 하나를 공유하는 지점. */
+  private applyRoomTint(name: string): void {
+    const mat = this.roomMats.get(name);
+    if (!mat) return;
+    mat.color.setHex(this.roomBase.get(name) ?? BOARD.room);
+    if (this.surveyed.has(name)) mat.color.multiplyScalar(SURVEYED_DIM);
   }
 
   /** 캐릭터 정면 얼굴 스프라이트(에셋 모드면 /assets, 아니면 이모지). */
@@ -387,21 +498,22 @@ export class IsoView {
     const sprite = new THREE.Sprite(mat);
     sprite.scale.set(worldH, worldH, 1); // 아이콘은 정사각
     sprite.renderOrder = 10;
-    this.loader.load(
+    loadTextureCached(
+      this.loader,
       url,
       (tex) => {
-        tex.colorSpace = THREE.SRGBColorSpace;
-        tex.minFilter = THREE.LinearFilter;
         mat.map = tex;
         mat.needsUpdate = true;
       },
-      undefined,
       () => {
         const fb = fallback();
         const fbMat = fb.material as THREE.SpriteMaterial;
         mat.map = fbMat.map;
         mat.needsUpdate = true;
         sprite.scale.copy(fb.scale);
+        // 폴백 스프라이트 자체는 씬에 들어가지 않는다 — 텍스처만 넘기고 머티리얼은 해제.
+        fbMat.map = null;
+        fbMat.dispose();
       },
     );
     return sprite;
@@ -415,14 +527,16 @@ export class IsoView {
   }
 
   // ── 보드(복도 바닥 + 그리드 + 방 + 잔치상 + 문) ──
+  // 지오메트리는 전부 `three-res`의 단위 프리미티브 + scale이다(§9.3: 49 → 24).
   private buildBoard(): void {
     const W = GRID_WIDTH;
     const H = GRID_HEIGHT;
     // 복도 바닥
     const floor = new THREE.Mesh(
-      new THREE.PlaneGeometry(W, H),
+      UNIT_PLANE,
       new THREE.MeshStandardMaterial({ color: BOARD.corridor }),
     );
+    floor.scale.set(W, H, 1);
     floor.rotation.x = -Math.PI / 2;
     this.scene.add(floor);
 
@@ -437,7 +551,9 @@ export class IsoView {
     for (const r of ROOM_REGIONS) {
       const roomMat = new THREE.MeshStandardMaterial({ color: BOARD.room });
       this.roomMats.set(r.name, roomMat);
-      const box = new THREE.Mesh(new THREE.BoxGeometry(r.w, 0.2, r.h), roomMat);
+      this.roomBase.set(r.name, BOARD.room);
+      const box = new THREE.Mesh(UNIT_BOX, roomMat);
+      box.scale.set(r.w, 0.2, r.h);
       box.position.set(
         worldX(r.x) + (r.w - 1) / 2,
         0.1,
@@ -445,9 +561,10 @@ export class IsoView {
       );
       this.scene.add(box);
       const edge = new THREE.LineSegments(
-        new THREE.EdgesGeometry(box.geometry),
+        UNIT_BOX_EDGES,
         new THREE.LineBasicMaterial({ color: BOARD.roomEdge }),
       );
+      edge.scale.copy(box.scale);
       edge.position.copy(box.position);
       this.scene.add(edge);
 
@@ -462,24 +579,40 @@ export class IsoView {
       });
       plaque.position.set(box.position.x, 0.9, worldZ(r.y) - 0.1);
       this.scene.add(plaque);
+      // 살펴봄 ✓ 스탬프 — 명패 오른쪽. 기본 숨김(§5 행 16).
+      const check = makeSprite("✓", {
+        fontPx: 44,
+        color: hexString(BOARD.gold),
+        worldH: 0.42,
+      });
+      check.position.set(
+        box.position.x + plaque.scale.x / 2 + 0.22,
+        0.9,
+        worldZ(r.y) - 0.1,
+      );
+      check.visible = false;
+      this.scene.add(check);
+      this.surveyMarks.set(r.name, check);
 
       // 문(입구) — 이 칸으로만 출입. 밝은 바닥 타일 + 문기둥 + "입구" 라벨로 명확히.
       const dx = worldX(r.door.x);
       const dz = worldZ(r.door.y);
       const mark = new THREE.Mesh(
-        new THREE.PlaneGeometry(0.94, 0.94),
+        UNIT_PLANE,
         new THREE.MeshBasicMaterial({
           color: BOARD.gold,
           transparent: true,
           opacity: 0.85,
         }),
       );
+      mark.scale.set(0.94, 0.94, 1);
       mark.rotation.x = -Math.PI / 2;
       mark.position.set(dx, 0.24, dz);
       this.scene.add(mark);
       const post = new THREE.MeshStandardMaterial({ color: BOARD.wood });
       for (const sx of [-0.42, 0.42]) {
-        const pillar = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.7, 0.14), post);
+        const pillar = new THREE.Mesh(UNIT_BOX, post);
+        pillar.scale.set(0.14, 0.7, 0.14);
         pillar.position.set(dx + sx, 0.35, dz);
         this.scene.add(pillar);
       }
@@ -501,10 +634,8 @@ export class IsoView {
     // 중앙 잔치상
     const feastMat = new THREE.MeshStandardMaterial({ color: BOARD.feast });
     this.feastMat = feastMat;
-    const feast = new THREE.Mesh(
-      new THREE.BoxGeometry(FEAST.w, 0.34, FEAST.h),
-      feastMat,
-    );
+    const feast = new THREE.Mesh(UNIT_BOX, feastMat);
+    feast.scale.set(FEAST.w, 0.34, FEAST.h);
     feast.position.set(
       worldX(FEAST.x) + (FEAST.w - 1) / 2,
       0.17,
@@ -512,9 +643,10 @@ export class IsoView {
     );
     this.scene.add(feast);
     const feastEdge = new THREE.LineSegments(
-      new THREE.EdgesGeometry(feast.geometry),
+      UNIT_BOX_EDGES,
       new THREE.LineBasicMaterial({ color: BOARD.feastEdge }),
     );
+    feastEdge.scale.copy(feast.scale);
     feastEdge.position.copy(feast.position);
     this.scene.add(feastEdge);
     const gift = makeSprite("🎁", { fontPx: 130, worldH: 1.5 });
@@ -530,22 +662,23 @@ export class IsoView {
   }
 
   // ── 토큰 생성 ──
-  private createToken(id: string, p: PlayerView): Token {
+  private createToken(id: string, a: ActorSnapshot): Token {
     const group = new THREE.Group();
     // 색은 접속 순서가 아니라 `suspect`로 결정된다 — 판 도중에도 불변(§4).
-    const color = zodiacColor(p.suspect);
+    const color = zodiacColor(a.suspect);
     const disc = new THREE.Mesh(
-      new THREE.CircleGeometry(0.42, 32),
+      UNIT_CIRCLE,
       // transparent를 켜두지 않으면 탈락 시 opacity가 무시돼 disc만 불투명하게 남는다.
       new THREE.MeshStandardMaterial({ color, transparent: true }),
     );
+    disc.scale.set(0.42, 0.42, 1);
     disc.rotation.x = -Math.PI / 2;
     disc.position.y = 0.22;
     group.add(disc);
 
     // 색면 아웃라인(§4.1) — disc에는 스트로크가 없어 밝은 방바닥 위에서 색면이 번진다.
     const outline = new THREE.Mesh(
-      new THREE.RingGeometry(0.42, 0.46, 32),
+      OUTLINE_RING,
       new THREE.MeshBasicMaterial({
         color: TOKEN_OUTLINE_COLOR,
         side: THREE.DoubleSide,
@@ -560,7 +693,7 @@ export class IsoView {
     // 아트 색과 팀 색을 섞지 않기 위해 접지 데칼로만 색을 반복한다.
     if (this.useAssets) {
       const decal = new THREE.Mesh(
-        new THREE.CircleGeometry(0.62, 32),
+        UNIT_CIRCLE,
         new THREE.MeshBasicMaterial({
           color,
           transparent: true,
@@ -568,13 +701,14 @@ export class IsoView {
           depthWrite: false,
         }),
       );
+      decal.scale.set(0.62, 0.62, 1);
       decal.rotation.x = -Math.PI / 2;
       decal.position.y = 0.205;
       group.add(decal);
     }
 
     const ring = new THREE.Mesh(
-      new THREE.RingGeometry(0.5, 0.6, 32),
+      TURN_RING,
       new THREE.MeshBasicMaterial({
         color: RING_CURRENT,
         side: THREE.DoubleSide,
@@ -588,11 +722,11 @@ export class IsoView {
     ring.renderOrder = 9;
     group.add(ring);
 
-    const face = this.charFace(p.suspect, 0.95, 110);
+    const face = this.charFace(a.suspect, 0.95, 110);
     face.position.set(0, 0.85, 0);
     group.add(face);
 
-    const nameSprite = makeSprite(`${p.isBot ? "🤖" : ""}${p.name}`, {
+    const nameSprite = makeSprite(`${a.isBot ? "🤖" : ""}${a.name}`, {
       fontPx: 34,
       color: hexString(BOARD.nameText),
       bg: "#000000aa",
@@ -619,18 +753,280 @@ export class IsoView {
       ring,
       face,
       elimMark,
-      cur: new THREE.Vector2(p.x, p.y),
-      target: new THREE.Vector2(p.x, p.y),
+      cur: new THREE.Vector2(a.cell.x, a.cell.y),
+      target: new THREE.Vector2(a.cell.x, a.cell.y),
+      suspect: a.suspect,
       placed: false,
+      eliminated: a.eliminated,
     };
     this.tokens.set(id, token);
     return token;
   }
 
+  // ── 계약: 액터 ───────────────────────────────────────────
+  /** 액터 1명의 현재 상태 반영. 실제 이동은 `loop()`의 dt 보간이 한다. */
+  syncActor(a: ActorSnapshot): void {
+    const token = this.tokens.get(a.id) ?? this.createToken(a.id, a);
+    token.target.set(a.cell.x, a.cell.y);
+    this.setElim(a.id, a.eliminated);
+  }
+
+  /** 퇴장 — 말풍선·타이머는 물론 **GPU 자원까지** 뷰가 정리한다(계약 §2 · §9.3). */
+  removeActor(id: string): void {
+    const t = this.tokens.get(id);
+    if (t) {
+      disposeObject(t.group);
+      this.tokens.delete(id);
+    }
+    const b = this.bubbles.get(id);
+    if (b) {
+      window.clearInterval(b.typeTimer);
+      window.clearTimeout(b.holdTimer);
+      b.el.remove();
+      this.bubbles.delete(id);
+    }
+    if (this.currentId === id) this.currentId = null;
+  }
+
+  /** 지금 턴 — `RingGeometry` visible(§5 행 1). */
+  setCurrent(id: string | null): void {
+    this.currentId = id;
+    this.tokens.forEach((t, tid) => {
+      t.ring.visible = tid === id;
+    });
+  }
+
+  /**
+   * 탈락 — 감쇠는 face 스프라이트가 아니라 **토큰 전체**(disc·ring·이름표·얼굴)에.
+   * 2차 표기(❌)는 감쇠 대상이 아니다 — 감쇠되면 2중 표기의 의미가 사라진다.
+   */
+  setElim(id: string, on: boolean): void {
+    const t = this.tokens.get(id);
+    if (!t) return;
+    t.eliminated = on;
+    setGroupOpacity(t.group, on ? ELIM_ALPHA : 1);
+    t.elimMark.visible = on;
+    (t.elimMark.material as THREE.SpriteMaterial).opacity = 1;
+    // ring은 현재 턴일 때만 보인다 — 감쇠와 별개로 가시성을 되맞춘다.
+    t.ring.visible = this.currentId === id;
+  }
+
+  // ── 계약: 일회성 연출(fx) ────────────────────────────────
+  private addFx(
+    obj: THREE.Object3D,
+    dur: number,
+    step: (o: THREE.Object3D, k: number) => void,
+  ): void {
+    this.scene.add(obj);
+    this.fx.push({ obj, t: 0, dur: Math.max(1, dur), step });
+  }
+
+  private stepFx(dtMs: number): void {
+    for (let i = this.fx.length - 1; i >= 0; i--) {
+      const f = this.fx[i];
+      f.t += dtMs;
+      const k = Math.min(1, f.t / f.dur);
+      f.step(f.obj, k);
+      if (k >= 1) {
+        disposeObject(f.obj);
+        this.fx.splice(i, 1);
+      }
+    }
+  }
+
+  private clearFx(): void {
+    for (const f of this.fx) disposeObject(f.obj);
+    this.fx = [];
+  }
+
+  /** 순간이동 — `RingGeometry` 펄스 + y축 포물선(spec §2 뷰2·3 칸). */
+  warp(id: string, from: ViewCell, to: ViewCell, reason: WarpReason): void {
+    const t = this.tokens.get(id);
+    if (t) {
+      // 워프는 걷는 것이 아니다 — 보간을 끊고 목적지에 둔다.
+      t.cur.set(to.x, to.y);
+      t.target.set(to.x, to.y);
+      t.placed = true;
+    }
+    const ms = this.timing.WARP_MS;
+    if (ms <= 0) return; // reduced: 배너가 대신한다(§1.3)
+    const tint = reason === "summon" ? BOARD.gold : BOARD.wood;
+    const pulse = new THREE.Mesh(
+      WARP_RING,
+      new THREE.MeshBasicMaterial({
+        color: tint,
+        side: THREE.DoubleSide,
+        transparent: true,
+        depthTest: false,
+      }),
+    );
+    pulse.rotation.x = -Math.PI / 2;
+    pulse.position.set(worldX(to.x), 0.25, worldZ(to.y));
+    pulse.renderOrder = 12;
+    this.addFx(pulse, ms, (o, k) => {
+      o.scale.setScalar(1 + k * 1.8);
+      ((o as THREE.Mesh).material as THREE.Material).opacity = 1 - k;
+    });
+
+    // 출발 → 도착을 y축 포물선으로 잇는 잔상 링 3겹.
+    for (let i = 1; i <= 3; i++) {
+      const f = i / 4;
+      const ghost = new THREE.Mesh(
+        WARP_RING,
+        new THREE.MeshBasicMaterial({
+          color: tint,
+          side: THREE.DoubleSide,
+          transparent: true,
+          depthTest: false,
+        }),
+      );
+      ghost.rotation.x = -Math.PI / 2;
+      ghost.renderOrder = 12;
+      const gx = worldX(from.x) + (worldX(to.x) - worldX(from.x)) * f;
+      const gz = worldZ(from.y) + (worldZ(to.y) - worldZ(from.y)) * f;
+      const gy = 0.25 + Math.sin(f * Math.PI) * 1.6; // 포물선
+      ghost.position.set(gx, gy, gz);
+      this.addFx(ghost, ms, (o, k) => {
+        o.scale.setScalar(1 - k * 0.5);
+        ((o as THREE.Mesh).material as THREE.Material).opacity = 0.9 * (1 - k);
+      });
+    }
+  }
+
+  /** 장물 순간이동 — 스프라이트가 y축 포물선을 그리며 이동. */
+  lootWarp(value: string, from: ViewCell, to: ViewCell): void {
+    const ms = this.timing.WARP_MS;
+    const ghost = this.lootSprite(value, 0.8);
+    ghost.position.set(worldX(from.x), 0.55, worldZ(from.y));
+    if (ms <= 0) {
+      disposeObject(ghost);
+      return;
+    }
+    const ax = worldX(from.x);
+    const az = worldZ(from.y);
+    const bx = worldX(to.x);
+    const bz = worldZ(to.y);
+    this.addFx(ghost, ms, (o, k) => {
+      o.position.set(
+        ax + (bx - ax) * k,
+        0.55 + Math.sin(k * Math.PI) * 1.4,
+        az + (bz - az) * k,
+      );
+      ((o as THREE.Sprite).material as THREE.SpriteMaterial).opacity =
+        1 - k * 0.4;
+    });
+  }
+
+  // ── 계약: 무대·칸 주목 ───────────────────────────────────
+  /** 사건의 무대 — `look` 목표 이동(camera) 또는 `emissive` 점멸(highlight). */
+  focusRoom(room: string, mode: FocusMode): void {
+    const r = regionOf(room);
+    if (!r) return;
+    const cx = worldX(r.x) + (r.w - 1) / 2;
+    const cz = worldZ(r.y) + (r.h - 1) / 2;
+    if (mode === "camera") {
+      this.focusPoint = new THREE.Vector3(cx, 0, cz);
+      this.focusUntil =
+        performance.now() + Math.max(1, this.timing.CAM_PAN_OTHER_MS) + 900;
+    }
+    const mat = this.roomMats.get(room);
+    if (!mat) return;
+    const dur = Math.max(1, this.timing.WARP_BANNER_MS);
+    // emissive는 머티리얼 1개의 속성이라 fx 오브젝트가 필요 없다 —
+    // 대신 빈 Object3D를 타이머 삼아 태우고 종료 시 원복한다(자원 0).
+    const clock = new THREE.Object3D();
+    mat.emissive.setHex(BOARD.gold);
+    this.addFx(clock, dur, (_o, k) => {
+      mat.emissiveIntensity = (1 - k) * 0.6 * (0.5 + 0.5 * Math.cos(k * 18));
+      if (k >= 1) mat.emissive.setHex(0x000000);
+    });
+  }
+
+  /** 특정 칸 주목 — y=0.02 평면 데칼(spec §2 뷰2·3 칸). */
+  pulseCell(cell: ViewCell, tone: PulseTone): void {
+    const decal = new THREE.Mesh(
+      UNIT_PLANE,
+      new THREE.MeshBasicMaterial({
+        color: TONE_COLOR[tone],
+        transparent: true,
+        opacity: 0.55,
+        depthWrite: false,
+      }),
+    );
+    decal.scale.set(0.94, 0.94, 1);
+    decal.rotation.x = -Math.PI / 2;
+    decal.position.set(worldX(cell.x), 0.02, worldZ(cell.y));
+    this.addFx(decal, Math.max(1, this.timing.WARP_BANNER_MS / 2), (o, k) => {
+      ((o as THREE.Mesh).material as THREE.Material).opacity = 0.55 * (1 - k);
+    });
+  }
+
+  // ── 매 프레임 루프 ──
+  // `now`는 rAF 타임스탬프(ms). 고정 프레임을 가정하지 않기 위해 dt를 여기서 만든다.
+  private loop(now: number): void {
+    if (!this.active) return;
+    const dtMs =
+      this.lastFrameMs === 0
+        ? 1000 / 60
+        : Math.min(DT_MAX_MS, Math.max(0, now - this.lastFrameMs));
+    this.lastFrameMs = now;
+    this.syncState();
+    this.stepFx(dtMs);
+
+    // 토큰 위치 보간 — 프레임 시간 기반 지수 보간 k = 1 - exp(-dt/τ).
+    // (기존 lerp(0.25)는 **프레임레이트 종속**이라 120Hz에서 뷰1의 tween 110ms보다
+    //  두 배 빨리 도착했다. 같은 이동이 뷰마다 다른 속도로 보이면 그건 정보 차이다.)
+    const moveK = expK(dtMs, this.timing.MOVE_TWEEN_MS);
+    this.tokens.forEach((t) => {
+      t.cur.lerp(t.target, t.placed ? moveK : 1);
+      t.placed = true;
+      t.group.position.set(worldX(t.cur.x), 0, worldZ(t.cur.y));
+    });
+
+    // 장물 위치 보간 — 동일한 dt 기반 지수 보간.
+    // (기존: 매 프레임 position.set으로 순간이동해 "무슨 일이 일어났는지" 안 읽혔다)
+    const lootK = expK(dtMs, this.timing.LOOT_TWEEN_MS);
+    this.weapons.forEach((lt) => {
+      lt.cur.lerp(lt.target, lt.placed ? lootK : 1);
+      lt.placed = true;
+      lt.sprite.position.set(worldX(lt.cur.x), 0.55, worldZ(lt.cur.y));
+    });
+
+    // 카메라: 추적 대상으로 부드럽게. `focusRoom("camera")`가 잡아둔 목표가 우선.
+    const focusing = this.focusPoint !== null && now < this.focusUntil;
+    if (focusing && this.focusPoint) {
+      this.look.lerp(this.focusPoint, this.freeLook ? 1 : LERP_OTHER);
+    } else {
+      if (this.focusPoint && !focusing) this.focusPoint = null;
+      const ft = this.tokens.get(this.followId);
+      if (ft) {
+        const inset = this.insetWorld();
+        const desired = new THREE.Vector3(
+          worldX(ft.cur.x) + inset + this.panOffset.x,
+          0,
+          worldZ(ft.cur.y) + this.panOffset.z,
+        );
+        const l = this.followId === this.myId ? LERP_ME : LERP_OTHER;
+        this.look.lerp(desired, this.freeLook || this.dragging ? 1 : l);
+      }
+    }
+    const off = new THREE.Vector3(
+      0,
+      Math.sin(CAM_PITCH),
+      Math.cos(CAM_PITCH),
+    ).multiplyScalar(this.camDist);
+    this.camera.position.copy(this.look).add(off);
+    this.camera.lookAt(this.look);
+
+    this.updateBubbles();
+    this.renderer.render(this.scene, this.camera);
+    this.raf = requestAnimationFrame(this.loop);
+  }
+
   // ── 상태 → 씬 반영(매 프레임 호출) ──
   private syncState(): void {
     const state = this.room.state as unknown as {
-      players: Map<string, PlayerView>;
+      players: Map<string, ActorSnapshotSource>;
       weapons: Map<string, { value: string; x: number; y: number }>;
       helpers: Map<
         string,
@@ -644,20 +1040,21 @@ export class IsoView {
 
     players.forEach((p, id) => {
       seen.add(id);
-      const token = this.tokens.get(id) ?? this.createToken(id, p);
-      token.target.set(p.x, p.y);
-      const isCurrent = id === current;
-      token.ring.visible = isCurrent;
-      // 탈락 표기는 face 스프라이트가 아니라 **토큰 전체**(disc·ring·이름표·얼굴)에.
-      const alpha = p.eliminated ? ELIM_ALPHA : 1;
-      setGroupOpacity(token.group, alpha);
-      // 2차 표기(❌)는 감쇠 대상이 아니다 — 감쇠되면 2중 표기의 의미가 사라진다.
-      token.elimMark.visible = p.eliminated;
-      (token.elimMark.material as THREE.SpriteMaterial).opacity = 1;
+      this.syncActor({
+        id,
+        suspect: p.suspect,
+        name: p.name,
+        isBot: p.isBot,
+        cell: { x: p.x, y: p.y },
+        eliminated: p.eliminated,
+      });
     });
+    this.setCurrent(current === "" ? null : current);
 
     // 장물 토큰 — 위치는 target만 갱신하고 실제 이동은 loop()에서 dt 보간(스냅 금지).
+    const seenLoot = new Set<string>();
     state.weapons.forEach((w, key) => {
+      seenLoot.add(key);
       let lt = this.weapons.get(key);
       if (!lt) {
         const sprite = this.lootSprite(w.value, 0.8);
@@ -673,17 +1070,26 @@ export class IsoView {
       }
       lt.target.set(w.x, w.y);
     });
+    for (const key of [...this.weapons.keys()]) {
+      if (seenLoot.has(key)) continue;
+      const lt = this.weapons.get(key);
+      if (lt) disposeObject(lt.sprite);
+      this.weapons.delete(key);
+    }
 
     // 고정 NPC(계략)
+    const seenHelpers = new Set<string>();
     state.helpers.forEach((h, key) => {
+      seenHelpers.add(key);
       let g = this.helpers.get(key);
       if (!g) {
         g = new THREE.Group();
         const disc = new THREE.Mesh(
-          new THREE.CircleGeometry(0.42, 32),
+          UNIT_CIRCLE,
           // helper 감광도 disc를 포함해야 하므로 transparent를 켜둔다.
           new THREE.MeshStandardMaterial({ color: BOARD.helperDisc, transparent: true }),
         );
+        disc.scale.set(0.42, 0.42, 1);
         disc.rotation.x = -Math.PI / 2;
         disc.position.y = 0.22;
         g.add(disc);
@@ -710,6 +1116,12 @@ export class IsoView {
       // 사용된 계략 감광도 Sprite만이 아니라 disc Mesh를 포함한 **그룹 전체**에.
       setGroupOpacity(g, h.used ? SPENT_ALPHA : 1);
     });
+    for (const key of [...this.helpers.keys()]) {
+      if (seenHelpers.has(key)) continue;
+      const g = this.helpers.get(key);
+      if (g) disposeObject(g);
+      this.helpers.delete(key);
+    }
 
     // 카메라 추적 대상 = 현재 턴(지연 전환)
     const followCand = current && this.tokens.has(current) ? current : this.myId;
@@ -730,75 +1142,8 @@ export class IsoView {
 
     // 사라진 토큰 정리
     for (const id of [...this.tokens.keys()]) {
-      if (!seen.has(id)) {
-        const t = this.tokens.get(id);
-        if (t) this.scene.remove(t.group);
-        this.tokens.delete(id);
-        // 퇴장 시 말풍선·타이머까지 뷰가 정리한다(계약 §2 removeActor).
-        const b = this.bubbles.get(id);
-        if (b) {
-          window.clearInterval(b.typeTimer);
-          window.clearTimeout(b.holdTimer);
-          b.el.remove();
-          this.bubbles.delete(id);
-        }
-      }
+      if (!seen.has(id)) this.removeActor(id);
     }
-  }
-
-  // ── 매 프레임 루프 ──
-  // `now`는 rAF 타임스탬프(ms). 고정 프레임을 가정하지 않기 위해 dt를 여기서 만든다.
-  private loop(now: number): void {
-    if (!this.active) return;
-    const dtMs =
-      this.lastFrameMs === 0
-        ? 1000 / 60
-        : Math.min(DT_MAX_MS, Math.max(0, now - this.lastFrameMs));
-    this.lastFrameMs = now;
-    this.syncState();
-
-    // 토큰 위치 보간 — 프레임 시간 기반 지수 보간 k = 1 - exp(-dt/τ).
-    // (기존 lerp(0.25)는 **프레임레이트 종속**이라 120Hz에서 뷰1의 tween 110ms보다
-    //  두 배 빨리 도착했다. 같은 이동이 뷰마다 다른 속도로 보이면 그건 정보 차이다.)
-    const moveK = expK(dtMs, this.timing.MOVE_TWEEN_MS);
-    this.tokens.forEach((t) => {
-      t.cur.lerp(t.target, t.placed ? moveK : 1);
-      t.placed = true;
-      t.group.position.set(worldX(t.cur.x), 0, worldZ(t.cur.y));
-    });
-
-    // 장물 위치 보간 — 동일한 dt 기반 지수 보간.
-    // (기존: 매 프레임 position.set으로 순간이동해 "무슨 일이 일어났는지" 안 읽혔다)
-    const lootK = expK(dtMs, this.timing.LOOT_TWEEN_MS);
-    this.weapons.forEach((lt) => {
-      lt.cur.lerp(lt.target, lt.placed ? lootK : 1);
-      lt.placed = true;
-      lt.sprite.position.set(worldX(lt.cur.x), 0.55, worldZ(lt.cur.y));
-    });
-
-    // 카메라: 추적 대상으로 부드럽게
-    const ft = this.tokens.get(this.followId);
-    if (ft) {
-      const inset = this.insetWorld();
-      const desired = new THREE.Vector3(
-        worldX(ft.cur.x) + inset + this.panOffset.x,
-        0,
-        worldZ(ft.cur.y) + this.panOffset.z,
-      );
-      const l = this.followId === this.myId ? LERP_ME : LERP_OTHER;
-      this.look.lerp(desired, this.freeLook || this.dragging ? 1 : l);
-    }
-    const off = new THREE.Vector3(
-      0,
-      Math.sin(CAM_PITCH),
-      Math.cos(CAM_PITCH),
-    ).multiplyScalar(this.camDist);
-    this.camera.position.copy(this.look).add(off);
-    this.camera.lookAt(this.look);
-
-    this.updateBubbles();
-    this.renderer.render(this.scene, this.camera);
-    this.raf = requestAnimationFrame(this.loop);
   }
 
   /**
@@ -817,7 +1162,12 @@ export class IsoView {
   }
 
   // ── 말풍선(DOM 오버레이 + 타자기) ──
+  /** `say` 라우팅의 기존 진입점. 계약 메서드로 넘긴다(이름 호환 유지). */
   showBubble(id: string, text: string): void {
+    this.bubble(id, text);
+  }
+
+  bubble(id: string, text: string, opts: BubbleOpts = {}): void {
     const prev = this.bubbles.get(id);
     if (prev) {
       window.clearInterval(prev.typeTimer);
@@ -825,24 +1175,27 @@ export class IsoView {
       prev.el.remove();
       this.bubbles.delete(id);
     }
+    // 귓속말은 공개 대사와 반드시 구분된다(계약 §2) — 접두 + 파선 테두리.
+    const body = opts.whisper ? `(귓속말) ${text}` : text;
     const el = document.createElement("div");
     el.style.cssText =
       "position:absolute; transform:translate(-50%,-100%); max-width:260px;" +
       `background:${hexString(BOARD.bubbleBg)}; color:${hexString(BOARD.bubbleText)};` +
       "padding:4px 8px; border-radius:8px;" +
       "font-size:15px; line-height:1.35; text-align:center; white-space:pre-wrap;" +
-      "box-shadow:0 2px 8px #0008;";
+      "box-shadow:0 2px 8px #0008;" +
+      (opts.whisper ? `border:2px dashed ${hexString(BOARD.gold)};` : "");
     this.bubbleLayer.appendChild(el);
     const b: Bubble = {
       el,
       id,
-      full: text,
+      full: body,
       shown: 0,
       typeTimer: 0,
       holdTimer: 0,
     };
     // 총 수명은 shared `bubbleLifeMs`가 계산한다(서버 SPEAK_HOLD와 정합을 맞추는 지점).
-    const total = bubbleLifeMs(text, this.timing);
+    const total = bubbleLifeMs(body, this.timing);
     const typeMs = this.timing.TYPE_MS;
     const expire = (): void => {
       el.remove();
@@ -850,18 +1203,18 @@ export class IsoView {
     };
     if (typeMs <= 0) {
       // reduced 프로파일: 타자기 없이 전문을 즉시 띄운다.
-      el.textContent = text;
-      b.shown = text.length;
+      el.textContent = body;
+      b.shown = body.length;
       b.holdTimer = window.setTimeout(expire, total);
     } else {
       b.typeTimer = window.setInterval(() => {
         b.shown += 1;
-        el.textContent = text.slice(0, b.shown);
-        if (b.shown >= text.length) {
+        el.textContent = body.slice(0, b.shown);
+        if (b.shown >= body.length) {
           window.clearInterval(b.typeTimer);
           b.holdTimer = window.setTimeout(
             expire,
-            Math.max(0, total - text.length * typeMs),
+            Math.max(0, total - body.length * typeMs),
           );
         }
       }, typeMs);
@@ -885,6 +1238,156 @@ export class IsoView {
       b.el.style.top = `${sy}px`;
       b.el.style.display = pos.z > 1 ? "none" : "block";
     });
+  }
+
+  // ── 계약: 식별·파생 정보·종료 ────────────────────────────
+  /**
+   * 뷰3(에셋)에서는 **실제 프리로드**가 된다 — 아트가 캐시에 올라와 있으면 토큰 생성
+   * 시점의 팝인이 사라진다. 뷰2(이모지)는 캔버스에서 즉시 파생되므로 할 일이 없다.
+   */
+  identity(suspect: string): void {
+    if (!this.useAssets) return;
+    loadTextureCached(
+      this.loader,
+      `/assets/char/${suspect}-face.svg`,
+      () => undefined,
+      () => undefined,
+    );
+  }
+
+  /** "이미 살펴본 방" — 명패 ✓ + 바닥 30% 어둡게(§2 뷰2·3 칸). 진실값 아님. */
+  setSurveyed(rooms: readonly string[]): void {
+    this.surveyed = new Set(rooms);
+    this.surveyMarks.forEach((mark, name) => {
+      mark.visible = this.surveyed.has(name);
+    });
+    this.roomMats.forEach((_m, name) => this.applyRoomTint(name));
+  }
+
+  /**
+   * 비밀 통로 — 낮은 아치 + 파선(§2 뷰2·3 칸).
+   * 파선은 **공유 단위 평면 메시의 반복**으로 그린다 — 여기서 BufferGeometry를
+   * 새로 만들면 `setPassages` 호출마다 GPU에 쌓인다(§9.3).
+   */
+  setPassages(links: readonly PassageLink[]): void {
+    if (this.passageGroup) {
+      disposeObject(this.passageGroup);
+      this.passageGroup = undefined;
+    }
+    if (links.length === 0) return;
+    const group = new THREE.Group();
+    const dashMat = new THREE.MeshBasicMaterial({
+      color: BOARD.gold,
+      transparent: true,
+      opacity: 0.45,
+      depthWrite: false,
+    });
+    const archMat = new THREE.MeshStandardMaterial({ color: BOARD.wood });
+    for (const l of links) {
+      const a = regionOf(l.from);
+      const b = regionOf(l.to);
+      if (!a || !b) continue;
+      const ax = worldX(a.x) + (a.w - 1) / 2;
+      const az = worldZ(a.y) + (a.h - 1) / 2;
+      const bx = worldX(b.x) + (b.w - 1) / 2;
+      const bz = worldZ(b.y) + (b.h - 1) / 2;
+      const len = Math.hypot(bx - ax, bz - az);
+      const steps = Math.max(2, Math.floor(len / 1.2));
+      for (let i = 0; i <= steps; i++) {
+        const k = i / steps;
+        const dash = new THREE.Mesh(UNIT_PLANE, dashMat);
+        dash.scale.set(0.5, 0.16, 1);
+        dash.rotation.x = -Math.PI / 2;
+        dash.rotation.z = -Math.atan2(bz - az, bx - ax);
+        dash.position.set(ax + (bx - ax) * k, 0.03, az + (bz - az) * k);
+        group.add(dash);
+      }
+      // 양 끝에 낮은 아치(상인방) — "여기로 빠져나갈 수 있다"는 정적 표기.
+      for (const [px, pz] of [
+        [ax, az],
+        [bx, bz],
+      ] as const) {
+        const lintel = new THREE.Mesh(UNIT_BOX, archMat);
+        lintel.scale.set(0.9, 0.12, 0.14);
+        lintel.position.set(px, 0.62, pz);
+        group.add(lintel);
+      }
+    }
+    this.scene.add(group);
+    this.passageGroup = group;
+  }
+
+  /** 승리 — `PointLight` + 팬(§5 행 22). `null`이면 연출 해제. */
+  setOutcome(o: ViewOutcome | null): void {
+    if (this.outcomeLight) {
+      this.scene.remove(this.outcomeLight);
+      this.outcomeLight.dispose();
+      this.outcomeLight = undefined;
+    }
+    if (!o) return;
+    const t = this.tokens.get(o.winnerId);
+    if (!t) return;
+    const light = new THREE.PointLight(BOARD.gold, 24, 12, 2);
+    light.position.set(worldX(t.cur.x), 2.4, worldZ(t.cur.y));
+    this.scene.add(light);
+    this.outcomeLight = light;
+    // 승자에게 카메라를 준다(팬).
+    this.focusPoint = new THREE.Vector3(worldX(t.cur.x), 0, worldZ(t.cur.y));
+    this.focusUntil = performance.now() + 4000;
+  }
+
+  // ── 계약: 자원 해제(§9.3) ────────────────────────────────
+  /**
+   * 뷰를 영구히 버릴 때만 호출한다. `setActive(false)`와 다르다 —
+   * 여기서는 WebGL 컨텍스트까지 놓는다.
+   */
+  dispose(): void {
+    if (this.disposed) return;
+    this.disposed = true;
+    this.setActive(false);
+    this.clearBubbles();
+    this.clearFx();
+    window.clearTimeout(this.switchTimer);
+    window.removeEventListener("pagehide", this.onPageHide);
+    this.tokens.clear();
+    this.weapons.clear();
+    this.helpers.clear();
+    this.roomMats.clear();
+    this.roomBase.clear();
+    this.surveyMarks.clear();
+    this.passageGroup = undefined;
+    this.outcomeLight = undefined;
+    this.feastMat = undefined;
+    disposeScene(this.scene);
+    this.renderer.dispose();
+    // 컨텍스트를 명시적으로 놓지 않으면 브라우저가 "가장 오래된 것"을 임의로
+    // 회수하다가 다른 뷰를 검게 만든다(§9.5).
+    this.renderer.forceContextLoss();
+    this.canvas.remove();
+    this.bubbleLayer.remove();
+    const w = window as unknown as { __zcIso?: IsoView };
+    if (w.__zcIso === this) delete w.__zcIso;
+  }
+
+  /**
+   * 회귀 게이트(§9.6) 측정 훅. 콘솔에서 `__zcIso.debugInfo()`로 읽는다.
+   * 뷰1→2→3→4→1 10회 순회 전후의 `geometries`·`textures`가 ±5 이내면 통과.
+   */
+  debugInfo(): {
+    geometries: number;
+    textures: number;
+    programs: number;
+    calls: number;
+    triangles: number;
+  } {
+    const info = this.renderer.info;
+    return {
+      geometries: info.memory.geometries,
+      textures: info.memory.textures,
+      programs: info.programs?.length ?? 0,
+      calls: info.render.calls,
+      triangles: info.render.triangles,
+    };
   }
 
   // ── 입력 ──
@@ -914,6 +1417,7 @@ export class IsoView {
     const k = this.camDist / 600;
     this.panOffset.x -= dx * k;
     this.panOffset.z -= dy * k;
+    this.focusPoint = null; // 사용자가 화면을 잡으면 강제 포커스는 즉시 놓는다
   }
 
   private onPointerUp(): void {
@@ -999,3 +1503,13 @@ export class IsoView {
     this.camera.updateProjectionMatrix();
   }
 }
+
+/** 서버 상태의 플레이어 레코드(그대로 `ActorSnapshot`으로 옮겨진다). */
+type ActorSnapshotSource = {
+  name: string;
+  suspect: string;
+  isBot: boolean;
+  x: number;
+  y: number;
+  eliminated: boolean;
+};
