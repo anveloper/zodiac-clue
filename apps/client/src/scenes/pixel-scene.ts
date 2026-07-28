@@ -109,6 +109,20 @@ type Critter = {
   suspect: string;
   placed: boolean;
   eliminated: boolean;
+  /**
+   * 지금 향하고 있는 **목표 픽셀 좌표**(서버 칸 → px). `c.x/c.y`(그리는 중인 값)와
+   * 반드시 구분한다 — `syncTokens()`가 매 프레임 도는 폴링 렌더러라 "현재 좌표가
+   * 목표와 다르다"를 트윈 재시작 조건으로 쓰면 트윈이 영원히 0프레임째에 머문다(§아래 주석).
+   */
+  tx: number;
+  ty: number;
+};
+
+/** 장물 상자 1건 — 컨테이너와 **목표 좌표**를 함께 들고 있어야 트윈이 살아남는다. */
+type LootBox = {
+  c: Phaser.GameObjects.Container;
+  tx: number;
+  ty: number;
 };
 
 /** 말풍선 1건이 소유한 오브젝트·타이머 전부. */
@@ -139,7 +153,7 @@ export class PixelScene extends Phaser.Scene implements ViewContract {
 
   private room!: Room;
   private tokens = new Map<string, Critter>();
-  private loot = new Map<string, Phaser.GameObjects.Container>();
+  private loot = new Map<string, LootBox>();
   private helpers = new Map<string, Phaser.GameObjects.Container>();
   private bubbles = new Map<string, BubbleRec>();
   /** 지금 턴(계약 `setCurrent`). 사본일 뿐 진실값은 서버에 있다. */
@@ -688,14 +702,21 @@ export class PixelScene extends Phaser.Scene implements ViewContract {
       seenLoot.add(key);
       const cx = w.x * CELL + CELL / 2;
       const cy = w.y * CELL + CELL / 2;
-      let s = this.loot.get(key);
+      const s = this.loot.get(key);
       if (!s) {
-        s = this.makeLootBox(cx, cy, w.value);
-        this.loot.set(key, s);
-      } else if (s.x !== cx || s.y !== cy) {
-        this.tweens.killTweensOf(s);
+        this.loot.set(key, {
+          c: this.makeLootBox(cx, cy, w.value),
+          tx: cx,
+          ty: cy,
+        });
+      } else if (s.tx !== cx || s.ty !== cy) {
+        // 말과 같은 이유로 **목표 좌표**와 비교한다 — `syncActor`의 긴 주석 참고.
+        // (`s.c.x`와 비교하면 매 프레임 트윈이 재시작돼 장물이 그 자리에 얼어붙는다.)
+        s.tx = cx;
+        s.ty = cy;
+        this.tweens.killTweensOf(s.c);
         this.tweens.add({
-          targets: s,
+          targets: s.c,
           x: cx,
           y: cy,
           duration: this.timing.LOOT_TWEEN_MS,
@@ -705,10 +726,10 @@ export class PixelScene extends Phaser.Scene implements ViewContract {
     });
     for (const key of [...this.loot.keys()]) {
       if (seenLoot.has(key)) continue;
-      const c = this.loot.get(key);
-      if (c) {
-        this.tweens.killTweensOf(c);
-        c.destroy();
+      const s = this.loot.get(key);
+      if (s) {
+        this.tweens.killTweensOf(s.c);
+        s.c.destroy();
       }
       this.loot.delete(key);
     }
@@ -733,6 +754,11 @@ export class PixelScene extends Phaser.Scene implements ViewContract {
           .setOrigin(0.5, 0);
         c = this.add.container(cx, cy, [body.c, tag]).setDepth(4);
         this.helpers.set(key, c);
+      } else if (c.x !== cx || c.y !== cy) {
+        // 계략 NPC는 판 시작에 한 번 놓이고 움직이지 않는다. 다만 재대국에서 같은
+        // 십이지가 **다른 자리**로 다시 깔릴 수 있어(서버 `helpers.clear()` → `set`)
+        // 위치를 놓치면 유령이 남는다. 트윈이 아니라 **스냅** — 이동이 아니라 재배치다.
+        c.setPosition(cx, cy);
       }
       c.setAlpha(h.used ? SPENT_ALPHA : 1);
     });
@@ -826,9 +852,27 @@ export class PixelScene extends Phaser.Scene implements ViewContract {
         suspect: a.suspect,
         placed: true,
         eliminated: a.eliminated,
+        tx: cx,
+        ty: cy,
       };
       this.tokens.set(a.id, t);
-    } else if (t.c.x !== cx || t.c.y !== cy) {
+    } else if (t.tx !== cx || t.ty !== cy) {
+      // ⚠ 비교 대상은 **목표 좌표(`t.tx/ty`)**지 `t.c.x/y`가 아니다.
+      //
+      //   이 뷰는 `update()`마다 `syncTokens()`로 서버 상태를 다시 읽는 **폴링** 렌더러다
+      //   (뷰1은 `room.onStateChange` 이벤트 구동이라 이 경로를 1회만 탄다).
+      //   그래서 조건을 "그리는 중인 좌표 ≠ 목표"로 쓰면 트윈이 도착하기 전까지 **매 프레임**
+      //   참이 되어 `killTweensOf` → `add`를 반복한다.
+      //   Phaser 3.60+ `Tween.update()`는 **첫 호출에서 `delta = 0`으로 리셋**한다
+      //   ("start progress from zero"). 즉 트윈은 두 번째 스텝부터 움직인다 →
+      //   매 프레임 죽였다 새로 만들면 어떤 트윈도 두 번째 스텝을 맞지 못해
+      //   `elapsed`가 0에 못 박히고 **말이 영원히 제자리에 선다.**
+      //   (뷰를 나가면 폴링이 멈춰 마지막 트윈이 살아남아 "튀는" 것이 그 증상이었다.)
+      //
+      //   목표가 **바뀔 때만** 재시작하면 트윈이 온전히 한 번 살아 실시간으로 따라온다.
+      //   뷰2·3(`iso-view.ts`)이 같은 폴링을 `target` + dt 보간으로 푸는 것과 같은 규약이다.
+      t.tx = cx;
+      t.ty = cy;
       this.tweens.killTweensOf(t.c);
       this.tweens.add({
         targets: t.c,
@@ -883,6 +927,10 @@ export class PixelScene extends Phaser.Scene implements ViewContract {
     if (t) {
       this.tweens.killTweensOf(t.c);
       t.c.setPosition(bx, by);
+      // 목표 좌표도 함께 옮긴다 — 다음 `syncTokens()` 폴링이 "아직 안 갔다"고 오해해
+      // 방금 순간이동한 말을 다시 트윈으로 끌지 않도록.
+      t.tx = bx;
+      t.ty = by;
     }
     const ms = this.timing.WARP_MS;
     if (ms <= 0) return;
@@ -1125,9 +1173,9 @@ export class PixelScene extends Phaser.Scene implements ViewContract {
       t.c.destroy();
     });
     this.tokens.clear();
-    this.loot.forEach((c) => {
-      this.tweens.killTweensOf(c);
-      c.destroy();
+    this.loot.forEach((s) => {
+      this.tweens.killTweensOf(s.c);
+      s.c.destroy();
     });
     this.loot.clear();
     this.helpers.forEach((c) => c.destroy());

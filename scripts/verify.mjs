@@ -70,7 +70,11 @@ const RUNNERS = {
     // ⚠️ `--live` 는 **절대** 붙이지 않는다. 기본이 오프라인 = Gemini 호출 0.
     cmd: process.execPath,
     args: ["scripts/eval-narrator.mjs"],
-    quickArgs: ["scripts/eval-narrator.mjs", "--quick"],
+    // ⚠️ `--quick`은 폴백 전수 스윕(112,752문장)을 생략한다. 그런데 eval은 실행마다
+    //    `docs/design/eval-narrator-report.md`를 덮어쓰므로, 그대로 두면 **커밋 전 게이트를
+    //    돌 때마다 ④ §3.4의 최대 근거가 `112,752 → 0`으로 퇴화**한다.
+    //    빠른 모드에서는 리포트를 쓰지 않는다 — 리포트는 전체 모드가 갱신한다.
+    quickArgs: ["scripts/eval-narrator.mjs", "--quick", "--no-report"],
     jsonArgs: ["scripts/eval-narrator.mjs", "--json"],
     quickJsonArgs: ["scripts/eval-narrator.mjs", "--quick", "--json"],
     // 2 = 환경 오류(tsx 부재 등) = **판정 자체를 못 함.** 통과로 세지 않는다.
