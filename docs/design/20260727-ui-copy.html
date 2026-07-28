@@ -52,6 +52,9 @@
   tr.now td{color:var(--dim)}
   .tag{display:inline-block;font-size:10.5px;padding:1px 7px;border-radius:5px;white-space:nowrap;font-weight:600}
   .t-now{background:#3a2320;color:var(--red)}
+  .t-bug{background:#3a1f1a;color:#e0857a}   /* 조사 오류가 실제로 출력되는 문장 */
+  .t-tone{background:#33291a;color:#e0c25a}  /* 어휘·톤 불일치 */
+  .t-warn{background:#33291a;color:var(--amber)}
   .t-new{background:#1d2f22;color:var(--green)}
   .t-soon{background:#33291a;color:var(--amber)}
   .t-keep{background:#1f2b3a;color:var(--blue)}
@@ -185,6 +188,10 @@
   .rule .h{font-size:13.5px;margin:3px 0 8px;color:var(--ink);font-weight:600}
   .rule .ex{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;line-height:1.8}
   .rule .ex .x{color:var(--red)} .rule .ex .o{color:var(--green)}
+  .rule .ex .x::before{content:"금지";font-family:system-ui,sans-serif;font-size:9.5px;font-weight:700;
+    background:#3a2320;border-radius:4px;padding:1px 5px;margin-right:7px;vertical-align:1px}
+  .rule .ex .o::before{content:"확정";font-family:system-ui,sans-serif;font-size:9.5px;font-weight:700;
+    background:#1d2f22;border-radius:4px;padding:1px 5px;margin-right:7px;vertical-align:1px}
 
   .voices{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin:14px 0}
   .voice{background:var(--card);border:1px solid var(--edge);border-radius:10px;padding:14px 16px}
@@ -202,7 +209,8 @@
 
   .chk{list-style:none;padding:0}
   .chk li{padding-left:26px;position:relative;margin:7px 0;font-size:13.5px}
-  .chk li::before{content:"☐";position:absolute;left:0;color:var(--accent);font-size:15px}
+  .chk li::before{content:"";position:absolute;left:0;top:5px;width:11px;height:11px;
+    border:1.5px solid var(--accent);border-radius:2px}
 
   hr{border:0;border-top:1px solid var(--edge);margin:40px 0}
   footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--edge);font-size:12px;color:var(--dim)}
@@ -314,28 +322,28 @@
       <div class="id">R1</div>
       <div class="h">변수 뒤에 조사를 붙이지 않는다</div>
       <p class="note" style="margin:0 0 8px">꼭 필요하면 받침이 고정된 접미어(<b>님·편·쪽·측·것·방</b>)를 사이에 끼운다.</p>
-      <div class="ex"><span class="x">✕ ${name}이</span><br><span class="o">✓ ${name} 님이</span></div>
+      <div class="ex"><span class="x">${name}이</span><br><span class="o">${name} 님이</span></div>
     </div>
     <div class="rule">
       <div class="id">R2</div>
       <div class="h">주격·목적격 → 콜론 라벨</div>
-      <div class="ex"><span class="x">✕ ${w}을 훔쳤다</span><br><span class="o">✓ 훔친 것: ${w}</span></div>
+      <div class="ex"><span class="x">${w}을 훔쳤다</span><br><span class="o">훔친 것: ${w}</span></div>
     </div>
     <div class="rule">
       <div class="id">R3</div>
       <div class="h">이동·변화 → 화살표 →</div>
-      <div class="ex"><span class="x">✕ ${s}가 ${r}(으)로 불려왔습니다</span><br><span class="o">✓ 소환 — ${s} → ${r}</span></div>
+      <div class="ex"><span class="x">${s}가 ${r}(으)로 불려왔습니다</span><br><span class="o">소환 — ${s} → ${r}</span></div>
     </div>
     <div class="rule">
       <div class="id">R4</div>
       <div class="h">인용·강조 → 낫표 「」 + 체언 종결</div>
-      <div class="ex"><span class="x">✕ ${w}이 사라졌다</span><br><span class="o">✓ 사라진 것 — 「${w}」</span></div>
+      <div class="ex"><span class="x">${w}이 사라졌다</span><br><span class="o">사라진 것 — 「${w}」</span></div>
     </div>
     <div class="rule">
       <div class="id">R5</div>
       <div class="h">받침 무관한 조사만 허용</div>
       <p class="note" style="margin:0 0 8px"><b>에 · 에서 · 에게서 · 의 · 도 · 만 · 까지 · 부터</b>만 변수 뒤에 올 수 있다.</p>
-      <div class="ex"><span class="x">✕ ${r}(으)로</span><br><span class="o">✓ ${r}에서</span></div>
+      <div class="ex"><span class="x">${r}(으)로</span><br><span class="o">${r}에서</span></div>
     </div>
     <div class="rule">
       <div class="id">R6</div>
@@ -362,7 +370,7 @@
     <li>대사 경로 표시(<code>✨</code>/<code>♻</code>/<code>⚙</code>)는 진실값이 아니라 <b>운영 메타데이터</b>다(④ §4). 게임 상태를 말하지 않으므로 <code>(나만 봄)</code> 대상도 아니고, 숨기지도 않는다 → 문안 <a href="#s4">§4.4</a>.</li>
   </ul>
   <div class="box warn">
-    ⚠️ <b>폴백 템플릿에 대한 이 문서의 확정 권한은 "길이 예산 안에서"다.</b>
+    <span class="tag t-warn">주의</span> <b>폴백 템플릿에 대한 이 문서의 확정 권한은 "길이 예산 안에서"다.</b>
     예산은 제출물 ④ §2.3이 정하고 코드 상수 <code>LINE_BUDGET_SUGGEST</code>(25) · <code>LINE_MAX</code>(40)가 강제한다 — <b>예산이 문안보다 상위</b>다.<br>
     <span class="note">07-27 확정본이 이 예산을 어겨 07-28에 템플릿을 교체했다. 경위는 <a href="#s8">§8.2 정정 노트</a>.</span>
   </div>
@@ -420,7 +428,7 @@
   </dl>
   <p class="note">접두 기호는 <b>이형 선택자(VS16 <code>U+FE0F</code>) 없이</b> 쓴다. 저장소 전체가 그렇고(<code>🛡</code> = <code>U+1F6E1</code> 단독), 한 곳만 붙이면 폭이 달라져 로그 좌측 정렬이 어긋난다.</p>
   <div class="box warn">
-    ⚠️ <code>EMOJI</code> 맵에 <b>장소 9종이 없다</b> → <code>emoji(room)</code>이 빈 문자열을 반환해 증거 노트 <code>장소</code> 그룹 칩의 아이콘 칸이 전부 비어 있다.
+    <span class="tag t-warn">주의</span> <code>EMOJI</code> 맵에 <b>장소 9종이 없다</b> → <code>emoji(room)</code>이 빈 문자열을 반환해 증거 노트 <code>장소</code> 그룹 칩의 아이콘 칸이 전부 비어 있다.
     장소 접두는 <b>고정 문자 <code>📍</code></b>로 통일한다. 카드 데이터에 이모지를 추가하지 않는다 — 정지(부엌)·사랑채·별당에 자연스럽게 대응하는 이모지가 없다.
   </div>
 
@@ -497,7 +505,7 @@
   </table></div>
 
   <div class="box crit">
-    <b>🔴 잠금 칩 툴팁이 코드와 갈라져 있다 (07-28 확인).</b>
+    <b><span class="tag t-bug">갈라짐</span> 잠금 칩 툴팁이 코드와 갈라져 있다 (07-28 확인).</b>
     <code>buildEvidence()</code>는 <code class="bad">공통 단서 (정답 아님)</code> / <code class="bad">내 패 (정답 아님)</code>을 쓴다.
     <b class="good">문서 쪽이 옳다</b> — 코드를 위 확정본으로 고친다.
     <ul style="margin-bottom:0">
@@ -671,8 +679,8 @@
     <tr><td>—</td><td><b class="good">활성</b></td><td class="q">계략 — 상대 카드 엿보기 + 이동 보너스. NPC마다 1회.</td></tr>
   </table></div>
   <div class="box warn">
-    ⚠️ 현재 활성 판정은 <code>!h.used &amp;&amp; 인접</code>을 한 번에 검사하므로 <b>3번과 4번을 구분하지 못한다</b> — 이미 쓴 NPC 옆에 서 있어도 "근처에 없어요"가 뜬다. 두 조건을 분리해야 이 문안이 성립한다.<br>
-    ⚠️ <code>CLAUDE.md</code>는 계략을 <b>"판당 1회"</b>로 규정하지만 코드는 <code>helper.used</code>로 <b>토큰(NPC)마다 1회</b>다. 문안은 코드 실동작(<code>NPC마다 1회</code>)을 따르고, 규약 문구 정정은 로드맵 소관.
+    <span class="tag t-warn">주의</span> 현재 활성 판정은 <code>!h.used &amp;&amp; 인접</code>을 한 번에 검사하므로 <b>3번과 4번을 구분하지 못한다</b> — 이미 쓴 NPC 옆에 서 있어도 "근처에 없어요"가 뜬다. 두 조건을 분리해야 이 문안이 성립한다.<br>
+    <span class="tag t-warn">주의</span> <code>CLAUDE.md</code>는 계략을 <b>"판당 1회"</b>로 규정하지만 코드는 <code>helper.used</code>로 <b>토큰(NPC)마다 1회</b>다. 문안은 코드 실동작(<code>NPC마다 1회</code>)을 따르고, 규약 문구 정정은 로드맵 소관.
   </div>
 
   <h3>5.5 [턴 종료] <code>#endTurn</code> <span class="note">— 4종 외, 참고</span></h3>
@@ -870,13 +878,13 @@
   <h3>8.1 <code>clue-room.ts</code></h3>
   <div class="scroll"><table>
     <tr><th>줄</th><th>현재</th><th>교체안</th><th>사유</th></tr>
-    <tr><td>697 <span class="bad">🔴</span></td><td class="q dim">${용의자}가 ${장소}(으)로 불려왔습니다.</td><td class="q good">🔔 소환 — ${용의자} → ${장소}</td><td>R1·R3 · <code>(으)로</code>가 화면에 그대로 출력</td></tr>
-    <tr><td>406 <span class="bad">🔴</span></td><td class="q dim">${캐릭터}는 이미 선택되었습니다.</td><td class="q good">이미 선택된 캐릭터예요 — ${캐릭터}</td><td>R1 · 변수를 문미로</td></tr>
+    <tr><td>697 <span class="tag t-bug">조사</span></td><td class="q dim">${용의자}가 ${장소}(으)로 불려왔습니다.</td><td class="q good">🔔 소환 — ${용의자} → ${장소}</td><td>R1·R3 · <code>(으)로</code>가 화면에 그대로 출력</td></tr>
+    <tr><td>406 <span class="tag t-bug">조사</span></td><td class="q dim">${캐릭터}는 이미 선택되었습니다.</td><td class="q good">이미 선택된 캐릭터예요 — ${캐릭터}</td><td>R1 · 변수를 문미로</td></tr>
     <tr><td>383</td><td class="q dim">${이름} 님이 ${방}에 들어갔습니다.</td><td class="q good">🚪 진입 — ${이름} → ${방}</td><td>R3 · 스캔 속도</td></tr>
     <tr><td>165</td><td class="q dim">🚪 ${이름} 님이 비밀 통로로 ${방}에 이동! (제안 또는 턴 종료)</td><td class="q good">🚪 비밀 통로 — ${이름} → ${방} · 제안 또는 턴 종료</td><td>58자 → 42자</td></tr>
     <tr><td>214</td><td class="q dim">🃏 ${이름} 님이 ${NPC}의 계략(엿보기 n·이동 +r) 사용</td><td class="q good">🃏 계략 — ${이름} · ${NPC}에게서 엿보기 n · 이동 +r</td><td><code>에게서</code>는 받침 무관(R5)</td></tr>
-    <tr><td>585 <span class="warn">🟠</span></td><td class="q dim">게임 시작! 정답 봉투 봉인. NPC n명 합류. ${이름} 님의 턴.</td><td class="q good">🎊 잔치 시작 — 정답 봉투 봉인 · NPC n명 합류<br>⏳ ${이름} 님의 턴 <span class="note">(2줄로 분리)</span></td><td>§2 <b>잔치 시작</b> · 한 줄 3정보는 스캔 불가</td></tr>
-    <tr><td>681 <span class="warn">🟠</span></td><td class="q dim">🔍 [제안] ${이름} — 도둑: … · 훔친 것: … · 장소: …</td><td class="q good">🔍 제안 — ${이름} · 용의자: … · 훔친 것: … · 장소: …</td><td>제안 단계는 <b>용의자</b> · 대괄호 제거</td></tr>
+    <tr><td>585 <span class="tag t-tone">톤</span></td><td class="q dim">게임 시작! 정답 봉투 봉인. NPC n명 합류. ${이름} 님의 턴.</td><td class="q good">🎊 잔치 시작 — 정답 봉투 봉인 · NPC n명 합류<br>⏳ ${이름} 님의 턴 <span class="note">(2줄로 분리)</span></td><td>§2 <b>잔치 시작</b> · 한 줄 3정보는 스캔 불가</td></tr>
+    <tr><td>681 <span class="tag t-tone">톤</span></td><td class="q dim">🔍 [제안] ${이름} — 도둑: … · 훔친 것: … · 장소: …</td><td class="q good">🔍 제안 — ${이름} · 용의자: … · 훔친 것: … · 장소: …</td><td>제안 단계는 <b>용의자</b> · 대괄호 제거</td></tr>
     <tr><td>724</td><td class="q dim">🛡 ${이름} 님이 반증했습니다.</td><td class="q good">🛡 반증 — ${이름} 님</td><td>표기 일관</td></tr>
     <tr><td>733</td><td class="q">❗ 아무도 반증하지 못함 — 정답 후보!</td><td colspan="2"><span class="tag t-keep">유지</span> <span class="note">허용된 느낌표 3종 중 하나</span></td></tr>
     <tr><td>784</td><td class="q dim">🎉 ${이름} 사건 해결! 정답: … · … · …</td><td class="q good">🎉 사건 해결 — ${이름} 님<br>📜 정답 봉투 — … · … · 📍 …</td><td>결과 오버레이(§7)와 <b>같은 문자열 재사용</b></td></tr>
@@ -1042,7 +1050,7 @@
     <tr><td>표시 형식</td><td class="q">안벨로퍼 (🐰 토끼 낭자) <span class="note">— 목록·턴 원형 / 로그·말풍선은 <code>🐰 토끼 낭자</code> 유지</span></td></tr>
   </table></div>
   <div class="box warn">
-    ⚠️ 닉네임은 사용자 입력이고 <code>renderTurnStrip</code>·<code>openTurnCircle</code>·<code>showCharInfo</code>가 <code>innerHTML</code>을 쓴다 →
+    <span class="tag t-warn">주의</span> 닉네임은 사용자 입력이고 <code>renderTurnStrip</code>·<code>openTurnCircle</code>·<code>showCharInfo</code>가 <code>innerHTML</code>을 쓴다 →
     <b>서버 새니타이즈 + 클라 이스케이프가 문안 적용의 선행 조건</b>(XSS).
   </div>
 
@@ -1084,7 +1092,7 @@
     <tr><td>3</td><td>목표 카드 <span class="tag t-soon">선행</span></td><td class="q">client/index.html · client/src/main.ts</td><td class="q">신규 <code>#goalCard</code> · <code>enterGame()</code> 말미 · <code>.hud-ctrl</code> 끝 <code>[?]</code></td></tr>
     <tr><td>4.1</td><td>손패 라벨</td><td class="q">client/src/main.ts</td><td class="q">onMessage("hand") ≈212 · <code>#hand</code> 초기 텍스트</td></tr>
     <tr><td>4.2</td><td>공통 단서</td><td class="q">server/rooms/clue-room.ts · client/src/main.ts</td><td class="q">startGame() ≈546 · buildEvidence()</td></tr>
-    <tr><td>4.3</td><td>증거 노트 툴팁 <span class="bad">🔴 갈라짐</span></td><td class="q">client/src/main.ts</td><td class="q">buildEvidence() — 잠금 칩 <code>chip.title</code> ≈1856</td></tr>
+    <tr><td>4.3</td><td>증거 노트 툴팁 <span class="tag t-bug">갈라짐</span></td><td class="q">client/src/main.ts</td><td class="q">buildEvidence() — 잠금 칩 <code>chip.title</code> ≈1856</td></tr>
     <tr><td>4.4</td><td>AI 칩 · 대사 경로 배지</td><td class="q">client/src/main.ts</td><td class="q">renderAi() ≈216 · addLog()의 배지 분기 ≈170 <span class="note">(폴백 사유 한글화)</span></td></tr>
     <tr><td>5.0</td><td><code>disabled</code> → <code>aria-disabled</code></td><td class="q">client/src/main.ts · index.html</td><td class="q">updateTurnInfo() ≈436 · <code>button:disabled</code> 옆 <code>.is-off</code></td></tr>
     <tr><td>5.1–5.5</td><td>버튼 4종 + 턴 종료</td><td class="q">client/src/main.ts</td><td class="q">updateTurnInfo()에서 <code>title</code> 설정 · 각 onclick 첫 분기</td></tr>

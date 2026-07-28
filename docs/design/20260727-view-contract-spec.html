@@ -63,7 +63,21 @@
   .mx td.v.c-no { background:rgba(224,115,107,.07); color:var(--dim); }
   .mx td.v.c-bug { background:rgba(224,115,107,.20); box-shadow:inset 3px 0 0 var(--red); color:var(--ink); }
   .mx tr.p0 td.st { box-shadow:inset 3px 0 0 var(--red); }
-  .mx .ic { font-size:11px; margin-right:3px; }
+  /* 매트릭스 상태 기호 — 컬러 이모지 대신 **모양이 다른 도형**으로 구분한다(회색조·인쇄 안전).
+     ● 일치 / ▲ 불일치 / ○ 없음 / ■ 코드로 확인한 버그. 색은 보조일 뿐 모양만으로 읽힌다. */
+  .mx .ic { font-size:10px; margin-right:5px; vertical-align:1px; line-height:1; }
+  .mx td.c-ok   .ic { color:var(--green); }
+  .mx td.c-warn .ic { color:var(--amber); }
+  .mx td.c-no   .ic { color:#8a8175; }
+  .mx td.c-bug  .ic { color:var(--red); }
+  /* 본문용 상태 배지 — 이모지를 대체한다. 글자가 들어 있어 색 없이도 읽힌다. */
+  .sb { display:inline-block; font-size:10px; font-weight:700; letter-spacing:.02em; padding:1px 7px;
+        border-radius:5px; margin-right:5px; vertical-align:1px; white-space:nowrap; border:1px solid transparent; }
+  .sb-ok  { background:#1d2f22; color:#7ee29a; border-color:#31573d; }
+  .sb-warn{ background:#33291a; color:#e0c25a; border-color:#5d4a24; }
+  .sb-no  { background:#2b2723; color:#a89e90; border-color:#4a443c; }
+  .sb-bug { background:#3a1f1a; color:#e0857a; border-color:#6b3931; }
+  .sb-open{ background:#1f2b3a; color:#7ec8e0; border-color:#31505f; }
   .grp { display:inline-block; font-size:10px; padding:1px 6px; border-radius:5px; white-space:nowrap; }
   .g-ok { background:#1d2f22; color:var(--green); }
   .g-warn { background:#33291a; color:var(--amber); }
@@ -194,6 +208,20 @@
   /* 이 문서 고유 — 색 견본(.sw/.gy/.band/.tok/.bar)은 '색 자체가 내용'이라 원색 강제 인쇄 */
   .toc, .filters { display:none !important; }
   .ok { color:#1d6b3a !important; } .no { color:#a1281e !important; } .part { color:#8a5b0a !important; }
+  /* 매트릭스는 화면용 최소 폭(td.v 150px · td.st 118px)을 종이에서 그대로 쓰면
+     마지막 «판정» 열이 한 글자씩 세로로 접힌다. 인쇄에서는 폭을 브라우저에 맡긴다. */
+  .mx td.v, .mx td.st { min-width:0 !important; }
+  .mx td:first-child, .mx th:first-child { white-space:nowrap !important; }
+  .mx { font-size:11px !important; }
+  .sb { font-size:9px !important; padding:0 4px !important; margin-right:4px !important; }
+  /* 상태 배지 — 종이에서도 배경·글자가 함께 살아야 «완료/주의/없음»이 구분된다 */
+  .sb-ok  { background:#e2f2e6 !important; color:#14562c !important; border-color:#83b795 !important; }
+  .sb-warn{ background:#faefd6 !important; color:#6f4805 !important; border-color:#c9a85c !important; }
+  .sb-no  { background:#eeeae2 !important; color:#4a4238 !important; border-color:#b3aa99 !important; }
+  .sb-bug { background:#fae2df !important; color:#8c1f16 !important; border-color:#c98d86 !important; }
+  .sb-open{ background:#dfeef6 !important; color:#0f4256 !important; border-color:#8ab4c6 !important; }
+  .mx td.c-ok .ic { color:#1d6b3a !important; } .mx td.c-warn .ic { color:#8a5b0a !important; }
+  .mx td.c-no .ic { color:#5b5346 !important; } .mx td.c-bug .ic { color:#a1281e !important; }
   .card.crit { border-left-color:#a1281e !important; }
   .card.warn { border-left-color:#8a5b0a !important; }
   .card.info { border-left-color:#14506b !important; }
@@ -247,7 +275,7 @@
 <body>
 <div class="wrap">
 
-  <h1>🎯 4뷰 표기 계약 명세</h1>
+  <h1>4뷰 표기 계약 명세</h1>
   <p class="sub">zodiac-clue · 2026-07-27 · <span class="pill">사람용 .html</span>
     압축본 <code>20260727-view-contract-spec.md</code> · 상위 <code>20260727-improvement-roadmap.md</code> §2·§7.8~7.11</p>
 
@@ -273,45 +301,45 @@
   <div class="stats">
     <div class="stat s-ok">
       <div class="big">3</div>
-      <b>✅ 4뷰 일치</b>
+      <b>4뷰 일치</b>
       <span>행 1 · 15 · 17 — 손댈 것 없음</span>
       <span class="delta">.md 표기 6 · 전수 재집계 3</span>
     </div>
     <div class="stat s-warn">
       <div class="big">10</div>
-      <b>⚠ 뷰 간 불일치</b>
+      <b>뷰 간 불일치</b>
       <span>같은 사실이 뷰마다 다르게 읽힌다</span>
-      <span class="delta">그중 🔴 명백한 버그 8행</span>
+      <span class="delta">그중 ■ 명백한 버그 8행</span>
     </div>
     <div class="stat s-board">
       <div class="big">9</div>
-      <b>❌ 보드 표현 필요</b>
+      <b>보드 표현 필요</b>
       <span>4뷰 전부 0건 — 정보가 화면에 없다</span>
       <span class="delta">.md 표기 6 · 재집계 9</span>
     </div>
     <div class="stat s-dom">
       <div class="big">3</div>
-      <b>❌ DOM 전담이 정당</b>
+      <b>DOM 전담이 정당</b>
       <span>행 2 · 24 · 25 — 계약에 명시 기록</span>
       <span class="delta">.md 표기 6 · 재집계 3</span>
     </div>
   </div>
 
   <div class="card warn">
-    <h3>⚠ 집계 정합 메모 (문서 자체의 오류)</h3>
-    <p style="margin:0"><code>.md</code> §5 하단 집계는 <b>✅6 · ⚠10 · ❌보드6 · ❌DOM6 = 28</b>로, 표의 실제 행 수 25와 어긋났다.
+    <h3><span class="sb sb-warn">주의</span>집계 정합 메모 (문서 자체의 오류)</h3>
+    <p style="margin:0"><code>.md</code> §5 하단 집계는 <b>일치 6 · 불일치 10 · 보드 6 · DOM 6 = 28</b>로, 표의 실제 행 수 25와 어긋났다.
     위 스탯 카드는 25행을 한 줄씩 전수 재집계한 값이다(<b>3 + 10 + 9 + 3 = 25</b>).
-    ⚠(10행)만 원문과 일치한다. <b class="ok">✅ <code>.md</code> §5 집계 문장은 2026-07-27자로 전수 재집계본으로 교체됐다</b> — 두 문서가 같은 값을 본다.</p>
+    불일치(10행)만 원문과 일치한다. <b class="ok"><span class="sb sb-ok">완료</span><code>.md</code> §5 집계 문장은 2026-07-27자로 전수 재집계본으로 교체됐다</b> — 두 문서가 같은 값을 본다.</p>
   </div>
 
   <div class="card good">
-    <h3 class="ok">✅ 2026-07-28 재집계 — 25행 중 19행이 닫혔다</h3>
-    <p>계약(§4)·상수(§3)·<code>main.ts</code> 배선·뷰4 도트 축소판이 들어가면서 위 진단의 ⚠·❌ 대부분이 해소됐다.
+    <h3 class="ok"><span class="sb sb-ok">완료</span>2026-07-28 재집계 — 25행 중 19행이 닫혔다</h3>
+    <p>계약(§4)·상수(§3)·<code>main.ts</code> 배선·뷰4 도트 축소판이 들어가면서 위 진단의 «불일치»·«없음» 대부분이 해소됐다.
     <b>진단 원문은 지우지 않는다</b> — 무엇이 왜 문제였는지가 계약의 근거이기 때문이다. 각 행 판정 칸에 07-28 결과를 병기했다.</p>
     <div class="scroll"><table>
       <tr><th>구분</th><th>행</th><th>비고</th></tr>
-      <tr><td class="ok"><b>✅ 닫힘 19행</b></td><td>1·3·4·5·6·7·8·9·10·11·12·13·14·15·16·17·20·21·22</td><td>계약 15메서드 <code>implements</code> 3곳 + 공용 상수</td></tr>
-      <tr><td class="part"><b>⬜ 남음 3행</b></td><td>18 소환 앵커 · 19 남은 이동칸 · 23 탈락 관전</td><td><b>실제로 밀린 것은 18뿐</b> — 19는 실행계획 §5.1에서 컷, 23은 위치가 DOM으로 확정</td></tr>
+      <tr><td class="ok"><b><span class="sb sb-ok">완료</span>닫힘 19행</b></td><td>1·3·4·5·6·7·8·9·10·11·12·13·14·15·16·17·20·21·22</td><td>계약 15메서드 <code>implements</code> 3곳 + 공용 상수</td></tr>
+      <tr><td class="part"><b><span class="sb sb-open">미해결</span>남음 3행</b></td><td>18 소환 앵커 · 19 남은 이동칸 · 23 탈락 관전</td><td><b>실제로 밀린 것은 18뿐</b> — 19는 실행계획 §5.1에서 컷, 23은 위치가 DOM으로 확정</td></tr>
       <tr><td class="dim"><b>— 설계상 DOM 전담 3행</b></td><td>2 · 24 · 25</td><td>계약이 인정한 예외(24는 <code>overlay-bus</code> 큐로 편입)</td></tr>
     </table></div>
     <p class="note">※ 위 스탯 카드 4개와 필터 버튼의 숫자는 <b>2026-07-27 진단 시점</b>의 값이다(합 25 유지).</p>
@@ -320,15 +348,15 @@
   <!-- ============ 1. 매트릭스 ============ -->
   <h2 id="matrix"><span class="n">01</span>4뷰 상태 표현 매트릭스 — 이 문서의 심장</h2>
   <p>서버가 진실이라고 말한 25가지 사실이 실제로 화면에 남는가. 열은 뷰, 행은 사실.
-    <b class="no">🔴</b>는 코드를 읽어 확인한 <b>명백한 버그</b>이며, 붉은 왼쪽 띠가 붙은 행은 <span class="p p0">P0</span> 즉시 수정 대상이다.</p>
+    <b class="no">■</b>는 코드를 읽어 확인한 <b>명백한 버그</b>이며, 붉은 왼쪽 띠가 붙은 행은 <span class="p p0">P0</span> 즉시 수정 대상이다.</p>
 
   <div class="filters">
     <button class="on" data-f="all">전체 25</button>
-    <button data-f="bug">🔴 버그만 8</button>
-    <button data-f="warn">⚠ 불일치 10</button>
-    <button data-f="board">❌ 보드 필요 9</button>
-    <button data-f="dom">❌ DOM 정당 3</button>
-    <button data-f="ok">✅ 일치 3</button>
+    <button data-f="bug">■ 버그만 8</button>
+    <button data-f="warn">▲ 불일치 10</button>
+    <button data-f="board">○ 보드 필요 9</button>
+    <button data-f="dom">○ DOM 정당 3</button>
+    <button data-f="ok">● 일치 3</button>
   </div>
 
   <div class="scroll">
@@ -338,148 +366,148 @@
       </thead>
       <tbody>
         <tr data-g="ok"><td>1</td><td class="st">현재 턴</td>
-          <td class="v c-ok"><span class="ic">✅</span>ring Arc + stroke</td>
-          <td class="v c-ok"><span class="ic">✅</span>RingGeometry</td>
-          <td class="v c-ok"><span class="ic">✅</span>동일</td>
-          <td class="v c-ok"><span class="ic">✅</span>사각 링</td>
-          <td><span class="grp g-ok">일치</span><div class="note ok">✅ 유지</div></td></tr>
+          <td class="v c-ok"><span class="ic">●</span>ring Arc + stroke</td>
+          <td class="v c-ok"><span class="ic">●</span>RingGeometry</td>
+          <td class="v c-ok"><span class="ic">●</span>동일</td>
+          <td class="v c-ok"><span class="ic">●</span>사각 링</td>
+          <td><span class="grp g-ok">일치</span><div class="note ok"><span class="sb sb-ok">완료</span>유지</div></td></tr>
 
         <tr data-g="dom"><td>2</td><td class="st">턴 순서 / 다음 차례</td>
-          <td class="v c-no">❌</td><td class="v c-no">❌</td><td class="v c-no">❌</td><td class="v c-no">❌</td>
+          <td class="v c-no"><span class="ic">○</span></td><td class="v c-no"><span class="ic">○</span></td><td class="v c-no"><span class="ic">○</span></td><td class="v c-no"><span class="ic">○</span></td>
           <td><span class="grp g-dom">HUD 전담 정당</span><div class="note">계약이 인정한 <b>유일한</b> HUD 독점 행</div><div class="note dim">— HUD 전담(설계대로)</div></td></tr>
 
         <tr data-g="warn" data-bug="1" class="p0"><td>3</td><td class="st">탈락</td>
-          <td class="v c-warn"><span class="ic">⚠</span>알파 0.3 <span class="dim">(ring 제외)</span></td>
-          <td class="v c-bug"><span class="ic">🔴</span><b>face만 0.35</b></td>
-          <td class="v c-bug"><span class="ic">🔴</span>동일</td>
-          <td class="v c-warn"><span class="ic">⚠</span>컨테이너 0.35</td>
-          <td><span class="grp g-warn">불일치</span> <span class="p p0">P0</span><div class="note ok">✅ 07-28 <code>setElim</code>·<code>ELIM_ALPHA</code> + 2중 표기</div></td></tr>
+          <td class="v c-warn"><span class="ic">▲</span>알파 0.3 <span class="dim">(ring 제외)</span></td>
+          <td class="v c-bug"><span class="ic">■</span><b>face만 0.35</b></td>
+          <td class="v c-bug"><span class="ic">■</span>동일</td>
+          <td class="v c-warn"><span class="ic">▲</span>컨테이너 0.35</td>
+          <td><span class="grp g-warn">불일치</span> <span class="p p0">P0</span><div class="note ok"><span class="sb sb-ok">완료</span>07-28 <code>setElim</code>·<code>ELIM_ALPHA</code> + 2중 표기</div></td></tr>
 
         <tr data-g="warn"><td>4</td><td class="st">이동 (1칸)</td>
-          <td class="v c-ok"><span class="ic">✅</span>tween 110</td>
-          <td class="v c-warn"><span class="ic">⚠</span>lerp <b>프레임 종속</b></td>
-          <td class="v c-warn"><span class="ic">⚠</span>동일</td>
-          <td class="v c-warn"><span class="ic">⚠</span>tween 120</td>
-          <td><span class="grp g-warn">불일치</span><div class="note">계약 도입으로 자동 정리</div><div class="note ok">✅ 07-28 <code>MOVE_TWEEN_MS</code> · 뷰2·3은 <code>k=1-exp(-dt/τ)</code></div></td></tr>
+          <td class="v c-ok"><span class="ic">●</span>tween 110</td>
+          <td class="v c-warn"><span class="ic">▲</span>lerp <b>프레임 종속</b></td>
+          <td class="v c-warn"><span class="ic">▲</span>동일</td>
+          <td class="v c-warn"><span class="ic">▲</span>tween 120</td>
+          <td><span class="grp g-warn">불일치</span><div class="note">계약 도입으로 자동 정리</div><div class="note ok"><span class="sb sb-ok">완료</span>07-28 <code>MOVE_TWEEN_MS</code> · 뷰2·3은 <code>k=1-exp(-dt/τ)</code></div></td></tr>
 
         <tr data-g="board"><td>5</td><td class="st">소환 warp</td>
-          <td class="v c-no">❌ 일반 이동과 동일</td><td class="v c-no">❌</td><td class="v c-no">❌</td><td class="v c-no">❌</td>
-          <td><span class="grp g-board">보드 필요</span><div class="note">4뷰 전부 없음 · 콘티 10–22s</div><div class="note ok">✅ 07-28 <code>warp()</code> 4뷰 + <code>main.ts</code> 배선(오탐 방지 포함)</div></td></tr>
+          <td class="v c-no"><span class="ic">○</span>일반 이동과 동일</td><td class="v c-no"><span class="ic">○</span></td><td class="v c-no"><span class="ic">○</span></td><td class="v c-no"><span class="ic">○</span></td>
+          <td><span class="grp g-board">보드 필요</span><div class="note">4뷰 전부 없음 · 콘티 10–22s</div><div class="note ok"><span class="sb sb-ok">완료</span>07-28 <code>warp()</code> 4뷰 + <code>main.ts</code> 배선(오탐 방지 포함)</div></td></tr>
 
         <tr data-g="warn" data-bug="1" class="p0"><td>6</td><td class="st">장물 소환</td>
-          <td class="v c-warn"><span class="ic">⚠</span>tween 260</td>
-          <td class="v c-bug"><span class="ic">🔴</span><b>매 프레임 스냅</b></td>
-          <td class="v c-bug"><span class="ic">🔴</span>동일</td>
-          <td class="v c-warn"><span class="ic">⚠</span>tween 220</td>
-          <td><span class="grp g-warn">불일치</span> <span class="p p0">P0</span><div class="note ok">✅ 07-28 <code>lootWarp()</code> · 뷰2·3 보간 도입</div></td></tr>
+          <td class="v c-warn"><span class="ic">▲</span>tween 260</td>
+          <td class="v c-bug"><span class="ic">■</span><b>매 프레임 스냅</b></td>
+          <td class="v c-bug"><span class="ic">■</span>동일</td>
+          <td class="v c-warn"><span class="ic">▲</span>tween 220</td>
+          <td><span class="grp g-warn">불일치</span> <span class="p p0">P0</span><div class="note ok"><span class="sb sb-ok">완료</span>07-28 <code>lootWarp()</code> · 뷰2·3 보간 도입</div></td></tr>
 
         <tr data-g="board"><td>7</td><td class="st">비밀 통로 (정적)</td>
-          <td class="v c-no">❌</td><td class="v c-no">❌</td><td class="v c-no">❌</td><td class="v c-no">❌</td>
-          <td><span class="grp g-board">보드 필요</span><div class="note">버튼 활성 여부로만 존재를 안다</div><div class="note ok">✅ 07-28 <code>setPassages()</code> 4뷰 + <b>§3.5 밝기 정책</b></div></td></tr>
+          <td class="v c-no"><span class="ic">○</span></td><td class="v c-no"><span class="ic">○</span></td><td class="v c-no"><span class="ic">○</span></td><td class="v c-no"><span class="ic">○</span></td>
+          <td><span class="grp g-board">보드 필요</span><div class="note">버튼 활성 여부로만 존재를 안다</div><div class="note ok"><span class="sb sb-ok">완료</span>07-28 <code>setPassages()</code> 4뷰 + <b>§3.5 밝기 정책</b></div></td></tr>
 
         <tr data-g="board"><td>8</td><td class="st">통로 이동</td>
-          <td class="v c-no">❌</td><td class="v c-no">❌</td><td class="v c-no">❌</td><td class="v c-no">❌</td>
-          <td><span class="grp g-board">보드 필요</span><div class="note ok">✅ 07-28 <code>warp(reason:"passage")</code></div></td></tr>
+          <td class="v c-no"><span class="ic">○</span></td><td class="v c-no"><span class="ic">○</span></td><td class="v c-no"><span class="ic">○</span></td><td class="v c-no"><span class="ic">○</span></td>
+          <td><span class="grp g-board">보드 필요</span><div class="note ok"><span class="sb sb-ok">완료</span>07-28 <code>warp(reason:"passage")</code></div></td></tr>
 
         <tr data-g="warn" data-bug="1"><td>9</td><td class="st">말풍선</td>
-          <td class="v c-ok"><span class="ic">✅</span>타자기 55 / 2600</td>
-          <td class="v c-ok"><span class="ic">✅</span>DOM 투영</td>
-          <td class="v c-ok"><span class="ic">✅</span>동일</td>
-          <td class="v c-bug"><span class="ic">🔴</span><b>타자기 없음</b> · 3200</td>
-          <td><span class="grp g-warn">불일치</span><div class="note ok">✅ 07-28 뷰4 타자기 도입 · <code>3200</code> 삭제 · <code>BUBBLE_HOLD_MS</code> 1200 공용</div></td></tr>
+          <td class="v c-ok"><span class="ic">●</span>타자기 55 / 2600</td>
+          <td class="v c-ok"><span class="ic">●</span>DOM 투영</td>
+          <td class="v c-ok"><span class="ic">●</span>동일</td>
+          <td class="v c-bug"><span class="ic">■</span><b>타자기 없음</b> · 3200</td>
+          <td><span class="grp g-warn">불일치</span><div class="note ok"><span class="sb sb-ok">완료</span>07-28 뷰4 타자기 도입 · <code>3200</code> 삭제 · <code>BUBBLE_HOLD_MS</code> 1200 공용</div></td></tr>
 
         <tr data-g="board"><td>10</td><td class="st">귓속말 구분</td>
-          <td class="v c-no">❌</td><td class="v c-no">❌</td><td class="v c-no">❌</td><td class="v c-no">❌</td>
-          <td><span class="grp g-board">보드 필요</span><div class="note">계약: 파선 + “(귓속말)” 접두</div><div class="note ok">✅ 07-28 <code>bubble(opts.whisper)</code> — 4뷰 “(귓속말)” 접두 + 파선</div></td></tr>
+          <td class="v c-no"><span class="ic">○</span></td><td class="v c-no"><span class="ic">○</span></td><td class="v c-no"><span class="ic">○</span></td><td class="v c-no"><span class="ic">○</span></td>
+          <td><span class="grp g-board">보드 필요</span><div class="note">계약: 파선 + “(귓속말)” 접두</div><div class="note ok"><span class="sb sb-ok">완료</span>07-28 <code>bubble(opts.whisper)</code> — 4뷰 “(귓속말)” 접두 + 파선</div></td></tr>
 
         <tr data-g="warn" data-bug="1"><td>11</td><td class="st">계략 NPC (미사용)</td>
-          <td class="v c-ok"><span class="ic">✅</span>이모지 + 🃏</td>
-          <td class="v c-ok"><span class="ic">✅</span>동형</td>
-          <td class="v c-ok"><span class="ic">✅</span>아트</td>
-          <td class="v c-bug"><span class="ic">🔴</span><b>회색 단색 · 마크 없음</b></td>
-          <td><span class="grp g-warn">불일치</span><div class="note ok">✅ 07-28 <code>makeCritter(suspect,{gray})</code> — 실루엣 유지·채도만 낮춤</div></td></tr>
+          <td class="v c-ok"><span class="ic">●</span>이모지 + 🃏</td>
+          <td class="v c-ok"><span class="ic">●</span>동형</td>
+          <td class="v c-ok"><span class="ic">●</span>아트</td>
+          <td class="v c-bug"><span class="ic">■</span><b>회색 단색 · 마크 없음</b></td>
+          <td><span class="grp g-warn">불일치</span><div class="note ok"><span class="sb sb-ok">완료</span>07-28 <code>makeCritter(suspect,{gray})</code> — 실루엣 유지·채도만 낮춤</div></td></tr>
 
         <tr data-g="warn" data-bug="1" class="p0"><td>12</td><td class="st">계략 NPC (사용됨)</td>
-          <td class="v c-ok"><span class="ic">✅</span>알파 0.3</td>
-          <td class="v c-bug"><span class="ic">🔴</span><b>Sprite만</b> <span class="dim">(disc 불투명)</span></td>
-          <td class="v c-bug"><span class="ic">🔴</span>동일</td>
-          <td class="v c-ok"><span class="ic">✅</span>0.3</td>
-          <td><span class="grp g-warn">불일치</span> <span class="p p0">P0</span><div class="note ok">✅ 07-28 감광 순회에 disc <code>Mesh</code> 포함</div></td></tr>
+          <td class="v c-ok"><span class="ic">●</span>알파 0.3</td>
+          <td class="v c-bug"><span class="ic">■</span><b>Sprite만</b> <span class="dim">(disc 불투명)</span></td>
+          <td class="v c-bug"><span class="ic">■</span>동일</td>
+          <td class="v c-ok"><span class="ic">●</span>0.3</td>
+          <td><span class="grp g-warn">불일치</span> <span class="p p0">P0</span><div class="note ok"><span class="sb sb-ok">완료</span>07-28 감광 순회에 disc <code>Mesh</code> 포함</div></td></tr>
 
         <tr data-g="warn" data-bug="1"><td>13</td><td class="st">장물 6종 구분</td>
-          <td class="v c-ok"><span class="ic">✅</span>이모지</td>
-          <td class="v c-ok"><span class="ic">✅</span>스프라이트</td>
-          <td class="v c-ok"><span class="ic">✅</span>아트</td>
-          <td class="v c-bug"><span class="ic">🔴</span><b>전부 동일 상자</b></td>
-          <td><span class="grp g-warn">불일치</span><div class="note ok">✅ 07-28 뷰4 장물 스탬프 6종</div></td></tr>
+          <td class="v c-ok"><span class="ic">●</span>이모지</td>
+          <td class="v c-ok"><span class="ic">●</span>스프라이트</td>
+          <td class="v c-ok"><span class="ic">●</span>아트</td>
+          <td class="v c-bug"><span class="ic">■</span><b>전부 동일 상자</b></td>
+          <td><span class="grp g-warn">불일치</span><div class="note ok"><span class="sb sb-ok">완료</span>07-28 뷰4 장물 스탬프 6종</div></td></tr>
 
         <tr data-g="warn" data-bug="1"><td>14</td><td class="st">캐릭터 12종 구분</td>
-          <td class="v c-ok"><span class="ic">✅</span>이모지 + 색</td>
-          <td class="v c-ok"><span class="ic">✅</span>이모지 + 색</td>
-          <td class="v c-ok"><span class="ic">✅</span>아트 + 색</td>
-          <td class="v c-bug"><span class="ic">🔴</span><b>동일 실루엣 · 색 6종 순환</b></td>
-          <td><span class="grp g-warn">불일치</span><div class="note">§5 팔레트가 정면으로 다루는 행</div><div class="note ok">✅ 07-28 <code>ZODIAC_COLOR</code> 12색 + 뷰4 3×3 문장 배지(축소판)</div></td></tr>
+          <td class="v c-ok"><span class="ic">●</span>이모지 + 색</td>
+          <td class="v c-ok"><span class="ic">●</span>이모지 + 색</td>
+          <td class="v c-ok"><span class="ic">●</span>아트 + 색</td>
+          <td class="v c-bug"><span class="ic">■</span><b>동일 실루엣 · 색 6종 순환</b></td>
+          <td><span class="grp g-warn">불일치</span><div class="note">§5 팔레트가 정면으로 다루는 행</div><div class="note ok"><span class="sb sb-ok">완료</span>07-28 <code>ZODIAC_COLOR</code> 12색 + 뷰4 3×3 문장 배지(축소판)</div></td></tr>
 
         <tr data-g="ok"><td>15</td><td class="st">봇 여부</td>
-          <td class="v c-ok"><span class="ic">✅</span>🤖</td><td class="v c-ok"><span class="ic">✅</span></td>
-          <td class="v c-ok"><span class="ic">✅</span></td><td class="v c-ok"><span class="ic">✅</span></td>
-          <td><span class="grp g-ok">일치</span><div class="note ok">✅ 유지</div></td></tr>
+          <td class="v c-ok"><span class="ic">●</span>🤖</td><td class="v c-ok"><span class="ic">●</span></td>
+          <td class="v c-ok"><span class="ic">●</span></td><td class="v c-ok"><span class="ic">●</span></td>
+          <td><span class="grp g-ok">일치</span><div class="note ok"><span class="sb sb-ok">완료</span>유지</div></td></tr>
 
         <tr data-g="board"><td>16</td><td class="st">“이미 살펴본 방”</td>
-          <td class="v c-no">❌</td><td class="v c-no">❌</td><td class="v c-no">❌</td><td class="v c-no">❌</td>
-          <td><span class="grp g-board">보드 필요</span><div class="note">클라 로컬 파생 · 진실값 아님</div><div class="note ok">✅ 07-28 <code>setSurveyed()</code> 4뷰</div></td></tr>
+          <td class="v c-no"><span class="ic">○</span></td><td class="v c-no"><span class="ic">○</span></td><td class="v c-no"><span class="ic">○</span></td><td class="v c-no"><span class="ic">○</span></td>
+          <td><span class="grp g-board">보드 필요</span><div class="note">클라 로컬 파생 · 진실값 아님</div><div class="note ok"><span class="sb sb-ok">완료</span>07-28 <code>setSurveyed()</code> 4뷰</div></td></tr>
 
         <tr data-g="ok"><td>17</td><td class="st">방 입구</td>
-          <td class="v c-ok"><span class="ic">✅</span></td>
-          <td class="v c-ok"><span class="ic">✅</span>문기둥</td>
-          <td class="v c-ok"><span class="ic">✅</span>(P1) 등불</td>
-          <td class="v c-ok"><span class="ic">✅</span></td>
-          <td><span class="grp g-ok">일치</span><div class="note ok">✅ 유지</div></td></tr>
+          <td class="v c-ok"><span class="ic">●</span></td>
+          <td class="v c-ok"><span class="ic">●</span>문기둥</td>
+          <td class="v c-ok"><span class="ic">●</span>(P1) 등불</td>
+          <td class="v c-ok"><span class="ic">●</span></td>
+          <td><span class="grp g-ok">일치</span><div class="note ok"><span class="sb sb-ok">완료</span>유지</div></td></tr>
 
         <tr data-g="board"><td>18</td><td class="st">소환 앵커</td>
-          <td class="v c-no">❌</td><td class="v c-no">❌</td><td class="v c-no">❌</td><td class="v c-no">❌</td>
+          <td class="v c-no"><span class="ic">○</span></td><td class="v c-no"><span class="ic">○</span></td><td class="v c-no"><span class="ic">○</span></td><td class="v c-no"><span class="ic">○</span></td>
           <td><span class="grp g-board">보드 필요</span><div class="note part">⬜ <b>미구현</b> — 남은 3행 중 유일하게 밀린 것</div></td></tr>
 
         <tr data-g="board"><td>19</td><td class="st">남은 이동칸</td>
-          <td class="v c-no">❌</td><td class="v c-no">❌</td><td class="v c-no">❌</td><td class="v c-no">❌</td>
+          <td class="v c-no"><span class="ic">○</span></td><td class="v c-no"><span class="ic">○</span></td><td class="v c-no"><span class="ic">○</span></td><td class="v c-no"><span class="ic">○</span></td>
           <td><span class="grp g-board">보드 필요</span><div class="note">(P2) <code>reachable()</code>를 shared에 1개 · <b>방은 통째로</b> 칠할 것(방 안 이동 무료)</div><div class="note part">⬜ 컷 — 실행계획 §5.1(온보딩 본체로 대체)</div></td></tr>
 
         <tr data-g="warn"><td>20</td><td class="st">카메라 추적</td>
-          <td class="v c-ok"><span class="ic">✅</span></td>
-          <td class="v c-warn"><span class="ic">⚠</span>상수 중복</td>
-          <td class="v c-warn"><span class="ic">⚠</span>동일</td>
-          <td class="v c-ok"><span class="ic">✅</span>미러링 <span class="dim">(뷰1 수정 자동 상속)</span></td>
-          <td><span class="grp g-warn">불일치</span><div class="note ok">✅ 07-28 <code>CAM_*</code> 공용 상수 · 중복 제거</div></td></tr>
+          <td class="v c-ok"><span class="ic">●</span></td>
+          <td class="v c-warn"><span class="ic">▲</span>상수 중복</td>
+          <td class="v c-warn"><span class="ic">▲</span>동일</td>
+          <td class="v c-ok"><span class="ic">●</span>미러링 <span class="dim">(뷰1 수정 자동 상속)</span></td>
+          <td><span class="grp g-warn">불일치</span><div class="note ok"><span class="sb sb-ok">완료</span>07-28 <code>CAM_*</code> 공용 상수 · 중복 제거</div></td></tr>
 
         <tr data-g="warn" data-bug="1" class="p0"><td>21</td><td class="st">우측 패널 inset</td>
-          <td class="v c-bug"><span class="ic">🔴</span><b>가드 없음</b></td>
-          <td class="v c-bug"><span class="ic">🔴</span>동일</td>
-          <td class="v c-bug"><span class="ic">🔴</span>동일</td>
-          <td class="v c-ok"><span class="ic">✅</span>미러링으로 자동 해결</td>
-          <td><span class="grp g-warn">불일치</span> <span class="p p0">P0</span><div class="note ok">✅ 07-28 <code>hudInset()</code> zero-rect 가드 + ResizeObserver 캐시</div></td></tr>
+          <td class="v c-bug"><span class="ic">■</span><b>가드 없음</b></td>
+          <td class="v c-bug"><span class="ic">■</span>동일</td>
+          <td class="v c-bug"><span class="ic">■</span>동일</td>
+          <td class="v c-ok"><span class="ic">●</span>미러링으로 자동 해결</td>
+          <td><span class="grp g-warn">불일치</span> <span class="p p0">P0</span><div class="note ok"><span class="sb sb-ok">완료</span>07-28 <code>hudInset()</code> zero-rect 가드 + ResizeObserver 캐시</div></td></tr>
 
         <tr data-g="board"><td>22</td><td class="st">승리</td>
-          <td class="v c-no">❌ 씬 표현 0</td><td class="v c-no">❌</td><td class="v c-no">❌</td><td class="v c-no">❌</td>
-          <td><span class="grp g-board">보드 필요</span><div class="note">현재 DOM 전담 → (P2) 씬 내 종료 연출</div><div class="note ok">✅ 07-28 <code>setOutcome()</code> 4뷰</div></td></tr>
+          <td class="v c-no"><span class="ic">○</span>씬 표현 0</td><td class="v c-no"><span class="ic">○</span></td><td class="v c-no"><span class="ic">○</span></td><td class="v c-no"><span class="ic">○</span></td>
+          <td><span class="grp g-board">보드 필요</span><div class="note">현재 DOM 전담 → (P2) 씬 내 종료 연출</div><div class="note ok"><span class="sb sb-ok">완료</span>07-28 <code>setOutcome()</code> 4뷰</div></td></tr>
 
         <tr data-g="board"><td>23</td><td class="st">탈락 관전</td>
-          <td class="v c-no">❌</td><td class="v c-no">❌</td><td class="v c-no">❌</td><td class="v c-no">❌</td>
+          <td class="v c-no"><span class="ic">○</span></td><td class="v c-no"><span class="ic">○</span></td><td class="v c-no"><span class="ic">○</span></td><td class="v c-no"><span class="ic">○</span></td>
           <td><span class="grp g-board">보드 필요</span><div class="note">현재 DOM · <code>.hud-turn</code>과 좌표 겹침</div><div class="note part">⬜ DOM 전담 유지(오버레이 큐로 좌표 충돌만 해소)</div></td></tr>
 
         <tr data-g="dom"><td>24</td><td class="st">주사위</td>
-          <td class="v c-no">❌</td><td class="v c-no">❌</td><td class="v c-no">❌</td><td class="v c-no">❌</td>
-          <td><span class="grp g-dom">DOM 전담 정당</span><div class="note">단 <code>overlay-bus</code> 큐 필요</div><div class="note ok">✅ 07-28 <code>overlay-bus</code> 큐 도입(dice 80 / interstitial 60)</div></td></tr>
+          <td class="v c-no"><span class="ic">○</span></td><td class="v c-no"><span class="ic">○</span></td><td class="v c-no"><span class="ic">○</span></td><td class="v c-no"><span class="ic">○</span></td>
+          <td><span class="grp g-dom">DOM 전담 정당</span><div class="note">단 <code>overlay-bus</code> 큐 필요</div><div class="note ok"><span class="sb sb-ok">완료</span>07-28 <code>overlay-bus</code> 큐 도입(dice 80 / interstitial 60)</div></td></tr>
 
         <tr data-g="dom"><td>25</td><td class="st">손패 / 공통단서</td>
-          <td class="v c-no">❌</td><td class="v c-no">❌</td><td class="v c-no">❌</td><td class="v c-no">❌</td>
+          <td class="v c-no"><span class="ic">○</span></td><td class="v c-no"><span class="ic">○</span></td><td class="v c-no"><span class="ic">○</span></td><td class="v c-no"><span class="ic">○</span></td>
           <td><span class="grp g-dom">DOM 전담 정당</span><div class="note"><b>비밀 정보라 보드에 그리면 안 된다</b></div><div class="note dim">— DOM 전담(설계대로)</div></td></tr>
       </tbody>
     </table>
   </div>
-  <p class="legend">범례 &nbsp; <span class="ok">✅ 4뷰 일치</span> · <span class="part">⚠ 불일치</span> · <span class="no">❌ 없음</span> · <span class="no">🔴 코드로 확인한 명백한 버그</span></p>
+  <p class="legend">범례 &nbsp; <span class="ok">● 4뷰 일치</span> · <span class="part">▲ 불일치</span> · <span class="no">○ 없음</span> · <span class="no">■ 코드로 확인한 명백한 버그</span> &nbsp;<span class="dim">— 색이 아니라 <b>모양</b>이 구분을 진다(회색조·흑백 인쇄에서도 읽힌다).</span></p>
 
   <div class="card info">
-    <p style="margin:0"><b>“❌ DOM 전담 정당” 그룹의 존재 이유</b> — 이 3행은 “아직 안 만든 것”이 아니라 <b>보드에 그리지 않기로 결정한 것</b>이다.
+    <p style="margin:0"><b>“DOM 전담 정당” 그룹의 존재 이유</b> — 이 3행은 “아직 안 만든 것”이 아니라 <b>보드에 그리지 않기로 결정한 것</b>이다.
     결정을 계약에 명시적으로 기록해 <b>뷰5에서 같은 논의가 재개되는 것을 막는다.</b> 특히 행 25는 비밀 정보라 보드 표현이 <b>금지</b>다.</p>
   </div>
 
@@ -529,16 +557,16 @@
       <tbody>
         <tr><td><code>ELIM_ALPHA</code></td><td><b>0.35</b></td>
           <td>뷰1 <span class="part">0.3</span> (disc/face/name) · 뷰2·3 0.35 (<b class="no">face 스프라이트만</b>) · 뷰4 0.35 (컨테이너)</td>
-          <td class="ok">✅ 4뷰 동일 값 · 뷰2·3은 disc·ring·name까지</td></tr>
+          <td class="ok"><span class="sb sb-ok">완료</span>4뷰 동일 값 · 뷰2·3은 disc·ring·name까지</td></tr>
         <tr><td><code>SPENT_ALPHA</code></td><td><b>0.3</b></td>
           <td>뷰2·3은 <code>Sprite</code>만 순회해 <b class="no">disc Mesh가 불투명 유지</b></td>
-          <td class="ok">✅ 감광 순회에 disc <code>Mesh</code> 포함</td></tr>
+          <td class="ok"><span class="sb sb-ok">완료</span>감광 순회에 disc <code>Mesh</code> 포함</td></tr>
         <tr><td><code>RING_CURRENT</code></td><td><code>0xffd479</code></td>
           <td><code>C_GOLD</code> / <code>PAL.gold</code> / 리터럴 <b class="part">3중 정의</b></td>
-          <td class="ok">✅ <code>BOARD.gold</code> 단일 정의</td></tr>
+          <td class="ok"><span class="sb sb-ok">완료</span><code>BOARD.gold</code> 단일 정의</td></tr>
         <tr><td><code>ELIM_NEEDS_SECOND_CUE</code></td><td><b>true</b></td>
           <td><b>알파 단독 금지.</b> 회색조·저대비에서 사라진다 → 알파 + (파선 테두리 또는 ✕ 오버레이) <b>2중 표기</b></td>
-          <td class="ok">✅ 4뷰 2중 표기</td></tr>
+          <td class="ok"><span class="sb sb-ok">완료</span>4뷰 2중 표기</td></tr>
       </tbody>
     </table>
   </div>
@@ -758,13 +786,13 @@
   </div>
 
   <div class="card good">
-    <h3 class="ok">✅ 2026-07-28 구현 완료</h3>
+    <h3 class="ok"><span class="sb sb-ok">완료</span>2026-07-28 구현 완료</h3>
     <p>위 15메서드를 <code>GameScene</code> · <code>IsoView</code> · <code>PixelScene</code>이 전부 <code>implements</code>한다.</p>
     <ul class="tight" style="margin:0">
-      <li>📍 <b>파일 위치는 <code>apps/client/src/scenes/view-contract.ts</code></b>다(이 문서가 지목한 <code>packages/shared/src/view-contract.ts</code>가 아니다).
+      <li><b>파일 위치는 <code>apps/client/src/scenes/view-contract.ts</code></b>다(이 문서가 지목한 <code>packages/shared/src/view-contract.ts</code>가 아니다).
         작업 범위가 <code>apps/client/src/scenes/**</code>로 한정돼 있었기 때문이며, <b>타입이 엔진 타입을 하나도 참조하지 않으므로</b>(원칙 1)
         shared로 옮길 때 import 경로 외에 바뀔 것이 없다. 파일 상단 주석에 같은 내용이 기록돼 있다.</li>
-      <li>📍 <code>ViewLifecycle</code>(로드맵 §9.5) 대비로 <code>dispose()</code>·<code>contextCost</code> 자리를 <b>선점</b>해 뒀다.
+      <li><code>ViewLifecycle</code>(로드맵 §9.5) 대비로 <code>dispose()</code>·<code>contextCost</code> 자리를 <b>선점</b>해 뒀다.
         남은 <code>mount()</code>/<code>tick(dt)</code>와 <code>STAGES.load</code>는 <code>main.ts</code> 소유다(§9.1 스플리팅에서 <code>load</code>만 먼저 들어갔다).</li>
     </ul>
   </div>
@@ -963,7 +991,7 @@
       <div><div class="s" style="background:#c8c8c8"></div><div class="l">#c8c8c8</div></div>
       <div><div class="s" style="background:#d4d4d4"></div><div class="l">#d4d4d4</div></div>
     </div>
-    <p style="margin:12px 0 0"><b class="no">⚠ 최소 인접 ΔL* = 0.2</b> (<code>dog</code> 46.9 ↔ <code>rat</code> 47.1 — 위 띠의 왼쪽 두 칸은 눈으로 경계를 찾을 수 없다).
+    <p style="margin:12px 0 0"><b class="no"><span class="sb sb-warn">주의</span>최소 인접 ΔL* = 0.2</b> (<code>dog</code> 46.9 ↔ <code>rat</code> 47.1 — 위 띠의 왼쪽 두 칸은 눈으로 경계를 찾을 수 없다).
       그 다음도 <code>monkey</code>↔<code>horse</code> Δ1.5, <code>rat</code>↔<code>rabbit</code> Δ2.1로 붙어 있다.</p>
     <p style="margin:6px 0 0">이는 <b>튜닝 실패가 아니라 1차원 축에 12점을 넣는 문제의 수학적 한계</b>다.
       흑백 인쇄 계획이 없고 2형/1형은 <b>청–황축이 살아있으므로</b>,
@@ -1032,7 +1060,7 @@
   <h2 id="todo"><span class="n">06</span>이행 체크리스트 — 파일 · 심볼 단위</h2>
   <p class="note">체크박스는 브라우저 세션 한정(저장 안 됨). 작업 중 임시 표시용.</p>
   <div class="card good">
-    <h3 class="ok">✅ 2026-07-28 — <code>main.ts</code> 이관분까지 전부 이행됨</h3>
+    <h3 class="ok"><span class="sb sb-ok">완료</span>2026-07-28 — <code>main.ts</code> 이관분까지 전부 이행됨</h3>
     <p style="margin:0">목록은 <b>지우지 않고</b> “무엇을 왜 고쳤는지”의 이력으로 남긴다.
     남은 것은 <code>main.ts</code>의 <code>mount()</code>/<code>tick(dt)</code> 생명주기 축(로드맵 §9.5, 본행사 백로그)뿐이다.
     이후 이 체크리스트의 검증은 <code>pnpm verify:quick</code>의 <code>typecheck</code> 항목이 <b>커밋마다</b> 대신한다.</p>
@@ -1045,7 +1073,7 @@
     <label><input type="checkbox" /><span><span class="fx mov">이동</span><code>MOVE_COOLDOWN_MS</code> · <code>MOVE_TWEEN_MS</code> · <code>CAM_SWITCH_DELAY</code> · <code>TYPE_MS</code> · <code>BUBBLE_HOLD_MS</code> · <code>C_*</code> → view-consts</span></label>
     <label><input type="checkbox" /><span><span class="fx bug">버그</span><code>rightInset()</code> → 공용 <code>hudInset(): {right,bottom}</code> +
       <del><b><code>offsetParent === null || rect.width === 0</code> 가드</b></del> <span class="note">(§7.8 선행 조건 · 매트릭스 행 21)</span><br />
-      <b class="no">🔴 정정(07-28 구현 시점) — <code>offsetParent === null</code> 가드는 이 DOM에서 틀렸다.</b>
+      <b class="no"><span class="sb sb-bug">버그</span>정정(07-28 구현 시점) — <code>offsetParent === null</code> 가드는 이 DOM에서 틀렸다.</b>
       우측 컬럼 <code>.rp-col</code>이 <code>position: fixed</code>이고 <b>fixed 요소의 <code>offsetParent</code>는 항상 <code>null</code></b>이라 넣으면 인셋이 영구 0이 된다.
       <b>zero-rect(<code>rect.width/height === 0</code>) + 화면 밖 + <code>display/visibility/opacity</code> 비표시</b> 판정으로 대체했다(로드맵 §9.2와 같은 진단).
       구현: <code>apps/client/src/scenes/hud-inset.ts</code> <span class="note">(뷰1·2·3 공용 · 화면 절반 클램프 · ResizeObserver 캐시 · refcount <code>disconnect()</code>)</span></span></label>
@@ -1058,9 +1086,9 @@
     <b>scenes/iso-view.ts <span class="tag">뷰2 · 뷰3 · Three — P0 버그가 전부 이 한 파일에 있다</span></b>
     <label><input type="checkbox" /><span><span class="fx del">삭제</span><code>PLAYER_COLORS</code>(2번째 중복) · 상수 4종 삭제 → view-consts</span></label>
     <label><input type="checkbox" /><span><span class="fx bug">버그</span><code>disc</code> 머티리얼에 <b><code>transparent: true</code> 추가</b> — 없으면 탈락 시 disc가 안 흐려진다</span></label>
-    <label><input type="checkbox" /><span><span class="fx bug">🔴 버그</span>탈락 알파를 <code>face</code>만이 아니라 <b>disc · ring · name 전부</b>에 적용 <span class="note">(행 3)</span></span></label>
-    <label><input type="checkbox" /><span><span class="fx bug">🔴 버그</span>장물 <code>position.set</code> 매 프레임 무보간 → <code>cur/target</code> + <code>LOOT_TWEEN_MS</code>, 2칸↑는 <code>lootWarp</code> <span class="note">(행 6)</span></span></label>
-    <label><input type="checkbox" /><span><span class="fx bug">🔴 버그</span>helper 감광 순회에 disc <code>Mesh</code> 포함 <span class="note">(행 12)</span></span></label>
+    <label><input type="checkbox" /><span><span class="fx bug">버그</span>탈락 알파를 <code>face</code>만이 아니라 <b>disc · ring · name 전부</b>에 적용 <span class="note">(행 3)</span></span></label>
+    <label><input type="checkbox" /><span><span class="fx bug">버그</span>장물 <code>position.set</code> 매 프레임 무보간 → <code>cur/target</code> + <code>LOOT_TWEEN_MS</code>, 2칸↑는 <code>lootWarp</code> <span class="note">(행 6)</span></span></label>
+    <label><input type="checkbox" /><span><span class="fx bug">버그</span>helper 감광 순회에 disc <code>Mesh</code> 포함 <span class="note">(행 12)</span></span></label>
     <label><input type="checkbox" /><span><span class="fx bug">버그</span><code>lerp(0.25)</code> <b>프레임레이트 종속</b> → <code>k = 1 - exp(-dt / (MOVE_TWEEN_MS/3))</code></span></label>
     <label><input type="checkbox" /><span><span class="fx bug">버그</span><code>insetWorld()</code>에 동일 가드 · <code>viewId</code>는 <code>useAssets ? "three-asset" : "three-emoji"</code> <span class="note">(한 인스턴스가 두 뷰를 겸한다)</span></span></label>
   </div>
@@ -1073,7 +1101,7 @@
       <b>§7.11(색)을 §2.3(실루엣)보다 먼저</b> 넣어야 이 시그니처를 두 번 안 고친다</span></label>
     <label><input type="checkbox" /><span><span class="fx new">신규</span>계략 NPC <code>makeCritter(0x8a8172)</code> → <code>makeCritter(h.value, {gray:true})</code> —
       <b>실루엣은 십이지대로, 색만 회색</b> <span class="note">(행 11)</span></span></label>
-    <label><input type="checkbox" /><span><span class="fx bug">🔴 버그</span>말풍선에 타자기 도입 + <code>3200</code> 하드코딩 제거 <span class="note">(행 9)</span></span></label>
+    <label><input type="checkbox" /><span><span class="fx bug">버그</span>말풍선에 타자기 도입 + <code>3200</code> 하드코딩 제거 <span class="note">(행 9)</span></span></label>
     <label><input type="checkbox" /><span><span class="fx del">유지</span><code>mirrorCamera()</code> 유지 — §7.8의 <code>hudInset</code> 수정이 <b>뷰4에 자동 전파</b>된다 (별도 조치 불필요)</span></label>
   </div>
 
@@ -1087,34 +1115,34 @@
   </div>
 
   <div class="lead" style="margin-top:18px">
-    ✅ <b>성공 신호</b> — <code>pnpm -r typecheck</code>에서 <code>implements ViewContract</code> 3곳의 <b>미구현 메서드가 컴파일 에러로 뜨는 것.</b>
+    <b>성공 신호</b> — <code>pnpm -r typecheck</code>에서 <code>implements ViewContract</code> 3곳의 <b>미구현 메서드가 컴파일 에러로 뜨는 것.</b>
     에러가 안 뜨면 계약이 걸리지 않은 것이다.<br />
-    <b class="ok">✅ 07-28 달성</b> — 3개 클래스가 <code>implements ViewContract</code>를 달고 타입체크가 통과한다.
+    <b class="ok"><span class="sb sb-ok">완료</span>07-28 달성</b> — 3개 클래스가 <code>implements ViewContract</code>를 달고 타입체크가 통과한다.
   </div>
 
   <!-- ============ 7. 우선순위 ============ -->
   <h2 id="prio"><span class="n">07</span>우선순위</h2>
   <div class="prio">
     <div class="card crit">
-      <h3><span class="p p0">P0</span>🔴 명백한 버그 <span class="ok">✅ 07-28 완료</span></h3>
+      <h3><span class="p p0">P0</span>명백한 버그 <span class="sb sb-ok">07-28 완료</span></h3>
       <p style="margin:0 0 6px">행 <b>3 · 6 · 12</b> — <b>전부 <code>iso-view.ts</code> 한 파일</b> + 행 <b>21</b> 가드.</p>
       <p class="note" style="margin:0">합계 <b>≈ 1.5h</b>. 파일 하나만 열면 되므로 가장 싸고 가장 눈에 띈다.</p>
     </div>
     <div class="card warn">
-      <h3><span class="p p0">P0</span>🟠 계약 도입 <span class="ok">✅ 07-28 완료</span></h3>
+      <h3><span class="p p0">P0</span>계약 도입 <span class="sb sb-ok">07-28 완료</span></h3>
       <p style="margin:0 0 6px"><code>view-consts</code> + <code>view-contract</code> + <code>implements</code> 3곳.
         행 <b>4 · 9 · 20</b>의 불일치가 <b>자동 정리</b>된다.</p>
       <p class="note" style="margin:0"><b>이 시점에 <code>ZODIAC_COLOR</code>를 함께</b> 넣어 <code>makeCritter</code> 시그니처를 두 번 고치지 않는다.
       <b class="ok">→ 순서를 지켜 시그니처를 1회만 고쳤다.</b></p>
     </div>
     <div class="card warn">
-      <h3><span class="p p1">P1</span>🟠 없는 정보 채우기 <span class="ok">✅ 07-28 완료</span> <span class="part">행 18 제외</span></h3>
+      <h3><span class="p p1">P1</span>없는 정보 채우기 <span class="sb sb-ok">07-28 완료</span> <span class="part">행 18 제외</span></h3>
       <p style="margin:0 0 6px">행 <b>5 · 6</b> <code>warp</code> → 행 <b>13 · 14</b> 뷰4 실루엣/스탬프 → 행 <b>16 · 7 · 18</b>.</p>
       <p class="note" style="margin:0">소환은 콘티 <b>10–22s</b>라 <b>영상에 확실히 찍힌다</b> — 우선순위 근거가 심사 제출물이다.</p>
     </div>
     <div class="card info">
-      <h3><span class="p p2">P2</span>🟡 후순위</h3>
-      <p style="margin:0 0 6px"><del>행 <b>22</b> 씬 내 종료 연출</del> <span class="ok">✅ <code>setOutcome()</code></span> ·
+      <h3><span class="p p2">P2</span>후순위</h3>
+      <p style="margin:0 0 6px"><del>행 <b>22</b> 씬 내 종료 연출</del> <span class="ok"><span class="sb sb-ok">완료</span><code>setOutcome()</code></span> ·
       행 <b>23</b> 탈락 관전 <span class="part">DOM 전담 유지</span> ·
       <del>행 <b>19</b> 도달 가능 칸</del> <span class="part">실행계획 §5.1에서 컷</span>.</p>
       <p class="note" style="margin:0">행 19는 <code>reachable()</code>를 shared에 1개만 두고 <b>방은 통째로</b> 칠한다(방 안 이동 무료) — 본행사 백로그.</p>
