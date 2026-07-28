@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import {
+  PASSAGES,
   ROOMS,
   SUSPECTS,
   WEAPONS,
@@ -9,9 +10,12 @@ import {
   label,
   passageOf,
   persona,
+  timingOf,
   zodiacColorHex,
   zodiacCue,
   type Card,
+  type MotionProfile,
+  type ViewTiming,
   type ZodiacFamily,
 } from "@zodiac-clue/shared";
 import type { Room } from "colyseus.js";
@@ -25,7 +29,15 @@ import {
 import { GameScene } from "./scenes/game-scene";
 import { PixelScene } from "./scenes/pixel-scene";
 import { IsoView } from "./scenes/iso-view";
-import { cvdMode } from "./scenes/view-motion";
+import { cvdMode, resolveMotion } from "./scenes/view-motion";
+import type {
+  FocusMode,
+  PassageLink,
+  ViewCell,
+  ViewContract,
+  ViewOutcome,
+  WarpReason,
+} from "./scenes/view-contract";
 
 /** 재접속 토큰 저장 키. sessionStorage = 탭 단위(새로고침엔 유지, 새 탭엔 없음). */
 const RECONNECT_KEY = "zc_reconnect";
@@ -331,6 +343,134 @@ let myCards = new Set<string>();
 /** 직전 게임 페이즈 — 리매치(ended→playing) 감지용. */
 let lastPhase = "";
 
+// ── 활성 뷰 접근자 (spec §3 "`say` 라우팅 3분기 → `activeView()` 하나로 축약") ──
+// `main.ts`는 **뷰를 모른다.** 어떤 렌더러가 떠 있든 `ViewContract` 한 타입으로만 말한다.
+// 그래서 뷰5를 추가해도 여기 분기가 늘지 않는다(계약 원칙 4).
+//
+// ⚠ Phaser 씬은 **`create()`가 끝나기 전에도 인스턴스가 조회된다.** 그 시점에 계약을
+//   호출하면 보드 사각형·명패가 아직 없어 조용히 아무 일도 안 일어난다 →
+//   `isActive(key)`(= status RUNNING, create 완료)로 게이트한다.
+const phaserView = (key: "game" | "pixel"): GameScene | PixelScene | null => {
+  if (!game || !game.scene.isActive(key)) return null;
+  return (game.scene.getScene(key) as GameScene | PixelScene | null) ?? null;
+};
+
+/** 지금 화면을 그리고 있는 뷰. 아직 준비되지 않았으면 `null`. */
+const activeView = (): ViewContract | null => {
+  const st = STAGES[stageIndex];
+  if (st.kind === "three") return iso;
+  return phaserView(st.kind === "pixel" ? "pixel" : "game");
+};
+
+/** 살아 있는 렌더러 전부(뷰2·3은 IsoView 한 인스턴스가 겸한다 → 4뷰 = 3인스턴스). */
+const allViews = (): ViewContract[] => {
+  const out: ViewContract[] = [];
+  const g = phaserView("game");
+  if (g) out.push(g);
+  const p = phaserView("pixel");
+  if (p) out.push(p);
+  if (iso) out.push(iso);
+  return out;
+};
+
+// ── 감속 프로파일: 한 곳에서 판정해 4뷰에 브로드캐스트 (spec §3 `main.ts`) ──
+// 렌더러 3종이 각자 `currentTiming()`을 부르던 것을 여기서 덮어쓴다. OS 설정이
+// 판 도중 바뀌어도 4뷰가 **동시에** 같은 프로파일로 넘어간다.
+let motion: MotionProfile = resolveMotion();
+let timing: ViewTiming = timingOf(motion);
+
+const broadcastMotion = (): void => {
+  motion = resolveMotion();
+  timing = timingOf(motion);
+  for (const v of allViews()) v.setMotion(motion);
+};
+
+try {
+  window
+    .matchMedia?.("(prefers-reduced-motion: reduce)")
+    ?.addEventListener?.("change", broadcastMotion);
+} catch {
+  /* matchMedia 미지원 — 초기 판정값을 그대로 쓴다 */
+}
+
+// ── 비밀 통로 링크(정적) — 양방향 3쌍을 한 번만 넘긴다(계약 `setPassages` 주석) ──
+const PASSAGE_LINKS: readonly PassageLink[] = (() => {
+  const seen = new Set<string>();
+  const out: PassageLink[] = [];
+  for (const [from, to] of Object.entries(PASSAGES)) {
+    const key = [from, to].sort().join("|");
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push({ from, to });
+  }
+  return out;
+})();
+
+// ── 뷰 전환 정합용 파생 상태 ──────────────────────────────
+// 전부 **표현용 사본**이다. 진실값은 서버 상태이고 여기엔 그것을 읽어 만든 것만 둔다.
+/** "이미 살펴본 방" — 서버 상태에 없는 클라 로컬 집합(계약 `setSurveyed` 주석). */
+const surveyedRooms = new Set<string>();
+let surveyDirty = true;
+/** 판의 종료(승자). 진행 중이면 `null`. `state.winner`에서만 파생된다. */
+let outcome: ViewOutcome | null = null;
+/** 마지막으로 현재 상태를 통째로 먹인 뷰. 뷰가 바뀌면 다시 먹인다. */
+let syncedView: ViewContract | null = null;
+
+/**
+ * 뷰에 현재 상태를 통째로 주입. **뷰를 바꾼 직후** 새 뷰가 조사한 방·통로·현재 턴·
+ * 탈락을 그대로 이어받게 하는 지점이다(배정 (3)).
+ * `force`가 아니어도 뷰 인스턴스가 바뀌면 자동으로 전량 재주입한다.
+ */
+const syncActiveView = (force = false): void => {
+  const v = activeView();
+  if (!v) return;
+  const fresh = force || v !== syncedView;
+  if (!fresh) {
+    if (surveyDirty) {
+      v.setSurveyed([...surveyedRooms]);
+      surveyDirty = false;
+    }
+    return;
+  }
+  syncedView = v;
+  surveyDirty = false;
+  v.setMotion(motion);
+  v.setPassages(PASSAGE_LINKS);
+  v.setSurveyed([...surveyedRooms]);
+  v.setOutcome(outcome);
+  if (!room) return;
+  const state = room.state;
+  // 12종 구분 가능성 확보 — 뷰3만 실제 프리로드가 일어나고 나머지는 표기 되맞춤.
+  for (const z of participantSuspects()) v.identity(z);
+  const players = state.players as Map<string, MePlayer>;
+  players.forEach((p, id) => v.setElim(id, !!p.eliminated));
+  v.setCurrent(state.currentTurn === "" ? null : state.currentTurn);
+};
+
+// ── 사건 → 연출 라우팅 (spec §5 ❌ 9행) ───────────────────
+// 서버는 소환·통로 전용 메시지를 보내지 않는다 — **동기화 상태의 델타**가 사실이다
+// (로드맵 §2.2 "상태 델타로 판정"). 여기서 하는 일은 그 델타를 읽어 **어떤 연출을
+// 부를지 고르는 것**뿐이고, 위치·방·승자 같은 값은 전부 서버가 준 것을 그대로 넘긴다.
+type CellSnap = { x: number; y: number; room: string };
+const lastCells = new Map<string, CellSnap>();
+const lastLoot = new Map<string, CellSnap>();
+/** 델타 판정에 쓰는 직전 페이즈. 전환 틱(배치·리매치)에는 연출을 내지 않는다. */
+let fxPhase = "";
+
+const cheb = (a: CellSnap, b: CellSnap): number =>
+  Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
+
+/** 연출 사본 초기화 — 리매치처럼 판이 다시 깔릴 때 직전 판의 잔상을 지운다. */
+const resetFxState = (): void => {
+  lastCells.clear();
+  lastLoot.clear();
+  surveyedRooms.clear();
+  surveyDirty = true;
+  outcome = null;
+  activeView()?.setOutcome(null);
+  activeView()?.setSurveyed([]);
+};
+
 // 캐릭터 선택은 대기실(renderLobbyChars)에서만 수행 — 랜딩엔 방 만들기/참여만.
 
 // ── 방 연결 후 공통 배선 ─────────────────────────────
@@ -373,6 +513,23 @@ const wireRoom = (r: Room): void => {
     } else {
       addLog("🔎 아무도 반증하지 못함 — 정답 후보!", { kind: "disprove" });
     }
+    // 반증은 **나만 보는 정보**라 로그가 우측 끝에 뜬다 → 보드에도 "어느 칸을 봐야
+    // 하는지"를 남긴다(계약 `pulseCell`). 이 메시지는 제안자에게만 온다.
+    const v = activeView();
+    if (!v) return;
+    const players = r.state.players as Map<string, MePlayer>;
+    if (m.card && m.by) {
+      const hits: ViewCell[] = [];
+      players.forEach((p) => {
+        if (p.name === m.by) hits.push({ x: p.x, y: p.y });
+      });
+      // 동명이인이면 판정 불가 → 표기하지 않는다(엉뚱한 칸을 가리키는 것보다 낫다).
+      if (hits.length === 1) v.pulseCell(hits[0], "neutral");
+    } else {
+      const me = players.get(r.sessionId);
+      // 미반증 = 정답 후보. 제안이 일어난 방(= 내가 서 있는 방)을 경고 톤으로.
+      if (me) v.pulseCell({ x: me.x, y: me.y }, "alert");
+    }
   });
   r.onMessage("accuseResult", (m: { player: string; correct: boolean }) => {
     addLog(m.correct ? `🎉 ${m.player} 정답!` : `❌ ${m.player} 오답`, {
@@ -383,17 +540,11 @@ const wireRoom = (r: Room): void => {
   r.onMessage("canAccuse", (m: { ms: number }) => openAccuseWindow(m.ms));
   r.onMessage("say", (m: { id: string; from: string; text: string }) => {
     addLog(`💬 ${m.from}: ${m.text}`, { kind: "info" });
-    const kind = STAGES[stageIndex].kind;
-    if (kind === "three") {
-      iso?.showBubble(m.id, m.text);
-    } else {
-      const key = kind === "pixel" ? "pixel" : "game";
-      const scene = game?.scene.getScene(key) as
-        | GameScene
-        | PixelScene
-        | undefined;
-      scene?.showBubble(m.id, m.text);
-    }
+    // 귓속말 판정은 **서버 상태를 읽는 것**이다 — 계략 NPC(고정 헬퍼)는 `helpers` 맵의
+    // 키가 십이지 id이고, `helperWhisper()`가 그 id로 `say`를 보낸다. 좌석(sessionId)이
+    // 말한 것은 공개 대사, 헬퍼가 말한 것은 귓속말(§5 행 10).
+    const whisper = (r.state.helpers as Map<string, unknown>).has(m.id);
+    activeView()?.bubble(m.id, m.text, whisper ? { whisper: true } : undefined);
   });
   r.onMessage("peek", (m: { from: string; cards: Card[] }) => {
     addLog(
@@ -422,6 +573,7 @@ const wireRoom = (r: Room): void => {
         /* noop */
       }
       buildEvidence(r.roomId);
+      resetFxState(); // 승리 연출·살펴본 방·위치 스냅샷을 새 판 기준으로 되돌린다
     }
     lastPhase = state.phase;
 
@@ -429,6 +581,8 @@ const wireRoom = (r: Room): void => {
     updateTurnInfo(state);
     updateEndState(state);
     if (state.phase === "playing" && !phaserStarted) enterGame();
+    // 연출 라우팅은 **뷰가 생긴 뒤에** — `enterGame()` 뒤에 오는 것이 조건이다.
+    applyFx(state);
   });
 
   r.onError((code, message) => addLog(`에러(${code}): ${message ?? ""}`));
@@ -549,6 +703,137 @@ const showBanner = (text: string, ms = 2800): void => {
     el.classList.add("hidden");
     bannerTimer = undefined;
   }, ms);
+};
+
+/**
+ * 상태 델타 → 계약 메서드 라우팅. `onStateChange`마다 1회.
+ *
+ * 판정 근거는 전부 **서버가 준 값**이다:
+ *  · 장물은 제안으로만 움직인다 → 장물의 `room`이 바뀌면 그 방이 **제안이 일어난 방**.
+ *  · 내 턴이 아닌 좌석이 방을 옮겼다면 그것은 이동이 아니라 **소환**이다
+ *    (서버에서 남의 턴에 좌석을 옮기는 경로는 `doSuggestion`의 소환뿐).
+ *  · 내 턴인 좌석이 `PASSAGES`로 연결된 방으로 건너뛰었다면 **비밀 통로**.
+ *  · 그 밖의 이동은 일반 이동 — 렌더러의 보간이 담당한다(워프로 만들지 않는다).
+ *
+ * ⚠ 여기서 진실값을 만들지 않는다. 위 세 줄은 "이미 일어난 사실을 어떤 연출로
+ *   보여줄지" 고르는 것이고, 좌표·방 이름·승자는 서버 상태를 그대로 넘긴다.
+ */
+const applyFx = (state: Room["state"]): void => {
+  const v = activeView();
+  const myId = room?.sessionId ?? "";
+  const players = state.players as Map<string, MePlayer>;
+  const weapons = state.weapons as Map<
+    string,
+    { value: string; x: number; y: number; room: string }
+  >;
+  const phaseChanged = state.phase !== fxPhase;
+  fxPhase = state.phase;
+  // 배치 틱(로비→진행, 리매치)은 좌표가 통째로 다시 깔린다 → 스냅샷만 갱신한다.
+  const emit = state.phase === "playing" && !phaseChanged && v !== null;
+
+  // ── ① 장물 델타 → `lootWarp` + "제안이 일어난 방" 판정 ──
+  type LootMove = { value: string; from: CellSnap; to: CellSnap };
+  const lootMoves: LootMove[] = [];
+  const liveLoot = new Set<string>();
+  weapons.forEach((w, key) => {
+    liveLoot.add(key);
+    const prev = lastLoot.get(key);
+    const cur: CellSnap = { x: w.x, y: w.y, room: w.room ?? "" };
+    lastLoot.set(key, cur);
+    if (!prev || !emit) return;
+    if (prev.x === cur.x && prev.y === cur.y) return;
+    lootMoves.push({ value: w.value, from: prev, to: cur });
+  });
+  for (const key of [...lastLoot.keys()]) {
+    if (!liveLoot.has(key)) lastLoot.delete(key);
+  }
+
+  let sugRoom = "";
+  for (const m of lootMoves) {
+    if (m.to.room && m.to.room !== m.from.room) sugRoom = m.to.room;
+    v?.lootWarp(m.value, m.from, m.to);
+  }
+
+  // ── ② 좌석 델타 → `warp` ──
+  type Move = { id: string; suspect: string; name: string; from: CellSnap; to: CellSnap };
+  const moves: Move[] = [];
+  const live = new Set<string>();
+  players.forEach((p, id) => {
+    live.add(id);
+    const prev = lastCells.get(id);
+    const cur: CellSnap = { x: p.x, y: p.y, room: p.room ?? "" };
+    lastCells.set(id, cur);
+    if (!prev || !emit) return;
+    if (prev.x === cur.x && prev.y === cur.y) return;
+    moves.push({ id, suspect: p.suspect, name: p.name, from: prev, to: cur });
+  });
+  for (const id of [...lastCells.keys()]) {
+    if (!live.has(id)) lastCells.delete(id);
+  }
+
+  let stage = "";
+  let stageCamera = false;
+  for (const m of moves) {
+    const isCur = m.id === state.currentTurn;
+    const roomChanged = m.from.room !== m.to.room;
+    let reason: WarpReason | null = null;
+    if (isCur && m.from.room && passageOf(m.from.room) === m.to.room) {
+      reason = "passage";
+    } else if (
+      (sugRoom !== "" && m.to.room === sugRoom && (roomChanged || cheb(m.from, m.to) >= 2)) ||
+      (!isCur && roomChanged)
+    ) {
+      reason = "summon";
+    }
+    if (!reason || !v) continue;
+    v.warp(m.id, m.from, m.to, reason);
+    v.pulseCell(m.to, reason === "summon" ? "suggest" : "neutral");
+    if (m.to.room) {
+      stage = m.to.room;
+      // `"camera"`는 내 턴이거나 내가 지목당했을 때만(계약 `FocusMode` 주석) —
+      // NPC 6인이 매 턴 제안하므로 무조건 포커스하면 화면이 계속 흔들린다.
+      stageCamera = stageCamera || state.currentTurn === myId || m.id === myId;
+    }
+    // 하단 배너(전면을 막지 않는 단일 슬롯). 문안은 ui-copy §10 확정본 그대로.
+    showBanner(
+      reason === "summon"
+        ? `🔔 소환 — ${label(m.suspect)} → ${label(m.to.room)}`
+        : `🚪 비밀 통로 — ${m.name} → ${label(m.to.room)} · 제안 또는 턴 종료`,
+      timing.WARP_BANNER_MS,
+    );
+  }
+
+  // ── ③ 사건의 무대 → `focusRoom` ──
+  // 지목된 인물이 이미 그 방에 있어 좌석이 안 움직였어도 무대는 강조한다(장물만 이동).
+  if (stage === "" && sugRoom !== "") {
+    stage = sugRoom;
+    stageCamera = state.currentTurn === myId;
+  }
+  if (stage !== "" && v) {
+    const mode: FocusMode = stageCamera ? "camera" : "highlight";
+    v.focusRoom(stage, mode);
+  }
+
+  // ── ④ "이미 살펴본 방"(클라 로컬 파생 · 진실값 아님) → `setSurveyed` ──
+  const me = myId ? players.get(myId) : undefined;
+  if (me?.room && !surveyedRooms.has(me.room)) {
+    surveyedRooms.add(me.room);
+    surveyDirty = true;
+  }
+
+  // ── ⑤ 판 종료 → `setOutcome` (무승부는 승자가 없으므로 연출도 없다) ──
+  const winnerId =
+    state.phase === "ended" && state.winner ? (state.winner as string) : "";
+  const nextOutcome: ViewOutcome | null = winnerId
+    ? { winnerId, winnerName: players.get(winnerId)?.name ?? "" }
+    : null;
+  if ((outcome?.winnerId ?? "") !== (nextOutcome?.winnerId ?? "")) {
+    outcome = nextOutcome;
+    v?.setOutcome(outcome);
+  }
+
+  // 새 뷰로 막 넘어왔거나 살펴본 방이 늘었으면 여기서 따라잡는다.
+  syncActiveView();
 };
 
 // 게임 중 현재 턴 배너 (내 턴이면 주사위 굴림 + 남은 이동 표시)
@@ -1160,6 +1445,9 @@ const enterGame = (): void => {
   });
   game.registry.set("room", room);
   if (room) buildEvidence(room.roomId);
+  // Phaser 씬은 첫 `step`이 끝나야 `create()`가 돌아 있다(그 전엔 보드 사각형이 없어
+  // `setPassages`가 조용히 실패한다). 부팅 직후 1회 전량 주입 지점.
+  game.events.once(Phaser.Core.Events.POST_STEP, () => syncActiveView(true));
 
   // 뷰 진화 단계 전환(순서형). 서버·HUD·입력 규칙은 단계와 무관하게 동일.
   // 핵심: #game(Phaser)은 절대 display:none 하지 않는다. three는 위에 얹어
@@ -1172,25 +1460,28 @@ const enterGame = (): void => {
     const st = STAGES[stageIndex];
     const three = st.kind === "three";
     const pixel = st.kind === "pixel";
-    if (three) {
-      if (!iso && room) iso = new IsoView(room, $("gameScreen"));
-      iso?.setActive(true); // three 캔버스가 Phaser 위를 덮음(HUD는 그 위)
-      iso?.setAssets(st.assets); // 뷰2=이모지 / 뷰3=에셋 아트
-    } else {
-      iso?.setActive(false); // 캔버스 숨김 → 아래 Phaser가 그대로 보임
-    }
-    // Phaser 씬 표시 전환: 뷰1=GameScene / 뷰4=PixelScene. GameScene은 뷰4에서도
-    // 계속 active(입력·카메라 담당)이되 invisible — PixelScene이 카메라를 미러링.
-    // PixelScene은 config 배열의 2번째라 자동 시작되지 않음 → 처음 필요할 때 run.
+    if (three && !iso && room) iso = new IsoView(room, $("gameScreen"));
+    // PixelScene은 config 배열의 2번째라 자동 시작되지 않는다 — 첫 진입에서만 run.
+    // (렌더러 `pixel-scene.ts` `setActive` 주석의 `TODO(main.ts)`가 이 한 줄이다.
+    //  시작되지 않은 씬에는 계약 메서드가 존재하지 않으므로 씬 밖에서 해야 한다.)
     if (pixel && game && !game.scene.isActive("pixel")) game.scene.run("pixel");
-    game?.scene.getScene("game")?.sys.setVisible(st.kind === "phaser");
-    game?.scene.getScene("pixel")?.sys.setVisible(pixel);
+    // 표시/은닉은 **계약 `setActive` 하나로만** 한다. 숨을 때 타이머·리스너·루프를
+    // 정리하는 책임이 뷰에 있어 `sys.setVisible` 직접 호출로는 그 계약이 실행되지 않는다.
+    // (뷰1은 뷰4에서도 계속 active — 입력·카메라 담당이고 표시만 꺼진다.)
+    iso?.setActive(three);
+    if (three) iso?.setAssets(st.assets); // 뷰2=이모지 / 뷰3=에셋 아트
+    phaserView("game")?.setActive(st.kind === "phaser");
+    phaserView("pixel")?.setActive(pixel);
     // three에선 iso가 입력 담당 → Phaser 키보드 off. phaser/pixel은 GameScene이 담당.
     if (game?.input.keyboard) game.input.keyboard.enabled = !three;
     viewBtn.textContent = st.label + " ▲";
     [...viewList.children].forEach((li, idx) =>
       (li as HTMLElement).classList.toggle("active", idx === stageIndex),
     );
+    // 새 뷰가 현재 상태(조사한 방·통로·현재 턴·탈락·승리)를 그대로 이어받는다.
+    syncActiveView(true);
+    // 방금 `run`한 씬은 다음 step에야 `create()`가 끝난다 → 그 프레임에 한 번 더.
+    game?.events.once(Phaser.Core.Events.POST_STEP, () => syncActiveView(true));
   };
   // 위로 열리는 드롭다운으로 단계 직접 선택.
   viewList.innerHTML = "";
