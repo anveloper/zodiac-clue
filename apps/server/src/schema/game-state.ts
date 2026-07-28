@@ -11,6 +11,11 @@ export class Player extends Schema {
   @type("boolean") eliminated = false;
   /** NPC(봇) 여부. */
   @type("boolean") isBot = false;
+  /**
+   * 사람이 이탈해 **대리 중인** 좌석(로드맵 §8.1). `isBot`도 true다.
+   * 순수 NPC(🤖)와 자리를 비운 사람(💤)을 표기로 구분하기 위한 공개 정보 — 비밀값 아님.
+   */
+  @type("boolean") awayBot = false;
   /** 현재 위치한 방(장소). 없으면 "" (복도). */
   @type("string") room = "";
 }

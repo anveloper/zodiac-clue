@@ -74,6 +74,7 @@ const cardMatches = (c, s) =>
  * @param {boolean} opts.sharedRevealed  true = 현행(봇 전원이 반증 카드를 전역 공유)
  * @param {boolean} opts.humanInstantAccuse true = 사람도 제안한 턴에 고발(§7.5.1)
  * @param {number|null} opts.suggestCap  총 제안 상한(도달 후 제안마다 공통 단서 1장 추가 공개)
+ * @param {boolean} opts.reentry  true = 재진입 규칙(§7.5.2): 같은 방에서 연속 제안 금지
  */
 const playGame = (rng, opts) => {
   // 좌석 = 십이지 6종(참여자). 정답 용의자는 참여자 중에서 뽑힌다.
@@ -132,6 +133,10 @@ const playGame = (rng, opts) => {
 
   const eliminated = Array(SEATS).fill(false);
   const room = Array(SEATS).fill(null); // 현재 앉아 있는 방
+  /** 재진입 규칙(§7.5.2) — 좌석별 "직전에 제안한 방". 방을 벗어나면 해제(서버와 동일). */
+  const suggestedIn = Array(SEATS).fill(null);
+  /** 좌석별로 제안을 시도한 서로 다른 방(보드가 장식인지 재는 지표 — 9개 중 몇 개). */
+  const visited = Array.from({ length: SEATS }, () => new Set());
   let suggestCount = 0;
   let humanTurns = 0;
   let turn = 0;
@@ -206,9 +211,14 @@ const playGame = (rng, opts) => {
 
     const k = know[seat];
     // 방 선택 — 현재 방이 아직 후보면 눌러앉고, 아니면 후보 방으로 옮긴다(서버 runBotTurn 동일).
-    if (!room[seat] || !k.rooms.has(room[seat])) {
-      const cands = [...k.rooms];
-      room[seat] = cands.length ? pick(rng, cands) : pick(rng, ROOMS);
+    // 재진입 규칙이 켜지면 "직전에 제안한 방"에는 눌러앉을 수 없다(§7.5.2).
+    const blocked = opts.reentry ? suggestedIn[seat] : null;
+    if (!room[seat] || !k.rooms.has(room[seat]) || room[seat] === blocked) {
+      const cands = [...k.rooms].filter((r) => r !== blocked);
+      const pool = cands.length ? cands : ROOMS.filter((r) => r !== blocked);
+      const next = pool.length ? pick(rng, pool) : pick(rng, ROOMS);
+      if (next !== room[seat]) suggestedIn[seat] = null; // 방을 벗어나면 잠금 해제
+      room[seat] = next;
     }
     const suggestion = {
       suspect: pick(rng, eff(seat, k.suspects)),
@@ -216,6 +226,8 @@ const playGame = (rng, opts) => {
       room: room[seat],
     };
     suggestCount++;
+    visited[seat].add(room[seat]);
+    suggestedIn[seat] = room[seat];
 
     // 시계방향 반증(탈락자도 손패로 반증한다 — 서버와 동일)
     let shown = null;
@@ -275,6 +287,7 @@ const playGame = (rng, opts) => {
     rounds: humanTurns,
     suggestions: suggestCount,
     draw: winner === null,
+    humanRooms: visited[HUMAN].size,
   };
 };
 
@@ -291,6 +304,7 @@ const run = (name, opts, games, seed) => {
   const seatWins = Array(SEATS).fill(0);
   const rounds = [];
   const suggestions = [];
+  const humanRooms = [];
   for (let i = 0; i < games; i++) {
     const r = playGame(rng, opts);
     if (r.humanWin) humanWins++;
@@ -298,6 +312,7 @@ const run = (name, opts, games, seed) => {
     else if (r.winner !== null) seatWins[r.winner]++;
     rounds.push(r.rounds);
     suggestions.push(r.suggestions);
+    humanRooms.push(r.humanRooms);
   }
   return {
     name,
@@ -306,6 +321,7 @@ const run = (name, opts, games, seed) => {
     drawPct: (draws / games) * 100,
     avgRounds: mean(rounds),
     avgSuggestions: mean(suggestions),
+    avgHumanRooms: mean(humanRooms),
     p95Suggestions: p95(suggestions),
     maxSuggestions: Math.max(...suggestions),
     capHitPct:
@@ -331,8 +347,17 @@ const variants = [
     { sharedRevealed: false, humanInstantAccuse: false, suggestCap: SUGGEST_CAP },
   ],
   [
-    "④ 변경 후 (①+②+③)",
+    "④ 직전 상태 (①+②+③)",
     { sharedRevealed: false, humanInstantAccuse: true, suggestCap: SUGGEST_CAP },
+  ],
+  [
+    "⑤ ④ + 재진입 규칙 (§7.5.2)",
+    {
+      sharedRevealed: false,
+      humanInstantAccuse: true,
+      suggestCap: SUGGEST_CAP,
+      reentry: true,
+    },
   ],
 ];
 
@@ -345,9 +370,9 @@ console.log(`\n판 수: ${games} · 시드: ${SEED} · 6인(사람 1 + NPC 5) ·
 console.log(
   pad("변형", 36) + pad("사람 승률", 11) + pad("무승부", 9) +
   pad("평균 라운드", 13) + pad("평균 제안", 11) + pad("제안 p95", 10) +
-  pad("제안 최대", 11) + pad("상한 도달", 10),
+  pad("제안 최대", 11) + pad("상한 도달", 11) + pad("방문 방/9", 10),
 );
-console.log("-".repeat(110));
+console.log("-".repeat(122));
 for (const r of results) {
   console.log(
     pad(r.name, 36) +
@@ -357,7 +382,8 @@ for (const r of results) {
       pad(num(r.avgSuggestions, 1), 11) +
       pad(r.p95Suggestions, 10) +
       pad(r.maxSuggestions, 11) +
-      pad(`${num(r.capHitPct)}%`, 10),
+      pad(`${num(r.capHitPct)}%`, 11) +
+      pad(num(r.avgHumanRooms, 2), 10),
   );
 }
 console.log("\n좌석별 승률(%) — 0번이 사람, 1~5번이 NPC");

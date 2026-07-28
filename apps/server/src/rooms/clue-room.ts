@@ -7,6 +7,7 @@ import {
   ROOMS,
   SUSPECTS,
   WEAPONS,
+  bubbleLifeMs,
   canCross,
   inFeast,
   label,
@@ -39,18 +40,22 @@ type BotKnowledge = {
 };
 
 // NPC 행동 딜레이 = 사용자 평균 턴 시간의 절반 (클램프). 데이터 없으면 기본값.
-// 사용자가 흐름을 인지할 수 있게 넉넉히.
+// 상한은 로드맵 §7.5.4 — `revealed` 분리로 판이 3.0 → 5.6라운드가 되어 7000은 판을
+// 3.8분 밖으로 밀어낸다. 하한은 상한보다 작아야 클램프가 성립한다(§7.5.4 미지정 값).
 const NPC_DELAY_DEFAULT = 3000;
-const NPC_DELAY_MIN = 1800;
-const NPC_DELAY_MAX = 7000;
-// 봇 턴 내 '이동 → (쉬고) → 제안' 사이 간격 (카메라 이동·인지 시간)
-const BOT_ACT_GAP = 1300;
-// 제안 대사가 타이핑되는 동안 턴을 넘기지 않고 대기 (카메라 튐 방지)
-const SPEAK_HOLD = 2400;
+const NPC_DELAY_MIN = 800;
+const NPC_DELAY_MAX = 1600;
+/**
+ * 라운드 예산(§1.4) — 남은 봇 수로 나눠 "내 턴 사이 간격"을 12초 안에 묶는다.
+ * 봇이 많을수록 개별 딜레이가 짧아진다(봇 5명이면 2400 → 상한 1600이 먼저 걸린다).
+ */
+const NPC_ROUND_BUDGET_MS = 12000;
+// 봇 턴 내 '이동 → (쉬고) → 제안' 사이 간격 (카메라 이동·인지 시간) — §7.5.4 1300→600
+const BOT_ACT_GAP = 600;
 
 /**
  * 즉시고발권(로드맵 §7.5.1): 사람이 자기 제안 직후 같은 턴에 고발할 수 있는 제한 시간.
- * 시간이 지나면 자동으로 턴이 넘어간다(봇은 SPEAK_HOLD 안에서 이미 같은 턴에 고발한다).
+ * 시간이 지나면 자동으로 턴이 넘어간다(봇은 말풍선 홀드 안에서 이미 같은 턴에 고발한다).
  */
 const ACCUSE_WINDOW_MS = 30000;
 /**
@@ -88,9 +93,6 @@ const CENTER = { x: 11, y: 11 };
 
 const pick = <T>(arr: readonly T[]): T =>
   arr[Math.floor(Math.random() * arr.length)];
-
-const pickFromSet = (s: Set<string>): string | undefined =>
-  s.size === 0 ? undefined : [...s][Math.floor(Math.random() * s.size)];
 
 const shuffle = <T>(arr: T[]): void => {
   for (let i = arr.length - 1; i > 0; i--) {
@@ -130,6 +132,16 @@ export class ClueRoom extends Room<GameState> {
   private seenNotSolution = new Map<string, Set<string>>();
   /** 이번 턴에 이미 제안한 플레이어 id(즉시고발 창이 열려 있는 동안 재제안 금지). */
   private suggestedTurnBy = "";
+  /**
+   * 재진입 규칙(로드맵 §7.5.2) — 좌석별 "직전에 제안한 방".
+   * 같은 방에 눌러앉아 매 턴 제안하면 2d6·9개 방·비밀통로가 전부 장식이 된다
+   * (실측: 사람이 판당 방문하는 방 2.1개 / 9개). 그 방을 **벗어나면 해제**되므로
+   * "방에 들어온 턴에 1회"라는 정통 클루 규칙과 같은 효과가 된다.
+   * 사람·봇 모두 같은 규칙을 받는다(봇 경로는 `runBotTurn`의 방 선택에서 적용).
+   */
+  private suggestedIn = new Map<string, string>();
+  /** 방이 파기됐는지 — 파기 후 도착한 비동기 콜백이 타이머를 되살리지 못하게 한다. */
+  private disposed = false;
   /** 키별 취소 가능한 타이머(§7.5.1 즉시고발 창 · §8.2 턴 클럭 공용 프리미티브). */
   private timers = new Map<string, Cancelable>();
   // 사용자 턴 시간 이동평균(ms) + 현재 턴 시작 시각(clock)
@@ -166,6 +178,7 @@ export class ClueRoom extends Room<GameState> {
 
   onDispose(): void {
     // 방이 사라질 때 살아 있는 타이머를 전부 회수한다(타이머 누수 금지).
+    this.disposed = true;
     this.cancelAllTimers();
   }
 
@@ -185,6 +198,7 @@ export class ClueRoom extends Room<GameState> {
     onExpire: () => void,
   ): { cancel: () => void } {
     this.cancelTimer(key);
+    if (this.disposed) return { cancel: () => undefined };
     const handle = this.clock.setTimeout(() => {
       this.timers.delete(key);
       onExpire();
@@ -219,6 +233,14 @@ export class ClueRoom extends Room<GameState> {
   /** 특정 참가자에게만 "이 카드는 정답이 아니다"를 기록한다(반증 카드는 제안자에게만). */
   private markSeen(id: string, value: string): void {
     this.seenOf(id).add(value);
+  }
+
+  /**
+   * 방을 옮기면 재진입 잠금이 풀린다(§7.5.2 "방을 벗어나면 해제").
+   * 이동·비밀통로·소환 등 **방이 바뀌는 모든 경로**가 이 함수를 지난다.
+   */
+  private clearSuggestedIn(id: string): void {
+    this.suggestedIn.delete(id);
   }
 
   /** 공통 단서처럼 전원이 동시에 보는 정보만 여기로(공개 정보 → 비대칭 아님). */
@@ -257,6 +279,7 @@ export class ClueRoom extends Room<GameState> {
     player.x = c.x;
     player.y = c.y;
     player.room = dest;
+    this.clearSuggestedIn(player.id); // 통로로 방을 옮겼다 → 새 방에서 제안 가능(§7.5.2)
     this.state.stepsLeft = 0; // 통로로 방 도착 = 이동 소진(방 진입 턴엔 이탈 불가). 턴은 유지.
     this.broadcast("log", {
       text: `🚪 비밀 통로 — ${player.name} → ${label(dest)} · 제안 또는 턴 종료`,
@@ -416,7 +439,47 @@ export class ClueRoom extends Room<GameState> {
         // 시간 초과 → 아래에서 제거
       }
     }
-    this.removePlayer(client.sessionId);
+    // 진행 중인 판이면 좌석을 **지우지 않고 봇에게 인계**한다(§8.1).
+    // `hands`·`turnOrder`를 지우면 이탈자의 카드가 영구히 반증 불가능해져
+    // ("유령 카드") 봇들이 연쇄 오답 고발로 판을 사고사시킨다.
+    if (this.state.phase === "playing") this.handoverToBot(client.sessionId);
+    else this.removePlayer(client.sessionId);
+  }
+
+  /**
+   * 이탈 좌석을 대리 NPC로 전환한다(로드맵 §8.1).
+   * - `hands`·`turnOrder`는 **절대 건드리지 않는다** — 반증 순환이 유지돼야 유령 카드가 없다.
+   * - 좌석 시야(`seenNotSolution`)를 그대로 물려받는다. `revealed` 전역 공유는 §1.1에서
+   *   이미 제거됐으므로 §8.1이 말한 `awayBot` 예외는 필요 없다(실행계획 §7.2 ⑧).
+   */
+  private handoverToBot(sessionId: string): void {
+    const p = this.state.players.get(sessionId);
+    if (!p) return;
+    if (p.isBot) {
+      // 이미 봇이 대리 중인 좌석 — 중복 인계 방지.
+      p.connected = false;
+      return;
+    }
+    p.isBot = true;
+    p.awayBot = true;
+    p.connected = false;
+    this.initBotKnowledge(sessionId); // 기존 손패 + 지금까지 본 카드로 추리 노트 재구성
+    this.broadcast("log", {
+      text: `💤 대리 시작 — ${p.name} 님 이탈 · NPC가 자리를 이어받았어요 (손패 유지)`,
+      kind: "info",
+    });
+    // 방장은 사람에게만 의미가 있다(시작·리매치 버튼).
+    if (this.state.host === sessionId) {
+      this.state.host =
+        [...this.state.players.values()].find((q) => !q.isBot)?.id ?? "";
+    }
+    // 자기 턴을 쥔 채 나갔다면 그 턴을 대리 NPC가 이어서 진행한다(무한 정지 방지).
+    if (this.state.currentTurn === sessionId) {
+      this.cancelTimer(TURN_TIMER);
+      this.suggestedTurnBy = "";
+      this.scheduleBotIfNeeded();
+    }
+    this.syncMeta();
   }
 
   private removePlayer(sessionId: string): void {
@@ -426,6 +489,7 @@ export class ClueRoom extends Room<GameState> {
     this.hands.delete(sessionId);
     this.botKnowledge.delete(sessionId);
     this.seenNotSolution.delete(sessionId);
+    this.suggestedIn.delete(sessionId);
     // 이탈자가 자기 턴(즉시고발 창 포함)을 쥐고 있었다면 타이머를 회수한다.
     if (this.state.currentTurn === sessionId) this.cancelTimer(TURN_TIMER);
     if (this.state.players.size === 0) this.cancelAllTimers();
@@ -483,6 +547,7 @@ export class ClueRoom extends Room<GameState> {
     const enteredRoom = nextRoom !== "" && nextRoom !== player.room;
     if (nextRoom !== player.room) {
       player.room = nextRoom;
+      this.clearSuggestedIn(player.id); // 방을 벗어났다 → 재진입 잠금 해제(§7.5.2)
       if (nextRoom) {
         this.broadcast("log", {
           text: `🚪 진입 — ${player.name} → ${label(nextRoom)}`,
@@ -523,10 +588,8 @@ export class ClueRoom extends Room<GameState> {
       return;
     }
 
-    // 빈 자리를 NPC로 6인까지 충원
-    while (this.state.players.size < MAX_PLAYERS) {
-      if (!this.addBot()) break;
-    }
+    // NPC 충원은 `startGame`이 한다(실행계획 §7.2 ⑨) — 리매치에도 같은 규칙이 걸려야
+    // 3인 판(덱 구성·공통 단서가 어긋남)이 나오지 않는다.
     void this.lock();
     this.startGame();
   }
@@ -544,6 +607,12 @@ export class ClueRoom extends Room<GameState> {
 
   // ── 판 시작 코어(최초 시작·리매치 공용): 위치/상태 리셋 + 딜 + 턴 개시 ──
   private startGame(): void {
+    // 빈 자리를 NPC로 6인까지 충원 — 최초 시작과 리매치 **양쪽**에서 돈다(실행계획 §7.2 ⑨).
+    // 이탈자가 봇으로 인계(§8.1)되면 자리가 비지 않으므로 대개 아무것도 하지 않는다.
+    while (this.state.players.size < MAX_PLAYERS) {
+      if (!this.addBot()) break;
+    }
+
     // 위치·탈락 상태 리셋 (사람=중앙 잔치상, 봇=방)
     let hIdx = 0;
     let bIdx = 0;
@@ -635,6 +704,7 @@ export class ClueRoom extends Room<GameState> {
     // 근거: 6인 꽉차면 딜이 딱 나눠떨어져 남는 카드가 없음 → 솔로 난이도 완화용 변형 룰.
     this.state.commonCards.clear();
     this.seenNotSolution.clear();
+    this.suggestedIn.clear(); // 재진입 잠금은 판마다 새로 센다(§7.5.2)
     this.suggestedTurnBy = "";
     this.suggestCount = 0; // 총 제안 상한(SUGGEST_CAP)은 판마다 새로 센다
     this.cancelAllTimers();
@@ -814,9 +884,13 @@ export class ClueRoom extends Room<GameState> {
     );
     if (target) {
       const c = this.freeCellIn(suggestion.room, target.id);
+      const moved = target.room !== suggestion.room;
       target.x = c.x;
       target.y = c.y;
       target.room = suggestion.room;
+      // 소환도 "방이 바뀐" 이동이다 → 끌려온 좌석의 재진입 잠금은 풀린다(§7.5.2).
+      // 자기 자신을 지목한 경우(같은 방)엔 바뀐 게 없으므로 잠금을 유지한다.
+      if (moved) this.clearSuggestedIn(target.id);
       this.broadcast("log", {
         text: `🔔 소환 — ${label(suggestion.suspect)} → ${label(
           suggestion.room,
@@ -832,6 +906,9 @@ export class ClueRoom extends Room<GameState> {
       wt.y = wr.y + wr.h - 2;
       wt.room = suggestion.room;
     }
+
+    // 재진입 규칙(§7.5.2) — 이 방에서는 이 좌석이 다시 제안할 수 없다(방을 벗어나면 해제).
+    this.suggestedIn.set(suggesterId, suggestion.room);
 
     const order = [...this.state.turnOrder] as string[];
     const start = order.indexOf(suggesterId);
@@ -947,6 +1024,17 @@ export class ClueRoom extends Room<GameState> {
       });
       return;
     }
+    // 재진입 규칙(§7.5.2) — 같은 방에서 눌러앉아 매 턴 제안하는 것을 막는다.
+    // (즉시고발 창 안내가 더 구체적이므로 그 검사 뒤에 온다 — ui-copy §5.1 우선순위 5)
+    if (this.suggestedIn.get(player.id) === player.room) {
+      client.send("log", {
+        text: "이 방에서는 이미 제안했어요. 다른 방으로 옮기세요.",
+      });
+      return;
+    }
+    // ⚠️ 지목 값은 **자기 손패여도 허용**한다(§7.5.2 "제안에서 자기 손패도 지목 허용").
+    // 클루 최강 전술("내 카드를 지목해 반증자를 통제")이라 서버가 막으면 안 된다 —
+    // 실제로 여기에 손패 검증은 원래부터 없다. 되살리지 말 것.
     const suggestion: Suggestion = {
       suspect: msg.suspect,
       weapon: msg.weapon,
@@ -967,10 +1055,9 @@ export class ClueRoom extends Room<GameState> {
     // 이동은 소진하고(stepsLeft=0) 재제안은 잠근 뒤, 제한 시간이 지나면 자동으로 턴을 넘긴다.
     this.state.stepsLeft = 0;
     this.suggestedTurnBy = player.id;
+    // 같은 문장을 로그로도 보내면 제안자는 턴 배너 부제와 로그에서 두 번 읽는다
+    // (UI 문안 명세 §11 "같은 사건이 두 줄" 위반). 카운트다운은 부제가 전담한다.
     client.send("canAccuse", { ms: ACCUSE_WINDOW_MS, suggestion });
-    client.send("log", {
-      text: "⏳ 지금 고발할 수 있어요 (30초). 넘기려면 [턴 종료]",
-    });
     this.armTimer(TURN_TIMER, ACCUSE_WINDOW_MS, () => {
       // 만료 시점에 여전히 같은 사람의 턴일 때만 넘긴다(고발·턴 종료로 이미 넘어갔으면 무시).
       if (this.state.phase !== "playing") return;
@@ -1044,16 +1131,27 @@ export class ClueRoom extends Room<GameState> {
     }
 
     // 1) 소환/현재 방이 아직 후보면 거기서 진행(소환 존중). 아니면 후보 방을 노려 이동.
-    const targetRoom =
-      bot.room && k.rooms.has(bot.room)
-        ? bot.room
-        : (pickFromSet(k.rooms) ?? pick(ROOMS));
+    //    단 재진입 규칙(§7.5.2)은 봇에도 동일하게 적용된다 — 이미 제안한 방이면 반드시 옮긴다.
+    const blocked = this.suggestedIn.get(id) ?? "";
+    const stay = !!bot.room && k.rooms.has(bot.room) && bot.room !== blocked;
+    const others = [...k.rooms].filter((r) => r !== blocked && r !== bot.room);
+    const anyRoom = (ROOMS as readonly string[]).filter(
+      (r) => r !== blocked && r !== bot.room,
+    );
+    const targetRoom = stay
+      ? bot.room
+      : others.length > 0
+        ? pick(others)
+        : anyRoom.length > 0
+          ? pick(anyRoom)
+          : pick(ROOMS);
     const region = regionOf(targetRoom) ?? pick(ROOM_REGIONS);
     const cell = this.freeCellIn(region.name, id);
     bot.x = cell.x;
     bot.y = cell.y;
     if (bot.room !== region.name) {
       bot.room = region.name;
+      this.clearSuggestedIn(id); // 방을 옮겼다 → 재진입 잠금 해제(§7.5.2)
       this.broadcast("log", {
         text: `🚪 진입 — ${bot.name} → ${label(region.name)}`,
         kind: "move",
@@ -1091,6 +1189,12 @@ export class ClueRoom extends Room<GameState> {
       room: roomName as Suggestion["room"],
     };
     const result = this.doSuggestion(id, suggestion);
+    // 상한 도달로 판이 끝났으면 대사·후속 타이머를 걸지 않는다(§1.1 SUGGEST_CAP).
+    if (this.state.phase !== "playing") return;
+
+    // 제안 대사가 타이핑되는 동안엔 턴을 넘기지 않는다(카메라 튐 방지).
+    // 홀드 길이는 **실제 대사 길이**로만 정해지므로(spec §1.3), 문장이 도착한 뒤에
+    // 타이머를 건다. 그 사이(LLM 왕복 ≤ 4s)에도 턴은 이 봇이 쥐고 있어 카메라는 고정이다.
     void this.speak(id, {
       name: bot.name,
       persona: persona(bot.suspect),
@@ -1099,13 +1203,30 @@ export class ClueRoom extends Room<GameState> {
       weapon: label(suggestion.weapon),
       room: label(suggestion.room),
       disproved: !!result.card,
-    });
-    // 상한 도달로 판이 끝났으면 후속 타이머를 걸지 않는다(§1.1 SUGGEST_CAP).
-    if (this.state.phase !== "playing") return;
+    }).then((line) => this.afterBotSpeak(id, k, suggestion, result, line));
+  }
 
-    // 제안 대사가 타이핑되는 동안엔 턴을 넘기지 않는다(카메라 튐 방지).
-    // 결정/고발/턴넘김은 대사 표시 시간 뒤에 수행. 턴 스코프 타이머(즉시고발 창과 같은 프리미티브).
-    this.armTimer(TURN_TIMER, SPEAK_HOLD, () => {
+  /**
+   * NPC 제안 대사가 실제로 방송된 뒤 — 말풍선 수명만큼 홀드하고 결정을 수행한다.
+   * 턴 스코프 타이머(즉시고발 창과 같은 프리미티브)이며 턴이 바뀌면 함께 회수된다.
+   */
+  private afterBotSpeak(
+    id: string,
+    k: BotKnowledge,
+    suggestion: Suggestion,
+    result: { by: string | null; card: Card | null },
+    line: string,
+  ): void {
+    if (this.state.phase !== "playing" || this.state.currentTurn !== id) return;
+    const bot = this.state.players.get(id);
+    if (!bot) return;
+    const eff = (set: Set<string>): string[] => {
+      const seen = this.seenOf(id);
+      const c = [...set].filter((v) => !seen.has(v));
+      return c.length ? c : [...set];
+    };
+
+    this.armTimer(TURN_TIMER, this.speakHold(line), () => {
       if (this.state.phase !== "playing" || this.state.currentTurn !== id) return;
 
       if (result.card) {
@@ -1156,8 +1277,13 @@ export class ClueRoom extends Room<GameState> {
     });
   }
 
-  // NPC 대사: 결정된 정보만 넘겨 LLM 대사 생성, 실패 시 규칙 폴백 → 브로드캐스트.
-  private async speak(id: string, input: NarrationInput): Promise<void> {
+  /**
+   * NPC 대사: 결정된 정보만 넘겨 LLM 대사 생성, 실패 시 규칙 폴백 → 브로드캐스트.
+   * **실제로 방송한 문장을 반환한다** — 호출부가 그 길이로 말풍선 홀드를 계산한다
+   * (4뷰 계약 spec §1.3: 서버 홀드 < `bubbleLifeMs`면 말하는 도중 턴이 넘어간다).
+   * 방송하지 못했으면 `""`(홀드 불필요).
+   */
+  private async speak(id: string, input: NarrationInput): Promise<string> {
     // 캐릭터 말투(voice)를 주입해 페르소나를 대사에 뚜렷이 반영.
     const suspect = this.state.players.get(id)?.suspect;
     const v = suspect ? voice(suspect) : undefined;
@@ -1178,15 +1304,38 @@ export class ClueRoom extends Room<GameState> {
       text = null;
     }
     if (!text) text = fallbackLine(enriched);
-    if (!this.state.players.has(id)) return;
+    if (!this.state.players.has(id)) return "";
     this.broadcast("say", { id, from: input.name, text });
+    return text;
   }
 
-  /** NPC 행동 딜레이 = 사용자 평균 턴 시간의 절반 (클램프). */
+  /**
+   * 말풍선이 화면에 살아 있는 시간(ms) — 클라 `bubbleLifeMs`와 **같은 함수**로 계산한다.
+   * 예전 고정값 `SPEAK_HOLD = 2400`은 클라 최솟값 2600보다도 짧아 **모든 대사에서**
+   * 서버가 먼저 턴을 넘겼다(spec §1.3 위반). 대사를 받은 뒤에 타이머를 걸어야
+   * "실제 대사 길이"가 들어간다 — 그래서 `speak()`가 문장을 반환한다.
+   */
+  private speakHold(text: string): number {
+    return text ? bubbleLifeMs(text) : 0;
+  }
+
+  /**
+   * NPC 행동 딜레이 = 사용자 평균 턴 시간의 절반 (클램프 + 라운드 예산).
+   * 로드맵 §1.4·§7.5.4: 규약("평균의 절반")은 **기준값**으로 유지하고, 그 위에
+   * ① 라운드 예산(`12000 / 남은 봇 수`) ② 상한 1600 을 얹어 판 길이를 묶는다.
+   * 판이 5.6라운드로 길어진 뒤에는 상한이 사실상 항상 이긴다(§7.5.4).
+   */
   private npcDelay(): number {
     const base =
       this.avgHumanTurnMs > 0 ? this.avgHumanTurnMs / 2 : NPC_DELAY_DEFAULT;
-    return Math.max(NPC_DELAY_MIN, Math.min(NPC_DELAY_MAX, base));
+    const bots = [...this.state.players.values()].filter(
+      (p) => p.isBot && !p.eliminated,
+    ).length;
+    const budget = NPC_ROUND_BUDGET_MS / Math.max(1, bots);
+    return Math.max(
+      NPC_DELAY_MIN,
+      Math.min(NPC_DELAY_MAX, budget, base),
+    );
   }
 
   /** 떠나는 턴이 사람이면 소요시간을 EMA로 기록. */
