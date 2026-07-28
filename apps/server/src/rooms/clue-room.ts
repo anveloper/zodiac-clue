@@ -213,6 +213,20 @@ export class ClueRoom extends Room<GameState> {
    * 반증 **카드 값**은 여기 들어오지 않는다 — 제안자에게만 가는 `disprove`가 유일한 경로다.
    */
   private suggestLog: SuggestEntry[] = [];
+  /**
+   * 판이 **어떻게** 끝났는가(ui-copy §7.0 — 결과 오버레이 6종의 분기 축).
+   * `state.winner`만으로는 「고발 성공」과 「최후 생존」을 구분할 수 없다(둘 다 승자가 있다).
+   * 진행 중에는 `null`이고, 종료 분기 3곳이 각자 값을 넣은 **직후에만** 전송에 쓰인다.
+   * 동기화 상태가 아니라 메시지로 나가는 이유는 정답 봉투와 같다 — 전송 시점을 통제해야 한다.
+   */
+  private endReason: "accuse" | "survivor" | "draw" | null = null;
+  /**
+   * 좌석별 **실패한 고발**(ui-copy §7.1 4번 «내 지목 / 정답 봉투» 대조).
+   * 남의 오답 조합은 "그 조합은 정답이 아니다"라는 진실값이므로 **절대 브로드캐스트하지 않는다** —
+   * 판이 끝난 뒤 **본인에게만** 되돌려준다(본인은 이미 아는 값이라 정보량이 0이다).
+   * 새로고침해도 4번 화면이 성립하도록 서버가 들고 있는다(클라 지역 기억은 재접속에서 사라진다).
+   */
+  private failedAccusations = new Map<string, Suggestion>();
   /** 방이 파기됐는지 — 파기 후 도착한 비동기 콜백이 타이머를 되살리지 못하게 한다. */
   private disposed = false;
 
@@ -482,9 +496,12 @@ export class ClueRoom extends Room<GameState> {
       client.send("log", {
         text: "이미 진행 중인 판이에요. 관전으로 들어갑니다.",
       });
-      // 관전자도 공개 정보(제안 기록·AI 집계)는 처음부터 본다 — 손패·정답은 어느 경로로도 가지 않는다.
+      // 관전자도 공개 정보(제안 기록·AI 집계)는 처음부터 본다 — 손패는 어느 경로로도 가지 않는다.
       this.sendSuggestLog(client);
       client.send("aiStats", this.ai.snapshot());
+      // 이미 끝난 판에 들어왔다면 결과 화면이 빈 채로 뜨지 않도록 봉투를 보낸다.
+      // (`phase !== "lobby"`에는 `"playing"`도 포함되므로 게이트는 `sendSolutionTo` 안에 있다.)
+      this.sendSolutionTo(client);
       return;
     }
     this.seatPlayer(client, options.character);
@@ -661,6 +678,9 @@ export class ClueRoom extends Room<GameState> {
     // 실시간 브로드캐스트와 **같은 배열**을 그대로 되돌려준다.
     this.sendSuggestLog(client);
     client.send("aiStats", this.ai.snapshot()); // 칩도 이번 판 값으로 복구
+    // 판이 이미 끝난 뒤의 새로고침 — 결과 오버레이가 봉투 없이 뜨지 않게 다시 보낸다.
+    // 진행 중이면 `sendSolutionTo`가 첫 줄에서 스스로 막는다.
+    this.sendSolutionTo(client);
     this.broadcast("log", { text: `🙋 재접속 — ${p.name} 님` });
     // 8초(끊김) 클럭으로 돌던 턴을 사람 기준(45초)으로 다시 건다.
     if (this.state.currentTurn === p.id) this.armTurnClock();
@@ -926,6 +946,11 @@ export class ClueRoom extends Room<GameState> {
     this.suggestedTurnBy = "";
     this.suggestCount = 0; // 총 제안 상한(SUGGEST_CAP)은 판마다 새로 센다
     this.suggestLog = []; // 제안 기록·리플레이도 판 단위(§1.2 · §8.3 b)
+    // 종료 사유·실패한 고발은 **판 단위**다. 여기서 비우지 않으면 새 판이 진행 중인데도
+    // `sendSolutionTo()`의 두 번째 관문이 열려 있는 상태가 되고, 지난 판의 «내 지목»이
+    // 다음 판 결과 화면에 섞인다.
+    this.endReason = null;
+    this.failedAccusations.clear();
     // 판 시드 — 봇의 확률적 도박 고발(§7.5.3)이 쓰는 유일한 난수원. 판마다 새로 뽑고
     // **반드시 로그로 남긴다**: 이 값을 `ZODIAC_SEED`로 되먹이면 같은 판이 재생된다.
     this.gameSeed = mintGameSeed();
@@ -1132,8 +1157,12 @@ export class ClueRoom extends Room<GameState> {
     const wt = this.state.weapons.get(suggestion.weapon);
     const wr = regionOf(suggestion.room);
     if (wt && wr) {
-      wt.x = wr.x + wr.w - 2;
-      wt.y = wr.y + wr.h - 2;
+      // 인물 소환과 **같은 앵커**를 쓴다(`ROOM_REGIONS[].summon`).
+      // 예전에는 방 우하단 안쪽 칸으로 고정했는데, 9방 중 6방에서 인물 소환 자리와
+      // 어긋나 "제안하면 인물과 물건이 같이 끌려온다"는 서사가 화면에서 깨졌다.
+      // 4뷰가 이제 이 칸에 🔔 앵커를 그리므로, 어긋나면 보드 표기가 거짓말이 된다.
+      wt.x = wr.summon.x;
+      wt.y = wr.summon.y;
       wt.room = suggestion.room;
     }
 
@@ -1226,6 +1255,42 @@ export class ClueRoom extends Room<GameState> {
   }
 
   /**
+   * 정답 봉투 개봉 — **판이 끝난 뒤에만** 나가는 유일한 경로(ui-copy §7.0 선행 조건).
+   *
+   * 결과 오버레이 6종(§7.1)은 전부 정답 봉투를 화면에 실어야 하는데, 07-28까지 봉투가
+   * 나가는 곳은 「고발 성공」·「무승부」의 **로그 문장**뿐이라 클라가 값을 쓸 수 없었고
+   * 「최후 생존」에서는 아예 공개되지 않았다. 여기서 세 경로를 하나로 합친다.
+   *
+   * ⚠️ **누설 방지 불변식** — 이 방에서 `this.solution`을 클라로 내보내는 코드는
+   *    `sendSolutionTo()` 하나뿐이고, 그 첫 줄이 `phase !== "ended"`를 막는다.
+   *    `endReason`도 종료 분기에서만 채워지므로 진행 중에는 두 겹으로 닫혀 있다.
+   */
+  private revealSolution(): void {
+    for (const client of this.clients) this.sendSolutionTo(client);
+  }
+
+  /**
+   * 한 명에게 정답 봉투를 보낸다(재접속·뒤늦은 입장의 복구 경로도 이 함수를 탄다).
+   * `mine`은 **받는 사람 자신의** 실패한 고발이다 — 남의 것은 어느 경우에도 담지 않는다.
+   */
+  private sendSolutionTo(client: Client): void {
+    if (this.state.phase !== "ended") return; // ← 진행 중 누설 차단(유일한 관문)
+    if (!this.solution || !this.endReason) return;
+    const mine = this.failedAccusations.get(client.sessionId) ?? null;
+    client.send("solution", {
+      reason: this.endReason,
+      suspect: this.solution.suspect,
+      weapon: this.solution.weapon,
+      room: this.solution.room,
+      // 무승부 부제("제안 75회에 이르도록 …")의 75 — 클라가 서버 상수를 베끼지 않게 실어 보낸다.
+      suggestCap: SUGGEST_CAP,
+      mine: mine
+        ? { suspect: mine.suspect, weapon: mine.weapon, room: mine.room }
+        : null,
+    });
+  }
+
+  /**
    * 총 제안 상한(§1.1 · §7.5 정정본 60) — 판이 무한히 늘어지는 것을 막는다.
    * 상한에 도달하면 제안마다 공통 단서를 1장씩 **결정론적으로** 추가 공개해 후보를 강제 수렴시키고,
    * 더 공개할 카드가 없으면 무승부로 종료하며 정답 봉투를 공개한다(가장 보수적인 백스톱).
@@ -1273,6 +1338,7 @@ export class ClueRoom extends Room<GameState> {
     if (!this.solution) return;
     this.state.phase = "ended";
     this.state.winner = "";
+    this.endReason = "draw";
     this.cancelAllTimers();
     this.setListed(true); // 판이 끝났다 → 공개방 목록으로 복귀
     this.logAiSummary();
@@ -1287,6 +1353,7 @@ export class ClueRoom extends Room<GameState> {
       )} · 📍 ${label(this.solution.room)}`,
       kind: "win",
     });
+    this.revealSolution(); // 결과 오버레이 5번(무승부)이 봉투를 화면에 싣는다
   }
 
   private handleSuggest(client: Client, msg: Suggestion): void {
@@ -1372,6 +1439,7 @@ export class ClueRoom extends Room<GameState> {
     if (correct) {
       this.state.phase = "ended";
       this.state.winner = playerId;
+      this.endReason = "accuse";
       this.cancelAllTimers();
       this.setListed(true); // 판이 끝났다 → 공개방 목록으로 복귀
       this.logAiSummary();
@@ -1385,8 +1453,16 @@ export class ClueRoom extends Room<GameState> {
         )} · 📍 ${label(this.solution.room)}`,
         kind: "win",
       });
+      this.revealSolution(); // 결과 오버레이 1·2번이 봉투를 화면에 싣는다
     } else {
       player.eliminated = true;
+      // 본인 화면(§7.1 4번)의 «내 지목» 대조용. 브로드캐스트하지 않는다 —
+      // 오답 조합은 "정답이 아니다"라는 진실값이라 남에게 가면 판이 기울어진다.
+      this.failedAccusations.set(playerId, {
+        suspect: accusation.suspect,
+        weapon: accusation.weapon,
+        room: accusation.room,
+      });
       this.broadcast("log", {
         text: `❌ 고발 실패 — ${player.name} 님 탈락 · 반증만 가능`,
         kind: "accuse",
@@ -1787,6 +1863,7 @@ export class ClueRoom extends Room<GameState> {
     if (order.length === 1) {
       this.state.phase = "ended";
       this.state.winner = order[0];
+      this.endReason = "survivor";
       this.cancelAllTimers();
       this.setListed(true); // 판이 끝났다 → 공개방 목록으로 복귀
       this.logAiSummary();
@@ -1795,6 +1872,17 @@ export class ClueRoom extends Room<GameState> {
         text: `🎉 최후 생존 — ${w?.name} 님 승리!`,
         kind: "win",
       });
+      // 여기까지 정답이 **어디에도** 공개되지 않던 유일한 종료 경로였다(ui-copy §7.0).
+      // 다른 두 종료와 같은 2줄 구성(결과 + 봉투)으로 맞추고, 오버레이 3·3′번용으로도 보낸다.
+      if (this.solution) {
+        this.broadcast("log", {
+          text: `📜 정답 봉투 — ${label(this.solution.suspect)} · ${label(
+            this.solution.weapon,
+          )} · 📍 ${label(this.solution.room)}`,
+          kind: "win",
+        });
+      }
+      this.revealSolution();
       return;
     }
     const cur = order.indexOf(this.state.currentTurn);
