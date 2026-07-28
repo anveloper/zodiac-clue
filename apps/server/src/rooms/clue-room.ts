@@ -7,6 +7,7 @@ import {
   ROOMS,
   SUSPECTS,
   WEAPONS,
+  botNerve,
   bubbleLifeMs,
   canCross,
   inFeast,
@@ -37,6 +38,8 @@ import {
   type NarrationInput,
 } from "../ai/narrator";
 import { AiCounter, logAi, recordAi } from "../ai/telemetry";
+import { gambleAccusation } from "../rules/bot-accuse";
+import { SEED_ENV, mintGameSeed, seededUnit } from "../rules/rng";
 
 type JoinOptions = { character?: string };
 type CreateOptions = { isPublic?: boolean };
@@ -212,6 +215,19 @@ export class ClueRoom extends Room<GameState> {
   private suggestLog: SuggestEntry[] = [];
   /** 방이 파기됐는지 — 파기 후 도착한 비동기 콜백이 타이머를 되살리지 못하게 한다. */
   private disposed = false;
+
+  /**
+   * 이번 판의 시드(`rules/rng.ts`). 봇의 확률적 도박 고발이 쓰는 **유일한 난수원**이며
+   * 판이 시작될 때 한 번 정해지고 그동안 불변이다. 시드는 진실값이 아니라 판단의
+   * 입력이므로 동기화 상태에 넣지 않는다(비밀 정보는 아니지만 클라가 쓸 일도 없다).
+   */
+  private gameSeed = 0;
+
+  /**
+   * 방 생성 시의 공개 여부. 판이 끝나 목록에 되돌릴 때(`setPrivate(false)`)
+   * **원래 비공개로 만든 방을 공개로 바꿔버리지 않기 위해** 기억해 둔다.
+   */
+  private createdPublic = true;
   /** 키별 취소 가능한 타이머(§7.5.1 즉시고발 창 · §8.2 턴 클럭 공용 프리미티브). */
   private timers = new Map<string, Cancelable>();
   // 사용자 턴 시간 이동평균(ms) + 현재 턴 시작 시각(clock)
@@ -222,8 +238,9 @@ export class ClueRoom extends Room<GameState> {
     this.setState(new GameState());
 
     // 공개/비공개: 비공개면 목록(getAvailableRooms)에서 숨김(코드 참가는 가능).
-    // 공개방은 기본 노출. 시작 시 lock()으로 목록에서 자동 제외된다.
+    // 공개방은 기본 노출 → 판이 도는 동안만 `setListed(false)`로 감췄다가 종료 시 복귀한다.
     const isPublic = options.isPublic !== false;
+    this.createdPublic = isPublic;
     if (!isPublic) void this.setPrivate(true);
     void this.setMetadata({ hostName: "", count: 0, isPublic });
 
@@ -763,11 +780,8 @@ export class ClueRoom extends Room<GameState> {
     // NPC 충원은 `startGame`이 한다(실행계획 §7.2 ⑨) — 리매치에도 같은 규칙이 걸려야
     // 3인 판(덱 구성·공통 단서가 어긋남)이 나오지 않는다.
     //
-    // §8.3 (c) — `lock()`이 아니라 `setPrivate(true)`다. `lock()`은 `joinById`까지
-    // **거부**해서 초대 링크 재입장이 막히고(어디에서도 `unlock()`하지 않았다),
-    // 심사자 두 명이 동시에 들어오는 동선도 끊겼다. `setPrivate`는 공개방 목록에서만
-    // 감추고 코드 참가는 허용한다 — 진행 중 입장은 `onJoin`이 관전으로 받는다.
-    void this.setPrivate(true);
+    // 목록 숨김(`setPrivate(true)`)은 `startGame()`이 한다 — 리매치도 같은 경로를 타야
+    // 두 번째 판이 "진행 중인데 공개 목록에 뜨는" 상태가 되지 않는다(아래 §복귀 주석).
     this.startGame();
   }
 
@@ -782,8 +796,33 @@ export class ClueRoom extends Room<GameState> {
     this.startGame();
   }
 
+  /**
+   * 공개방 목록 노출 토글 — 판이 도는 동안만 숨긴다.
+   *
+   * §8.3 (c) — `lock()`이 아니라 `setPrivate()`다. `lock()`은 `joinById`까지 **거부**해서
+   * 초대 링크 재입장이 막히고(어디에서도 `unlock()`하지 않았다), 심사자 두 명이 동시에
+   * 들어오는 동선도 끊겼다. `setPrivate`는 공개방 목록에서만 감추고 코드 참가는 허용한다 —
+   * 진행 중 입장은 `onJoin`이 관전으로 받는다.
+   *
+   * **복귀 지점(문서 미규정 → 판단 근거)**: `startGame()`에서 숨기고 **판이 끝날 때** 되돌린다.
+   *  - 리매치는 `startGame()`을 그대로 다시 타므로 두 번째 판도 자동으로 숨겨진다
+   *    (예전처럼 `handleStart`에만 걸어두면 리매치 판이 목록에 뜬 채로 돌았다).
+   *  - "전원 이탈"은 복귀 지점이 될 수 없다 — 마지막 클라이언트가 나가면 Colyseus가 방을
+   *    폐기(`onDispose`)하므로 되돌릴 대상 자체가 사라진다.
+   *  - `ended`에서 되돌리는 것이 안전한 이유: 이때 들어오는 사람은 `onJoin`이 관전으로 받고,
+   *    다음 판 시작 시 `seatSpectators()`가 (필요하면 순수 NPC를 밀어내고) 좌석을 준다.
+   *    즉 "목록 → 참여"가 실제로 성립하는 상태다.
+   *  - 원래 비공개로 만든 방(`createdPublic === false`)은 공개로 바꾸지 않는다.
+   */
+  private setListed(listed: boolean): void {
+    if (!this.createdPublic) return; // 비공개로 만든 방은 계속 비공개
+    void this.setPrivate(!listed);
+  }
+
   // ── 판 시작 코어(최초 시작·리매치 공용): 위치/상태 리셋 + 딜 + 턴 개시 ──
   private startGame(): void {
+    // 판이 도는 동안 공개방 목록에서 감춘다(최초 시작·리매치 공용 — 위 `setListed` 주석).
+    this.setListed(false);
     // 관전자를 먼저 좌석에 앉힌다(§8.3 (c)) — NPC 충원보다 **앞**이어야 사람이 우선된다.
     this.seatSpectators();
     // 빈 자리를 NPC로 6인까지 충원 — 최초 시작과 리매치 **양쪽**에서 돈다(실행계획 §7.2 ⑨).
@@ -887,6 +926,10 @@ export class ClueRoom extends Room<GameState> {
     this.suggestedTurnBy = "";
     this.suggestCount = 0; // 총 제안 상한(SUGGEST_CAP)은 판마다 새로 센다
     this.suggestLog = []; // 제안 기록·리플레이도 판 단위(§1.2 · §8.3 b)
+    // 판 시드 — 봇의 확률적 도박 고발(§7.5.3)이 쓰는 유일한 난수원. 판마다 새로 뽑고
+    // **반드시 로그로 남긴다**: 이 값을 `ZODIAC_SEED`로 되먹이면 같은 판이 재생된다.
+    this.gameSeed = mintGameSeed();
+    console.log(`[rng] game seed ${this.gameSeed} (replay: ${SEED_ENV}=${this.gameSeed})`);
     // AI 계측도 판 단위로 센다 — 칩이 말하는 "이번 판 LLM n건"의 n이 이것이다.
     this.ai.reset();
     this.aiSent = "";
@@ -1231,6 +1274,7 @@ export class ClueRoom extends Room<GameState> {
     this.state.phase = "ended";
     this.state.winner = "";
     this.cancelAllTimers();
+    this.setListed(true); // 판이 끝났다 → 공개방 목록으로 복귀
     this.logAiSummary();
     this.broadcast("log", {
       // 🚧 문안 미확정 — `20260727-ui-copy.md`에 상한 도달/무승부 문장이 없다(보고 항목).
@@ -1329,6 +1373,7 @@ export class ClueRoom extends Room<GameState> {
       this.state.phase = "ended";
       this.state.winner = playerId;
       this.cancelAllTimers();
+      this.setListed(true); // 판이 끝났다 → 공개방 목록으로 복귀
       this.logAiSummary();
       this.broadcast("log", {
         text: `🎉 사건 해결 — ${player.name} 님`,
@@ -1507,6 +1552,39 @@ export class ClueRoom extends Room<GameState> {
           suspect: fs[0] as Suggestion["suspect"],
           weapon: fw[0] as Suggestion["weapon"],
           room: fr[0] as Suggestion["room"],
+        };
+        void this.speak(id, {
+          name: bot.name,
+          persona: persona(bot.suspect),
+          action: "accuse",
+          suspect: label(acc.suspect),
+          weapon: label(acc.weapon),
+          room: label(acc.room),
+        });
+        this.doAccusation(id, acc);
+        return;
+      }
+
+      // 4) 확신은 없지만 후보가 좁혀졌다 → **페르소나 배짱 + 시드 RNG로 도박 고발**
+      //    (ai-tech-doc §1.2 (b) · roadmap §7.5.3). 틀리면 봇도 탈락한다 —
+      //    탈락 리스크를 사람만 지던 결함이 여기서 닫힌다.
+      //    판정은 순수 규칙 함수(`rules/bot-accuse.ts`)가 하고, 대사는 그 **뒤에** 붙는다.
+      const gamble = gambleAccusation({
+        seed: this.gameSeed,
+        seat: id,
+        // 결정 좌표 = 이 판의 제안 일련번호. 같은 시드·같은 판이면 같은 값이 나온다.
+        decision: this.suggestSeq,
+        nerve: botNerve(bot.suspect),
+        suspects: fs,
+        weapons: fw,
+        rooms: fr,
+        unit: seededUnit,
+      });
+      if (gamble) {
+        const acc: Suggestion = {
+          suspect: gamble.suspect as Suggestion["suspect"],
+          weapon: gamble.weapon as Suggestion["weapon"],
+          room: gamble.room as Suggestion["room"],
         };
         void this.speak(id, {
           name: bot.name,
@@ -1710,6 +1788,7 @@ export class ClueRoom extends Room<GameState> {
       this.state.phase = "ended";
       this.state.winner = order[0];
       this.cancelAllTimers();
+      this.setListed(true); // 판이 끝났다 → 공개방 목록으로 복귀
       this.logAiSummary();
       const w = this.state.players.get(order[0]);
       this.broadcast("log", {

@@ -18,14 +18,30 @@
  *     → 이 단순화는 사람·봇에 **동일하게** 적용되므로 측정 대상(정보 비대칭·고발 시점)이 격리된다.
  *   - 계략은 로드맵 실측상 ±1.8%p(노이즈)라 제외했다.
  *
- * 실행: node scripts/sim-balance.mjs [판수]
+ * 실행: node scripts/sim-balance.mjs [판수]        # 전체 비교표(탐색용)
+ *       node scripts/sim-balance.mjs --gate       # 회귀 판정만 (PASS/FAIL + 종료코드)
+ *       node scripts/sim-balance.mjs --gate --json
+ *       node scripts/sim-balance.mjs --gate --update-baseline --reason="…"
+ *
+ * 회귀 판정 기준·기준선은 이 파일이 아니라 scripts/gate-sim-regression.mjs ·
+ * scripts/gate.config.mjs · scripts/gate.baseline.json 에 있다(규칙/판정/기준선 3분리).
  */
 
 // ── 카드 (packages/shared/src/cards.ts 미러) ─────────────────────────
+// ⚠️ 예전 미러에는 `dragon`·`goat`가 있었다 — 실제 `cards.ts`는 `gecko`·`sheep`다.
+//    이름만 다르고 규칙은 같아 지금까지 결과에 영향이 없었지만, 페르소나 상수
+//    `BOT_NERVE`가 캐릭터 id로 조회되므로 여기서부터 실값과 맞춘다.
 const SUSPECTS = [
-  "rat", "ox", "tiger", "rabbit", "dragon", "snake",
-  "horse", "goat", "monkey", "rooster", "dog", "pig",
+  "rat", "ox", "tiger", "rabbit", "gecko", "snake",
+  "horse", "sheep", "monkey", "rooster", "dog", "pig",
 ];
+
+/** 캐릭터 배짱 — `packages/shared/src/cards.ts`의 `BOT_NERVE` 미러. */
+const BOT_NERVE = {
+  rat: 0.3, ox: 0.45, tiger: 0.9, rabbit: 0.55,
+  gecko: 0.8, snake: 0.2, horse: 0.65, sheep: 0.05,
+  monkey: 0.75, rooster: 0.15, dog: 0.25, pig: 0.4,
+};
 const WEAPONS = ["japchae", "gift", "safe", "chopstick", "liquor", "tteok"];
 const ROOMS = [
   "jeongji", "daecheong", "huwon", "sarangbang", "sarangchae",
@@ -62,6 +78,45 @@ const makeRng = (seed) => {
   };
 };
 
+// ── 무상태 해시 RNG (apps/server/src/rules/rng.ts 미러) ─────────────
+// 봇의 도박 고발은 스트림이 아니라 "결정 좌표 해시"를 쓴다 — 호출 순서에 결과가
+// 걸리지 않아야 서버(타이머·LLM 왕복)와 시뮬(즉시 진행)이 **같은 답**을 내기 때문이다.
+const fnv1a = (s) => {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return h >>> 0;
+};
+const unit32 = (n) => {
+  let t = (n + 0x6d2b79f5) | 0;
+  t = Math.imul(t ^ (t >>> 15), 1 | t);
+  t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+};
+const seededUnit = (seed, ...parts) => unit32(fnv1a(`${seed}|${parts.join("|")}`));
+
+// ── 도박 고발 (apps/server/src/rules/bot-accuse.ts 미러) ─────────────
+const GAMBLE_MAX_COMBOS = 6;
+const gambleChance = (nerve, combos) =>
+  combos <= 1 || combos > GAMBLE_MAX_COMBOS ? 0 : nerve / combos;
+const gambleAccusation = ({ seed, seat, decision, nerve, suspects, weapons, rooms }) => {
+  if (!suspects.length || !weapons.length || !rooms.length) return null;
+  const combos = suspects.length * weapons.length * rooms.length;
+  const p = gambleChance(nerve, combos);
+  if (p <= 0) return null;
+  if (seededUnit(seed, seat, decision, "go") >= p) return null;
+  let idx = Math.floor(seededUnit(seed, seat, decision, "pick") * combos);
+  if (idx >= combos) idx = combos - 1;
+  const s = idx % suspects.length;
+  idx = Math.floor(idx / suspects.length);
+  const w = idx % weapons.length;
+  idx = Math.floor(idx / weapons.length);
+  const r = idx % rooms.length;
+  return { suspect: suspects[s], weapon: weapons[w], room: rooms[r], combos };
+};
+
 const pick = (rng, arr) => arr[Math.floor(rng() * arr.length)];
 const shuffle = (rng, arr) => {
   for (let i = arr.length - 1; i > 0; i--) {
@@ -82,8 +137,11 @@ const cardMatches = (c, s) =>
  * @param {boolean} opts.humanInstantAccuse true = 사람도 제안한 턴에 고발(§7.5.1)
  * @param {number|null} opts.suggestCap  총 제안 상한(도달 후 제안마다 공통 단서 1장 추가 공개)
  * @param {boolean} opts.reentry  true = 재진입 규칙(§7.5.2): 같은 방에서 연속 제안 금지
+ * @param {boolean} opts.gamble   true = 봇의 확률적 도박 고발(§7.5.3 · ④ §1.2 (b))
+ * @param {number} gameSeed  이 판의 도박 판정 시드. **rng 스트림을 소비하지 않는다**
+ *   (소비하면 변형마다 딜이 어긋나 ①~⑥의 기존 실측이 재현되지 않는다).
  */
-const playGame = (rng, opts) => {
+const playGame = (rng, opts, gameSeed = 0) => {
   // 좌석 = 십이지 6종(참여자). 정답 용의자는 참여자 중에서 뽑힌다.
   const zodiac = [...SUSPECTS];
   shuffle(rng, zodiac);
@@ -150,6 +208,8 @@ const playGame = (rng, opts) => {
   let winner = null; // 좌석 번호 · null = 무승부/미결
   /** 현행 규칙에서 사람이 "다음 자기 턴에" 하려고 미뤄둔 고발 */
   let pendingHumanAccuse = null;
+  /** 도박 고발 계측 — [캐릭터, 적중여부] 목록(진실값 아님, 리포트용). */
+  const gambles = [];
 
   const aliveSeats = () => {
     const out = [];
@@ -280,6 +340,27 @@ const playGame = (rng, opts) => {
       }
     }
 
+    // 확률적 도박 고발(§7.5.3) — 봇 좌석만. 확신은 없지만 후보가 좁혀졌을 때
+    // 페르소나 배짱 × 시드 RNG로 지른다. 틀리면 봇도 탈락한다.
+    if (opts.gamble && seat !== HUMAN) {
+      const g = gambleAccusation({
+        seed: gameSeed,
+        seat: String(seat),
+        decision: suggestCount, // 서버의 `suggestSeq`와 같은 결정 좌표
+        nerve: BOT_NERVE[suspectPool[seat]] ?? 0.4,
+        suspects: fs,
+        weapons: fw,
+        rooms: fr,
+      });
+      if (g) {
+        const hit = doAccuse(seat, g);
+        gambles.push([suspectPool[seat], hit]);
+        if (hit) break;
+        turn++;
+        continue;
+      }
+    }
+
     // 총 제안 상한 — 도달 후 제안마다 공통 단서 1장 추가 공개, 소진되면 무승부 종료
     if (opts.suggestCap && suggestCount >= opts.suggestCap) {
       if (!revealCommonClue()) break; // 무승부
@@ -295,6 +376,11 @@ const playGame = (rng, opts) => {
     suggestions: suggestCount,
     draw: winner === null,
     humanRooms: visited[HUMAN].size,
+    /** 이 판에서 봇이 한 명이라도 탈락했는가 — ④ §1.2 (b)가 "0.0%"라 지목한 지표. */
+    botEliminated: eliminated.some((e, i) => e && i !== HUMAN),
+    gambles,
+    /** 이 판에서 **봇이 맡은** 캐릭터들 — 십이지별 고발 횟수를 출전 수로 정규화한다. */
+    botLineup: suspectPool.filter((_, i) => i !== HUMAN),
   };
 };
 
@@ -313,14 +399,28 @@ const run = (name, opts, games, seed) => {
   const rounds = [];
   const suggestions = [];
   const humanRooms = [];
+  let botElimGames = 0;
+  let gambleTotal = 0;
+  let gambleHit = 0;
+  const gambleByZodiac = {};
+  const appearByZodiac = {};
   for (let i = 0; i < games; i++) {
-    const r = playGame(rng, opts);
+    // 판 시드는 (실행 시드, 판 번호)의 순수 함수 — rng 스트림을 건드리지 않으므로
+    // 도박을 켜고 꺼도 딜 생성 순서가 그대로다.
+    const r = playGame(rng, opts, (seed ^ Math.imul(i + 1, 0x9e3779b1)) >>> 0);
     if (r.humanWin) humanWins++;
     if (r.draw) draws++;
     else if (r.winner !== null) seatWins[r.winner]++;
     rounds.push(r.rounds);
     suggestions.push(r.suggestions);
     humanRooms.push(r.humanRooms);
+    if (r.botEliminated) botElimGames++;
+    for (const z of r.botLineup) appearByZodiac[z] = (appearByZodiac[z] ?? 0) + 1;
+    for (const [z, hit] of r.gambles) {
+      gambleTotal++;
+      if (hit) gambleHit++;
+      gambleByZodiac[z] = (gambleByZodiac[z] ?? 0) + 1;
+    }
   }
   // 상한 도달률은 **그 변형이 실제로 건 상한**으로 잰다.
   // (예전에는 전역 SUGGEST_CAP으로 재서, 상한이 없는 변형 ①②의 도달률이 잘못 나왔다.)
@@ -340,10 +440,16 @@ const run = (name, opts, games, seed) => {
       : 0,
     suggestions,
     seatWinPct: seatWins.map((w) => (w / games) * 100),
+    botElimPct: (botElimGames / games) * 100,
+    gambleTotal,
+    gambleHitPct: gambleTotal ? (gambleHit / gambleTotal) * 100 : 0,
+    gambleByZodiac,
+    appearByZodiac,
   };
 };
 
-const games = Number(process.argv[2] ?? 2000);
+// 판수는 **플래그가 아닌 첫 인자**로만 받는다(--gate 등이 NaN이 되지 않도록).
+const games = Number(process.argv.slice(2).find((a) => !a.startsWith("--")) ?? 2000);
 const SEED = 20260728;
 
 const variants = [
@@ -373,7 +479,7 @@ const variants = [
     },
   ],
   [
-    "⑥ ⑤ + 상한 재산정 75 (현재)",
+    "⑥ ⑤ + 상한 재산정 75 (변경 전)",
     {
       sharedRevealed: false,
       humanInstantAccuse: true,
@@ -381,7 +487,35 @@ const variants = [
       reentry: true,
     },
   ],
+  [
+    "⑦ ⑥ + 봇 도박 고발 (§7.5.3 · 변경 후)",
+    {
+      sharedRevealed: false,
+      humanInstantAccuse: true,
+      suggestCap: SUGGEST_CAP,
+      reentry: true,
+      gamble: true,
+    },
+  ],
 ];
+
+// ── 회귀 게이트 모드 (`--gate`) ─────────────────────────────────────
+// 위 표는 **탐색용**(왜 지금 규칙인가의 근거)이고, 게이트가 지키는 것은 **현재 규칙 하나**다.
+// 규약: `variants`는 시간순이며 **마지막 항목이 현재 서버 규칙**이다.
+//       변형을 추가할 때 탐색용 후보를 맨 뒤에 붙이지 말 것 — 게이트가 그것을 잰다.
+//       (게이트 출력이 잰 변형 이름을 항상 인쇄하므로 잘못 잡히면 즉시 보인다.)
+const CURRENT_VARIANT = variants[variants.length - 1];
+if (process.argv.includes("--gate")) {
+  const { runSimGate } = await import("./gate-sim-regression.mjs");
+  process.exit(
+    runSimGate({
+      run,
+      rules: CURRENT_VARIANT[1],
+      variantName: CURRENT_VARIANT[0],
+      argv: process.argv.slice(2),
+    }),
+  );
+}
 
 const results = variants.map(([name, opts]) => run(name, opts, games, SEED));
 
@@ -390,15 +524,16 @@ const num = (v, d = 1) => v.toFixed(d);
 
 console.log(`\n판 수: ${games} · 시드: ${SEED} · 6인(사람 1 + NPC 5) · 공정 몫 16.7%\n`);
 console.log(
-  pad("변형", 36) + pad("사람 승률", 11) + pad("무승부", 9) +
+  pad("변형", 40) + pad("사람 승률", 11) + pad("봇 탈락 판", 12) + pad("무승부", 9) +
   pad("평균 라운드", 13) + pad("평균 제안", 11) + pad("제안 p95", 10) +
   pad("제안 최대", 11) + pad("상한 도달", 11) + pad("방문 방/9", 10),
 );
-console.log("-".repeat(122));
+console.log("-".repeat(138));
 for (const r of results) {
   console.log(
-    pad(r.name, 36) +
+    pad(r.name, 40) +
       pad(`${num(r.humanWinPct)}%`, 11) +
+      pad(`${num(r.botElimPct)}%`, 12) +
       pad(`${num(r.drawPct)}%`, 9) +
       pad(num(r.avgRounds, 2), 13) +
       pad(num(r.avgSuggestions, 1), 11) +
@@ -410,7 +545,33 @@ for (const r of results) {
 }
 console.log("\n좌석별 승률(%) — 0번이 사람, 1~5번이 NPC");
 for (const r of results) {
-  console.log(pad(r.name, 36) + r.seatWinPct.map((v) => num(v).padStart(6)).join(" "));
+  console.log(pad(r.name, 40) + r.seatWinPct.map((v) => num(v).padStart(6)).join(" "));
+}
+
+// ── 페르소나가 의사결정에 반영됐는지 — 십이지별 도박 고발 횟수 ──────────
+// 각 캐릭터는 6좌석 중 무작위로 뽑히므로 **출전 판 수**로 나눠 정규화해야 비교가 된다.
+for (const r of results) {
+  if (!r.gambleTotal) continue;
+  console.log(
+    `\n── 십이지별 도박 고발 (${r.name}) · 총 ${r.gambleTotal}회 · 적중률 ${num(r.gambleHitPct)}% ──`,
+  );
+  console.log(
+    pad("캐릭터", 12) + pad("nerve", 9) + pad("고발", 8) + pad("봇 출전", 9) +
+    pad("100판당", 10),
+  );
+  const rows = SUSPECTS.map((z) => {
+    const n = r.gambleByZodiac[z] ?? 0;
+    const a = r.appearByZodiac[z] ?? 0;
+    return [z, n, a, a ? (n / a) * 100 : 0];
+  }).sort((x, y) => y[3] - x[3]);
+  const top = rows[0][3] || 1;
+  for (const [z, n, a, per] of rows) {
+    const bar = "█".repeat(Math.round((per / top) * 30));
+    console.log(
+      pad(z, 12) + pad(BOT_NERVE[z].toFixed(2), 9) +
+      pad(n, 8) + pad(a, 9) + pad(num(per, 1), 10) + bar,
+    );
+  }
 }
 
 // ── 총 제안 상한 재산정 (로드맵 §7.5 2차 실측) ──────────────────────────
