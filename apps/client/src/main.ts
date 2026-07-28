@@ -86,6 +86,11 @@ const SCREENS = ["landing", "lobby", "gameScreen"] as const;
 type ScreenId = (typeof SCREENS)[number];
 const show = (which: ScreenId): void => {
   for (const id of SCREENS) $(id).classList.toggle("hidden", id !== which);
+  // 게임 화면에서는 문서 스크롤을 잠근다. `overscroll-behavior`는 스크롤 **연쇄**만 막을 뿐,
+  // 문서가 뷰포트보다 조금이라도 길면 화면이 통째로 밀려 올라간다
+  // (실측: 폰에서 보드가 위로 사라지고 아래에 빈 검은 띠가 남았다).
+  // 랜딩·대기실은 카드가 화면보다 길 수 있어 잠그지 않는다.
+  document.body.classList.toggle("no-scroll", which === "gameScreen");
 };
 
 // ── AI 계측 계약 (서버 → 클라, 표시 전용) ─────────────────────────────
@@ -2432,6 +2437,9 @@ const enterGame = async (): Promise<void> => {
     rpToggle.setAttribute("aria-expanded", open ? "true" : "false");
     // 라벨 확정 문안이 없어 패널 제목의 기호를 재사용한다(툴팁도 제목 원문 그대로).
     rpToggle.textContent = open ? "✕" : "🔍";
+    // 열려 있을 때는 버튼을 컬럼 모서리로 옮긴다(CSS `.rp-on`).
+    // 화면 한가운데 오른쪽에 떠 있으면 무엇을 닫는 버튼인지 읽히지 않는다.
+    rpToggle.classList.toggle("rp-on", open);
   };
   const narrow = window.matchMedia?.("(max-width: 680px)");
   const applyNarrow = (): void => {

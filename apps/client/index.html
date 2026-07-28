@@ -18,6 +18,12 @@
       }
       /* 터치 T0: 당겨서 새로고침·스크롤 체이닝으로 판이 날아가는 것을 막는다. */
       html, body { overscroll-behavior: none; }
+      /* 게임 화면에서는 **문서 스크롤 자체를 없앤다.**
+         `overscroll-behavior`는 스크롤 연쇄만 막을 뿐, 문서가 뷰포트보다 조금이라도
+         길면 화면이 통째로 밀려 올라간다(실측: 폰에서 보드가 위로 사라지고 아래에 빈 검은 띠).
+         패널은 전부 자체 스크롤이므로 문서가 스크롤될 이유가 없다.
+         랜딩·대기실은 카드가 화면보다 길 수 있어 잠그지 않는다 — 클래스로만 건다. */
+      body.no-scroll { overflow: hidden; height: 100dvh; }
       body {
         margin: 0;
         font-family: system-ui, -apple-system, "Apple SD Gothic Neo", sans-serif;
@@ -658,7 +664,7 @@
       #rpToggle {
         display: none; position: fixed; z-index: 6;
         right: calc(6px + var(--sa-r, 0px)); top: 50%; transform: translateY(-50%);
-        min-width: 34px; min-height: 46px; padding: 8px 6px;
+        min-width: 44px; min-height: 44px; padding: 8px 6px;
         font-size: 15px; line-height: 1; border-radius: 10px;
         background: rgba(13, 11, 8, 0.9); border: 1px solid #3a3126;
       }
@@ -667,17 +673,28 @@
       /* 반응형: 좁은 화면에서 HUD 축소·모서리 정리 */
       @media (max-width: 680px) {
         .hud { font-size: 11px; padding: 8px 10px; }
+        /* 액션 바를 **하단으로** 내린다.
+           상단 좌측에 두면 6개 버튼이 폭을 거의 다 먹어 상단 중앙 턴 배너와 겹치고,
+           실측에서 [제안]만 보이고 [고발]·[통로]·[계략]·[턴 종료]·[?]가 전부 가려졌다.
+           엄지가 닿는 자리이기도 하다. 우측 D-패드(162px) 자리는 비워 둔다. */
         .hud-ctrl {
-          left: calc(8px + var(--sa-l, 0px)); top: calc(8px + var(--sa-t, 0px));
-          gap: 6px; padding: 6px;
+          left: calc(8px + var(--sa-l, 0px));
+          right: calc(180px + var(--sa-r, 0px));
+          top: auto; bottom: calc(8px + var(--sa-b, 0px));
+          display: flex; flex-wrap: wrap; gap: 6px; padding: 6px;
+          justify-content: flex-start;
         }
-        .hud-ctrl button { padding: 6px 8px; }
+        .hud-ctrl button { padding: 7px 9px; }
+        /* 손패는 상단 — 턴 배너 아래. 하단은 액션 바·패드가 쓴다. */
         .hud-hand {
-          left: calc(8px + var(--sa-l, 0px)); bottom: calc(8px + var(--sa-b, 0px));
-          max-width: 46vw;
+          left: calc(8px + var(--sa-l, 0px));
+          top: calc(66px + var(--sa-t, 0px)); bottom: auto;
+          max-width: min(62vw, 260px);
         }
+        /* 뷰 선택은 액션 바 위로(액션 바는 2줄까지 접힌다). */
         .hud-view {
-          left: calc(8px + var(--sa-l, 0px)); bottom: calc(64px + var(--sa-b, 0px));
+          left: calc(8px + var(--sa-l, 0px));
+          bottom: calc(112px + var(--sa-b, 0px));
         }
         /* 폰에서 260px 고정 컬럼이 화면 폭의 2/3를 덮어 보드·턴 배너를 가렸다(§7.8 부수).
            기존 반응형은 DOM에 없는 `.hud-evi`/`.hud-log`를 잡고 있어 죽은 코드였다. */
@@ -685,6 +702,16 @@
           top: calc(8px + var(--sa-t, 0px)); right: calc(8px + var(--sa-r, 0px));
           bottom: calc(8px + var(--sa-b, 0px));
           width: min(86vw, 300px);
+          /* 패널 4개가 세로로 쌓이면 화면을 넘긴다. **컬럼 안에서** 스크롤한다 —
+             문서를 스크롤시키면 보드가 통째로 밀려 올라간다(위 `body.no-scroll` 참조). */
+          overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y;
+          pointer-events: auto;
+        }
+        /* 열려 있을 때 닫기 버튼을 **컬럼 모서리**에 붙인다.
+           화면 한가운데 오른쪽에 떠 있으면 무엇을 닫는 버튼인지 읽히지 않는다(실측). */
+        #rpToggle.rp-on {
+          top: calc(14px + var(--sa-t, 0px)); transform: none;
+          right: calc(14px + var(--sa-r, 0px)); z-index: 8;
         }
         /* 컬럼 좌측 너비 핸들은 좁은 화면에서 보드 조작과 충돌한다 */
         .rp-wresizer { display: none; }
