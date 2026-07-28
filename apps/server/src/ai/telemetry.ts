@@ -18,7 +18,7 @@ import type {
 
 // 규약 구간(12~40자)은 `narrator.ts`가 단일 소스다 — 프롬프트 문안·정규화·계측이 같은 상수를 본다.
 // 두 파일이 서로를 import하지만 **참조가 전부 함수 안**이라 로드 순환에 걸리지 않는다.
-import { LINE_MAX, LINE_MIN } from "./narrator";
+import { cacheInfo, LINE_MAX, LINE_MIN, normalizeStats } from "./narrator";
 
 /** 폴백 사유별 건수(0인 사유는 스냅샷에서 생략). */
 export type ReasonCounts = Partial<Record<AiFallbackReason, number>>;
@@ -229,6 +229,18 @@ export const healthSnapshot = (env: {
       contract: { min: LINE_MIN, max: LINE_MAX },
       ...totals.compliance(),
     },
+    /**
+     * **상한 초과분을 어느 단계가 살렸는가**(07-28 후속). `norm`은 `packages/shared`의
+     * `AiNormalizeOp` 계약이라 세 단계가 전부 `truncate` 한 칸으로 방송된다 — 단계 구분은
+     * 서버 로컬 계측인 여기서만 보인다. `drop`이 곧 **화면에서 규칙 폴백으로 대체된 건수**다.
+     */
+    normalizeTiers: normalizeStats(),
+    /**
+     * **캐시 적중률의 분모와 키 공간.** `cacheHits: 0`만으로는 "고장"과 "칠 일이 없었다"가
+     * 구분되지 않는다 — `lookups`(조회 시도)와 `size`(적재된 항목)를 같이 낸다.
+     * `size > 0 ∧ hits == 0` = 저장은 되는데 같은 키가 다시 오지 않았다는 뜻이다.
+     */
+    cache: cacheInfo(),
     uptimeSec: Math.round(process.uptime()),
   };
 };

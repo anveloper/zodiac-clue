@@ -60,13 +60,46 @@ export const LINE_MIN = 12;
  */
 export const LINE_BUDGET_SUGGEST = 25;
 
+/**
+ * 고발·계략의 **목표** 길이. 상한(`LINE_MAX`)이 아니라 프롬프트가 모델에게 요구하는 값이다.
+ *
+ * 유도: 07-28 라이브 실측에서 모델의 최대 원문이 50자였다 — 상한 40 대비 **초과율 1.25배**.
+ * 같은 초과율이 유지된다면 목표를 `LINE_MAX / 1.25 = 32`로 내렸을 때 최악의 원문이 40자에
+ * 들어온다. **상한은 그대로 두고 목표만 내린다** — "못 지켰는데 통과시키는 것"이 아니라
+ * "지키기 쉬운 목표를 주는 것"이다. 제안은 페이싱 예산(§6.2)이 더 빡빡하므로 25를 쓴다.
+ */
+export const LINE_TARGET_LOUD = 32;
+
+/** 액션별 목표 길이. 홀드 타이머가 걸리는 제안만 페이싱 예산(25)까지 조인다. */
+const targetLen = (action: NarrationInput["action"]): number =>
+  action === "suggest" ? LINE_BUDGET_SUGGEST : LINE_TARGET_LOUD;
+
+/**
+ * 목표 글자 수를 **어절 수**로도 준다. 모델은 글자를 잘 못 세지만 띄어쓰기 단위는 센다
+ * (07-28 실측: "12~40자"라고만 적었을 때 원문 22%가 40자를 넘겼다).
+ * 한국어 어절 평균 ≈ 3자 + 공백 1 = 4자 → `target / 4`.
+ */
+const targetWords = (n: number): number => Math.max(3, Math.round(n / 4));
+
 const SYSTEM =
   "너는 조선 사극풍 추리 보드게임 NPC다. 배경: 호랑이 대감의 생신 잔치에서 누군가 잔치 음식·선물을 훔쳤다. " +
   "누가(도둑)·무엇을(훔친 것)·어디서(장소)를 추리한다. " +
   "사용자가 주는 '결정된 행동'을 사극 말투 대사 한 문장으로만 바꾼다. " +
   "**주어진 NPC 성격이 말투와 태도에 뚜렷이 드러나야 한다.** " +
   "규칙: 오직 대사 한 문장만 출력. 머리말/설명/선택지/마크다운/따옴표 전부 금지. " +
-  `${LINE_MIN}~${LINE_MAX}자 — 짧을수록 좋다(20자 내외 권장). ${LINE_MAX}자를 넘으면 폐기된다. ` +
+  // 길이는 **사용자 턴이 액션별로 지정**한다(제안은 페이싱 예산이 더 빡빡하다).
+  // 여기서는 지키는 방법과 감각만 준다 — 숫자만 반복해 봐야 모델은 글자를 못 센다.
+  `길이는 사용자가 지정한 값 이내로 맞춘다. 짧을수록 좋다. ${LINE_MAX}자를 넘으면 그 대사는 버려진다. ` +
+  "짧게 쓰는 법: ① 접속어(그리고·하니·하며·인데)로 문장을 잇지 마라 " +
+  "② 쉼표는 많아야 하나 ③ 수식어와 설명을 빼고 핵심만 남겨라. " +
+  // ⚠️ 여기서 «세 요소를 다 읊지 말고 한둘만 집어라»까지만 적었더니 8콜 중 2콜이
+  // 라벨을 **하나도** 넣지 않아 §3 C4(진실값 유지)가 6/8로 떨어졌다(07-28 실측).
+  // 짧게 쓰라는 압력과 «결정된 값을 말하라»는 계약은 같은 문장에서 못을 박아야 한다.
+  "다만 주어진 이름·물건·장소 중 **최소 하나는 준 글자 그대로** 문장에 넣는다 — " +
+  "줄여 부르거나 다른 말로 바꾸면 안 된다. 나머지는 생략해도 좋다. " +
+  "길이 감각(문구를 베끼지 말고 길이만 참고하라): " +
+  "그 셈속이 훤히 보이는구먼 = 14자 / 쯧쯧, 어림도 없는 수작일세 = 15자 / " +
+  "낱낱이 밝혀 두는 게 좋을 게요 = 17자. " +
   "게임의 정답이나 남의 손패를 아는 척 금지, 주어진 정보만 사용.";
 
 const rand = <T>(a: T[]): T => a[Math.floor(Math.random() * a.length)];
@@ -151,6 +184,60 @@ export const fallbackLine = (i: NarrationInput): string => {
  */
 const MARKUP_RE = /[*_`#"'“”‘’«»]/g;
 
+/**
+ * **완결 문장 경계**(절단 1순위). 여기서 자르면 문장이 끝난 자리이므로 그대로 쓴다.
+ */
+const SENTENCE_END = [".", "!", "?", "…", "~"];
+
+/**
+ * **절 경계**(절단 2순위). 자르면 문장이 미완결이므로 말줄임표로 닫는다.
+ */
+const CLAUSE_END = [",", "·", "—", ";", ":"];
+
+/**
+ * 미완결 절단을 닫는 부호. 한국어에서 **말끝을 흐리는 것은 자연스러운 화법**이라
+ * 어절 경계에서 끊고 `…`를 붙이면 문장이 뭉개지지 않고 페르소나도 덜 다친다
+ * (뱀 무녀 `스으…` 처럼 추임새로도 쓰이는 문자다). C3 판정 사전에 없다.
+ */
+const ELLIPSIS = "…";
+
+const lastIndexOfAny = (s: string, chars: string[]): number =>
+  chars.reduce((m, c) => Math.max(m, s.lastIndexOf(c)), -1);
+
+/** 끝에 남은 구분부호·공백을 턴다 — `쯧쯧,…` 같은 이중 부호를 막는다. */
+const trimTail = (s: string): string => s.replace(/[\s.,!?~…·—;:]+$/u, "");
+
+/**
+ * `limit` 이내에서 **어절이 온전히 끝나는** 가장 긴 앞부분.
+ * ⚠️ **어절 중간에서는 절대 자르지 않는다** — 그것이 80자 하드컷을 버렸던 이유다.
+ * 마지막에 1글자 토막(`그…`·`저…`)이 남으면 그 어절도 버린다.
+ * 공백이 하나도 없으면 `""`(→ 폐기).
+ */
+const wordCut = (full: string, limit: number): string => {
+  let end = -1;
+  for (let i = 0; i <= Math.min(limit, full.length - 1); i++)
+    if (full[i] === " ") end = i;
+  if (end < 0) return "";
+  let kept = trimTail(full.slice(0, end));
+  const tail = kept.slice(kept.lastIndexOf(" ") + 1);
+  if (tail.length <= 1) {
+    const prev = kept.lastIndexOf(" ");
+    kept = prev > 0 ? trimTail(kept.slice(0, prev)) : "";
+  }
+  return kept;
+};
+
+/**
+ * 절단 단계별 발동 횟수. `AiNormalizeOp`는 `packages/shared` 계약이라 새 값을 넣을 수 없어
+ * (클라가 읽는 필드다 — 추가만 허용) 세 단계 모두 `truncate` 한 칸으로 나간다.
+ * **어느 단계가 문장을 살렸는지**는 서버 로컬 계측으로만 센다 → `GET /health`.
+ */
+const tiers = { sentence: 0, clause: 0, word: 0, drop: 0 };
+export type NormalizeTiers = typeof tiers;
+
+/** `GET /health`용 스냅샷 — 절단 단계별 누적(프로세스 단위). */
+export const normalizeStats = (): NormalizeTiers => ({ ...tiers });
+
 /** 정규화 결과 — 문장 + **무엇이 발동했는가**(④ §3.4 L1: 프롬프트 준수율의 분모/분자). */
 export type NormalizeResult = {
   text: string | null;
@@ -202,19 +289,43 @@ export const normalizeWithMeta = (raw: string): NormalizeResult => {
   }
   if (one.length <= LINE_MAX) return { text: one, rawLen, ops };
 
-  // 상한 안에서 마지막 문장 끝(종결부호)까지만 남긴다 — 어절 중간 절단 금지.
+  // ── 상한 초과 — **3단 절단**. 어느 단계든 어절 중간은 자르지 않는다.
+  //
+  // 07-28 라이브에서 폐기 9건 중 `truncate` 발동이 **0건**이었다. 원인은 우연이 아니라
+  // 구조다: 프롬프트가 «한 문장만»을 요구하므로 종결부호는 **문장 맨 끝에 하나뿐**이고,
+  // 원문이 상한을 넘었다는 것은 그 하나가 상한 밖에 있다는 뜻이다 → 1순위는 원리적으로
+  // 발동할 수 없고 전부 폐기로 떨어졌다. 그래서 경계 후보를 절·어절까지 넓힌다.
+  //
+  // ⚠️ 넓히는 것은 **경계 후보**이지 규약이 아니다. 결과 문장은 여전히 `LINE_MAX` 이내이고
+  // `ops`에 `truncate`가 남아 준수율(cleanRate)의 분자에서 빠진다 — 통과시킨 것이 아니라
+  // **못 지킨 사실을 기록한 채 문장을 살린 것**이다.
+
+  // ① 완결 문장 경계 — 상한 안에 종결부호가 있으면 거기까지가 완성된 문장이다.
   const head = one.slice(0, LINE_MAX);
-  const cut = Math.max(
-    head.lastIndexOf("."),
-    head.lastIndexOf("!"),
-    head.lastIndexOf("?"),
-    head.lastIndexOf("…"),
-    head.lastIndexOf("~"),
-  );
-  if (cut >= 11) {
+  const cut = lastIndexOfAny(head, SENTENCE_END);
+  if (cut >= LINE_MIN - 1) {
+    tiers.sentence += 1;
     ops.push("truncate");
     return { text: head.slice(0, cut + 1).trim(), rawLen, ops }; // 최소 12자 유지
   }
+
+  // ②③ 미완결 절단 — 말줄임표 한 칸을 빼고 자리를 잡는다.
+  const room = LINE_MAX - ELLIPSIS.length;
+  const clauseAt = lastIndexOfAny(one.slice(0, room), CLAUSE_END);
+  const byClause = clauseAt >= LINE_MIN ? trimTail(one.slice(0, clauseAt)) : "";
+  const byWord = wordCut(one, room);
+  // 둘 다 어절 경계지만 **더 많이 살리는 쪽**을 쓴다 — 잘려나간 뒷부분에 3요소 라벨이
+  // 들어 있으면 C4(진실값 유지)가 흔들린다. 남는 글자가 많을수록 라벨이 남는다.
+  const kept = byWord.length >= byClause.length ? byWord : byClause;
+  if (kept.length >= LINE_MIN) {
+    if (kept === byWord) tiers.word += 1;
+    else tiers.clause += 1;
+    ops.push("truncate");
+    return { text: kept + ELLIPSIS, rawLen, ops };
+  }
+
+  // 공백조차 없는 한 덩어리 — 여기서 자르면 어절 중간이므로 폐기한다(규칙 폴백으로).
+  tiers.drop += 1;
   ops.push("drop");
   return { text: null, rawLen, ops };
 };
@@ -271,6 +382,37 @@ const cacheSet = (k: string, v: string): void => {
   }
 };
 
+/** 조회 시도 수 — **적중률의 분모**. 이게 없으면 `cacheHits 0`이 "캐시가 고장" 인지
+ *  "칠 일이 없었다" 인지 구분되지 않는다(07-28 실측 0/32가 정확히 그 상태였다). */
+let cacheLookups = 0;
+
+/**
+ * 캐시 키 공간의 크기 — `cacheKey`가 진실값 조합(용의자12×장물6×장소9)에 페르소나12와
+ * `disproved` 2를 곱한 값이다. **한 판의 발화 수(≈30)로는 원리적으로 못 맞힌다**는 사실을
+ * `/health`가 숫자로 말하게 한다. (라벨 수는 여기서 상수로 적지 않고 계산식만 남긴다 —
+ * `packages/shared`를 import하면 §3 S2의 의존 경계를 흐린다.)
+ */
+export const cacheInfo = (): {
+  size: number;
+  max: number;
+  lookups: number;
+  keyFields: string[];
+} => ({
+  size: cache.size,
+  max: CACHE_MAX,
+  lookups: cacheLookups,
+  keyFields: [
+    "action",
+    "suspect",
+    "weapon",
+    "room",
+    "persona",
+    "tone",
+    "disproved",
+    "hint",
+  ],
+});
+
 /** 현재 설정된 모델명(키 값이 아니다 — `/health`가 그대로 노출해도 안전). */
 export const currentModel = (): string =>
   process.env.GEMINI_MODEL ?? "gemini-flash-lite-latest";
@@ -299,6 +441,7 @@ export const narrate = async (i: NarrationInput): Promise<NarrationResult> => {
 
   // 캐시 히트 시 API 호출 없이 재사용
   const ck = cacheKey(i);
+  cacheLookups += 1;
   const cached = cacheGet(ck);
   if (cached !== undefined) {
     return {
@@ -317,9 +460,14 @@ export const narrate = async (i: NarrationInput): Promise<NarrationResult> => {
         : `행동: 제안 — ${i.suspect} / ${i.weapon} / ${i.room}${
             i.disproved ? " (반증당함)" : ""
           }.`;
+  // 길이 목표는 **액션마다 다르다**(제안만 홀드 타이머의 임계경로에 있다 — §6.2).
+  // 시스템 지시가 아니라 사용자 턴에 붙이는 이유: 시스템 문자열을 액션별로 갈라 만들면
+  // 네트워크 payload의 텍스트 출처가 늘어나 §3 S5(출처 2개)의 검사 대상이 흐려진다.
+  const tgt = targetLen(i.action);
   const userText =
     `NPC: ${i.name} (성격: ${i.persona ?? "무난함"}` +
-    `${i.tone ? `; 말투: ${i.tone}` : ""}). ${act}`;
+    `${i.tone ? `; 말투: ${i.tone}` : ""}). ${act}` +
+    ` 길이: ${tgt}자 이내(어절 ${targetWords(tgt)}개 이하).`;
 
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), NARRATE_TIMEOUT_MS);

@@ -466,6 +466,116 @@ const C6 = (text, hintLabels, handLabels) => {
   });
 }
 
+// ── 6.7 절단 구제 실측 (P6 · 합성 코퍼스) ────────────────────────────
+// 🔴 **이 코퍼스는 실측 표본이 아니다.** 라이브 `/health`가 관측한 **형태**를 재현한 것이다:
+//    폴백 9건 전부 `toolong`, `ops {drop: 9}`, `truncate` **0건**, `maxRawLen 50`.
+//    truncate가 한 번도 안 걸린 것은 우연이 아니라 구조다 — 프롬프트가 «한 문장만»을
+//    요구하므로 종결부호는 문장 맨 끝에 하나뿐이고, 원문이 상한을 넘겼다는 것은 곧
+//    그 하나가 상한 밖이라는 뜻이다. 그래서 아래 문장들은 **종결부호를 끝에만** 둔다.
+// 원문 텍스트를 저장하지 않는 계측 규약(④ §2.3) 때문에 진짜 폐기 원문은 남아 있지 않다.
+// → 여기서 재는 것은 «관측된 형태에 대해 새 절단이 몇 %를 살리는가»이지 실측 구제율이 아니다.
+const OVERLONG_CORPUS = [
+  "쯧쯧, 후원에서 술동이를 훔쳤다니 그 죄가 실로 무겁고 부끄러운 일이로다.",
+  "낄낄, 서재에서 떡시루를 집어간 자가 뱀 무녀라니 이거 참으로 볼만하구먼!",
+  "어험— 안방에서 금고를 열어젖힌 자가 누구인지 내 반드시 밝혀내고 말겠다.",
+  // 관측 최대치(rawLen 50) 부근 — 46~47자
+  "쯧쯧, 후원에서 술동이를 훔쳐 갔다니 그 죄가 실로 무겁고 부끄러운 일이 아니겠는가",
+  "저, 저기… 정지에서 잡채가 없어졌다는데 혹시 토끼 낭자가 그때 다녀가지 않았을까요",
+  "그거 아나, 대청에서 젓가락이 사라졌다는 소문이 벌써 온 동네에 파다하게 퍼졌다더군",
+  "어험— 안방의 금고를 열어젖힌 자가 대체 누구인지 내 오늘 반드시 밝혀내고야 말겠노라",
+  "저, 저기… 정지에서 잡채가 없어졌다는데 혹시 토끼 낭자가 다녀가지 않았을까요",
+  "그거 아나, 대청에서 젓가락이 사라졌다는 소문이 온 동네에 파다하게 퍼졌다더군",
+  "사랑방에 감돌던 그 기운이 예사롭지 않으니 두고 보면 절로 알게 되는 법이라네",
+  "고하오— 별당에서 선물이 사라진 건에 대하여 지체 없이 낱낱이 밝히겠소이다.",
+  "어이구, 행랑에서 떡시루를 가져간 이가 돼지 객주라면 밑질 거래는 아니지 않소?",
+  "어머, 서재의 금고를 만진 사람이 게코 도령이라니 눈치 못 챌 줄 알고 그랬을까",
+  "핫핫, 사랑채에서 술동이를 비운 자가 말 장수라는 것쯤은 내 눈은 못 속이지!",
+  "허, 정지에서 잡채가 사라진 셈속을 따져 보면 답이 훤히 드러나는 법이 아니겠나",
+  "안방의 젓가락을 가져간 이가 황소 역사는 아니니 에두를 것 없이 말해 두겠네.",
+];
+/** 어떤 절단으로도 살릴 수 없어야 하는 것 — 공백이 없으면 자르는 곳이 어절 중간뿐이다. */
+const UNSALVAGEABLE = ["가".repeat(60), `${"나".repeat(45)}!`];
+
+/**
+ * 07-28 **이전** 절단 규칙(1순위만)의 재현 — **비교 전용**이며 판정에는 쓰지 않는다.
+ * 미러링 금지 원칙의 예외: 여기서 재는 것은 «지금 코드가 맞는가»가 아니라
+ * «바꾸기 전 대비 몇 건이 살아났는가»라는 **차이**이고, 옛 코드는 이미 리포에 없다.
+ */
+const legacyNormalize = (raw) => {
+  const first = raw.split("\n")[0].replace(/[*_`#"'“”‘’«»]/g, "").replace(/ {2,}/g, " ").trim();
+  if (!first) return null;
+  if (first.length <= LINE_MAX) return first;
+  const head = first.slice(0, LINE_MAX);
+  const cut = Math.max(
+    head.lastIndexOf("."), head.lastIndexOf("!"), head.lastIndexOf("?"),
+    head.lastIndexOf("…"), head.lastIndexOf("~"),
+  );
+  return cut >= 11 ? head.slice(0, cut + 1).trim() : null;
+};
+
+const stripPunct = (s) => s.replace(/^[\s.,!?~…·—;:「」]+|[\s.,!?~…·—;:「」]+$/gu, "");
+
+/** 결과 문장의 모든 어절이 **원문의 어절과 통째로 일치**하는가 = 어절 중간 절단 없음. */
+const noMidWordCut = (raw, out) => {
+  const src = new Set(raw.split(/\s+/).filter(Boolean).map(stripPunct));
+  return out
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(stripPunct)
+    .every((w) => w === "" || src.has(w));
+};
+
+const salvage = { n: 0, legacyKept: 0, keptNow: 0, tiers: {}, rows: [] };
+{
+  const N = typeof normalizeWithMeta === "function" ? normalizeWithMeta : null;
+  const bad = [];
+  if (N) {
+    for (const raw of OVERLONG_CORPUS) {
+      // 코퍼스 자체가 상한을 넘지 않으면 절단 경로를 타지 않는다 — 재는 대상이 사라진다.
+      if ([...raw].length <= LINE_MAX)
+        bad.push(`코퍼스 부적합(${[...raw].length}자 ≤ ${LINE_MAX}) ${raw.slice(0, 12)}…`);
+      const r = N(raw);
+      const old = legacyNormalize(raw);
+      salvage.n++;
+      if (old !== null) salvage.legacyKept++;
+      if (r.text !== null) salvage.keptNow++;
+      const len = r.text ? [...r.text].length : 0;
+      // 불변식 — 살렸다면 ① 상한 이내 ② 하한 이상 ③ 어절 중간 절단 없음 ④ C3 통과
+      if (r.text !== null) {
+        if (len > LINE_MAX) bad.push(`상한초과(${len}) ${raw.slice(0, 12)}…`);
+        if (len < RAW_MIN) bad.push(`하한미달(${len}) ${raw.slice(0, 12)}…`);
+        if (!noMidWordCut(raw, r.text)) bad.push(`어절중간절단 → ${r.text}`);
+        if (C3_PATTERNS.some(([re]) => re.test(r.text))) bad.push(`C3위반 → ${r.text}`);
+        if (!r.ops.includes("truncate")) bad.push(`ops에 truncate 없음 → ${r.text}`);
+      } else {
+        // 공백이 있는데도 폐기했다면 구제 로직이 일을 안 한 것이다.
+        bad.push(`구제 실패(폐기) ${raw.slice(0, 16)}…`);
+      }
+      salvage.rows.push({ rawLen: [...raw].length, old, now: r.text, len });
+    }
+    for (const raw of UNSALVAGEABLE) {
+      const r = N(raw);
+      if (r.text !== null) bad.push(`공백 없는 덩어리를 잘랐다 → ${r.text}`);
+      if (!r.ops.includes("drop")) bad.push("공백 없는 덩어리에 drop이 안 붙었다");
+    }
+    const t = typeof narrator.normalizeStats === "function" ? narrator.normalizeStats() : {};
+    salvage.tiers = t;
+  }
+  preconditions.push({
+    id: "P6",
+    name: "상한 초과 구제 — 어절 중간 절단 없이 살리고, 공백 없는 덩어리는 폐기",
+    pass: N !== null && bad.length === 0,
+    detail:
+      N === null
+        ? "normalizeWithMeta()가 없다 — 절단 구제를 판정할 수 없다"
+        : bad.length === 0
+          ? `합성 코퍼스 ${salvage.n}종(41~50자, 종결부호 끝에만) 전건 구제 · ` +
+            `이전 규칙 생존 ${salvage.legacyKept}/${salvage.n} → 현재 ${salvage.keptNow}/${salvage.n} · ` +
+            `공백 없는 덩어리 ${UNSALVAGEABLE.length}종은 그대로 폐기`
+          : `위반 ${bad.slice(0, 5).join(" | ")}`,
+  });
+}
+
 // ── 7. 시드 RNG · 36 케이스(§3.1) ────────────────────────────────────
 const mulberry32 = (a) => () => {
   a |= 0;
@@ -1097,6 +1207,10 @@ const report = {
   ),
   C7: c7,
   C2raw: c2raw,
+  salvage: {
+    note: "합성 코퍼스 — 실측 표본이 아니다. 라이브가 관측한 형태(41~50자·종결부호 끝에만)의 재현.",
+    ...salvage,
+  },
   unjudgeable: LIMITS,
   exitCode,
 };
@@ -1172,6 +1286,22 @@ if (c2raw.judged) {
     log(`     ✗ ${v.case} rawLen=${v.rawLen} ops=[${v.ops.join("+") || "-"}]${v.dropped ? " (폐기)" : ""}`);
 } else {
   log(`  N/A  ${c2raw.reason}`);
+}
+
+log(`\n■ 상한 초과 구제 — 합성 코퍼스 (🔴 실측 아님. 라이브가 관측한 *형태*의 재현)`);
+if (salvage.n) {
+  const tierStr = Object.entries(salvage.tiers)
+    .map(([k, v]) => `${k}×${v}`)
+    .join(" · ");
+  log(
+    `  표본 ${salvage.n}종 · 이전 규칙(문장경계 1순위만) 생존 ${salvage.legacyKept}/${salvage.n}` +
+      ` (${pct(salvage.legacyKept, salvage.n)}) → 현재 ${salvage.keptNow}/${salvage.n} (${pct(salvage.keptNow, salvage.n)})`,
+  );
+  log(`  절단 단계 누계(프로세스): ${tierStr || "—"}`);
+  for (const r of salvage.rows.slice(0, 4))
+    log(`     원문 ${r.rawLen}자 → 이전 ${r.old === null ? "폐기" : `${[...r.old].length}자`} · 현재 ${r.len}자  "${r.now}"`);
+} else {
+  log("  N/A  코퍼스 미실행");
 }
 
 log(`\n■ C7 경로·지연 분포`);
