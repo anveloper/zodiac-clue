@@ -334,11 +334,26 @@
       <li>지연 <b>0.2~0.6초</b>(LLM 경로 실측 ~1s) → 로컬 문자열 결합</li>
       <li>문법 오류 <code>떡시루<b>이</b> 사라졌던걸</code> — LLM이 낼 수 없는 결함</li>
     </ul>
-    <p>→ OCI 호스트에 <code>GEMINI_API_KEY</code> 미설정이거나 무료 쿼터 소진.
-    <b>심사자가 링크를 눌러 플레이하면 AI 흔적이 0이다.</b> 게다가 폴백은 "캐릭터색 유지"를 목표로 설계돼 <b>의도적으로 구분 불가능</b>하다.</p>
-    <p><b>조치</b> — ① 기동 로그의 <code>Gemini ON/폴백(규칙)</code> 확인(이미 찍고 있다) ② <code>GET /health</code>로 <code>{ai, model, llmCalls, fallbackCalls, quotaErrors}</code> 노출(운영 메타·경계 침범 아님)
-    ③ §1.3 계측을 P0로 승격 ④ 429 수신 시 <b>"AI 대사 일시 폴백" 배지</b> — 조용한 성능 저하가 조용한 감점이 되는 것을 막는다.</p>
-    <p class="note">무료 쿼터가 심사 기간 내내 여러 심사자에게 소모되는 구조라 <b>키만 켜는 것으로는 부족</b>하다.</p>
+    <p><b>심사자가 링크를 눌러 플레이하면 AI 흔적이 0이었다.</b> 폴백은 "캐릭터색 유지"를 목표로 설계돼 <b>의도적으로 구분 불가능</b>하다.</p>
+
+    <div class="lead" style="border-left:3px solid var(--green);padding-left:12px">
+      <b class="ok">✅ 원인 규명·해결 (2026-07-28)</b> — 초판은 원인을 "키 미설정 또는 쿼터 소진"으로 <b>추정했으나 둘 다 아니었다.</b>
+    </div>
+    <div class="scroll"><table>
+      <tr><th>검증</th><th>결과</th></tr>
+      <tr><td>모델 목록 조회</td><td class="ok"><code>200</code> · 56개 → <b>키 정상</b></td></tr>
+      <tr><td><code>gemini-flash-lite-latest</code> + <code>thinkingBudget: 0</code></td><td class="no"><b><code>400</code> INVALID_ARGUMENT</b> ← 당시 코드</td></tr>
+      <tr><td>동일 모델, <code>thinkingConfig</code> 미지정</td><td class="ok"><code>200</code> · 정상 대사 (실프롬프트 5/5)</td></tr>
+      <tr><td><code>thinkingBudget: -1</code>(동적)</td><td class="part"><code>200</code>이나 생각 토큰이 64 예산을 먹어 <b>문장 잘림</b></td></tr>
+      <tr><td><code>gemini-2.5-flash-lite</code> 고정</td><td class="no"><code>404</code> 제공 종료</td></tr>
+    </table></div>
+    <p><b>진짜 원인</b> — <code>-latest</code> 별칭이 <b><code>thinkingBudget: 0</code>을 거부하는 세대로 이동</b>했다.
+    그 400이 <code>if (!res.ok) return null</code>로 흡수돼 전 대사가 폴백으로 나갔다.
+    코드 주석("flash 계열은 thinking 모델이라 꺼야 빈 응답을 막는다")은 <b>이전 모델에선 옳았지만 지금은 파라미터 자체가 무효</b>다.</p>
+    <p class="no"><b>발견이 늦은 이유</b> — 실패 로그가 <code>[narrate] HTTP 400</code>으로 <b>상태코드만</b> 남겨 사유가 어디에도 없었다.</p>
+    <p><b class="ok">조치 완료</b> — <code>thinkingConfig</code> 제거 + 실패 로그에 응답 본문 포함(<code>477c88b</code>). 배포 후 라이브 재검증 <b class="ok">12/12 LLM · 폴백 0</b>.<br>
+    남은 조치: ① <code>GET /health</code> ② §1.3 계측을 P0로 승격하고 <code>?ai=1</code> 게이팅 제거(7.7) ③ 429 시 "AI 대사 일시 폴백" 배지.</p>
+    <p class="note"><b>교훈</b> — 폴백이 조용하면 장애도 조용하다. 관측 가능성(§4)은 편의 기능이 아니라 <b>이 장애를 오래 놓치지 않기 위한 조건</b>이다.</p>
   </div>
 
   <div class="card crit">

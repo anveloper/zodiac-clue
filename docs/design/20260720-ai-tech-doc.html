@@ -139,7 +139,7 @@
 <div class="wrap">
 
   <h1>제출물 ④ — AI 활용 기술 문서</h1>
-  <p class="sub">zodiac-clue · 초판 2026-07-20 · <b class="ok">개정 2판 2026-07-27</b> ·
+  <p class="sub">zodiac-clue · 초판 2026-07-20 · <b class="ok">개정 2판 2026-07-27 · 보정 2026-07-28(§4.1)</b> ·
     저장소 <code>github.com/anveloper/zodiac-clue</code> (public) · 라이브 <code>zodiac-clue.vercel.app</code></p>
   <p class="sub">AI 압축본 <code>20260720-ai-tech-doc.md</code> · 본 문서의 모든 경로·심볼은 저장소 실측값이며,
     미구현 항목은 <span class="badge b-amber">요구사항</span>으로 명시한다.</p>
@@ -392,9 +392,13 @@
     <div class="card info">
       <h4>생성 파라미터</h4>
       <p class="s13"><code>temperature 0.95</code> · <code>maxOutputTokens 64</code> ·
-        <code>thinkingConfig.thinkingBudget 0</code> · <code>AbortController</code> 4000ms</p>
-      <p class="s13"><code>thinkingBudget:0</code>은 선택이 아니라 <b>필수</b>다 — flash 계열은 thinking 모델이라 끄지 않으면
-        <b>생각 토큰이 64 예산을 전부 먹고 빈 응답</b>이 온다(실제로 겪은 결함, <code>docs/logs/20260720-npc-llm-persona.md</code>).</p>
+        <code>AbortController</code> 4000ms · <b><code>thinkingConfig</code>는 보내지 않는다</b></p>
+      <p class="s13"><b>이력</b> — 초기에는 <code>thinkingBudget: 0</code>을 보냈다. flash 계열이 thinking 모델이라 끄지 않으면
+        생각 토큰이 64 예산을 먹고 빈 응답이 왔기 때문이다(<code>docs/logs/20260720-npc-llm-persona.md</code>).
+        그러나 2026-07-28 시점에 <code>gemini-flash-lite-latest</code> 별칭이 <b>해당 파라미터를 거부하는 세대로 이동</b>해
+        <b class="no">400 INVALID_ARGUMENT</b>가 되었고, 그 400이 폴백으로 흡수돼 전 대사가 규칙 대사로 나갔다(§4.1).
+        현재는 미지정으로 두며 64토큰 예산에서 빈 응답 없이 정상 동작한다(실프롬프트 5/5 · 라이브 12/12).<br>
+        <b>모델 별칭은 계약이 아니다</b> — <code>-latest</code>는 언제든 파라미터 수용 범위가 바뀌므로 §3 C7이 회귀 검사 역할을 한다.</p>
     </div>
   </div>
   <p><b>사후 정규화</b> — 프롬프트를 신뢰하지 않고 <b>코드로 강제</b>한다:
@@ -454,7 +458,7 @@
 ├─ 캐시 히트 ──────────────────► cached   (API 호출 0)
 ├─ 4000ms 초과 → AbortError ───► null
 ├─ res.ok = false (429 / 5xx) ─► null
-├─ candidates 텍스트 비어 있음 ─► null     (thinkingBudget 미차단 시 발생)
+├─ candidates 텍스트 비어 있음 ─► null     (과거 thinking 미차단 시 발생)
 └─ 성공 → 정규화 → 캐시 저장 → 반환
 
 호출부: text === null → fallbackLine(input)
@@ -595,16 +599,31 @@
     <p class="s13"><b>경계 확인</b> — 추가 필드는 전부 <b>운영 메타데이터</b>이며 게임 상태가 아니다.
       <code>GameState</code> 스키마는 변경되지 않는다. <b class="ok">진실값 경계 불변.</b></p>
   </div>
-  <p class="note"><b>운영 선행 조건(사람 담당)</b> — OCI 호스트의 <code>GEMINI_API_KEY</code> 확인.
-     기동 로그가 이미 <code>NPC 대사: Gemini ON | 폴백(규칙)</code>을 찍는다.
-     무료 쿼터는 심사 기간 내내 다수 심사자가 소모하는 구조이므로 <b>키를 켜는 것만으로는 부족하다.</b></p>
+  <div class="card" style="border-left:3px solid var(--green)">
+    <h3 class="ok">4.1 실제 장애 사례 — 이 절이 요구사항인 이유 (2026-07-28 해결)</h3>
+    <p>라이브에서 NPC 대사가 <b>100% 규칙 폴백</b>으로 나가고 있었고, 화면에도 로그에도 아무 신호가 없었다.</p>
+    <ul>
+      <li><b>원인</b> — <code>thinkingConfig.thinkingBudget: 0</code>이 <b class="no">400 INVALID_ARGUMENT</b>로 거부됐다.
+      <code>gemini-flash-lite-latest</code> 별칭이 해당 파라미터를 받지 않는 세대로 이동했기 때문이다.
+      그 400을 <code>if (!res.ok) return null</code>이 흡수해 전 호출이 폴백으로 빠졌다.</li>
+      <li><b>키·쿼터는 정상이었다</b> — 모델 목록 조회 <code>200</code>, <code>thinkingConfig</code>만 빼면 <code>200</code>과 정상 대사(5/5).
+      즉 <b>운영 문제가 아니라 요청 파라미터 문제</b>였다.</li>
+      <li><b>왜 늦게 발견됐나</b> — 실패 로그가 <code>[narrate] HTTP 400</code>으로 <b>상태코드만</b> 남겨 사유가 없었고,
+      폴백이 §2.5의 설계대로 캐릭터색을 유지하므로 <b>육안으로 구분되지 않았다.</b></li>
+      <li><b class="ok">조치</b> — <code>thinkingConfig</code> 제거 + 실패 로그에 응답 본문 포함. 배포 후 라이브 재검증 <b class="ok">12/12 LLM · 폴백 0건</b>.</li>
+    </ul>
+    <p>이 사건이 §4의 5개 요구사항을 정당화한다. <b>가용성을 위한 폴백은 관측 가능성을 갖추지 않으면 장애를 숨기는 장치가 된다.</b>
+    <code>source</code>/<code>ms</code> 계측과 AI 카운터 칩이 있었다면 첫 판에서 드러났을 문제다.</p>
+  </div>
+  <p class="note"><b>운영 선행 조건(사람 담당)</b> — 무료 쿼터는 심사 기간 내내 다수 심사자가 소모하는 구조이므로,
+     심사 기간에는 쿼터 잔량을 주기적으로 확인한다(현재 <code>GET /health</code>가 없어 서버 로그로만 확인 가능).</p>
 
   <!-- ══════ 5·6 ══════ -->
   <h2 id="s5">5. Gemini 운용 (무료티어 안전)</h2>
   <div class="scroll"><table>
     <tr><th style="width:150px">항목</th><th>내용</th></tr>
     <tr><td>모델</td><td><code>gemini-flash-lite-latest</code> (<code>GEMINI_MODEL</code> env로 교체 가능)</td></tr>
-    <tr><td>필수 파라미터</td><td><code>thinkingBudget: 0</code> (§2.3)</td></tr>
+    <tr><td>필수 파라미터</td><td><code>thinkingConfig</code> <b>미지정</b> (§2.3 · §4.1)</td></tr>
     <tr><td>호출 상한</td><td><b>이벤트당 1콜</b>, <b>프레임 루프 호출 0</b>. 동일 진실값 조합은 LRU(200) 재사용</td></tr>
     <tr><td>타임아웃</td><td>4000ms + <code>AbortController</code> — 응답이 없어도 턴이 멈추지 않는다</td></tr>
     <tr><td>키 관리</td><td><code>apps/server/.env</code>만 사용, gitignore. <code>.env.example</code>은 키 이름·발급 URL·모델 기본값만.
