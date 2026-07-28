@@ -1740,6 +1740,11 @@ export class ClueRoom extends Room<GameState> {
       ms: r.ms,
       model: r.model,
       ...(r.reason ? { reason: r.reason } : {}),
+      // 원문 **길이**와 정규화 발동 종류만 옮긴다(④ §3.4 L1 — 프롬프트 준수율의 원자료).
+      // 원문 문자열은 `narrate()` 안에서 끝나고 여기까지 오지 않는다.
+      ...(typeof r.rawLen === "number"
+        ? { rawLen: r.rawLen, norm: r.norm ?? [] }
+        : {}),
     };
     const text = r.text ?? fallbackLine(input);
     this.ai.record(ai);

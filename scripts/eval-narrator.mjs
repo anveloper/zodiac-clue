@@ -111,8 +111,17 @@ const CARDS_TS = join(ROOT, "packages/shared/src/cards.ts");
 const narrator = await import(pathToFileURL(NARRATOR_TS).href);
 const cards = await import(pathToFileURL(CARDS_TS).href);
 
-const { fallbackLine, normalizeLine, narrate, LINE_MAX, LINE_BUDGET_SUGGEST } =
-  narrator;
+const {
+  fallbackLine,
+  normalizeLine,
+  normalizeWithMeta,
+  narrate,
+  LINE_MAX,
+  LINE_MIN,
+  LINE_BUDGET_SUGGEST,
+} = narrator;
+/** 규약 하한 — 코드가 강제하지 않는 값이라 상수가 없던 시절도 대비해 12로 떨어뜨린다(④ §2.3). */
+const RAW_MIN = typeof LINE_MIN === "number" ? LINE_MIN : 12;
 const { SUSPECTS, WEAPONS, ROOMS, LABELS, PERSONA, VOICE, label } = cards;
 
 // ── 3. 사전(§3.2 공통 사전) ─────────────────────────────────────────
@@ -318,6 +327,35 @@ const C5 = (text, A) => {
   return { pass: true, queued, why: `누출 0${queued.length ? ` · 수동확인 ${queued.join(",")}` : ""}` };
 };
 
+/**
+ * C2raw — **LLM 원문**의 길이 규약(④ §3.2 C2 "원문 기준" · §3.4 L1).
+ *
+ * 정규화본이 아니라 원문을 보므로 **하한 12자도 판정한다**: 코드는 하한을 강제하지 않지만
+ * (§2.3 알려진 간극) 프롬프트는 «12~40자»를 요구했고, 원문 기준에서는 "요구를 지켰는가"를
+ * 물을 수 있다. 즉 이 규칙이 재는 것은 코드의 강제력이 아니라 **LLM의 지시 준수**다.
+ * `rawLen`은 실호출에서만 생기므로 오프라인에서는 표본 0 → **미판정**(L1).
+ */
+const C2RAW = (rawLen) => ({
+  pass:
+    typeof rawLen === "number" && rawLen >= RAW_MIN && rawLen <= LINE_MAX,
+  why:
+    typeof rawLen === "number"
+      ? `원문 ${rawLen}자 / 규약 ${RAW_MIN}~${LINE_MAX}`
+      : "원문 길이 없음(계측 미부착)",
+});
+
+/**
+ * NORM — **프롬프트 준수율**의 판정 단위. 사후 정규화가 한 번이라도 발동했다는 것은
+ * LLM이 출력 계약을 지키지 않아 **코드가 대신 고쳤다**는 뜻이다. `ops`가 비어야 준수.
+ */
+const NORM = (ops) => {
+  const o = ops ?? [];
+  return {
+    pass: o.length === 0,
+    why: o.length ? `정규화 발동 ${o.join("+")}` : "무발동 — 원문 그대로 통과",
+  };
+};
+
 /** C6 — scheme 전용. hint 외 손패 라벨 등장 시 blocking FAIL. */
 const C6 = (text, hintLabels, handLabels) => {
   const off = handLabels.filter((l) => !hintLabels.includes(l) && text.includes(l));
@@ -355,6 +393,17 @@ const C6 = (text, hintLabels, handLabels) => {
     ["C5", "정상", () => C5("후원의 술동이", A), true],
     ["C6", "hint 외 손패", () => C6("자네 서재를 가졌지", ["금고"], HANDS), false],
     ["C6", "정상", () => C6("금고… 자네만 알게", ["금고"], HANDS), true],
+    // ── 07-28 신설: 원문 기준 규칙(L1 해소분). **음성 케이스 없이 통과하는 검사는
+    //    아무것도 잡지 않는 검사와 구분되지 않는다.**
+    ["C2raw", "원문 상한 초과", () => C2RAW(LINE_MAX + 1), false],
+    ["C2raw", "원문 하한 미만", () => C2RAW(RAW_MIN - 1), false],
+    ["C2raw", "계측 미부착(undefined)", () => C2RAW(undefined), false],
+    ["C2raw", "상한 경계", () => C2RAW(LINE_MAX), true],
+    ["C2raw", "하한 경계", () => C2RAW(RAW_MIN), true],
+    ["NORM", "마크업 정규화 발동", () => NORM(["markup"]), false],
+    ["NORM", "절단 발동", () => NORM(["truncate"]), false],
+    ["NORM", "폐기 발동", () => NORM(["oneline", "drop"]), false],
+    ["NORM", "무발동", () => NORM([]), true],
   ];
   const wrong = cases.filter(([, , fn, expect]) => fn().pass !== expect);
   preconditions.push({
@@ -365,6 +414,55 @@ const C6 = (text, hintLabels, handLabels) => {
       wrong.length === 0
         ? `음성 ${cases.filter((c) => !c[3]).length}건 · 양성 ${cases.filter((c) => c[3]).length}건 전부 기대대로`
         : `오판 ${wrong.map((w) => `${w[0]}/${w[1]}`).join(", ")}`,
+  });
+}
+
+// ── 6.6 정규화 실측 (P5) ────────────────────────────────────────────
+// ④ §2.3의 "마크업 제거가 양끝 한정" 간극이 07-28에 해소됐다. **해소는 주장이 아니라
+// 실행으로 확인한다** — 실제 `normalizeWithMeta()`에 위반 문장을 넣어
+//   ① 중간 마크업이 사라지고 ② 그 결과가 C3를 통과하며 ③ ops에 사유가 남고
+//   ④ **정상 문장(낫표·말줄임표·물결·가운뎃점)은 바이트 동일**한지를 본다.
+// ④가 없으면 "다 지우면 통과"라는 퇴행을 이 검사가 승인해 버린다.
+{
+  const c3ok = (t) => C3_PATTERNS.every(([re]) => !re.test(t));
+  const N = typeof normalizeWithMeta === "function" ? normalizeWithMeta : null;
+  const keep = [
+    "후원의 「술동이」, 자네 짓인가", // 낫표 — 폴백 문안이 실제로 쓰는 인용부호
+    "스으…, 두고 보면 알겠지", // 말줄임표 — 종결부호이자 뱀 무녀 추임새
+    "허, 셈속이 그러하렷다~", // 물결 — 절단 로직의 문장 경계
+    "쉿… 금고 · 서재, 자네만 알게", // 가운뎃점 — hint 구분자
+    "도둑은 뱀 무녀! 후원의 「술동이」", // 낫표 + 느낌표
+  ];
+  const cases = N
+    ? [
+        // 음성: 중간 마크업 — 예전 정규식(양끝 한정)이면 전부 실패한다
+        ["중간 별표", () => { const r = N("**뱀 무녀**가 훔쳤다"); return r.text === "뱀 무녀가 훔쳤다" && r.ops.includes("markup") && c3ok(r.text); }],
+        ["중간 밑줄", () => { const r = N("_뱀 무녀_가 훔쳤다네"); return c3ok(r.text) && r.ops.includes("markup"); }],
+        ["중간 따옴표", () => { const r = N("그자가 “뱀 무녀”라 하더군"); return r.text === "그자가 뱀 무녀라 하더군" && r.ops.includes("markup"); }],
+        ["백틱·해시", () => { const r = N("# `뱀 무녀`가 훔쳤다"); return c3ok(r.text) && r.ops.includes("markup"); }],
+        ["양끝 따옴표(기존 동작 유지)", () => { const r = N('"도둑은 뱀 무녀"'); return r.text === "도둑은 뱀 무녀" && r.ops.includes("markup"); }],
+        ["개행 → 첫 줄만", () => { const r = N("도둑은 뱀 무녀!\n술동이라네"); return r.text === "도둑은 뱀 무녀!" && r.ops.includes("oneline"); }],
+        ["상한 초과 → 문장 경계 절단", () => { const r = N(`${"가".repeat(20)}! ${"나".repeat(40)}`); return r.ops.includes("truncate") && [...r.text].length <= LINE_MAX; }],
+        ["경계 없음 → 폐기", () => { const r = N("가".repeat(60)); return r.text === null && r.ops.includes("drop"); }],
+        ["rawLen은 원문 길이", () => N("가".repeat(60)).rawLen === 60],
+        // 양성: 정상 문장은 **한 글자도 바뀌지 않는다**
+        ...keep.map((s) => [
+          `보존: ${s.slice(0, 10)}…`,
+          () => { const r = N(s); return r.text === s && r.ops.length === 0; },
+        ]),
+      ]
+    : [];
+  const wrong = N ? cases.filter(([, fn]) => fn() !== true) : [];
+  preconditions.push({
+    id: "P5",
+    name: "정규화 실측 — 중간 마크업 제거 ∧ 정상 문장(낫표·말줄임표) 보존 (④ §2.3)",
+    pass: N !== null && wrong.length === 0,
+    detail:
+      N === null
+        ? "normalizeWithMeta()가 없다 — 정규화 발동 종류를 판정할 수 없다(L1 미해소)"
+        : wrong.length === 0
+          ? `위반 문장 ${cases.length - keep.length}종 교정 · 정상 문장 ${keep.length}종 바이트 동일 · 교정 결과 전건 C3 통과`
+          : `오판 ${wrong.map((w) => w[0]).join(", ")}`,
   });
 }
 
@@ -661,6 +759,13 @@ const latencies = [];
 const paths = { llm: 0, cache: 0, fallback: 0, timeout: 0 };
 const fbReasons = {};
 let liveStatus = "미실행(기본 오프라인 모드 — 실호출은 --live로만)";
+/**
+ * 원문 계측 표본(④ §3.4 L1) — `{ id, rawLen, ops }`만 모은다.
+ * **원문 텍스트는 담지 않는다**(narrate가 애초에 내보내지 않는다 — 계약대로다).
+ * 폐기된 원문(`reason: "toolong"`)도 **분모에 넣는다**: 규약을 가장 크게 어긴 표본을
+ * 빼고 준수율을 계산하면 그 숫자는 프롬프트를 고칠 근거가 되지 못한다.
+ */
+const rawSamples = [];
 
 /**
  * `narrate()` 반환 형태 정규화.
@@ -676,6 +781,10 @@ const asResult = (v, ms) => {
     source: v.source ?? (v.text ? "llm" : "fallback"),
     ms: typeof v.ms === "number" ? v.ms : ms,
     reason: v.reason ?? null,
+    // 07-28 L1 해소분. 없으면 `undefined` → C2raw/NORM은 **미판정**으로 남는다
+    // (구버전 narrate와 물려도 검증기가 죽지 않고, 없는 값을 지어내지도 않는다).
+    rawLen: typeof v.rawLen === "number" ? v.rawLen : undefined,
+    norm: Array.isArray(v.norm) ? v.norm : undefined,
   };
 };
 
@@ -720,6 +829,9 @@ if (OPT.live) {
     }
     const r = asResult(raw, Date.now() - t0);
     latencies.push(r.ms);
+    // 원문을 실제로 받은 건수만 표본이다(캐시 히트·키 없음은 원문이 없다).
+    if (typeof r.rawLen === "number")
+      rawSamples.push({ id: c.id, rawLen: r.rawLen, ops: r.norm ?? [], dropped: r.text === null });
     if (r.text === null) {
       paths.fallback++;
       const why = r.reason ?? "unknown";
@@ -830,19 +942,77 @@ const c7 = OPT.live
     };
 if (c7.judged && !c7.pass) failedRules.add("C7");
 
+// ── C2raw / 프롬프트 준수율 (④ §3.4 L1) ─────────────────────────────
+// 07-28 `rawLen`·`norm` 계측이 붙어 **판정 가능해졌다.** 다만 원문은 실호출에서만
+// 생기므로 오프라인에서는 표본이 0이고, 그때는 **미판정으로 남긴다**(추정 금지).
+// 통과 기준은 ④ §3.4가 L1에 적어둔 «12~40, 기준 ≥33/36» = 91.7%를 비율로 옮긴 값이다.
+const RAW_RATE_MIN = 33 / 36;
+const c2raw = (() => {
+  if (!OPT.live)
+    return {
+      judged: false,
+      reason:
+        "C2(원문 기준)·프롬프트 준수율은 LLM 원문이 있어야 성립한다 — 오프라인에는 원문 자체가 없다. 미판정으로 남긴다(계측은 부착 완료: SayAi.rawLen/norm).",
+    };
+  if (rawSamples.length === 0)
+    return {
+      judged: false,
+      reason:
+        "--live 실행이지만 원문 표본 0 — 전건이 폴백(AI_NARRATE=off 리허설/키 없음/HTTP/타임아웃)이라 원문이 생기지 않았다. C7의 폴백 사유를 보라.",
+    };
+  const n = rawSamples.length;
+  const inRange = rawSamples.filter((s) => C2RAW(s.rawLen).pass).length;
+  const clean = rawSamples.filter((s) => NORM(s.ops).pass).length;
+  const ops = {};
+  for (const s of rawSamples) for (const o of s.ops) ops[o] = (ops[o] ?? 0) + 1;
+  const lens = rawSamples.map((s) => s.rawLen);
+  const violations = rawSamples
+    .filter((s) => !C2RAW(s.rawLen).pass || !NORM(s.ops).pass)
+    .slice(0, 20)
+    .map((s) => ({ case: s.id, rawLen: s.rawLen, ops: s.ops, dropped: s.dropped }));
+  return {
+    judged: true,
+    samples: n,
+    inRange,
+    inRangeRate: +(inRange / n).toFixed(3),
+    clean,
+    // **프롬프트 준수율** — 정규화가 한 번도 발동하지 않은 비율.
+    cleanRate: +(clean / n).toFixed(3),
+    ops,
+    dropped: rawSamples.filter((s) => s.dropped).length,
+    minRawLen: Math.min(...lens),
+    maxRawLen: Math.max(...lens),
+    avgRawLen: +(lens.reduce((a, b) => a + b, 0) / n).toFixed(1),
+    threshold: +RAW_RATE_MIN.toFixed(3),
+    pass: inRange / n >= RAW_RATE_MIN,
+    violations,
+  };
+})();
+if (c2raw.judged && !c2raw.pass) failedRules.add("C2raw");
+
 /**
  * 현재 코드로 **판정할 수 없는** 항목. 추정으로 채우지 않고 그대로 인쇄한다.
  * (문서에 검사 항목만 있고 실행체가 없던 것이 이 스크립트를 만든 이유다.
  *  실행체를 만들면서 "판정한 척"을 남기면 같은 문제를 반복한다.)
  */
 const LIMITS = [
-  {
-    id: "L1",
-    rule: "C2(원문)",
-    what: "LLM **원문**의 길이(12~40, 기준 ≥33/36)와 §3.1 '원문·정규화본 둘 다 기록'",
-    why: "narrate()는 정규화본만 반환한다 — 원문은 함수 밖으로 나오지 않는다. 정규화 발동 횟수(=프롬프트 준수율)도 같은 이유로 셀 수 없다.",
-    unblock: "narrate()가 raw를 함께 돌려주거나 telemetry에 원문 길이를 기록하면 판정 가능해진다.",
-  },
+  // L1은 07-28에 **해소됐다**(`SayAi.rawLen`/`norm`). 다만 원문은 실호출에서만 생기므로
+  // 오프라인 실행에서는 여전히 표본이 없다 — 그 사실을 "해소됨"으로 덮지 않는다.
+  ...(c2raw.judged
+    ? []
+    : [
+        {
+          id: "L1",
+          rule: "C2(원문) · 프롬프트 준수율",
+          what: `LLM **원문**의 길이(${RAW_MIN}~${LINE_MAX}, 기준 ≥33/36)와 정규화 발동률(=프롬프트 준수율)`,
+          why:
+            typeof normalizeWithMeta === "function"
+              ? `계측은 부착돼 있다(narrate → SayAi.rawLen·norm). 그러나 원문은 실호출에서만 생긴다 — ${OPT.live ? "이번 실행은 원문 표본이 0이었다." : "오프라인 실행에는 판정할 표본 자체가 없다."}`
+              : "narrate()가 원문 길이를 내보내지 않는다 — 정규화본만 반환하므로 준수율의 분모가 없다.",
+          unblock:
+            "`--live`로 사람이 쿼터를 승인하고 실행하면 같은 실행에서 판정된다(원문 텍스트는 여전히 저장하지 않는다 — 길이·발동 종류만).",
+        },
+      ]),
   {
     id: "L2",
     rule: "C7",
@@ -926,6 +1096,7 @@ const report = {
     ]),
   ),
   C7: c7,
+  C2raw: c2raw,
   unjudgeable: LIMITS,
   exitCode,
 };
@@ -985,6 +1156,24 @@ for (const [k, name, t] of suites) {
   }
 }
 
+log(`\n■ C2raw 원문 길이 규약 · 프롬프트 준수율 (④ §3.4 L1 — 07-28 계측 부착)`);
+if (c2raw.judged) {
+  const ops = Object.entries(c2raw.ops)
+    .map(([k, v]) => `${k}×${v}`)
+    .join(" · ");
+  log(
+    `  ${c2raw.pass ? "PASS" : "FAIL"}  원문 표본 ${c2raw.samples}건 · 규약 ${RAW_MIN}~${LINE_MAX}자 ` +
+      `${c2raw.inRange}/${c2raw.samples} (${(c2raw.inRangeRate * 100).toFixed(1)}%, 기준 ≥${(c2raw.threshold * 100).toFixed(1)}%)\n` +
+      `        길이 평균 ${c2raw.avgRawLen} · 최소 ${c2raw.minRawLen} · 최대 ${c2raw.maxRawLen} · 폐기 ${c2raw.dropped}건\n` +
+      `        프롬프트 준수율(정규화 무발동) ${c2raw.clean}/${c2raw.samples} (${(c2raw.cleanRate * 100).toFixed(1)}%)` +
+      (ops ? ` · 발동 ${ops}` : " · 발동 0"),
+  );
+  for (const v of c2raw.violations.slice(0, OPT.showFailures))
+    log(`     ✗ ${v.case} rawLen=${v.rawLen} ops=[${v.ops.join("+") || "-"}]${v.dropped ? " (폐기)" : ""}`);
+} else {
+  log(`  N/A  ${c2raw.reason}`);
+}
+
 log(`\n■ C7 경로·지연 분포`);
 if (c7.judged) {
   log(
@@ -1010,7 +1199,7 @@ for (const s of sampleLines.slice(0, 6))
 log(`\n${line()}`);
 log(
   exitCode === 0
-    ? "결과: PASS — 적용 가능한 규칙 전건 통과. (C7은 실호출 모드에서만 판정된다)"
+    ? "결과: PASS — 적용 가능한 규칙 전건 통과. (C2raw·C7은 실호출 모드에서만 판정된다)"
     : `결과: FAIL — 위반 규칙 [${[...failedRules].join(", ")}]${preFail.length ? ` · 전제 ${preFail.map((p) => p.id)}` : ""}${statFail.length ? ` · 정적 ${statFail.map((s) => s.id)}` : ""}`,
 );
 if (!OPT.live)

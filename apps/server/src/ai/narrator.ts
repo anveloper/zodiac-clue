@@ -2,7 +2,11 @@
 // LLM은 주어진 '결정된 정보'만 사용해 한 문장 대사를 생성. 진실값을 만들거나 남의 패를
 // 아는 척하지 않는다. 키(GEMINI_API_KEY)가 없거나 실패하면 규칙기반 폴백 대사로 대체.
 
-import type { AiFallbackReason, SayAi } from "@zodiac-clue/shared";
+import type {
+  AiFallbackReason,
+  AiNormalizeOp,
+  SayAi,
+} from "@zodiac-clue/shared";
 import { josa } from "../util/josa";
 import { recordQuotaError } from "./telemetry";
 
@@ -39,6 +43,13 @@ const NARRATE_TIMEOUT_MS = 4000;
 export const LINE_MAX = 40;
 
 /**
+ * 규약 **하한**. 코드가 강제하지는 않는다(④ §2.3 "최소 길이 미강제" — 강제 여부는 사람 판단
+ * 대기 중이라 임의로 정하지 않는다). 다만 프롬프트 문안과 계측이 **같은 숫자**를 봐야
+ * "LLM이 12~40자 규약을 얼마나 지키는가"를 셀 수 있으므로 상수로 올린다.
+ */
+export const LINE_MIN = 12;
+
+/**
  * **제안 대사 전용** 페이싱 예산. 봇 1턴의 임계경로에 있는 대사는 제안뿐이다
  * (고발·계략 대사에는 홀드 타이머를 걸지 않는다 — `clue-room.ts` `afterBotSpeak`/`helperWhisper`).
  *
@@ -55,7 +66,7 @@ const SYSTEM =
   "사용자가 주는 '결정된 행동'을 사극 말투 대사 한 문장으로만 바꾼다. " +
   "**주어진 NPC 성격이 말투와 태도에 뚜렷이 드러나야 한다.** " +
   "규칙: 오직 대사 한 문장만 출력. 머리말/설명/선택지/마크다운/따옴표 전부 금지. " +
-  `12~${LINE_MAX}자 — 짧을수록 좋다(20자 내외 권장). ${LINE_MAX}자를 넘으면 폐기된다. ` +
+  `${LINE_MIN}~${LINE_MAX}자 — 짧을수록 좋다(20자 내외 권장). ${LINE_MAX}자를 넘으면 폐기된다. ` +
   "게임의 정답이나 남의 손패를 아는 척 금지, 주어진 정보만 사용.";
 
 const rand = <T>(a: T[]): T => a[Math.floor(Math.random() * a.length)];
@@ -127,8 +138,35 @@ export const fallbackLine = (i: NarrationInput): string => {
 };
 
 /**
+ * 문장 **어디에 있든** 지우는 마크업·인용부호(④ §2.3 "마크업 제거가 양끝 한정" 간극 해소).
+ * §3 C3의 판정 사전(`따옴표 · 별표·밑줄·해시`)과 **같은 집합**을 지운다 — 검사기가 잡는
+ * 문자를 정규화가 남기면 그 검사는 실호출에서 상시 FAIL을 뜻하게 된다.
+ *
+ * **남기는 것과 그 근거**
+ * - `「」` 낫표 — 폴백 문안이 실제로 쓰는 **대사 인용부호**이고(`${i.room}의 「${i.weapon}」`)
+ *   C3 사전에 없다(eval P4의 양성 케이스 "정상(낫표)"). 마크업이 아니다.
+ * - `…` 말줄임표 · `~` 물결 — **문장 종결부호**로 아래 절단 로직이 경계로 삼는 문자다.
+ *   뱀 무녀 `스으…, ` 처럼 페르소나 추임새의 일부이기도 하다.
+ * - `—` 줄표 · `·` 가운뎃점 — 폴백 문안·`hint` 구분자로 쓰인다.
+ */
+const MARKUP_RE = /[*_`#"'“”‘’«»]/g;
+
+/** 정규화 결과 — 문장 + **무엇이 발동했는가**(④ §3.4 L1: 프롬프트 준수율의 분모/분자). */
+export type NormalizeResult = {
+  text: string | null;
+  /** 원문 길이(문자 수). **원문 텍스트는 담지 않는다.** */
+  rawLen: number;
+  ops: AiNormalizeOp[];
+};
+
+/**
  * LLM 응답 사후 정규화 — 프롬프트를 신뢰하지 않고 코드로 강제한다(④ §2.3).
- * ① 첫 줄만 ② 앞뒤 따옴표·별표 제거 ③ **길이 규약 강제**.
+ * ① 첫 줄만 ② 따옴표·별표 제거(**양끝 + 문장 중간**) ③ **길이 규약 강제**.
+ *
+ * ②를 "양끝 한정"에서 바꾼 이유(④ §2.3 알려진 간극):
+ * - 이전 정규식은 `^["'*]+|["'*]+$`라 `**뱀 무녀**가 훔쳤다`의 가운데 `**`가 그대로 남았다.
+ *   §3 C3가 바로 그것을 FAIL로 잡는 규칙이므로, 프롬프트가 한 번 흔들리면 **검사기가
+ *   잡되 코드는 못 고치는** 상태가 된다. 지우는 문자 집합을 C3 사전과 일치시킨다.
  *
  * ③의 처리를 "80자 하드컷"에서 바꾼 이유:
  * - 하드컷은 문장을 중간에서 자른다(④ §2.3이 80자 여유를 둔 이유). 그런데 잘리지 않은
@@ -137,14 +175,33 @@ export const fallbackLine = (i: NarrationInput): string => {
  *   페이싱 문제이고, 무료티어 호출 예산(이벤트당 1콜)도 규약이다.
  * - 대신 **문장 경계에서만 줄인다**: 상한 안에 완결된 문장이 있으면 그것을 쓰고,
  *   없으면 `null`(→ 호출부가 규칙 폴백으로 대체). 폴백은 길이 규약을 항상 지킨다.
+ *
+ * `ops`가 **빈 배열이면 LLM이 출력 계약을 그대로 지킨 것**이다. 그 비율이 프롬프트 준수율이며,
+ * 계측에 남기는 값은 길이·발동 종류뿐 — **원문 문자열은 여기서 밖으로 나가지 않는다.**
  */
-export const normalizeLine = (raw: string): string | null => {
-  const one = raw
-    .split("\n")[0]
-    .replace(/^["'*]+|["'*]+$/g, "")
-    .trim();
-  if (!one) return null;
-  if (one.length <= LINE_MAX) return one;
+export const normalizeWithMeta = (raw: string): NormalizeResult => {
+  const ops: AiNormalizeOp[] = [];
+  const rawLen = raw.length;
+
+  const nl = raw.indexOf("\n");
+  const first = nl < 0 ? raw : raw.slice(0, nl);
+  // 뒤에 **내용이 있을 때만** 발동으로 센다 — 끝의 개행 하나까지 위반으로 세면
+  // 준수율이 실제보다 낮게 나오고, 그 숫자는 프롬프트를 고칠 근거가 되지 못한다.
+  if (nl >= 0 && raw.slice(nl + 1).trim() !== "") ops.push("oneline");
+
+  // 마크업은 문장 어디에 있든 제거한다. 제거 후 생기는 이중 공백만 접는다
+  // (어절을 붙여버리면 `**뱀 무녀**가` → `뱀 무녀가`가 아니라 문장이 뭉개진다).
+  const demarked = first.replace(MARKUP_RE, "");
+  if (demarked !== first) ops.push("markup");
+  const stripped = demarked.replace(/ {2,}/g, " ");
+
+  const one = stripped.trim();
+  if (!one) {
+    ops.push("drop");
+    return { text: null, rawLen, ops };
+  }
+  if (one.length <= LINE_MAX) return { text: one, rawLen, ops };
+
   // 상한 안에서 마지막 문장 끝(종결부호)까지만 남긴다 — 어절 중간 절단 금지.
   const head = one.slice(0, LINE_MAX);
   const cut = Math.max(
@@ -154,9 +211,21 @@ export const normalizeLine = (raw: string): string | null => {
     head.lastIndexOf("…"),
     head.lastIndexOf("~"),
   );
-  if (cut >= 11) return head.slice(0, cut + 1).trim(); // 최소 12자 유지
-  return null;
+  if (cut >= 11) {
+    ops.push("truncate");
+    return { text: head.slice(0, cut + 1).trim(), rawLen, ops }; // 최소 12자 유지
+  }
+  ops.push("drop");
+  return { text: null, rawLen, ops };
 };
+
+/**
+ * 정규화본만 필요한 호출부를 위한 얇은 래퍼. 계측(`rawLen`·`ops`)이 필요하면
+ * `normalizeWithMeta()`를 쓴다 — 메타를 버리는 경로를 기본으로 두면
+ * "정규화가 몇 번 발동했는가"를 다시 셀 수 없게 된다(④ §3.4 L1이 그렇게 생겼다).
+ */
+export const normalizeLine = (raw: string): string | null =>
+  normalizeWithMeta(raw).text;
 
 /**
  * `narrate()` 반환 — **문장 + 그 문장이 온 경로**(④ §4-1).
@@ -293,14 +362,28 @@ export const narrate = async (i: NarrationInput): Promise<NarrationResult> => {
       console.warn("[narrate] empty text");
       return fb("empty", Date.now() - started);
     }
-    // 안전: 한 줄만, 따옴표 제거, 길이 규약 강제(초과분은 문장 경계 절단 또는 폐기).
-    const line = normalizeLine(text);
-    if (!line) {
-      console.warn(`[narrate] over-length dropped (${text.length}) → fallback`);
-      return fb("toolong", Date.now() - started);
+    // 안전: 한 줄만, 마크업 제거, 길이 규약 강제(초과분은 문장 경계 절단 또는 폐기).
+    // `rawLen`·`ops`는 여기서만 생긴다 — **원문 문자열은 이 스코프 밖으로 나가지 않는다.**
+    const norm = normalizeWithMeta(text);
+    if (!norm.text) {
+      console.warn(
+        `[narrate] dropped (rawLen=${norm.rawLen} ops=${norm.ops.join("+")}) → fallback`,
+      );
+      return {
+        ...fb("toolong", Date.now() - started),
+        rawLen: norm.rawLen,
+        norm: norm.ops,
+      };
     }
-    cacheSet(ck, line);
-    return { text: line, source: "llm", ms: Date.now() - started, model };
+    cacheSet(ck, norm.text);
+    return {
+      text: norm.text,
+      source: "llm",
+      ms: Date.now() - started,
+      model,
+      rawLen: norm.rawLen,
+      norm: norm.ops,
+    };
   } catch (e) {
     const name = e instanceof Error ? e.name : String(e);
     console.warn(`[narrate] err ${name}`);

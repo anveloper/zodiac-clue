@@ -10,13 +10,41 @@
 
 import type {
   AiFallbackReason,
+  AiNormalizeOp,
   AiSource,
   AiStats,
   SayAi,
 } from "@zodiac-clue/shared";
 
+// 규약 구간(12~40자)은 `narrator.ts`가 단일 소스다 — 프롬프트 문안·정규화·계측이 같은 상수를 본다.
+// 두 파일이 서로를 import하지만 **참조가 전부 함수 안**이라 로드 순환에 걸리지 않는다.
+import { LINE_MAX, LINE_MIN } from "./narrator";
+
 /** 폴백 사유별 건수(0인 사유는 스냅샷에서 생략). */
 export type ReasonCounts = Partial<Record<AiFallbackReason, number>>;
+
+/** 정규화 종류별 발동 건수(0인 종류는 스냅샷에서 생략). */
+export type NormCounts = Partial<Record<AiNormalizeOp, number>>;
+
+/**
+ * **프롬프트 준수율** — "LLM이 12~40자 규약을 얼마나 지키는가"(④ §3.4 L1).
+ *
+ * 분모 `samples`는 **원문을 실제로 받은 건수**다(캐시 히트·키 없음은 원문이 없으므로 제외).
+ * `clean`은 정규화가 **한 번도 발동하지 않은** 건수 — 즉 LLM이 계약을 그대로 지킨 문장이다.
+ * `inRange`는 원문 길이가 규약 구간(12~`LINE_MAX`)에 들어온 건수.
+ * ⚠️ 여기 어떤 필드에도 **원문 텍스트는 없다.** 길이·발동 종류라는 메타뿐이다.
+ */
+export type PromptCompliance = {
+  samples: number;
+  clean: number;
+  cleanRate: number;
+  inRange: number;
+  inRangeRate: number;
+  avgRawLen: number;
+  minRawLen: number;
+  maxRawLen: number;
+  ops: NormCounts;
+};
 
 /**
  * 경로별 건수·지연 누적기. **판 단위**(방)와 **프로세스 단위**(/health)가 같은 클래스를 쓴다.
@@ -26,6 +54,14 @@ export class AiCounter {
   private counts: Record<AiSource, number> = { llm: 0, cache: 0, fallback: 0 };
   private msSum: Record<AiSource, number> = { llm: 0, cache: 0, fallback: 0 };
   private reasons: ReasonCounts = {};
+  // ── 프롬프트 준수 계측(④ §3.4 L1) — 길이·발동 종류만. 원문 텍스트는 받지 않는다.
+  private rawN = 0;
+  private rawSum = 0;
+  private rawMin = Infinity;
+  private rawMax = 0;
+  private rawClean = 0;
+  private rawInRange = 0;
+  private ops: NormCounts = {};
 
   record(ai: SayAi): void {
     this.counts[ai.source] += 1;
@@ -33,12 +69,31 @@ export class AiCounter {
     if (ai.source === "fallback" && ai.reason) {
       this.reasons[ai.reason] = (this.reasons[ai.reason] ?? 0) + 1;
     }
+    // `rawLen`이 있는 건수 = **LLM 원문을 실제로 받은 건수**. 캐시 히트·키 없음은
+    // 원문이 없으므로 분모에 넣지 않는다(넣으면 준수율이 캐시 적중률에 오염된다).
+    if (typeof ai.rawLen === "number") {
+      this.rawN += 1;
+      this.rawSum += ai.rawLen;
+      this.rawMin = Math.min(this.rawMin, ai.rawLen);
+      this.rawMax = Math.max(this.rawMax, ai.rawLen);
+      if (ai.rawLen >= LINE_MIN && ai.rawLen <= LINE_MAX) this.rawInRange += 1;
+      const ops = ai.norm ?? [];
+      if (ops.length === 0) this.rawClean += 1;
+      for (const op of ops) this.ops[op] = (this.ops[op] ?? 0) + 1;
+    }
   }
 
   reset(): void {
     this.counts = { llm: 0, cache: 0, fallback: 0 };
     this.msSum = { llm: 0, cache: 0, fallback: 0 };
     this.reasons = {};
+    this.rawN = 0;
+    this.rawSum = 0;
+    this.rawMin = Infinity;
+    this.rawMax = 0;
+    this.rawClean = 0;
+    this.rawInRange = 0;
+    this.ops = {};
   }
 
   get total(): number {
@@ -67,10 +122,34 @@ export class AiCounter {
     return { ...this.reasons };
   }
 
-  /** 판 종료 집계 한 줄(경로별 건수 + 평균 지연 + 폴백 사유 분포). */
+  /**
+   * **프롬프트 준수율 스냅샷**(④ §3.4 L1 해소). 표본이 0이면 비율은 0이고
+   * `samples: 0`이 함께 나간다 — "지킨 적 없음"과 "잰 적 없음"은 다른 사건이므로
+   * 비율만 보고 판단할 수 없게 분모를 항상 같이 낸다.
+   */
+  compliance(): PromptCompliance {
+    const n = this.rawN;
+    return {
+      samples: n,
+      clean: this.rawClean,
+      cleanRate: n === 0 ? 0 : +(this.rawClean / n).toFixed(3),
+      inRange: this.rawInRange,
+      inRangeRate: n === 0 ? 0 : +(this.rawInRange / n).toFixed(3),
+      avgRawLen: n === 0 ? 0 : Math.round(this.rawSum / n),
+      minRawLen: n === 0 ? 0 : this.rawMin,
+      maxRawLen: this.rawMax,
+      ops: { ...this.ops },
+    };
+  }
+
+  /** 판 종료 집계 한 줄(경로별 건수 + 평균 지연 + 폴백 사유 분포 + 프롬프트 준수). */
   summaryLine(): string {
     const s = this.snapshot();
     const r = Object.entries(this.reasons)
+      .map(([k, v]) => `${k}=${v}`)
+      .join(",");
+    const c = this.compliance();
+    const ops = Object.entries(c.ops)
       .map(([k, v]) => `${k}=${v}`)
       .join(",");
     return (
@@ -78,7 +157,15 @@ export class AiCounter {
       `cache=${s.cache}(avg ${this.avgOf("cache")}ms) ` +
       `fallback=${s.fallback}(avg ${this.avgOf("fallback")}ms) ` +
       `total=${this.total} avgMs=${s.avgMs}` +
-      (r ? ` reasons[${r}]` : "")
+      (r ? ` reasons[${r}]` : "") +
+      // 규약 준수 — 분모(원문 표본)를 항상 같이 인쇄한다.
+      ` raw=${c.samples}` +
+      (c.samples
+        ? ` len(avg ${c.avgRawLen} min ${c.minRawLen} max ${c.maxRawLen}) ` +
+          `규약${LINE_MIN}~${LINE_MAX}=${c.inRange}/${c.samples}(${(c.inRangeRate * 100).toFixed(1)}%) ` +
+          `무정규화=${c.clean}/${c.samples}(${(c.cleanRate * 100).toFixed(1)}%)` +
+          (ops ? ` norm[${ops}]` : "")
+        : "")
     );
   }
 }
@@ -134,6 +221,14 @@ export const healthSnapshot = (env: {
     // 최근 경로 분포 — 누적 평균은 장애를 희석시킨다(07-27이 그랬다).
     recent: recentSnapshot(),
     fallbackReasons: totals.reasonCounts(),
+    /**
+     * **프롬프트 준수율**(④ §3.4 L1) — "LLM이 `${LINE_MIN}~${LINE_MAX}자` 규약을 얼마나 지키는가".
+     * 길이·정규화 발동 종류만 담는다. **원문 텍스트는 어떤 필드에도 없다.**
+     */
+    promptCompliance: {
+      contract: { min: LINE_MIN, max: LINE_MAX },
+      ...totals.compliance(),
+    },
     uptimeSec: Math.round(process.uptime()),
   };
 };
@@ -141,15 +236,22 @@ export const healthSnapshot = (env: {
 // ── 서버 로그 한 줄 ───────────────────────────────────────────────────
 /**
  * 문장 1건을 **한 줄**로 남긴다. 이 한 줄이 있었으면 07-27 장애는 첫 판에서 드러났다.
- * 예) `[ai] say fallback(http) 412ms model=- 잔나비 광대/suggest len=21 seat=bot-3`
+ * 예) `[ai] say llm 923ms model=… 잔나비 광대/suggest len=21 raw=34 norm=truncate seat=bot-3`
+ *
+ * `raw`/`norm`은 **길이와 발동 종류**다 — 원문 문장은 남기지 않는다(방송된 대사는 이미
+ * `text`로 나가고, 폐기된 원문까지 로그에 적으면 계측이 유출 경로가 된다).
  */
 export const logAi = (
   ctx: { seat: string; name: string; action: string; textLen: number },
   ai: SayAi,
 ): void => {
   const path = ai.source === "fallback" ? `fallback(${ai.reason ?? "?"})` : ai.source;
+  const raw =
+    typeof ai.rawLen === "number"
+      ? ` raw=${ai.rawLen} norm=${ai.norm?.length ? ai.norm.join("+") : "none"}`
+      : "";
   console.log(
     `[ai] say ${path} ${ai.ms}ms model=${ai.model || "-"} ` +
-      `${ctx.name}/${ctx.action} len=${ctx.textLen} seat=${ctx.seat}`,
+      `${ctx.name}/${ctx.action} len=${ctx.textLen}${raw} seat=${ctx.seat}`,
   );
 };

@@ -49,6 +49,17 @@ export type AiFallbackReason =
   | "nokey"
   | "disabled";
 
+/**
+ * 사후 정규화가 **무엇을 발동시켰는가**(④ §2.3 "사후 정규화" ①②③).
+ * 하나라도 붙었다는 것은 **LLM이 출력 계약을 지키지 않았다**는 뜻이다 —
+ * 이 배열이 비어 있는 비율이 곧 **프롬프트 준수율**이다(④ §3.4 L1).
+ * - `oneline`  : 개행이 있어 첫 줄만 취함
+ * - `markup`   : 따옴표·별표·밑줄·해시·백틱 제거(양끝 + **문장 중간**, §3 C3)
+ * - `truncate` : 상한 초과 → 문장 경계에서 절단
+ * - `drop`     : 상한 초과인데 경계가 없음(또는 정규화 후 공백) → 폐기 후 규칙 폴백
+ */
+export type AiNormalizeOp = "oneline" | "markup" | "truncate" | "drop";
+
 /** `say` 메시지에 동봉되는 경로·지연·모델 메타. */
 export type SayAi = {
   source: AiSource;
@@ -58,6 +69,17 @@ export type SayAi = {
   model: string;
   /** `source === "fallback"`일 때만. */
   reason?: AiFallbackReason;
+  /**
+   * **LLM 원문의 길이(문자 수)만.** 실호출로 텍스트를 받은 경우에만 채워진다
+   * (`source: "llm"` · `reason: "toolong"`). 캐시 히트·키 없음 등 원문이 없는 경로는 `undefined`.
+   *
+   * ⚠️ **원문 텍스트 자체는 어떤 계측 필드에도 담지 않는다.** 대사는 이미 `text`로 방송되고
+   * 로그에도 남는다. 계측이 필요로 하는 것은 «규약(12~40자)을 지켰는가»라는 **메타**뿐이며,
+   * 폐기된 원문까지 저장하면 방송되지 않은 문장이 계측 채널로 새어 나간다.
+   */
+  rawLen?: number;
+  /** 정규화 발동 종류. **빈 배열 = 원문 그대로 통과 = 프롬프트 준수.** 원문이 없으면 `undefined`. */
+  norm?: AiNormalizeOp[];
 };
 
 /** 이번 판 누적 경로 집계 — AI 카운터 칩(`✨LLM n · ♻캐시 n · ⚙폴백 n`)용. */
