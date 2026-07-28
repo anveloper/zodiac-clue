@@ -28,26 +28,67 @@ export type NarrationInput = {
 
 const NARRATE_TIMEOUT_MS = 4000;
 
+/**
+ * 디렉팅 명세(제출물 ④ §2.3)가 정한 대사 길이 상한.
+ * **프롬프트·폴백·LLM 사후 정규화가 이 상수 하나를 본다.** 예전에는 프롬프트에만
+ * "12~40자"라고 적혀 있고 코드 상한은 80자였다 — 강제 수단이 없으니 폴백 평균이 47자였고
+ * `bubbleLifeMs`가 그만큼 길어져 판 길이를 지배했다(로드맵 §7.5 2차 실측).
+ */
+export const LINE_MAX = 40;
+
+/**
+ * **제안 대사 전용** 페이싱 예산. 봇 1턴의 임계경로에 있는 대사는 제안뿐이다
+ * (고발·계략 대사에는 홀드 타이머를 걸지 않는다 — `clue-room.ts` `afterBotSpeak`/`helperWhisper`).
+ *
+ * 역산: 봇 1턴 = npcDelay(하한 800) + BOT_ACT_GAP(600) + bubbleLifeMs(len)
+ *              = 1400 + len×TYPE_MS(55) + BUBBLE_HOLD_MS(1200) ≤ 4000
+ *              ⇒ len ≤ (4000 − 1400 − 1200) / 55 = 25.4
+ * 고발·계략은 `LINE_MAX`(40)까지 허용해 클라이맥스 대사의 캐릭터색을 지킨다.
+ */
+export const LINE_BUDGET_SUGGEST = 25;
+
 const SYSTEM =
   "너는 조선 사극풍 추리 보드게임 NPC다. 배경: 호랑이 대감의 생신 잔치에서 누군가 잔치 음식·선물을 훔쳤다. " +
   "누가(도둑)·무엇을(훔친 것)·어디서(장소)를 추리한다. " +
   "사용자가 주는 '결정된 행동'을 사극 말투 대사 한 문장으로만 바꾼다. " +
   "**주어진 NPC 성격이 말투와 태도에 뚜렷이 드러나야 한다.** " +
   "규칙: 오직 대사 한 문장만 출력. 머리말/설명/선택지/마크다운/따옴표 전부 금지. " +
-  "12~40자. 게임의 정답이나 남의 손패를 아는 척 금지, 주어진 정보만 사용.";
+  `12~${LINE_MAX}자 — 짧을수록 좋다(20자 내외 권장). ${LINE_MAX}자를 넘으면 폐기된다. ` +
+  "게임의 정답이나 남의 손패를 아는 척 금지, 주어진 정보만 사용.";
 
 const rand = <T>(a: T[]): T => a[Math.floor(Math.random() * a.length)];
 
-/** 규칙기반 폴백 대사 (LLM 없이도 사극 말투 한 줄). intro/outro로 캐릭터색을 입힌다. */
+/**
+ * 예산 안에서 **캐릭터색을 최대한** 붙인다.
+ * 추임새(intro/outro)는 `cards.ts`의 `VOICE` 단일 소스이며 인물을 식별하는 유일한 표식이라
+ * "길어서 통째로 버린다"가 아니라 **들어가는 만큼 넣는다**:
+ *   둘 다 → 후렴(outro, 인물 고유 문구라 색이 더 진하다) → 머리말(intro) → 없음.
+ * 마지막 폴백에서도 규약 상한(`LINE_MAX`)은 지킨다.
+ */
+const fit = (body: string, i: NarrationInput, budget: number): string => {
+  const intro = i.intro ?? "";
+  const outro = i.outro ?? "";
+  for (const cand of [intro + body + outro, body + outro, intro + body, body]) {
+    const s = cand.trim();
+    if (s.length <= budget) return s;
+  }
+  return body.trim().slice(0, LINE_MAX);
+};
+
+/**
+ * 규칙기반 폴백 대사 (LLM 없이도 사극 말투 한 줄). intro/outro로 캐릭터색을 입힌다.
+ * 문안 원본은 `20260727-ui-copy.md` §8.2 — **길이 규약(④ §2.3)에 맞춰 압축**했다.
+ * 조사는 여전히 회피하거나 `josa()`로 고른다(§7.14 `떡시루이` 재발 방지).
+ */
 export const fallbackLine = (i: NarrationInput): string => {
-  const deco = (s: string): string =>
-    `${i.intro ?? ""}${s}${i.outro ?? ""}`.trim().slice(0, 80);
+  const budget = i.action === "suggest" ? LINE_BUDGET_SUGGEST : LINE_MAX;
+  const deco = (s: string): string => fit(s, i, budget);
   if (i.action === "accuse") {
     return deco(
       rand([
-        `이건 필시 ${i.suspect}의 소행! ${i.room}에서 훔친 것은 「${i.weapon}」`,
-        `도둑은 ${i.suspect}! 증거는 ${i.room}의 「${i.weapon}」`,
-        `더 볼 것도 없다. ${i.suspect}, ${i.weapon}, ${i.room}`,
+        `도둑은 ${i.suspect}! ${i.room}의 「${i.weapon}」`,
+        `${i.suspect}, 「${i.weapon}」, ${i.room} — 끝일세`,
+        `더 볼 것 없다. ${i.suspect}, ${i.weapon}, ${i.room}`,
       ]),
     );
   }
@@ -55,24 +96,64 @@ export const fallbackLine = (i: NarrationInput): string => {
     const h = i.hint ?? "";
     return deco(
       rand([
-        `쉿… ${h}, 이건 자네만 알게`,
-        `가까이 오게. ${h} — 못 들은 걸로 하고`,
-        `은밀히 일러주지. ${h}`,
-        `${h}… 내 입에서 나온 말은 아닐세`,
+        `쉿… ${h}, 자네만 알게`,
+        `가까이 오게. ${h} — 못 들은 걸로`,
+        `은밀히 이르네. ${h}`,
+        `${h}… 내 입에서 난 말은 아닐세`,
       ]),
     );
   }
-  const base = rand([
-    `흠… ${i.room}에서 ${i.suspect} — 「${i.weapon}」${josa(
-      i.weapon,
-      "이라니",
-      "라니",
-    )}, 수상쩍구먼`,
-    `내 짐작엔 ${i.suspect}, ${i.weapon}, ${i.room}`,
-    `${i.room} 쪽을 살피니 「${i.weapon}」, 그게 사라졌던걸`,
-    `${i.suspect}, 자네 ${i.room}엔 왜 갔는가`,
-  ]);
-  return deco(i.disproved ? `${base} …아니라니 하나 지웠군` : base);
+  // 반증당한 뒤에는 3요소를 다시 읊지 않는다 — 제안 내용은 이미 로그 한 줄에 다 있고,
+  // 여기서 필요한 것은 "지웠다"는 반응이다(길이를 8~10자 줄이는 가장 싼 레버).
+  if (i.disproved) {
+    return deco(
+      rand([
+        `${i.suspect}, 「${i.weapon}」… 아니군`,
+        `${i.room}의 「${i.weapon}」${josa(i.weapon, "이", "가")} 아니라니`,
+        `${i.suspect}도 ${i.weapon}도 아니군`,
+      ]),
+    );
+  }
+  return deco(
+    rand([
+      `${i.room}의 ${i.suspect}, 「${i.weapon}」`,
+      `${i.suspect}, ${i.room}의 「${i.weapon}」`,
+      `${i.room}에서 ${i.suspect}, ${i.weapon}`,
+      `${i.suspect}, 자네 ${i.room}엔 왜 갔는가`,
+    ]),
+  );
+};
+
+/**
+ * LLM 응답 사후 정규화 — 프롬프트를 신뢰하지 않고 코드로 강제한다(④ §2.3).
+ * ① 첫 줄만 ② 앞뒤 따옴표·별표 제거 ③ **길이 규약 강제**.
+ *
+ * ③의 처리를 "80자 하드컷"에서 바꾼 이유:
+ * - 하드컷은 문장을 중간에서 자른다(④ §2.3이 80자 여유를 둔 이유). 그런데 잘리지 않은
+ *   41~80자 문장은 그대로 `bubbleLifeMs`에 들어가 봇 1턴을 1.5~2초씩 늘린다.
+ * - **재시도는 하지 않는다** — 왕복 4초 타임아웃을 한 번 더 무는 것이 바로 지금 고치려는
+ *   페이싱 문제이고, 무료티어 호출 예산(이벤트당 1콜)도 규약이다.
+ * - 대신 **문장 경계에서만 줄인다**: 상한 안에 완결된 문장이 있으면 그것을 쓰고,
+ *   없으면 `null`(→ 호출부가 규칙 폴백으로 대체). 폴백은 길이 규약을 항상 지킨다.
+ */
+export const normalizeLine = (raw: string): string | null => {
+  const one = raw
+    .split("\n")[0]
+    .replace(/^["'*]+|["'*]+$/g, "")
+    .trim();
+  if (!one) return null;
+  if (one.length <= LINE_MAX) return one;
+  // 상한 안에서 마지막 문장 끝(종결부호)까지만 남긴다 — 어절 중간 절단 금지.
+  const head = one.slice(0, LINE_MAX);
+  const cut = Math.max(
+    head.lastIndexOf("."),
+    head.lastIndexOf("!"),
+    head.lastIndexOf("?"),
+    head.lastIndexOf("…"),
+    head.lastIndexOf("~"),
+  );
+  if (cut >= 11) return head.slice(0, cut + 1).trim(); // 최소 12자 유지
+  return null;
 };
 
 /**
@@ -171,11 +252,12 @@ export const narrate = async (i: NarrationInput): Promise<string | null> => {
       console.warn("[narrate] empty text");
       return null;
     }
-    // 안전: 한 줄만, 따옴표/과도한 길이 정리
-    const line = text
-      .split("\n")[0]
-      .replace(/^["'*]+|["'*]+$/g, "")
-      .slice(0, 80);
+    // 안전: 한 줄만, 따옴표 제거, 길이 규약 강제(초과분은 문장 경계 절단 또는 폐기).
+    const line = normalizeLine(text);
+    if (!line) {
+      console.warn(`[narrate] over-length dropped (${text.length}) → fallback`);
+      return null;
+    }
     cacheSet(ck, line);
     return line;
   } catch (e) {

@@ -62,7 +62,18 @@ export type ViewTiming = {
   WARP_BANNER_MS: number;
   /** 말풍선 타자기 속도(글자당). */
   TYPE_MS: number;
-  /** 타자기 완료 후 유지 시간. */
+  /**
+   * 타자기 완료 후 유지 시간.
+   *
+   * **읽기 속도에서 유도한 값이다**(예전 2600은 뷰별 인라인 리터럴 2600/3200을 옮겨 적은
+   * 것이라 근거가 없었다). 한국어 자막 권장 읽기 속도 12자/초 = `READ_MS 83ms/자`를
+   * 기준으로, 말풍선이 살아 있어야 하는 최소 시간은 `len × READ_MS`다.
+   * full 프로파일은 그중 `len × TYPE_MS(55)`를 타자기가 이미 소비하므로 남는 몫만 붙들면 된다:
+   *   `HOLD ≥ (READ_MS − TYPE_MS) × len_max = (83 − 55) × 40 = 1120` → **1200**
+   * (`len_max 40` = 디렉팅 명세 ④ §2.3의 대사 길이 상한).
+   * reduced는 타자기가 없어(`TYPE_MS 0`) 전량을 홀드가 부담한다: `83 × 40 = 3320` → **3400**.
+   * 두 프로파일은 규약 상한 40자에서 총 수명 3400ms로 **정확히 수렴한다**.
+   */
   BUBBLE_HOLD_MS: number;
   /** 짧은 대사가 깜빡이는 것을 막는 말풍선 최소 총 수명. */
   BUBBLE_MIN_TOTAL_MS: number;
@@ -90,8 +101,8 @@ export const TIMING_FULL: ViewTiming = {
   LOOT_TWEEN_MS: 260,
   WARP_MS: 420,
   WARP_BANNER_MS: 1200,
-  TYPE_MS: 55,
-  BUBBLE_HOLD_MS: 2600,
+  TYPE_MS: 55, // 로드맵 §1.4 — AI 활용의 유일한 가시적 증거라 **불변**.
+  BUBBLE_HOLD_MS: 1200, // 2600 → 1200 (읽기 속도 유도치, 위 주석). 봇 1턴 −1400ms.
   BUBBLE_MIN_TOTAL_MS: 1800,
   CAM_SWITCH_SELF_MS: 150,
   CAM_SWITCH_OTHER_MS: 900,

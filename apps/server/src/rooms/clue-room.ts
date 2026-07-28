@@ -27,7 +27,12 @@ import {
   Player,
   WeaponToken,
 } from "../schema/game-state";
-import { fallbackLine, narrate, type NarrationInput } from "../ai/narrator";
+import {
+  LINE_BUDGET_SUGGEST,
+  fallbackLine,
+  narrate,
+  type NarrationInput,
+} from "../ai/narrator";
 
 type JoinOptions = { character?: string };
 type CreateOptions = { isPublic?: boolean };
@@ -51,7 +56,15 @@ const NPC_DELAY_MAX = 1600;
  */
 const NPC_ROUND_BUDGET_MS = 12000;
 // 봇 턴 내 '이동 → (쉬고) → 제안' 사이 간격 (카메라 이동·인지 시간) — §7.5.4 1300→600
+// §8.2는 다인(사람≥2)에서 700을 지시하지만 그것은 1300 기준의 **감축안**이다.
+// 현재 값 600은 그보다 짧아 지시의 목적(다인 페이싱 단축)을 이미 만족하므로 분기하지 않는다.
 const BOT_ACT_GAP = 600;
+/**
+ * 라운드 예산에서 빼는 **제안 대사 홀드 추정치**. 실제 홀드는 문장 길이로 정해지지만
+ * (`speakHold`), 딜레이는 대사가 나오기 **전에** 정해야 하므로 규약 상한값으로 잡는다.
+ * `LINE_BUDGET_SUGGEST`(25자)는 제안 대사 길이의 하드 상한이라 이 추정은 보수적이다.
+ */
+const EST_SPEAK_HOLD_MS = bubbleLifeMs("가".repeat(LINE_BUDGET_SUGGEST));
 
 /**
  * 즉시고발권(로드맵 §7.5.1): 사람이 자기 제안 직후 같은 턴에 고발할 수 있는 제한 시간.
@@ -64,12 +77,37 @@ const ACCUSE_WINDOW_MS = 30000;
  */
 const TURN_TIMER = "turn";
 /**
- * 총 제안 상한(로드맵 §1.1 + §7.5 정정본 60). `revealed` 분리로 판이 길어지므로
- * 40이 아니라 60이다(분리 후 총 제안 p95 = 53~60).
+ * 턴 클럭(§8.2) 키 — `TURN_TIMER`와 **반드시 다른 키**여야 한다.
+ * 같은 키를 쓰면 `armTimer`의 "같은 key면 이전 타이머 자동 취소" 규칙 때문에
+ * 즉시고발 창을 여는 순간 턴 클럭이 사라지고(또는 그 반대) 둘 중 하나가 조용히 죽는다.
+ * 대신 **겹치는 구간에서는 명시적으로 한쪽을 끈다** — 즉시고발 창이 열리면
+ * 그 30초가 곧 턴 마감이므로 턴 클럭을 취소한다(`handleSuggest`).
+ */
+const TURN_CLOCK = "turnClock";
+/** 사람 턴 제한(§8.2). AFK 1명이 판을 무한 정지시키는 것을 막는 유일한 장치다. */
+const TURN_LIMIT_HUMAN_MS = 45000;
+/** 접속이 끊긴(재접속 대기 중) 좌석의 턴 제한(§8.2) — 45초를 다 기다리지 않는다. */
+const TURN_LIMIT_AWAY_MS = 8000;
+/**
+ * 이탈 후 대리 NPC 인계까지의 유예(§8.2). 재접속 허용은 120초로 늘리되
+ * 20초 시점에 좌석을 대리 NPC가 이어받아 **판이 멈추는 시간은 20초로 묶는다**.
+ */
+const HANDOVER_GRACE_MS = 20000;
+/** 비자발적 이탈 시 재접속 허용 시간(초) — §8.2: 60 → 120. */
+const RECONNECT_WINDOW_SEC = 120;
+/**
+ * 총 제안 상한 — 판이 무한히 늘어지는 것을 막는 **백스톱**(밸런스 손잡이가 아니다).
  * 상한 도달 이후에는 제안마다 공통 단서를 1장씩 결정론적으로 추가 공개해 수렴을 강제하고,
  * 더 공개할 카드가 없으면 무승부로 종료한다.
+ *
+ * 60 → 75 재산정(`scripts/sim-balance.mjs` · 3,000판 · 시드 20260728).
+ * 60은 재진입 규칙(§7.5.2) **이전**의 총 제안 p95 51~53을 근거로 고른 값이었다.
+ * 재진입 규칙이 들어간 뒤 자연 분포는 p95 68 · p99 73 · p99.5 74 · 최대 76이라
+ * 60은 정상 게임의 **17.0%**를 강제 종료시킨다 — 로드맵이 상한을 고를 때 세운 기준
+ * ("정상 게임을 자르지 않는 선")을 그대로 적용하면 도달률 목표는 ≤1%이고,
+ * 그 조건을 만족하는 최솟값이 75다(실측 도달률 0.1% · 무승부 0.0% · 평균 라운드 7.27).
  */
-const SUGGEST_CAP = 60;
+const SUGGEST_CAP = 75;
 
 // 고정 NPC(계략) 배치 후보. 모서리(강한 이익) 1~2 + 건물 사이 중앙 근처에서 랜덤.
 const HELPER_CORNERS = [
@@ -140,6 +178,17 @@ export class ClueRoom extends Room<GameState> {
    * 사람·봇 모두 같은 규칙을 받는다(봇 경로는 `runBotTurn`의 방 선택에서 적용).
    */
   private suggestedIn = new Map<string, string>();
+  /**
+   * 진행 중인 판에 들어온 **관전자**의 sessionId(로드맵 §8.3 (c)).
+   *
+   * 관전자는 `state.players`에 **넣지 않는다**. §8.3이 경고한 "유령 몸통이 문을 막는 봉쇄
+   * 버그"의 세 지점(`freeCellIn` 점유 집합 · `handleMove` 충돌 검사 · 소환 대상 탐색)은
+   * 전부 `state.players`를 순회하므로, 좌석 자체를 만들지 않으면 **구조적으로** 제외된다
+   * (세 곳에 필터를 다는 것보다 빠뜨릴 여지가 없다). 보드 위 토큰도 생기지 않는다.
+   * 관전자는 동기화 상태와 브로드캐스트 로그만 받는다 — 손패·정답은 어느 경로로도 가지 않는다.
+   * 다음 판(`startGame`)에서 빈 자리·순수 NPC 자리로 좌석을 받는다.
+   */
+  private spectators = new Set<string>();
   /** 방이 파기됐는지 — 파기 후 도착한 비동기 콜백이 타이머를 되살리지 못하게 한다. */
   private disposed = false;
   /** 키별 취소 가능한 타이머(§7.5.1 즉시고발 창 · §8.2 턴 클럭 공용 프리미티브). */
@@ -217,6 +266,9 @@ export class ClueRoom extends Room<GameState> {
   private cancelAllTimers(): void {
     this.timers.forEach((t) => t.clear());
     this.timers.clear();
+    // 턴 클럭도 함께 사라지므로 화면에 남은 마감 시각을 반드시 지운다
+    // (판 종료·무승부·리매치에서 카운트다운이 계속 도는 것을 막는다).
+    this.state.turnEndsAt = 0;
   }
 
   // ── 참가자별 시야(정보 대칭성 §1.1) ──────────────────────────────────
@@ -388,13 +440,25 @@ export class ClueRoom extends Room<GameState> {
   }
 
   onJoin(client: Client, options: JoinOptions = {}): void {
+    // 진행 중인 판에는 좌석을 만들지 않고 **관전**으로 들인다(§8.3 (c)).
+    // 예전에는 이 분기가 로그만 찍고 그대로 좌석을 만들었지만, `handleStart`가 즉시
+    // `lock()`을 걸어 애초에 도달할 수 없는 죽은 코드였다. 잠금을 `setPrivate(true)`로
+    // 바꾸면서 실제로 도달 가능해졌으므로 관전 처리를 구현한다.
     if (this.state.phase !== "lobby") {
-      client.send("log", { text: "이미 진행 중인 판이에요. 관전으로 들어갑니다." });
+      this.spectators.add(client.sessionId);
+      client.send("log", {
+        text: "이미 진행 중인 판이에요. 관전으로 들어갑니다.",
+      });
+      return;
     }
+    this.seatPlayer(client, options.character);
+  }
+
+  /** 대기실 좌석 생성(최초 입장·관전자 승격 공용). */
+  private seatPlayer(client: Client, requested?: string): void {
     const used = new Set(
       [...this.state.players.values()].map((p) => p.suspect),
     );
-    const requested = options.character;
     const wanted =
       requested &&
       (SUSPECTS as readonly string[]).includes(requested) &&
@@ -420,23 +484,76 @@ export class ClueRoom extends Room<GameState> {
     this.syncMeta();
   }
 
+  /**
+   * 다음 판이 시작될 때 관전자에게 좌석을 준다(§8.3 (c)).
+   * 자리가 없으면 **순수 NPC(대리 중이 아닌 봇)** 한 자리를 비워 사람을 우선한다 —
+   * 그러지 않으면 관전자는 영원히 관전자로 남는다.
+   */
+  private seatSpectators(): void {
+    for (const sid of [...this.spectators]) {
+      const client = this.clients.find((c) => c.sessionId === sid);
+      if (!client) {
+        this.spectators.delete(sid);
+        continue;
+      }
+      if (this.state.players.size >= MAX_PLAYERS && !this.evictOneBot()) break;
+      this.spectators.delete(sid);
+      this.seatPlayer(client);
+    }
+  }
+
+  /** 순수 NPC 좌석 1개를 제거한다(대리 중인 사람 자리 `awayBot`은 건드리지 않는다). */
+  private evictOneBot(): boolean {
+    const bot = [...this.state.players.values()].find(
+      (p) => p.isBot && !p.awayBot,
+    );
+    if (!bot) return false;
+    this.state.players.delete(bot.id);
+    this.hands.delete(bot.id);
+    this.botKnowledge.delete(bot.id);
+    this.seenNotSolution.delete(bot.id);
+    this.suggestedIn.delete(bot.id);
+    return true;
+  }
+
+  /**
+   * 손패 개별 전송(§8.3 (a)). `startGame`과 **재접속** 양쪽이 쓴다.
+   * 예전에는 `startGame` 한 곳에서만 보내서, 새로고침 한 번이면 클라 `myCards`가
+   * 빈 채로 남아 증거노트가 자기 카드를 정답 후보로 표시하고 자멸 고발까지 가능했다.
+   * ⚠️ 손패는 비밀 정보 — 반드시 `client.send`로 당사자에게만(동기화 상태 금지).
+   */
+  private sendHand(id: string): void {
+    const player = this.state.players.get(id);
+    if (!player || player.isBot) return;
+    const target = this.clients.find((c) => c.sessionId === id);
+    target?.send("hand", { cards: this.hands.get(id) ?? [] });
+  }
+
   async onLeave(client: Client, consented: boolean): Promise<void> {
+    this.spectators.delete(client.sessionId);
     const player = this.state.players.get(client.sessionId);
     if (player) player.connected = false;
+    // 끊긴 좌석이 턴을 쥐고 있으면 45초가 아니라 8초 클럭으로 갈아탄다(§8.2).
+    if (this.state.currentTurn === client.sessionId) this.armTurnClock();
 
     // 게임 중 비자발적 이탈만 재접속을 기다린다(대기실에선 즉시 제거).
     if (!consented && this.state.phase === "playing") {
       this.broadcast("log", {
         text: `📡 연결 끊김 — ${player?.name ?? "누군가"} 님 · 재접속 대기`,
       });
+      // §8.2 — 재접속 창은 120초로 늘리되 **20초 시점에 대리 NPC가 좌석을 이어받는다.**
+      // 예전엔 60초 창 동안 `currentTurn`이 이탈자에게 고정돼 판이 최대 60초 완전 정지했다.
+      const grace = this.armTimer(`away:${client.sessionId}`, HANDOVER_GRACE_MS, () =>
+        this.handoverToBot(client.sessionId),
+      );
       try {
-        await this.allowReconnection(client, 60);
-        const back = this.state.players.get(client.sessionId);
-        if (back) back.connected = true;
-        this.broadcast("log", { text: `🙋 재접속 — ${back?.name ?? "플레이어"} 님` });
+        const back = await this.allowReconnection(client, RECONNECT_WINDOW_SEC);
+        grace.cancel();
+        this.restoreSeat(back);
         return;
       } catch {
-        // 시간 초과 → 아래에서 제거
+        grace.cancel();
+        // 시간 초과 → 아래에서 제거(이미 대리 인계됐으면 `handoverToBot`이 중복을 막는다)
       }
     }
     // 진행 중인 판이면 좌석을 **지우지 않고 봇에게 인계**한다(§8.1).
@@ -476,10 +593,37 @@ export class ClueRoom extends Room<GameState> {
     // 자기 턴을 쥔 채 나갔다면 그 턴을 대리 NPC가 이어서 진행한다(무한 정지 방지).
     if (this.state.currentTurn === sessionId) {
       this.cancelTimer(TURN_TIMER);
+      // 좌석이 봇이 된 이상 사람 턴 클럭은 의미가 없다(§8.2 — 봇은 스스로 턴을 넘긴다).
+      this.cancelTimer(TURN_CLOCK);
+      this.state.turnEndsAt = 0;
       this.suggestedTurnBy = "";
       this.scheduleBotIfNeeded();
     }
     this.syncMeta();
+  }
+
+  /**
+   * 재접속한 좌석을 사람에게 되돌린다(§8.3 (a) · §8.2).
+   * - **손패를 다시 개별 전송**한다 — 이게 없으면 새로고침 한 번에 "재접속 지원"이 거짓이 된다.
+   * - 대리 NPC가 이어받고 있었다면(`awayBot`) 좌석을 반환하고 봇 추리 노트를 버린다.
+   *   `hands`·`turnOrder`·`seenNotSolution`은 인계 때도 건드리지 않았으므로 그대로 이어진다.
+   */
+  private restoreSeat(client: Client): void {
+    const p = this.state.players.get(client.sessionId);
+    if (!p) return;
+    p.connected = true;
+    if (p.awayBot) {
+      p.isBot = false;
+      p.awayBot = false;
+      this.botKnowledge.delete(p.id);
+      // 대리 NPC가 진행 중이던 행동(이동 후 제안 등)은 사람이 돌아왔으니 회수한다.
+      if (this.state.currentTurn === p.id) this.cancelTimer(TURN_TIMER);
+    }
+    if (!this.state.host) this.state.host = p.id;
+    this.sendHand(p.id);
+    this.broadcast("log", { text: `🙋 재접속 — ${p.name} 님` });
+    // 8초(끊김) 클럭으로 돌던 턴을 사람 기준(45초)으로 다시 건다.
+    if (this.state.currentTurn === p.id) this.armTurnClock();
   }
 
   private removePlayer(sessionId: string): void {
@@ -490,8 +634,12 @@ export class ClueRoom extends Room<GameState> {
     this.botKnowledge.delete(sessionId);
     this.seenNotSolution.delete(sessionId);
     this.suggestedIn.delete(sessionId);
-    // 이탈자가 자기 턴(즉시고발 창 포함)을 쥐고 있었다면 타이머를 회수한다.
-    if (this.state.currentTurn === sessionId) this.cancelTimer(TURN_TIMER);
+    // 이탈자가 자기 턴(즉시고발 창·턴 클럭 포함)을 쥐고 있었다면 타이머를 회수한다.
+    if (this.state.currentTurn === sessionId) {
+      this.cancelTimer(TURN_TIMER);
+      this.cancelTimer(TURN_CLOCK);
+      this.state.turnEndsAt = 0;
+    }
     if (this.state.players.size === 0) this.cancelAllTimers();
     if (this.state.host === sessionId) {
       this.state.host = [...this.state.players.keys()][0] ?? "";
@@ -526,6 +674,7 @@ export class ClueRoom extends Room<GameState> {
     // 방 경계는 입구로만 출입 (벽)
     if (!canCross(player.x, player.y, nx, ny)) return;
     // P5: 다른 말이 있는 칸으로는 이동 불가 (입구 칸이 막히면 진입 불가 = 문 봉쇄)
+    // §8.3 관전자 제외 ②/③ — 관전자는 `state.players`에 없으므로 충돌 대상이 아니다.
     const occupied = [...this.state.players.values()].some(
       (p) => p.id !== client.sessionId && !p.eliminated && p.x === nx && p.y === ny,
     );
@@ -590,7 +739,12 @@ export class ClueRoom extends Room<GameState> {
 
     // NPC 충원은 `startGame`이 한다(실행계획 §7.2 ⑨) — 리매치에도 같은 규칙이 걸려야
     // 3인 판(덱 구성·공통 단서가 어긋남)이 나오지 않는다.
-    void this.lock();
+    //
+    // §8.3 (c) — `lock()`이 아니라 `setPrivate(true)`다. `lock()`은 `joinById`까지
+    // **거부**해서 초대 링크 재입장이 막히고(어디에서도 `unlock()`하지 않았다),
+    // 심사자 두 명이 동시에 들어오는 동선도 끊겼다. `setPrivate`는 공개방 목록에서만
+    // 감추고 코드 참가는 허용한다 — 진행 중 입장은 `onJoin`이 관전으로 받는다.
+    void this.setPrivate(true);
     this.startGame();
   }
 
@@ -607,6 +761,8 @@ export class ClueRoom extends Room<GameState> {
 
   // ── 판 시작 코어(최초 시작·리매치 공용): 위치/상태 리셋 + 딜 + 턴 개시 ──
   private startGame(): void {
+    // 관전자를 먼저 좌석에 앉힌다(§8.3 (c)) — NPC 충원보다 **앞**이어야 사람이 우선된다.
+    this.seatSpectators();
     // 빈 자리를 NPC로 6인까지 충원 — 최초 시작과 리매치 **양쪽**에서 돈다(실행계획 §7.2 ⑨).
     // 이탈자가 봇으로 인계(§8.1)되면 자리가 비지 않으므로 대개 아무것도 하지 않는다.
     while (this.state.players.size < MAX_PLAYERS) {
@@ -748,8 +904,7 @@ export class ClueRoom extends Room<GameState> {
       if (player?.isBot) {
         this.initBotKnowledge(id);
       } else {
-        const target = this.clients.find((c) => c.sessionId === id);
-        target?.send("hand", { cards: this.hands.get(id) ?? [] });
+        this.sendHand(id); // 재접속 경로와 **같은 헬퍼**로만 보낸다(§8.3 (a))
       }
     }
 
@@ -769,6 +924,7 @@ export class ClueRoom extends Room<GameState> {
     });
     this.broadcast("log", { text: `⏳ ${first?.name} 님의 턴` });
     this.scheduleBotIfNeeded();
+    this.armTurnClock();
   }
 
   private addBot(): boolean {
@@ -798,6 +954,8 @@ export class ClueRoom extends Room<GameState> {
     const r = regionOf(name);
     if (!r) return { x: 0, y: 0 };
     const occ = new Set<string>();
+    // §8.3 관전자 제외 ①/③ — 관전자는 좌석 자체가 없어 점유 집합에 들어오지 않는다
+    // (§8.3이 경고한 "유령 몸통이 문을 막는 봉쇄 버그"가 구조적으로 불가능하다).
     this.state.players.forEach((p, id) => {
       if (id !== excludeId) occ.add(`${p.x},${p.y}`);
     });
@@ -879,6 +1037,7 @@ export class ClueRoom extends Room<GameState> {
     });
 
     // 지목된 용의자 토큰을 그 방으로 소환 (다음 본인 턴에 그 방에서 시작)
+    // §8.3 관전자 제외 ③/③ — 소환 대상 탐색도 `state.players`만 본다(관전자는 없다).
     const target = [...this.state.players.values()].find(
       (p) => p.suspect === suggestion.suspect,
     );
@@ -1058,6 +1217,11 @@ export class ClueRoom extends Room<GameState> {
     // 같은 문장을 로그로도 보내면 제안자는 턴 배너 부제와 로그에서 두 번 읽는다
     // (UI 문안 명세 §11 "같은 사건이 두 줄" 위반). 카운트다운은 부제가 전담한다.
     client.send("canAccuse", { ms: ACCUSE_WINDOW_MS, suggestion });
+    // 즉시고발 창이 곧 이 턴의 마감이다 — 턴 클럭(§8.2)과 **동시에 살려두지 않는다.**
+    // (키가 서로 달라 자동 취소되지 않으므로 여기서 명시적으로 끈다. 켜둔 채로 두면
+    //  45초 클럭이 30초 창 뒤에 한 번 더 `advanceTurn`을 때려 남의 턴을 넘긴다.)
+    this.cancelTimer(TURN_CLOCK);
+    this.state.turnEndsAt = this.clock.currentTime + ACCUSE_WINDOW_MS;
     this.armTimer(TURN_TIMER, ACCUSE_WINDOW_MS, () => {
       // 만료 시점에 여전히 같은 사람의 턴일 때만 넘긴다(고발·턴 종료로 이미 넘어갔으면 무시).
       if (this.state.phase !== "playing") return;
@@ -1326,12 +1490,23 @@ export class ClueRoom extends Room<GameState> {
    * 판이 5.6라운드로 길어진 뒤에는 상한이 사실상 항상 이긴다(§7.5.4).
    */
   private npcDelay(): number {
+    // §8.2 다인 페이싱 — `avgHumanTurnMs`는 **모든 사람의 단일 EMA**라 사람이 늘수록
+    // 한 바퀴가 길어지는데 봇 딜레이는 그대로였다. 규약("사용자 평균의 절반")을
+    // **1인당 해석**으로 읽어 사람 수로 나눈다(사람 1명이면 기존과 완전히 동일).
+    const humans = Math.max(1, this.humanSeats());
     const base =
-      this.avgHumanTurnMs > 0 ? this.avgHumanTurnMs / 2 : NPC_DELAY_DEFAULT;
+      this.avgHumanTurnMs > 0
+        ? this.avgHumanTurnMs / (2 * humans)
+        : NPC_DELAY_DEFAULT;
     const bots = [...this.state.players.values()].filter(
       (p) => p.isBot && !p.eliminated,
     ).length;
-    const budget = NPC_ROUND_BUDGET_MS / Math.max(1, bots);
+    // 라운드 예산(§1.4)은 "내 턴 사이 간격"을 묶는 장치다. 그런데 봇 1턴의 비용은
+    // 딜레이만이 아니라 `BOT_ACT_GAP` + 대사 홀드까지다 — 딜레이에만 예산을 걸면
+    // 예산이 사실상 아무것도 하지 않는다(5봇 기준 2400 > 상한 1600이라 항상 무시됐다).
+    // 예산에서 **나머지 비용을 먼저 뺀** 몫만 딜레이에 준다.
+    const budget =
+      NPC_ROUND_BUDGET_MS / Math.max(1, bots) - (BOT_ACT_GAP + EST_SPEAK_HOLD_MS);
     return Math.max(
       NPC_DELAY_MIN,
       Math.min(NPC_DELAY_MAX, budget, base),
@@ -1352,6 +1527,45 @@ export class ClueRoom extends Room<GameState> {
     }
   }
 
+  /** 이 방에서 좌석을 가진 **사람**의 수(대리 NPC로 넘어간 자리는 사람이 아니다). */
+  private humanSeats(): number {
+    return [...this.state.players.values()].filter((p) => !p.isBot).length;
+  }
+
+  /**
+   * 턴 클럭(로드맵 §8.2) — AFK 1명이 판 전체를 무한 정지시키는 것을 막는다.
+   * `handleEndTurn`은 당사자만 호출할 수 있어서, 사람이 아무것도 하지 않으면
+   * 예전에는 **아무도 판을 진행시킬 수 없었다**(사람 턴 타임아웃 0개).
+   *
+   * - 전용 타이머를 새로 만들지 않고 공용 프리미티브 `armTimer`에 인자만 넘긴다.
+   * - **사람이 1명뿐이면 걸지 않는다** — 솔로 심사 동선에서 45초 압박은 손해다(§8.2).
+   * - 시간값: 접속 중 45초 / 접속 끊김 8초(§8.2).
+   * - 봇 턴에는 걸지 않는다(봇은 자기 타이머로 반드시 턴을 넘긴다).
+   */
+  private armTurnClock(): void {
+    this.cancelTimer(TURN_CLOCK);
+    this.state.turnEndsAt = 0;
+    if (this.state.phase !== "playing") return;
+    const id = this.state.currentTurn;
+    const p = this.state.players.get(id);
+    if (!p || p.isBot || p.eliminated) return;
+    if (this.humanSeats() < 2) return; // 솔로 = 클럭 없음
+    const ms = p.connected ? TURN_LIMIT_HUMAN_MS : TURN_LIMIT_AWAY_MS;
+    if (!p.connected) {
+      this.broadcast("log", { text: `⏳ 접속 대기 8초 — ${p.name} 님` });
+    }
+    this.state.turnEndsAt = this.clock.currentTime + ms;
+    this.armTimer(TURN_CLOCK, ms, () => {
+      if (this.state.phase !== "playing") return;
+      if (this.state.currentTurn !== id) return;
+      this.broadcast("log", {
+        text: "⌛ 시간 초과 — 다음 사람에게 넘어갔어요",
+        kind: "info",
+      });
+      this.advanceTurn();
+    });
+  }
+
   private scheduleBotIfNeeded(): void {
     if (this.state.phase !== "playing") return;
     const cur = this.state.players.get(this.state.currentTurn);
@@ -1362,8 +1576,10 @@ export class ClueRoom extends Room<GameState> {
   }
 
   private advanceTurn(): void {
-    // 턴 스코프 타이머(즉시고발 창·봇 행동)는 턴을 넘기는 순간 반드시 회수한다.
+    // 턴 스코프 타이머(즉시고발 창·봇 행동·턴 클럭)는 턴을 넘기는 순간 반드시 회수한다.
     this.cancelTimer(TURN_TIMER);
+    this.cancelTimer(TURN_CLOCK);
+    this.state.turnEndsAt = 0;
     this.suggestedTurnBy = "";
     this.recordTurnDuration();
     const order = ([...this.state.turnOrder] as string[]).filter((id) => {
@@ -1390,6 +1606,7 @@ export class ClueRoom extends Room<GameState> {
     const np = this.state.players.get(next);
     this.broadcast("log", { text: `⏳ ${np?.name} 님의 턴` });
     this.scheduleBotIfNeeded();
+    this.armTurnClock();
   }
 
   // 사람 플레이어 초기 위치 = 중앙 잔치상 주변 (봇은 addBot에서 방 스폰)

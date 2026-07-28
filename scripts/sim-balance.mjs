@@ -35,7 +35,14 @@ const ROOMS = [
 const SEATS = 6; // MAX_PLAYERS
 const HUMAN = 0; // 사람은 방장 = 턴 순서 첫 번째(ids[0])
 const COMMON_CARDS = 2; // 솔로(사람 1)일 때 공개되는 공통 단서
-const SUGGEST_CAP = 60; // 로드맵 §1.1 + §7.5 정정본
+const SUGGEST_CAP_OLD = 60; // 로드맵 §1.1 + §7.5 정정본(재진입 규칙 이전 p95 51~53 기준)
+/**
+ * 재산정된 총 제안 상한. 재진입 규칙(§7.5.2) 투입 후 자연 분포는
+ * p95 68 · p99 73 · p99.5 74 · 최대 76이라 60은 판의 17%를 강제 종료시킨다.
+ * 상한은 **밸런스 손잡이가 아니라 무한 지연 백스톱**이므로 도달률 목표를 ≤1%로 두고
+ * p99.5 바로 위인 75를 쓴다(실측 도달률 0.1% · 무승부 0.0%).
+ */
+const SUGGEST_CAP = 75;
 const HARD_STOP = 1000; // 상한이 없는 변형에서 무한 루프를 막는 안전장치
 
 // ── 시드 RNG(재현 가능) ─────────────────────────────────────────────
@@ -291,10 +298,11 @@ const playGame = (rng, opts) => {
   };
 };
 
-const p95 = (arr) => {
+const pct = (arr, q) => {
   const s = [...arr].sort((a, b) => a - b);
-  return s[Math.min(s.length - 1, Math.floor(s.length * 0.95))];
+  return s[Math.min(s.length - 1, Math.floor(s.length * q))];
 };
+const p95 = (arr) => pct(arr, 0.95);
 const mean = (arr) => arr.reduce((a, b) => a + b, 0) / arr.length;
 
 const run = (name, opts, games, seed) => {
@@ -314,6 +322,9 @@ const run = (name, opts, games, seed) => {
     suggestions.push(r.suggestions);
     humanRooms.push(r.humanRooms);
   }
+  // 상한 도달률은 **그 변형이 실제로 건 상한**으로 잰다.
+  // (예전에는 전역 SUGGEST_CAP으로 재서, 상한이 없는 변형 ①②의 도달률이 잘못 나왔다.)
+  const cap = opts.suggestCap ?? null;
   return {
     name,
     games,
@@ -324,8 +335,10 @@ const run = (name, opts, games, seed) => {
     avgHumanRooms: mean(humanRooms),
     p95Suggestions: p95(suggestions),
     maxSuggestions: Math.max(...suggestions),
-    capHitPct:
-      (suggestions.filter((s) => s >= SUGGEST_CAP).length / games) * 100,
+    capHitPct: cap
+      ? (suggestions.filter((s) => s >= cap) .length / games) * 100
+      : 0,
+    suggestions,
     seatWinPct: seatWins.map((w) => (w / games) * 100),
   };
 };
@@ -344,14 +357,23 @@ const variants = [
   ],
   [
     "③ revealed 분리 + 상한 60만 (§1.1)",
-    { sharedRevealed: false, humanInstantAccuse: false, suggestCap: SUGGEST_CAP },
+    { sharedRevealed: false, humanInstantAccuse: false, suggestCap: SUGGEST_CAP_OLD },
   ],
   [
     "④ 직전 상태 (①+②+③)",
-    { sharedRevealed: false, humanInstantAccuse: true, suggestCap: SUGGEST_CAP },
+    { sharedRevealed: false, humanInstantAccuse: true, suggestCap: SUGGEST_CAP_OLD },
   ],
   [
-    "⑤ ④ + 재진입 규칙 (§7.5.2)",
+    "⑤ ④ + 재진입 규칙 (§7.5.2) · 상한 60",
+    {
+      sharedRevealed: false,
+      humanInstantAccuse: true,
+      suggestCap: SUGGEST_CAP_OLD,
+      reentry: true,
+    },
+  ],
+  [
+    "⑥ ⑤ + 상한 재산정 75 (현재)",
     {
       sharedRevealed: false,
       humanInstantAccuse: true,
@@ -389,5 +411,53 @@ for (const r of results) {
 console.log("\n좌석별 승률(%) — 0번이 사람, 1~5번이 NPC");
 for (const r of results) {
   console.log(pad(r.name, 36) + r.seatWinPct.map((v) => num(v).padStart(6)).join(" "));
+}
+
+// ── 총 제안 상한 재산정 (로드맵 §7.5 2차 실측) ──────────────────────────
+// 상한 60은 "재진입 규칙 이전의 p95 = 51~53"을 근거로 고른 값이다. 재진입 규칙(§7.5.2)이
+// 들어가면서 p95가 65가 되어 상한이 판의 16%에서 작동한다 — 근거가 무너졌다.
+// 기준은 로드맵과 같다: **정상 게임을 자르지 않는 선**.
+// 상한이 없을 때의 자연 분포를 뽑고, 후보값별 도달률·승률·판 길이를 함께 본다.
+const natural = run(
+  "⑦ 재진입 · 상한 없음(자연 분포)",
+  { sharedRevealed: false, humanInstantAccuse: true, suggestCap: null, reentry: true },
+  games,
+  SEED,
+);
+const s = natural.suggestions;
+console.log("\n── 총 제안 수 자연 분포(상한 없음 · 재진입 규칙 적용) ──");
+console.log(
+  `평균 ${num(mean(s), 1)} · p50 ${pct(s, 0.5)} · p90 ${pct(s, 0.9)} · p95 ${pct(s, 0.95)}` +
+    ` · p98 ${pct(s, 0.98)} · p99 ${pct(s, 0.99)} · p99.5 ${pct(s, 0.995)} · 최대 ${Math.max(...s)}`,
+);
+
+console.log("\n── 상한 후보 스윕(같은 시드 · 재진입 규칙 적용) ──");
+console.log(
+  pad("상한", 8) + pad("도달률", 10) + pad("무승부", 9) +
+  pad("사람 승률", 11) + pad("평균 라운드", 13) + pad("평균 제안", 11) + pad("제안 p95", 10),
+);
+console.log("-".repeat(72));
+for (const capCand of [60, 70, 75, 80, 85, 90, 100]) {
+  const r = run(
+    `cap${capCand}`,
+    {
+      sharedRevealed: false,
+      humanInstantAccuse: true,
+      suggestCap: capCand,
+      reentry: true,
+    },
+    games,
+    SEED,
+  );
+  const natHit = (s.filter((v) => v >= capCand).length / games) * 100;
+  console.log(
+    pad(capCand, 8) +
+      pad(`${num(natHit)}%`, 10) +
+      pad(`${num(r.drawPct)}%`, 9) +
+      pad(`${num(r.humanWinPct)}%`, 11) +
+      pad(num(r.avgRounds, 2), 13) +
+      pad(num(r.avgSuggestions, 1), 11) +
+      pad(r.p95Suggestions, 10),
+  );
 }
 console.log("");

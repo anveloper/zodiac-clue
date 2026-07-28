@@ -51,6 +51,13 @@ export class GameState extends Schema {
   @type("string") winner = "";
   /** 현재 턴 플레이어의 남은 이동 칸 수(주사위). 0이면 이동 불가. */
   @type("number") stepsLeft = 0;
+  /**
+   * 현재 턴이 자동으로 넘어가는 시각(서버 `clock.currentTime` 기준 ms). 0이면 제한 없음
+   * (솔로 = 사람 1명이면 클럭을 끈다 — 로드맵 §8.2).
+   * **공개 정보다** — 누구의 턴이 언제 끝나는지는 전원이 동등하게 알아야 하는 값이고,
+   * 정답·손패와 무관하다(비밀 정보 동기화 금지 규약에 저촉되지 않는다).
+   */
+  @type("number") turnEndsAt = 0;
   /** 공통 단서(모두 공개·정답 아님). 솔로(사람1)일 때 추리 보조로 일부 공개. */
   @type(["string"]) commonCards = new ArraySchema<string>();
   /** 장물(훔친 것) 토큰들(보드 위 위치). */
