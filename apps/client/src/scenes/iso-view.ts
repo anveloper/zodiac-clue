@@ -21,11 +21,14 @@ import {
   roomAt,
   timingOf,
   zodiacColor,
+  zodiacCue,
   type MotionProfile,
   type ViewTiming,
+  type ZodiacCue,
 } from "@zodiac-clue/shared";
 import { acquireHudInset, hudRightInset, releaseHudInset } from "./hud-inset";
-import { currentTiming } from "./view-motion";
+import { currentTiming, cvdMode } from "./view-motion";
+import { CVD_CELL, cvdCueDots } from "./pixel-glyphs";
 import {
   OUTLINE_RING,
   TURN_RING,
@@ -136,6 +139,13 @@ const makeSprite = (
     worldH: number;
     /** 좌측 색 스트라이프(§4.2) — 색과 이름을 같은 픽셀에 둔다. */
     stripe?: string;
+    /**
+     * `?cvd=1` 색각 대체 표기(§4.3) — 이름표 **우측**에 8×8 도트 셀을 붙인다.
+     * 별도 스프라이트를 띄우지 않고 같은 캔버스에 그리는 이유:
+     * 뷰2·3의 1차 식별자는 이모지/아트이므로 보조 표기가 오브젝트 수를 늘리면
+     * (= 빌보드가 하나 더 뜨면) 화면이 어지러워지고 GPU 자원 회수 경로도 늘어난다.
+     */
+    cue?: ZodiacCue;
   },
 ): THREE.Sprite => {
   const {
@@ -146,6 +156,7 @@ const makeSprite = (
     padY = 0,
     worldH,
     stripe,
+    cue,
   } = opts;
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
@@ -155,7 +166,10 @@ const makeSprite = (
   const metrics = ctx.measureText(text);
   // 스트라이프 폭은 폰트에 비례(3px @ 13px 기준) — 어느 줌에서도 같은 굵기로 읽힌다.
   const stripeW = stripe ? Math.max(4, Math.round(fontPx * 0.22)) : 0;
-  const tw = Math.ceil(metrics.width) + padX * 2 + stripeW;
+  // 대체 표기 셀은 글자 높이의 0.62배 — 이름을 압도하지 않는 최소 크기.
+  const cueDot = cue ? Math.max(1, (fontPx * 0.62) / CVD_CELL) : 0;
+  const cueW = cue ? cueDot * CVD_CELL + Math.round(fontPx * 0.18) : 0;
+  const tw = Math.ceil(metrics.width) + padX * 2 + stripeW + cueW;
   const th = Math.ceil(fontPx * 1.3) + padY * 2;
   canvas.width = tw;
   canvas.height = th;
@@ -174,7 +188,16 @@ const makeSprite = (
     ctx.fillRect(0, 0, stripeW, th);
   }
   ctx.fillStyle = color;
-  ctx.fillText(text, stripeW + (tw - stripeW) / 2, th / 2);
+  ctx.fillText(text, stripeW + (tw - stripeW - cueW) / 2, th / 2);
+  if (cue) {
+    // 색 대체 표기는 **흰색 고정**(§4.3) — 색에 의존하면 의미가 없다.
+    ctx.fillStyle = "#ffffff";
+    const ox = tw - cueW + (cueW - cueDot * CVD_CELL) / 2;
+    const oy = (th - cueDot * CVD_CELL) / 2;
+    for (const r of cvdCueDots(cue)) {
+      ctx.fillRect(ox + r.x * cueDot, oy + r.y * cueDot, r.w * cueDot, r.h * cueDot);
+    }
+  }
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.minFilter = THREE.LinearFilter;
@@ -259,6 +282,8 @@ export class IsoView implements ViewContract {
   private timing: ViewTiming = currentTiming();
   /** 직전 프레임의 rAF 타임스탬프(ms). 0이면 "첫 프레임"(dt 기본값 사용). */
   private lastFrameMs = 0;
+  /** 색각 대체 표기(§4.3). 뷰4에만 있던 것을 뷰2·3으로 넓혀 계약을 맞춘다. */
+  private cvd = cvdMode();
 
   // 뷰3(에셋 모드): 이모지 대신 /assets/의 정면 아트를 로드. 실패 시 이모지 폴백.
   private useAssets = false;
@@ -735,6 +760,8 @@ export class IsoView implements ViewContract {
       worldH: 0.36,
       // 이름표 좌측 색 스트라이프 — 색과 이름을 같은 픽셀에(§4.2).
       stripe: hexString(color),
+      // `?cvd=1`이면 우측에 계열 바 + 명도 핍(§4.3). 뷰2·3 공통.
+      cue: this.cvd ? zodiacCue(a.suspect) : undefined,
     });
     nameSprite.position.set(0, 0.35, 0.15);
     group.add(nameSprite);

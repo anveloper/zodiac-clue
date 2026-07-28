@@ -20,11 +20,13 @@ import {
   roomAt,
   timingOf,
   zodiacColor,
+  zodiacCue,
   type MotionProfile,
   type ViewTiming,
 } from "@zodiac-clue/shared";
 import { acquireHudInset, hudInset, releaseHudInset } from "./hud-inset";
-import { currentTiming } from "./view-motion";
+import { currentTiming, cvdMode } from "./view-motion";
+import { CVD_CELL, cvdCueDots } from "./pixel-glyphs";
 import {
   beginReveal,
   destroyReveal,
@@ -195,6 +197,8 @@ export class GameScene extends Phaser.Scene implements ViewContract {
   private outcomeFx: Phaser.GameObjects.GameObject[] = [];
   /** 감속 프로파일 타이밍(§1.3). 보간 길이는 매번 여기서 재조회한다. */
   private timing: ViewTiming = currentTiming();
+  /** 색각 대체 표기(§4.3). 뷰4에만 있던 것을 4뷰 공통으로 맞춘다. */
+  private cvd = false;
 
   constructor() {
     super("game");
@@ -203,6 +207,7 @@ export class GameScene extends Phaser.Scene implements ViewContract {
   create(): void {
     this.room = this.registry.get("room") as Room;
     this.myId = this.room.sessionId;
+    this.cvd = cvdMode();
     // HUD 인셋 캐시 구독 — 씬이 내려갈 때 반드시 해제(ResizeObserver 누수 금지).
     this.holdInset();
     // 씬 종료·파괴에서 GPU 자원·타이머를 회수한다(§9.3 — dispose 0건이던 지점).
@@ -1025,6 +1030,43 @@ export class GameScene extends Phaser.Scene implements ViewContract {
     this.dropInset();
   }
 
+  /**
+   * `?cvd=1` 색각 대체 표기(spec §4.3) — **계열 바 + 명도 핍**을 8×8 도트 셀에.
+   *
+   * 뷰4에만 있던 표기를 뷰1로 넓힌다(계약 §5가 요구하는 4뷰 균일성).
+   * 다만 뷰1의 1차 식별자는 이모지이므로 **얼굴을 건드리지 않고 이름표 우측**에
+   * 12px 셀 하나만 붙인다 — spec §4.3이 셀 크기(8×8 도트)만 정하고 배치는
+   * 뷰에 맡겼기 때문에, 가장 덜 어지러운 자리를 고른 것이다.
+   * 글리프 어휘 자체는 `pixel-glyphs.cvdCueDots` 단일 소스에서 온다.
+   */
+  private makeCvdCue(
+    suspect: string,
+    name: Phaser.GameObjects.Text,
+  ): Phaser.GameObjects.GameObject[] {
+    if (!this.cvd) return [];
+    const cue = zodiacCue(suspect);
+    if (!cue) return [];
+    const d = 1.5; // 도트 1단위(px) → 셀 12px
+    const cx = name.width / 2 + (CVD_CELL * d) / 2 + 4;
+    const cy = CELL * 0.55 + name.height / 2;
+    // 잔디·방바닥 어디에서도 흰 글리프가 읽히도록 어두운 판을 깐다.
+    const out: Phaser.GameObjects.GameObject[] = [
+      this.add.rectangle(cx, cy, CVD_CELL * d + 4, CVD_CELL * d + 4, 0x000000, 0.67),
+    ];
+    for (const r of cvdCueDots(cue)) {
+      out.push(
+        this.add.rectangle(
+          cx + (r.x + r.w / 2 - CVD_CELL / 2) * d,
+          cy + (r.y + r.h / 2 - CVD_CELL / 2) * d,
+          r.w * d,
+          r.h * d,
+          0xffffff,
+        ),
+      );
+    }
+    return out;
+  }
+
   private createToken(id: string, a: ActorSnapshot): Token {
     // 색은 접속 순서가 아니라 `suspect`로 결정된다 — 판 도중에도 불변(§4).
     const color = zodiacColor(a.suspect);
@@ -1078,6 +1120,7 @@ export class GameScene extends Phaser.Scene implements ViewContract {
       name,
       stripe,
       elimDash,
+      ...this.makeCvdCue(a.suspect, name),
     ]);
     const token: Token = {
       c,

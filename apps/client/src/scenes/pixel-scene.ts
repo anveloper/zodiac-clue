@@ -20,9 +20,15 @@ import {
   zodiacCue,
   type MotionProfile,
   type ViewTiming,
-  type ZodiacFamily,
 } from "@zodiac-clue/shared";
 import { currentTiming, cvdMode } from "./view-motion";
+import {
+  CVD_CELL,
+  cvdCueDots,
+  gridCells,
+  lootStamp,
+  zodiacBadge,
+} from "./pixel-glyphs";
 import {
   beginReveal,
   destroyReveal,
@@ -283,10 +289,14 @@ export class PixelScene extends Phaser.Scene implements ViewContract {
   }
 
   /**
-   * 도트 캐릭터(크리터) — 몸통 블록 + 귀 + 눈.
+   * 도트 캐릭터(크리터) — 몸통 블록 + 귀 + 눈 + **머리 위 3×3 문장 배지**.
    *
    * 시그니처가 `color`가 아니라 `suspect`인 이유: 색은 십이지 고유값(§4)에서 파생되고,
    * 실루엣 12종(§2.3)도 같은 키로 갈라진다. 색을 인자로 받으면 두 번 고쳐야 한다.
+   *
+   * roadmap §2.3 **축소판** 채택 — 12종을 가르는 축은 배지 하나다.
+   * 풀버전(귀 4형 × 볏 2형 × 꼬리 3형)은 execution-plan §5.1에서 컷됐으므로
+   * **몸통·귀 실루엣은 12종이 동일하게 유지**한다(컷 경계를 코드로 지킨다).
    */
   private makeCritter(
     suspect: string,
@@ -321,7 +331,9 @@ export class PixelScene extends Phaser.Scene implements ViewContract {
       ...this.makeElimEye(s * 0.12, -s * 0.01),
     ];
     const cue = this.makeCvdCue(suspect, s);
+    const badge = this.makeBadge(suspect, s);
     const c = this.add.container(0, 0, [
+      ...badge,
       earL,
       earR,
       body,
@@ -330,6 +342,42 @@ export class PixelScene extends Phaser.Scene implements ViewContract {
       ...cue,
     ]);
     return { c, eyes, elimEyes, colorParts: [body, earL, earR] };
+  }
+
+  /**
+   * 머리 위 3×3 문장 배지(roadmap §2.3 축소판) — 십이지 12종을 **색과 독립으로** 가른다.
+   *
+   * 배치 근거: 현재-턴 사각 링 상단(`y = 2 - CELL*0.82/2 ≈ -14.4`)보다 위,
+   * 말풍선 하단(`y = -CELL*0.9 = -36`)보다 아래 — **기존 상태 표기와 겹치지 않는다**.
+   * 탈락 시에는 컨테이너 알파(§1.2)를 그대로 함께 받고, 눈 ✕는 얼굴에 찍히므로
+   * 배지가 2차 표기를 가리지 않는다.
+   *
+   * 색은 잉크 명판 위 크림색 도트 고정 — 배지가 십이지색을 쓰면 축이 하나로 합쳐져
+   * "색을 빼고도 구분"이라는 목적 자체가 사라진다.
+   */
+  private makeBadge(
+    suspect: string,
+    s: number,
+  ): Phaser.GameObjects.GameObject[] {
+    const grid = zodiacBadge(suspect);
+    if (!grid) return [];
+    const cy = -s * 0.62;
+    const plate = this.add
+      .rectangle(0, cy, DOT * 5, DOT * 5, PAL.ink, 0.92)
+      .setStrokeStyle(1, PAL.gold, 0.9);
+    const out: Phaser.GameObjects.GameObject[] = [plate];
+    for (const { col, row } of gridCells(grid)) {
+      out.push(
+        this.add.rectangle(
+          (col - 1) * DOT,
+          cy + (row - 1) * DOT,
+          DOT,
+          DOT,
+          PAL.cream,
+        ),
+      );
+    }
+    return out;
   }
 
   /** 탈락 눈 = ✕ 2×2 도트(§2 계약 표 `setElim` 뷰4 칸). 기본 숨김. */
@@ -360,24 +408,17 @@ export class PixelScene extends Phaser.Scene implements ViewContract {
     const cue = zodiacCue(suspect);
     if (!cue) return [];
     const d = 1.5; // 도트 1단위(px)
-    const cell = d * 8;
     const cy = s * 0.16; // 몸통 하단
-    const white = 0xffffff;
-    const bars: Record<ZodiacFamily, [number, number, number, number]> = {
-      red: [-cell / 2 + d, cy, d * 2, cell],
-      jade: [0, cy - cell / 2 + d, cell, d * 2],
-      violet: [cell / 2 - d, cy, d * 2, cell],
-      blue: [0, cy + cell / 2 - d, cell, d * 2],
-    };
-    const [bx, by, bw, bh] = bars[cue.family];
-    const out = [this.add.rectangle(bx, by, bw, bh, white)];
-    const n = cue.tier + 1;
-    for (let i = 0; i < n; i++) {
-      out.push(
-        this.add.rectangle((i - (n - 1) / 2) * d * 2, cy, d, d, white),
-      );
-    }
-    return out;
+    // 글리프 어휘는 `pixel-glyphs.cvdCueDots` 단일 소스 — 뷰1·2·3이 같은 함수를 쓴다.
+    return cvdCueDots(cue).map((r) =>
+      this.add.rectangle(
+        (r.x + r.w / 2 - CVD_CELL / 2) * d,
+        cy + (r.y + r.h / 2 - CVD_CELL / 2) * d,
+        r.w * d,
+        r.h * d,
+        0xffffff,
+      ),
+    );
   }
 
   // ── 계약: 표시/은닉 · 감속 프로파일 ───────────────────────
@@ -556,7 +597,7 @@ export class PixelScene extends Phaser.Scene implements ViewContract {
       const cy = w.y * CELL + CELL / 2;
       let s = this.loot.get(key);
       if (!s) {
-        s = this.makeLootBox(cx, cy);
+        s = this.makeLootBox(cx, cy, w.value);
         this.loot.set(key, s);
       } else if (s.x !== cx || s.y !== cy) {
         this.tweens.killTweensOf(s);
@@ -613,15 +654,39 @@ export class PixelScene extends Phaser.Scene implements ViewContract {
     }
   }
 
-  /** 도트 장물 상자(뚜껑 분리 — `lootWarp`가 2프레임으로 여닫는다). */
-  private makeLootBox(cx: number, cy: number): Phaser.GameObjects.Container {
+  /**
+   * 도트 장물 상자 — 뚜껑 분리(`lootWarp`가 2프레임으로 여닫는다) +
+   * **앞면 3×3 스탬프**로 장물 6종을 구분한다(spec §5 행 13 · roadmap §2.3 축소판).
+   *
+   * ⚠ 자식 순서 `[box, lid, ...stamp]`는 `lootWarp`가 `list[1]`을 뚜껑으로 집는
+   *   전제다 — 스탬프를 **뒤에** 붙여 그 전제를 깨지 않는다.
+   *   `LOOT_DOTS` 8×8 6벌(풀버전 텍스처)은 execution-plan §5.1에서 컷.
+   */
+  private makeLootBox(
+    cx: number,
+    cy: number,
+    value: string,
+  ): Phaser.GameObjects.Container {
     const box = this.add
-      .rectangle(0, 0, CELL * 0.5, CELL * 0.4, PAL.loot)
+      .rectangle(0, CELL * 0.02, CELL * 0.56, CELL * 0.48, PAL.loot)
       .setStrokeStyle(3, PAL.ink);
     const lid = this.add
-      .rectangle(0, -CELL * 0.16, CELL * 0.56, CELL * 0.12, PAL.gold)
+      .rectangle(0, -CELL * 0.2, CELL * 0.62, CELL * 0.13, PAL.gold)
       .setStrokeStyle(2, PAL.ink);
-    return this.add.container(cx, cy, [box, lid]).setDepth(4);
+    const parts: Phaser.GameObjects.GameObject[] = [box, lid];
+    const sy = CELL * 0.06;
+    for (const { col, row } of gridCells(lootStamp(value))) {
+      parts.push(
+        this.add.rectangle(
+          (col - 1) * DOT,
+          sy + (row - 1) * DOT,
+          DOT,
+          DOT,
+          PAL.ink,
+        ),
+      );
+    }
+    return this.add.container(cx, cy, parts).setDepth(4);
   }
 
   // ── 계약: 액터 ───────────────────────────────────────────
@@ -766,14 +831,18 @@ export class PixelScene extends Phaser.Scene implements ViewContract {
     }
   }
 
-  /** 장물 순간이동 — Container tween + 뚜껑 2프레임(spec §2 뷰4 칸). */
-  lootWarp(_value: string, from: ViewCell, to: ViewCell): void {
+  /**
+   * 장물 순간이동 — Container tween + 뚜껑 2프레임(spec §2 뷰4 칸).
+   * 잔상 상자도 **같은 스탬프**를 달고 날아간다 — 어떤 장물이 옮겨졌는지가
+   * 배너 없이 화면만으로 읽힌다.
+   */
+  lootWarp(value: string, from: ViewCell, to: ViewCell): void {
     const ax = from.x * CELL + CELL / 2;
     const ay = from.y * CELL + CELL / 2;
     const bx = to.x * CELL + CELL / 2;
     const by = to.y * CELL + CELL / 2;
     const ms = this.timing.WARP_MS;
-    const ghost = this.makeLootBox(ax, ay).setDepth(6);
+    const ghost = this.makeLootBox(ax, ay, value).setDepth(6);
     if (ms <= 0) {
       ghost.destroy();
       return;
@@ -782,7 +851,7 @@ export class PixelScene extends Phaser.Scene implements ViewContract {
     // 뚜껑 2프레임: 열림(위로 1도트) → 닫힘.
     this.tweens.add({
       targets: lid,
-      y: -CELL * 0.16 - DOT * 2,
+      y: -CELL * 0.2 - DOT * 2,
       duration: Math.max(1, ms / 2),
       yoyo: true,
     });
