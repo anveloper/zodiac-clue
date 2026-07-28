@@ -50,8 +50,13 @@ export const SEED_ENV = "ZODIAC_SEED";
  * 2) 없으면 새 시드를 **한 번** 뽑고 서버 로그에 남긴다.
  *
  * ⚠️ `Math.random()`은 여기서 **시드를 발행할 때 1회**만 쓰인다. 이후 모든 판단은
- *    발행된 정수 시드의 순수 함수이므로, 로그에 찍힌 시드를 `ZODIAC_SEED`로 되먹이면
- *    같은 딜에서 같은 판이 그대로 재생된다(§0.2-2 위배 없음).
+ *    발행된 정수 시드의 순수 함수다.
+ *
+ * ⚠️ **재생되는 것은 이 시드를 쓰는 판단뿐이다** — 지금은 봇의 확률적 오답 고발 하나다.
+ *    정답 봉투(`pick`)·덱 셔플(`shuffle`)·주사위(`rollSteps`)는 여전히 시드 없는
+ *    `Math.random()`이라 `ZODIAC_SEED`를 되먹여도 **같은 판이 재생되지는 않는다.**
+ *    판 전체를 재생하려면 그 셋도 이 시드에서 파생시켜야 한다(미착수).
+ *    판 전체의 결정론이 필요한 검증은 `scripts/sim-balance.mjs`가 자체 시드로 수행한다.
  */
 export const mintGameSeed = (): number => {
   const raw = process.env[SEED_ENV];
