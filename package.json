@@ -17,6 +17,8 @@
     "verify": "node scripts/verify.mjs",
     "verify:quick": "node scripts/verify.mjs --quick",
     "verify:json": "node scripts/verify.mjs --json",
+    "verify:print": "node scripts/verify-print.mjs",
+    "verify:print:json": "node scripts/verify-print.mjs --json",
     "gate:bundle": "node scripts/gate-bundle-budget.mjs",
     "gate:sim": "node scripts/sim-balance.mjs --gate",
     "gate:gpu": "node scripts/gate-gpu-baseline.mjs",

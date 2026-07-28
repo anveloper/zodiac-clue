@@ -128,6 +128,8 @@
     :root { --bg:#ffffff; --card:#ffffff; --edge:#bbb2a4; --ink:#1a1712; --dim:#5b5245;
             --gold:#7a5a12; --accent:#8a4519; --red:#9b2f26; --green:#1f6b3a; --amber:#7d5f10;
             --blue:#1d5570; --violet:#4b3a70; }
+    /* 배경색을 인쇄에 실어야 배지·간트 막대가 "글자만 뜬 상태"로 나오지 않는다. */
+    html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     body { background:#fff; color:#1a1712; }
     .wrap { max-width:none; padding:0; }
     a { color:#1d5570; }
@@ -148,7 +150,14 @@
     .chain .nd.root { background:#fbf1d8 !important; }
     .hu .when { background:#fbf1d8 !important; }
     .cp tr.mile td { background:#fbf6ea !important; }
-    @page { margin:14mm; }
+    /* `.tag` 는 화면용 어두운 배경(#2c2519)을 그대로 물려받아 인쇄에서 **검은 배지 위 검은 글자**가
+       된다(실측: §7.1·콘티 2.C 등 명도차 Δ3~31). 배경을 밝게 되돌리고 글자를 진하게 고정한다. */
+    .tag { background:#f1ece2 !important; color:#3d3527 !important; border-color:#b6ab97 !important; }
+    .tag.src { color:#463263 !important; border-color:#9b8bb8 !important; }
+    .tag.p0  { color:#8f2a22 !important; border-color:#c9938d !important; }
+    .tag.hu  { color:#6b4e0f !important; border-color:#c0a86a !important; }
+    .tag.cut { color:#5b5245 !important; border-color:#b6ab97 !important; }
+    @page { size: A4; margin:14mm; }
   }
 </style>
 </head>
