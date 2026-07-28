@@ -10,6 +10,7 @@ import {
   label,
   roomAt,
 } from "@zodiac-clue/shared";
+import { acquireHudInset, hudRightInset, releaseHudInset } from "./hud-inset";
 
 // 2.5D 뷰: 평면 보드를 카메라로 살짝 내려다보는(피치) 원근 뷰.
 // 서버 상태(그리드 x,y)를 그대로 읽어 3D 월드로 매핑한다. 룰/입력은 2D와 동일.
@@ -30,6 +31,26 @@ const PAN_STEP = 0.6; // 자유시점 방향키 팬
 const TYPE_MS = 55;
 const BUBBLE_HOLD_MS = 2600;
 
+// ── 표기 강도(view-contract-spec §1.2) — 4뷰 동일 값 ──
+/** 탈락(고발 실패) 토큰의 불투명도. 뷰1 0.3 / 뷰4 0.35와 같은 정보 강도. */
+const ELIM_ALPHA = 0.35;
+/** 이미 사용된 계략 NPC의 불투명도. */
+const SPENT_ALPHA = 0.3;
+
+// ── 장물 보간(view-contract-spec §1.3 `LOOT_TWEEN_MS` 260 · §3 "스냅 → 보간 도입") ──
+/** 계약상 장물 이동 연출 길이(ms). */
+const LOOT_TWEEN_MS = 260;
+/**
+ * 지수 보간 시상수 τ(ms). `k = 1 - exp(-dt/τ)`.
+ * τ = LOOT_TWEEN_MS/3 이면 LOOT_TWEEN_MS 경과 시 잔차가 e⁻³ ≈ 5%로,
+ * 뷰1·뷰4의 tween(260ms)과 "같은 시간에 도착한 것처럼" 보인다.
+ * 뷰2·3이 프레임 종속 lerp였던 것을 dt 기반으로 바꾸는 것이 목적이므로
+ * 계수가 아니라 시간을 상수로 둔다.
+ */
+const LOOT_TAU_MS = LOOT_TWEEN_MS / 3;
+/** 탭 복귀·긴 스톨 후 한 프레임에 순간이동하지 않도록 dt 상한(ms). */
+const DT_MAX_MS = 100;
+
 // 그리드(gx,gy) → 월드(x,0,z). 보드 중심을 원점에.
 const worldX = (gx: number): number => gx - GRID_WIDTH / 2 + 0.5;
 const worldZ = (gy: number): number => gy - GRID_HEIGHT / 2 + 0.5;
@@ -47,8 +68,17 @@ type Token = {
   group: THREE.Group;
   ring: THREE.Mesh;
   face: THREE.Sprite;
+  elimMark: THREE.Sprite; // 탈락 2차 표기(알파 단독 금지 — §1.2 ELIM_NEEDS_SECOND_CUE)
   cur: THREE.Vector2; // 현재 보간 위치(그리드 단위)
   target: THREE.Vector2; // 목표 위치
+  placed: boolean;
+};
+
+/** 장물 토큰 — 위치를 dt 기반 지수 보간으로 따라간다(스냅 금지). */
+type LootToken = {
+  sprite: THREE.Sprite;
+  cur: THREE.Vector2; // 현재 보간 위치(그리드 단위)
+  target: THREE.Vector2;
   placed: boolean;
 };
 
@@ -111,6 +141,31 @@ const makeSprite = (
   return sprite;
 };
 
+/**
+ * 그룹(토큰/NPC) **전체 구성 요소**에 같은 불투명도를 적용한다.
+ * 탈락·계략사용 표기가 `Sprite`(얼굴)에만 걸려 disc·ring·이름표가 불투명하게
+ * 남던 결함(view-contract-spec §5 행 3·12, §6 P0)의 수정 지점.
+ * `Mesh`의 머티리얼은 `transparent`가 꺼져 있으면 opacity가 무시되므로 함께 켠다.
+ */
+const setGroupOpacity = (root: THREE.Object3D, opacity: number): void => {
+  root.traverse((obj) => {
+    const holder = obj as THREE.Object3D & {
+      material?: THREE.Material | THREE.Material[];
+    };
+    if (!holder.material) return;
+    const mats = Array.isArray(holder.material)
+      ? holder.material
+      : [holder.material];
+    for (const m of mats) {
+      if (!m.transparent) {
+        m.transparent = true;
+        m.needsUpdate = true;
+      }
+      m.opacity = opacity;
+    }
+  });
+};
+
 export class IsoView {
   private room: Room;
   private renderer: THREE.WebGLRenderer;
@@ -121,7 +176,7 @@ export class IsoView {
 
   private myId: string;
   private tokens = new Map<string, Token>();
-  private weapons = new Map<string, THREE.Sprite>();
+  private weapons = new Map<string, LootToken>();
   private helpers = new Map<string, THREE.Group>();
   private bubbles = new Map<string, Bubble>();
 
@@ -137,6 +192,8 @@ export class IsoView {
   private lastMove = 0;
   private active = false;
   private raf = 0;
+  /** 직전 프레임의 rAF 타임스탬프(ms). 0이면 "첫 프레임"(dt 기본값 사용). */
+  private lastFrameMs = 0;
 
   // 뷰3(에셋 모드): 이모지 대신 /assets/의 정면 아트를 로드. 실패 시 이모지 폴백.
   private useAssets = false;
@@ -198,6 +255,9 @@ export class IsoView {
     this.bubbleLayer.style.display = on ? "block" : "none";
     if (on) {
       this.resize();
+      // 인셋 캐시 구독(뷰1과 공유·refcount). 비활성화 때 반드시 해제한다.
+      acquireHudInset();
+      this.lastFrameMs = 0; // 숨어 있던 시간이 dt로 새지 않도록 리셋
       window.addEventListener("keydown", this.onKeyDown);
       window.addEventListener("keyup", this.onKeyUp);
       this.canvas.addEventListener("wheel", this.onWheel, { passive: false });
@@ -217,6 +277,9 @@ export class IsoView {
       window.removeEventListener("pointerup", this.onPointerUp);
       window.removeEventListener("resize", this.onResize);
       cancelAnimationFrame(this.raf);
+      this.lastFrameMs = 0;
+      // 마지막 사용자면 hud-inset이 ResizeObserver를 disconnect 한다.
+      releaseHudInset();
     }
   }
 
@@ -240,7 +303,7 @@ export class IsoView {
     // 토큰·장물·NPC 스프라이트는 지워두면 다음 syncState에서 새 플래그로 재생성.
     this.tokens.forEach((t) => this.scene.remove(t.group));
     this.tokens.clear();
-    this.weapons.forEach((s) => this.scene.remove(s));
+    this.weapons.forEach((lt) => this.scene.remove(lt.sprite));
     this.weapons.clear();
     this.helpers.forEach((g) => this.scene.remove(g));
     this.helpers.clear();
@@ -447,7 +510,8 @@ export class IsoView {
     const color = PLAYER_COLORS[index % PLAYER_COLORS.length];
     const disc = new THREE.Mesh(
       new THREE.CircleGeometry(0.42, 32),
-      new THREE.MeshStandardMaterial({ color }),
+      // transparent를 켜두지 않으면 탈락 시 opacity가 무시돼 disc만 불투명하게 남는다.
+      new THREE.MeshStandardMaterial({ color, transparent: true }),
     );
     disc.rotation.x = -Math.PI / 2;
     disc.position.y = 0.22;
@@ -483,11 +547,20 @@ export class IsoView {
     nameSprite.position.set(0, 0.35, 0.15);
     group.add(nameSprite);
 
+    // 탈락 2차 표기 — 알파 단독은 저대비·회색조에서 사라진다(§1.2).
+    // 문안은 ui-copy §"아이콘 사전"의 탈락 기호 ❌를 그대로 쓴다.
+    const elimMark = makeSprite("❌", { fontPx: 96, worldH: 0.6 });
+    elimMark.position.set(0, 0.9, 0.2);
+    elimMark.renderOrder = 11;
+    elimMark.visible = false;
+    group.add(elimMark);
+
     this.scene.add(group);
     const token: Token = {
       group,
       ring,
       face,
+      elimMark,
       cur: new THREE.Vector2(p.x, p.y),
       target: new THREE.Vector2(p.x, p.y),
       placed: false,
@@ -518,19 +591,30 @@ export class IsoView {
       token.target.set(p.x, p.y);
       const isCurrent = id === current;
       token.ring.visible = isCurrent;
-      const alpha = p.eliminated ? 0.35 : 1;
-      (token.face.material as THREE.SpriteMaterial).opacity = alpha;
+      // 탈락 표기는 face 스프라이트가 아니라 **토큰 전체**(disc·ring·이름표·얼굴)에.
+      const alpha = p.eliminated ? ELIM_ALPHA : 1;
+      setGroupOpacity(token.group, alpha);
+      // 2차 표기(❌)는 감쇠 대상이 아니다 — 감쇠되면 2중 표기의 의미가 사라진다.
+      token.elimMark.visible = p.eliminated;
+      (token.elimMark.material as THREE.SpriteMaterial).opacity = 1;
     });
 
-    // 장물 토큰
+    // 장물 토큰 — 위치는 target만 갱신하고 실제 이동은 loop()에서 dt 보간(스냅 금지).
     state.weapons.forEach((w, key) => {
-      let s = this.weapons.get(key);
-      if (!s) {
-        s = this.lootSprite(w.value, 0.8);
-        this.scene.add(s);
-        this.weapons.set(key, s);
+      let lt = this.weapons.get(key);
+      if (!lt) {
+        const sprite = this.lootSprite(w.value, 0.8);
+        sprite.position.set(worldX(w.x), 0.55, worldZ(w.y));
+        this.scene.add(sprite);
+        lt = {
+          sprite,
+          cur: new THREE.Vector2(w.x, w.y),
+          target: new THREE.Vector2(w.x, w.y),
+          placed: false,
+        };
+        this.weapons.set(key, lt);
       }
-      s.position.set(worldX(w.x), 0.55, worldZ(w.y));
+      lt.target.set(w.x, w.y);
     });
 
     // 고정 NPC(계략)
@@ -540,7 +624,8 @@ export class IsoView {
         g = new THREE.Group();
         const disc = new THREE.Mesh(
           new THREE.CircleGeometry(0.42, 32),
-          new THREE.MeshStandardMaterial({ color: 0x2b2013 }),
+          // helper 감광도 disc를 포함해야 하므로 transparent를 켜둔다.
+          new THREE.MeshStandardMaterial({ color: 0x2b2013, transparent: true }),
         );
         disc.rotation.x = -Math.PI / 2;
         disc.position.y = 0.22;
@@ -565,11 +650,8 @@ export class IsoView {
         this.scene.add(g);
         this.helpers.set(key, g);
       }
-      const op = h.used ? 0.3 : 1;
-      g.children.forEach((c) => {
-        if (c instanceof THREE.Sprite)
-          (c.material as THREE.SpriteMaterial).opacity = op;
-      });
+      // 사용된 계략 감광도 Sprite만이 아니라 disc Mesh를 포함한 **그룹 전체**에.
+      setGroupOpacity(g, h.used ? SPENT_ALPHA : 1);
     });
 
     // 카메라 추적 대상 = 현재 턴(지연 전환)
@@ -598,8 +680,14 @@ export class IsoView {
   }
 
   // ── 매 프레임 루프 ──
-  private loop(): void {
+  // `now`는 rAF 타임스탬프(ms). 고정 프레임을 가정하지 않기 위해 dt를 여기서 만든다.
+  private loop(now: number): void {
     if (!this.active) return;
+    const dtMs =
+      this.lastFrameMs === 0
+        ? 1000 / 60
+        : Math.min(DT_MAX_MS, Math.max(0, now - this.lastFrameMs));
+    this.lastFrameMs = now;
     this.syncState();
 
     // 토큰 위치 보간(그리드→월드)
@@ -608,6 +696,15 @@ export class IsoView {
       t.cur.lerp(t.target, k);
       t.placed = true;
       t.group.position.set(worldX(t.cur.x), 0, worldZ(t.cur.y));
+    });
+
+    // 장물 위치 보간 — 프레임 시간 기반 지수 보간 k = 1 - exp(-dt/τ).
+    // (기존: 매 프레임 position.set으로 순간이동해 "무슨 일이 일어났는지" 안 읽혔다)
+    const lootK = 1 - Math.exp(-dtMs / LOOT_TAU_MS);
+    this.weapons.forEach((lt) => {
+      lt.cur.lerp(lt.target, lt.placed ? lootK : 1);
+      lt.placed = true;
+      lt.sprite.position.set(worldX(lt.cur.x), 0.55, worldZ(lt.cur.y));
     });
 
     // 카메라: 추적 대상으로 부드럽게
@@ -635,12 +732,15 @@ export class IsoView {
     this.raf = requestAnimationFrame(this.loop);
   }
 
-  /** 우측 패널이 가리는 만큼 시선 중심을 오른쪽으로 보정(토큰이 보이는 영역 중앙에 오도록). */
+  /**
+   * 우측 패널이 가리는 만큼 시선 중심을 오른쪽으로 보정(토큰이 보이는 영역 중앙에 오도록).
+   * 측정은 `hud-inset`의 ResizeObserver 캐시가 담당 — 프레임 루프에서 리플로우가 없다.
+   * 세로(bottom) 인셋은 42° 피치 때문에 화면-세로↔월드-z 환산이 선형이 아니라
+   * 여기서는 쓰지 않는다(하단 시트 레이아웃 도입 시 별도 처리).
+   */
   private insetWorld(): number {
-    const el = document.getElementById("rightPanel");
-    if (!el) return 0;
-    const rect = el.getBoundingClientRect();
-    const insetPx = Math.max(0, window.innerWidth - rect.left);
+    const insetPx = hudRightInset();
+    if (insetPx <= 0) return 0;
     const frac = insetPx / window.innerWidth;
     const aspect = window.innerWidth / window.innerHeight;
     const viewW = 2 * this.camDist * Math.tan((45 * Math.PI) / 360) * aspect;
