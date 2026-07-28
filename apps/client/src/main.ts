@@ -189,23 +189,36 @@ const addLog = (text: string, opts: LogOpts = {}): void => {
   // 대사 경로 배지. 폴백은 **사유까지** 적는다 — 07-27 장애(전 대사가 조용히 폴백)를
   // 즉시 잡았을 조건이 그것이다(④ §4.1). 사유 토큰은 서버가 보낸 값 그대로 쓴다.
   if (opts.ai) {
-    const b = document.createElement("span");
-    b.className = `log-badge ai-${opts.ai.source}`;
-    b.textContent =
-      opts.ai.source === "fallback"
-        ? AI_GLYPH.fallback + (opts.ai.reason ? ` ${aiReasonKo(opts.ai.reason)}` : "")
-        : `${AI_GLYPH[opts.ai.source]} ${secText(opts.ai.ms)}`;
-    b.title = [
-      opts.ai.source,
-      `${Math.round(opts.ai.ms)}ms`,
-      opts.ai.model,
-      opts.ai.reason,
-    ]
-      .filter((s) => s !== "" && s !== undefined)
-      .join(" · ");
+    const b = aiBadge(opts.ai);
     div.appendChild(b);
+    // 폰 AI HUD의 «마지막 대사 한 줄». 배지가 붙은 줄은 우측 컬럼 안에만 있고,
+    // 그 컬럼은 폰에서 0×0이다(실측) → 숫자 칩만으로는 «이 대사가 LLM에서 왔다»가
+    // 화면에 없다. 그래서 **가장 최근 한 줄만** 배지째 컬럼 밖에 복제한다.
+    // 배지를 앞에 두는 것은 말줄임 때문이다 — 뒤에 두면 잘려 나가는 쪽이 배지가 된다.
+    // 본문은 서버 문자열이라 `textContent`로만 넣는다(HTML 주입 차단).
+    const hud = $("aiHudLine");
+    hud.textContent = text;
+    hud.prepend(b.cloneNode(true));
+    hud.classList.remove("hidden");
   }
   $("log").prepend(div);
+};
+
+/**
+ * 경로 배지 1개. 로그 줄(우측 컬럼)과 폰 AI HUD가 **같은 함수**를 쓴다 —
+ * 표기가 두 벌 생기면 두 화면이 서로 다른 말을 하게 된다.
+ */
+const aiBadge = (ai: SayAi): HTMLElement => {
+  const b = document.createElement("span");
+  b.className = `log-badge ai-${ai.source}`;
+  b.textContent =
+    ai.source === "fallback"
+      ? AI_GLYPH.fallback + (ai.reason ? ` ${aiReasonKo(ai.reason)}` : "")
+      : `${AI_GLYPH[ai.source]} ${secText(ai.ms)}`;
+  b.title = [ai.source, `${Math.round(ai.ms)}ms`, ai.model, ai.reason]
+    .filter((s) => s !== "" && s !== undefined)
+    .join(" · ");
+  return b;
 };
 
 // ── AI 카운터 칩 + 상세 (로드맵 §7.7 · ④ §4) ─────────────────────────
@@ -238,16 +251,9 @@ const aiReasons = new Map<string, number>();
 const aiRow = (k: string, v: string): string =>
   `<div class="ai-row"><span>${k}</span><b>${v}</b></div>`;
 
-/**
- * 기호 범례. `✨`/`♻`/`⚙`는 로그 배지·칩에 이미 쓰이는데 뜻이 화면 어디에도 없었다.
- * 표기는 ui-copy §2 기호 목록 확정본을 그대로 인용한다(새로 짓지 않는다).
- */
-const AI_LEGEND =
-  `<div class="ai-legend">` +
-  `<span>${AI_GLYPH.llm} LLM 대사</span>` +
-  `<span>${AI_GLYPH.cache} 캐시 대사</span>` +
-  `<span>${AI_GLYPH.fallback} 폴백 대사</span>` +
-  `</div>`;
+// 기호 범례(`✨ LLM 대사 · ♻ 캐시 대사 · ⚙ 폴백 대사`)는 **index.html의 고정 마크업**이다.
+// 매 렌더마다 같은 문자열을 다시 만들 이유가 없고, 초기 로드 JS는 §9.1 래칫이 걸린
+// 예산이다. 표기는 ui-copy §2 기호 목록 확정본 그대로이고 바뀐 것은 사는 곳뿐이다.
 
 const renderAi = (): void => {
   if (!aiArmed && !aiSeen) return;
@@ -256,6 +262,7 @@ const renderAi = (): void => {
   const total = llm + cache + fallback;
   const allFallback = total > 0 && llm === 0 && cache === 0;
   const chip = $("aiChip");
+  const hudChip = $("aiHudChip");
   // 계측 0건 동안에는 칩 자체를 붙이지 않는다(위 주석의 `aiSeen` 항목).
   chip.classList.toggle("hidden", !aiSeen);
   if (aiSeen) {
@@ -268,7 +275,12 @@ const renderAi = (): void => {
       `⚙폴백 <span class="ai-n">${fallback}</span>`;
     chip.title = `✨LLM ${llm} · ♻캐시 ${cache} · ⚙폴백 ${fallback}`;
   }
+  // 폰 HUD에는 상세(평균·모델) 행이 없다 → 「계측 전」을 말할 자리가 칩뿐이다.
+  // 그래서 여기서는 칩을 감추는 대신 §4.4의 `—`를 그대로 찍는다. `0 · 0 · 0`은
+  // 서버가 하지 않은 주장이므로 어느 화면에서도 그리지 않는다.
+  if (aiSeen) hudChip.innerHTML = chip.innerHTML;
   chip.classList.toggle("warn", allFallback);
+  hudChip.classList.toggle("warn", allFallback);
 
   // 계측 0건이면 평균은 **없는 값**이다. 서버 빈 스냅샷의 `avgMs: 0`을 그대로 그리면
   // `평균 0.0s`라는, 역시 서버가 하지 않은 주장이 된다 → ui-copy §4.4 "계측 전이면 `—`".
@@ -280,7 +292,6 @@ const renderAi = (): void => {
   }
   // 문안은 ④ §4 요구사항 5의 확정 배지 문장을 그대로 쓴다(새로 짓지 않는다).
   if (allFallback) html += `<div class="ai-note">AI 대사 일시 폴백</div>`;
-  html += AI_LEGEND;
   $("aiDetail").innerHTML = html;
 };
 
@@ -2444,8 +2455,13 @@ const enterGame = async (): Promise<void> => {
     // 컬럼을 펴면 폭 min(86vw,300px)가 우하단 이동 패드를 통째로 덮는다 → 그동안은 접는다.
     // (넓은 화면에서는 패드가 어차피 `pointer: coarse` 조건에서 걸러진다.)
     $("dpad").classList.toggle("dp-off", open);
+    // 컬럼을 펴면 그 안의 `#aiPanel`이 같은 계측을 더 자세히 보여준다 →
+    // 폰 AI HUD는 그동안 접는다(한 화면에 계측이 두 벌 뜨지 않게).
+    $("aiHud").classList.toggle("ai-off", open);
     rpToggle.setAttribute("aria-expanded", open ? "true" : "false");
-    // 라벨 확정 문안이 없어 패널 제목의 기호를 재사용한다(툴팁도 제목 원문 그대로).
+    // 기호만 있던 버튼은 «무엇을 여는가»가 화면에 없었다(실측) → 글자 라벨을 붙였는데,
+    // 라벨 전환은 **CSS `#rpToggle::after`**가 `.rp-on`으로 한다(index.html 참조).
+    // 여기서는 기호만 바꾼다 — 초기 로드 JS 예산(§9.1 래칫)을 라벨에 쓰지 않는다.
     rpToggle.textContent = open ? "✕" : "🔍";
     // 열려 있을 때는 버튼을 컬럼 모서리로 옮긴다(CSS `.rp-on`).
     // 화면 한가운데 오른쪽에 떠 있으면 무엇을 닫는 버튼인지 읽히지 않는다.
