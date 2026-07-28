@@ -60,16 +60,74 @@ const show = (which: ScreenId): void => {
   for (const id of SCREENS) $(id).classList.toggle("hidden", id !== which);
 };
 
+// ── AI 계측 계약 (서버 → 클라, 표시 전용) ─────────────────────────────
+// 진실값 경계: 아래 필드는 전부 **"그 문장이 어느 경로로 왔는가"**라는 운영 메타데이터다.
+// 게임 상태가 아니고, 클라는 경로를 **추정하지 않는다** — 서버가 준 값을 그대로 센다.
+// 근거: 로드맵 §1.3·§7.7 · AI 기술문서 §4(관측 가능성)·§4.1(07-27 장애).
+type AiSource = "llm" | "cache" | "fallback";
+type AiReason = "timeout" | "http" | "empty" | "toolong" | "nokey" | "disabled";
+type SayAi = {
+  source: AiSource;
+  /** `narrate()` 왕복 소요(ms) */
+  ms: number;
+  /** 실호출 모델명. 폴백이면 "" */
+  model: string;
+  /** fallback일 때만 */
+  reason?: AiReason;
+};
+type AiStats = { llm: number; cache: number; fallback: number; avgMs: number };
+
+const AI_SOURCES: readonly AiSource[] = ["llm", "cache", "fallback"];
+/** 경로 기호 — §7.7·④ §4 지정본. 여기서 새로 고르지 않는다. */
+const AI_GLYPH: Record<AiSource, string> = {
+  llm: "✨",
+  cache: "♻",
+  fallback: "⚙",
+};
+
+/**
+ * `say.ai` 파서. **`ai` 필드가 없는 `say`도 온다**(서버 배포 타이밍·구버전) →
+ * 그때는 `null`을 돌려 조용히 무시하고 기존 동작을 그대로 유지한다. 예외를 던지지 않는다.
+ */
+const readSayAi = (v: unknown): SayAi | null => {
+  if (v === null || typeof v !== "object") return null;
+  const o = v as Partial<SayAi>;
+  if (!AI_SOURCES.includes(o.source as AiSource)) return null;
+  return {
+    source: o.source as AiSource,
+    ms: typeof o.ms === "number" && Number.isFinite(o.ms) ? o.ms : 0,
+    model: typeof o.model === "string" ? o.model : "",
+    reason: typeof o.reason === "string" ? (o.reason as AiReason) : undefined,
+  };
+};
+
+/** ms → "1.2s". 칩·배지가 같은 함수를 쓴다(표기가 두 벌 생기지 않게). */
+const secText = (ms: number): string => `${(ms / 1000).toFixed(1)}s`;
+
 // ── 로그 ─────────────────────────────
 type LogKind = "info" | "move" | "suggest" | "disprove" | "accuse" | "win";
-type LogOpts = { kind?: LogKind; sid?: string; disproved?: boolean };
+type LogOpts = {
+  kind?: LogKind;
+  sid?: string;
+  disproved?: boolean;
+  /** 대사 경로 계측(§7.7). 없으면 배지를 붙이지 않는다. */
+  ai?: SayAi | null;
+};
 const sidDivs = new Map<string, HTMLElement>();
+/** `sid`를 단 서버 브로드캐스트 로그 줄 — 제안 기록표가 켜지면 통째로 회수한다. */
+let sidLogDivs: HTMLElement[] = [];
 
 const addLog = (text: string, opts: LogOpts = {}): void => {
+  // 중복 읽기 방지(ui-copy §11 "같은 사건이 두 줄로 뜨지 않는가").
+  // `sid`가 붙은 줄은 서버의 제안 요약 + 반증 결과 2줄뿐이고, 그 둘이 곧 제안 기록표의
+  // 한 행이다. 표가 살아 있으면 표가 그 사건의 유일한 표시자가 된다.
+  // (반증 카드 내용은 `sid` 없이 오는 개인 메시지라 로그에 그대로 남는다.)
+  if (sugLive && opts.sid) return;
   const kind = opts.kind ?? "info";
   const div = document.createElement("div");
   div.className = "log-" + kind;
   div.textContent = text;
+  if (opts.sid) sidLogDivs.push(div);
   if (opts.sid && kind === "suggest") sidDivs.set(opts.sid, div);
   // 반증 결과 → 원 제안 로그에 배지 부착
   if (opts.sid && kind === "disprove") {
@@ -81,7 +139,216 @@ const addLog = (text: string, opts: LogOpts = {}): void => {
       orig.appendChild(badge);
     }
   }
+  // 대사 경로 배지. 폴백은 **사유까지** 적는다 — 07-27 장애(전 대사가 조용히 폴백)를
+  // 즉시 잡았을 조건이 그것이다(④ §4.1). 사유 토큰은 서버가 보낸 값 그대로 쓴다.
+  if (opts.ai) {
+    const b = document.createElement("span");
+    b.className = `log-badge ai-${opts.ai.source}`;
+    b.textContent =
+      opts.ai.source === "fallback"
+        ? AI_GLYPH.fallback + (opts.ai.reason ? ` ${opts.ai.reason}` : "")
+        : `${AI_GLYPH[opts.ai.source]} ${secText(opts.ai.ms)}`;
+    b.title = [
+      opts.ai.source,
+      `${Math.round(opts.ai.ms)}ms`,
+      opts.ai.model,
+      opts.ai.reason,
+    ]
+      .filter((s) => s !== "" && s !== undefined)
+      .join(" · ");
+    div.appendChild(b);
+  }
   $("log").prepend(div);
+};
+
+// ── AI 카운터 칩 + 상세 (로드맵 §7.7 · ④ §4) ─────────────────────────
+// **기본 노출**이다 — `?ai=1` 같은 게이팅은 폐기된 설계다(심사자는 파라미터 없는 URL로
+// 들어온다). 단, 계측이 **한 건도 오지 않은 동안에는 패널을 띄우지 않는다**:
+// 구버전 서버에서 `0 · 0 · 0`을 띄우면 "대사가 없었다"는 없는 사실을 주장하게 된다.
+// 첫 계측이 도착하는 순간(= NPC 첫 대사) 나타나고 그 뒤로는 사라지지 않는다.
+//
+// HUD는 DOM이라 뷰1~4 어느 렌더러가 떠 있어도 같은 마크업이 뜬다(뷰 독립).
+let aiSeen = false;
+const aiCount: Record<AiSource, number> = { llm: 0, cache: 0, fallback: 0 };
+/** 서버 누적 집계(`aiStats`)의 평균. 없으면 로컬 관측 평균으로 대체한다. */
+let aiAvgMs: number | null = null;
+let aiMsSum = 0;
+let aiMsN = 0;
+/** 마지막으로 관측된 실호출 모델명(폴백은 ""이라 덮어쓰지 않는다). */
+let aiModel = "";
+/** 폴백 사유별 건수. `aiStats`에는 사유가 없어 `say.ai`에서만 모인다. */
+const aiReasons = new Map<string, number>();
+
+const aiRow = (k: string, v: string): string =>
+  `<div class="ai-row"><span>${k}</span><b>${v}</b></div>`;
+
+const renderAi = (): void => {
+  if (!aiSeen) return;
+  $("aiPanel").classList.remove("hidden");
+  const { llm, cache, fallback } = aiCount;
+  // 칩 문안은 ④ §4 요구사항 3의 지정본 그대로: `✨LLM 12 · ♻캐시 3 · ⚙폴백 0`.
+  // ⚠ 폴백만 세지 않는다 — 세 경로를 항상 같이 보여준다. 폴백이 전부라도 숫자를
+  //   가리거나 줄이지 않고, 대신 아래 note로 상태를 말로 밝힌다.
+  const chip = $("aiChip");
+  chip.innerHTML =
+    `✨LLM <span class="ai-n">${llm}</span> · ` +
+    `♻캐시 <span class="ai-n">${cache}</span> · ` +
+    `⚙폴백 <span class="ai-n">${fallback}</span>`;
+  const total = llm + cache + fallback;
+  const allFallback = total > 0 && llm === 0 && cache === 0;
+  chip.classList.toggle("warn", allFallback);
+
+  const avg = aiAvgMs ?? (aiMsN > 0 ? aiMsSum / aiMsN : null);
+  let html = aiRow("평균", avg === null ? "—" : secText(avg));
+  html += aiRow("모델", aiModel || "—");
+  for (const [reason, n] of aiReasons) {
+    html += aiRow(`${AI_GLYPH.fallback} ${reason}`, String(n));
+  }
+  // 문안은 ④ §4 요구사항 5의 확정 배지 문장을 그대로 쓴다(새로 짓지 않는다).
+  if (allFallback) html += `<div class="ai-note">AI 대사 일시 폴백</div>`;
+  $("aiDetail").innerHTML = html;
+  chip.title = `✨LLM ${llm} · ♻캐시 ${cache} · ⚙폴백 ${fallback}`;
+};
+
+/** `say`에 동봉된 계측 1건 반영. 값은 전부 서버가 준 것이다. */
+const noteAi = (ai: SayAi): void => {
+  aiSeen = true;
+  aiCount[ai.source] += 1;
+  if (ai.ms > 0) {
+    aiMsSum += ai.ms;
+    aiMsN += 1;
+  }
+  if (ai.model) aiModel = ai.model;
+  if (ai.source === "fallback" && ai.reason) {
+    aiReasons.set(ai.reason, (aiReasons.get(ai.reason) ?? 0) + 1);
+  }
+  renderAi();
+};
+
+/** 서버 누적 집계 — 도착하면 **로컬 카운트를 덮어쓴다**(서버가 권위). */
+const applyAiStats = (s: unknown): void => {
+  if (s === null || typeof s !== "object") return;
+  const o = s as Partial<AiStats>;
+  let got = false;
+  for (const k of AI_SOURCES) {
+    const v = o[k];
+    if (typeof v === "number" && Number.isFinite(v)) {
+      aiCount[k] = v;
+      got = true;
+    }
+  }
+  if (typeof o.avgMs === "number" && Number.isFinite(o.avgMs)) {
+    aiAvgMs = o.avgMs;
+    got = true;
+  }
+  if (!got) return;
+  // 입장·재접속 시 서버가 빈 스냅샷(0·0·0)을 보낸다. 그것으로 패널을 띄우면
+  // 아직 대사가 한 줄도 안 나온 시점에 "AI 0건"이라고 **서버가 하지 않은 주장**을
+  // 화면이 대신 하게 된다. 실제 측정이 하나라도 있을 때만 노출한다.
+  if (AI_SOURCES.every((k) => aiCount[k] === 0)) {
+    renderAi();
+    return;
+  }
+  aiSeen = true;
+  renderAi();
+};
+
+// ── 제안 기록표 (로드맵 §1.2) ────────────────────────────────────────
+// §1.2 재분류: 이 패널은 **새 정보를 주지 않는다**(반증자·턴순서가 이미 브로드캐스트라
+// 사람도 역산 가능) → 정보 대칭성이 아니라 **인지부하** 항목이다. 그래서 여기서 하는 일은
+// 딱 하나 — 로그에 흩어진 제안·반증을 한 행으로 모은다. 파생 통계·추론은 얹지 않는다.
+type SuggestEntry = {
+  seq: number;
+  byId: string;
+  byName: string;
+  suspect: string;
+  weapon: string;
+  room: string;
+  disprovedById: string | null;
+  disprovedByName: string | null;
+};
+
+/** 표가 살아 있는가 = 서버가 `suggestLog`를 보내는 빌드인가. 로그 중복 제거의 조건. */
+let sugLive = false;
+const sugEntries = new Map<number, SuggestEntry>();
+
+const readSuggestEntry = (v: unknown): SuggestEntry | null => {
+  if (v === null || typeof v !== "object") return null;
+  const o = v as Partial<SuggestEntry>;
+  if (typeof o.seq !== "number" || !Number.isFinite(o.seq)) return null;
+  if (typeof o.suspect !== "string" || typeof o.weapon !== "string") return null;
+  if (typeof o.room !== "string") return null;
+  return {
+    seq: o.seq,
+    byId: typeof o.byId === "string" ? o.byId : "",
+    byName: typeof o.byName === "string" ? o.byName : "",
+    suspect: o.suspect,
+    weapon: o.weapon,
+    room: o.room,
+    disprovedById: typeof o.disprovedById === "string" ? o.disprovedById : null,
+    disprovedByName:
+      typeof o.disprovedByName === "string" ? o.disprovedByName : null,
+  };
+};
+
+/**
+ * 한 행 = 한 제안. 접두 기호는 ui-copy §2 고정본(`🔍` 제안 · `🛡` 반증 · `❗` 미반증),
+ * 조합 표기는 증거노트·제안 모달과 같은 `cardIcon()`+`label()` 경로를 탄다.
+ * 이름은 서버 문자열이므로 `textContent`로만 넣는다(HTML 주입 차단).
+ */
+const sugRow = (e: SuggestEntry): HTMLElement => {
+  const row = document.createElement("div");
+  row.className = "sg-row";
+  const top = document.createElement("div");
+  top.className = "sg-top";
+  const n = document.createElement("span");
+  n.className = "sg-n";
+  n.textContent = String(e.seq);
+  const by = document.createElement("span");
+  by.className = "sg-by";
+  by.textContent = `🔍 ${e.byName}`;
+  const res = document.createElement("span");
+  res.className = "sg-res" + (e.disprovedByName ? "" : " none");
+  res.textContent = e.disprovedByName ? `🛡 ${e.disprovedByName}` : "❗ 미반증";
+  top.append(n, by, res);
+  const combo = document.createElement("div");
+  combo.className = "sg-combo";
+  combo.textContent =
+    `${cardIcon(e.suspect)} ${label(e.suspect)} · ` +
+    `${cardIcon(e.weapon)} ${label(e.weapon)} · ` +
+    `${cardIcon(e.room)} ${label(e.room)}`;
+  row.append(top, combo);
+  return row;
+};
+
+const renderSug = (): void => {
+  if (!sugLive) return;
+  $("sugPanel").classList.remove("hidden");
+  const host = $("sugBody");
+  host.innerHTML = "";
+  // 기록 패널과 같은 방향(최신이 위)으로 읽히게 내림차순.
+  const rows = [...sugEntries.values()].sort((a, b) => b.seq - a.seq);
+  for (const e of rows) host.appendChild(sugRow(e));
+};
+
+/**
+ * 표를 켠다. 켜지는 순간, 이미 로그에 찍혀 있던 `sid` 줄(제안 요약·반증 결과)을 회수한다 —
+ * 첫 제안은 표보다 로그가 먼저 도착하므로 그것을 안 지우면 딱 그 한 건만 두 번 읽힌다.
+ */
+const armSuggestTable = (): void => {
+  if (sugLive) return;
+  sugLive = true;
+  for (const div of sidLogDivs) div.remove();
+  sidLogDivs = [];
+  sidDivs.clear();
+};
+
+const addSuggestEntry = (v: unknown): void => {
+  const e = readSuggestEntry(v);
+  if (!e) return;
+  armSuggestTable();
+  sugEntries.set(e.seq, e);
+  renderSug();
 };
 
 // ── HUD 12색 (view-contract-spec §4.2 · 로드맵 §7.11) ─────────────────
@@ -538,13 +805,36 @@ const wireRoom = (r: Room): void => {
   });
   // 즉시고발 창(§7.5.1) — 서버가 연 창을 표시만 한다. 만료 판정은 서버 몫.
   r.onMessage("canAccuse", (m: { ms: number }) => openAccuseWindow(m.ms));
-  r.onMessage("say", (m: { id: string; from: string; text: string }) => {
-    addLog(`💬 ${m.from}: ${m.text}`, { kind: "info" });
-    // 귓속말 판정은 **서버 상태를 읽는 것**이다 — 계략 NPC(고정 헬퍼)는 `helpers` 맵의
-    // 키가 십이지 id이고, `helperWhisper()`가 그 id로 `say`를 보낸다. 좌석(sessionId)이
-    // 말한 것은 공개 대사, 헬퍼가 말한 것은 귓속말(§5 행 10).
-    const whisper = (r.state.helpers as Map<string, unknown>).has(m.id);
-    activeView()?.bubble(m.id, m.text, whisper ? { whisper: true } : undefined);
+  r.onMessage(
+    "say",
+    (m: { id: string; from: string; text: string; ai?: unknown }) => {
+      // `ai`가 없는 `say`(구버전 서버)도 온다 → `null`이면 배지·집계 없이 기존 동작.
+      const ai = readSayAi(m.ai);
+      addLog(`💬 ${m.from}: ${m.text}`, { kind: "info", ai });
+      if (ai) noteAi(ai);
+      // 귓속말 판정은 **서버 상태를 읽는 것**이다 — 계략 NPC(고정 헬퍼)는 `helpers` 맵의
+      // 키가 십이지 id이고, `helperWhisper()`가 그 id로 `say`를 보낸다. 좌석(sessionId)이
+      // 말한 것은 공개 대사, 헬퍼가 말한 것은 귓속말(§5 행 10).
+      //
+      // ⚠ 말풍선에는 경로 기호를 붙이지 않는다. 서버가 `bubbleLifeMs(line)`으로 홀드를
+      //   걸고 클라가 같은 함수로 말풍선 수명을 재는데(④ §6.1), 접두를 붙이면 두 계산의
+      //   입력 문자열이 달라져 07-28에 맞춰 놓은 서버·클라 정합이 다시 어긋난다.
+      const whisper = (r.state.helpers as Map<string, unknown>).has(m.id);
+      activeView()?.bubble(m.id, m.text, whisper ? { whisper: true } : undefined);
+    },
+  );
+  // AI 누적 집계(§7.7) — 서버가 권위. 없는 빌드면 이 핸들러가 영영 안 불릴 뿐이다.
+  r.onMessage("aiStats", (s: unknown) => applyAiStats(s));
+  // 제안 기록표(§1.2) — 실시간 1건 / 재접속 시 전체.
+  r.onMessage("suggestLog", (e: unknown) => addSuggestEntry(e));
+  r.onMessage("suggestLogAll", (es: unknown) => {
+    if (!Array.isArray(es)) return;
+    armSuggestTable();
+    for (const e of es) {
+      const parsed = readSuggestEntry(e);
+      if (parsed) sugEntries.set(parsed.seq, parsed);
+    }
+    renderSug();
   });
   r.onMessage("peek", (m: { from: string; cards: Card[] }) => {
     addLog(
@@ -574,6 +864,10 @@ const wireRoom = (r: Room): void => {
       }
       buildEvidence(r.roomId);
       resetFxState(); // 승리 연출·살펴본 방·위치 스냅샷을 새 판 기준으로 되돌린다
+      // 제안 기록표도 판 단위다 — 지난 판의 제안이 새 판 표에 섞이지 않게 비운다.
+      // (AI 카운터는 서버 누적치를 그대로 비추므로 여기서 건드리지 않는다.)
+      sugEntries.clear();
+      renderSug();
     }
     lastPhase = state.phase;
 
@@ -1631,6 +1925,34 @@ const enterGame = (): void => {
     const w = Math.max(220, Math.min(680, right - e.clientX));
     rightCol.style.width = `${w}px`;
   });
+
+  // ── 좁은 화면에서 우측 컬럼 접기 (로드맵 §7.8 부수 · §7.9) ──────────
+  // 390×844 실측에서 260px 고정 컬럼이 화면 폭의 2/3를 덮어 보드·턴 배너를 가렸다.
+  //
+  // 하단 시트를 고르지 않은 이유: `hudInset()`은 `{right, bottom}`을 주지만 **뷰2·3이
+  // bottom 축을 쓰지 않는다**(42° 피치라 세로 보정이 비선형). 시트로 만들면 4뷰 중
+  // 2뷰에서 보드가 계속 가려져 제약 2(뷰1~4 전부 성립)를 못 지킨다.
+  // 접기는 **`display:none`**으로 한다 — 그래야 `hud-inset`의 ResizeObserver가 즉시
+  // zero-rect를 보고 인셋을 0으로 떨군다(transform으로 밀면 크기가 안 변해 안 깨어난다).
+  const rpToggle = $("rpToggle") as HTMLButtonElement;
+  const setRpOpen = (open: boolean): void => {
+    rightCol.classList.toggle("rp-off", !open);
+    rpToggle.setAttribute("aria-expanded", open ? "true" : "false");
+    // 라벨 확정 문안이 없어 패널 제목의 기호를 재사용한다(툴팁도 제목 원문 그대로).
+    rpToggle.textContent = open ? "✕" : "🔍";
+  };
+  const narrow = window.matchMedia?.("(max-width: 680px)");
+  const applyNarrow = (): void => {
+    // 넓은 화면에선 토글 자체가 CSS로 숨겨지므로 항상 펼친 상태로 되돌린다.
+    setRpOpen(!narrow?.matches);
+  };
+  rpToggle.onclick = () => setRpOpen(rightCol.classList.contains("rp-off"));
+  try {
+    narrow?.addEventListener?.("change", applyNarrow);
+  } catch {
+    /* matchMedia 미지원 — 초기 판정값을 그대로 쓴다 */
+  }
+  applyNarrow();
 
   addLog("잔치 시작! 이동: 방향키, 방에 들어가 [제안]");
 };

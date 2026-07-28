@@ -160,7 +160,7 @@
       /* Phaser·three 캔버스 모두(뷰1~4 공통) */
       #gameScreen canvas { touch-action: none; }
       /* HUD 내부 스크롤은 세로만 허용 + 페이지로 전파 금지 */
-      .rp-body, .room-list, #log, #evidence {
+      .rp-body, .room-list, #log, #evidence, #aiDetail {
         overscroll-behavior: contain; touch-action: pan-y;
       }
       .hud {
@@ -383,8 +383,12 @@
       }
       .rp-head .rp-sub { color: #a89778; font-weight: 400; }
       .rp-body { flex: 1; min-height: 0; overflow-y: auto; padding: 8px 12px; }
-      .rp-evi { flex: none; height: 260px; }   /* 높이 드래그로 조절 */
-      .rp-log { flex: 1 1 0; }                  /* 남은 공간 채우고 내부 스크롤 */
+      /* 패널이 4개가 되면서(§7.9) 고정 높이만 두면 짧은 화면에서 컬럼이 넘친다.
+         드래그로 정한 높이는 유지하되 공간이 모자라면 줄어들도록 shrink를 연다. */
+      .rp-evi { flex: 0 1 auto; height: 260px; min-height: 72px; } /* 높이 드래그로 조절 */
+      .rp-log { flex: 1 1 0; min-height: 72px; } /* 남은 공간 채우고 내부 스크롤 */
+      .rp-ai { flex: 0 0 auto; max-height: 40%; }
+      .rp-sug { flex: 0 1 auto; max-height: 32%; }
 
       /* 드래그 핸들 — 잡을 수 있음이 보이도록 강조색(주황) + 그립 */
       .rp-hresizer {
@@ -433,6 +437,12 @@
         font-size: 10px; background: #a878d5; color: #16130f; font-weight: 600;
       }
       .log-badge.none { background: #d5b45b; }
+      /* 대사 경로 배지(로드맵 §1.3·§7.7 · ④ §4) — ✨LLM / ♻캐시 / ⚙폴백.
+         07-27 장애는 "폴백이 캐릭터색을 유지해 육안 구분이 안 된다"가 원인이었다.
+         그래서 폴백은 색까지 다르게 두고 사유(reason)를 배지 본문에 그대로 적는다. */
+      .log-badge.ai-llm { background: #6be08a; }
+      .log-badge.ai-cache { background: #5b9bd5; }
+      .log-badge.ai-fallback { background: #d5b45b; }
       #logLatest {
         display: inline-block; max-width: 190px; overflow: hidden;
         text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom;
@@ -467,6 +477,73 @@
       .evi-chip.own { cursor: default; opacity: 0.5; border-style: dashed; }
       .evi-chip.own:hover { border-color: #3a3126; }
 
+      /* ── AI 계측 패널 (로드맵 §7.7 "칩은 기본 노출, 상세만 접힘" · ④ §4) ── */
+      /* `.rp-panel`이 flex 컨테이너라 <details>를 직접 패널로 쓰지 않는다
+         (details를 flex로 만들면 접힘 동작이 브라우저마다 흔들린다). */
+      /* 패널 접기(§7.9 최소안 = `<details>` 아코디언). AI 패널·제안 기록표가 공용. */
+      .rp-fold > details { display: flex; flex-direction: column; min-height: 0; flex: 1; }
+      /* 260px 컬럼에서 라벨과 칩이 한 줄에 다 안 들어가면 **칩이 통째로 다음 줄로**
+         내려가야 한다(라벨이 "AI 대/사"로 쪼개지지 않게 각 조각을 nowrap로 묶는다). */
+      .rp-fold summary {
+        flex: none; list-style: none; cursor: pointer;
+        display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+        padding: 8px 12px; font-size: 11px; color: #f0d9a8;
+        letter-spacing: 0.4px; border-bottom: 1px solid #2c251c;
+      }
+      .rp-fold summary .ai-title { flex: none; white-space: nowrap; }
+      .rp-fold summary .rp-sub { flex: none; color: #a89778; font-weight: 400; }
+      .rp-fold summary::-webkit-details-marker { display: none; }
+      .rp-fold summary::before { content: "▸"; color: #a89778; }
+      .rp-fold details[open] summary::before { content: "▾"; }
+      .ai-chip {
+        flex: none; margin-left: auto; white-space: nowrap;
+        font-size: 11px; color: #cbbfa8;
+        background: #16130f; border: 1px solid #3a3126;
+        border-radius: 8px; padding: 2px 7px;
+      }
+      .ai-chip .ai-n { color: #f0e9dc; font-weight: 700; }
+      /* 전 대사가 폴백일 때 — 숨기지 않고 테두리로 상태를 알린다(§4.1 장애 재발 방지). */
+      .ai-chip.warn { border-color: #d5b45b; color: #f0d9a8; }
+      #aiDetail {
+        flex: 1; min-height: 0; overflow-y: auto;
+        padding: 8px 12px; font-size: 11px; color: #a89778;
+      }
+      .ai-row { display: flex; justify-content: space-between; gap: 8px; padding: 1px 0; }
+      .ai-row b { color: #cbbfa8; font-weight: 600; }
+      .ai-note { margin-top: 6px; color: #d5b45b; line-height: 1.45; }
+
+      /* ── 제안 기록표 (로드맵 §1.2) ── */
+      /* §1.2 재분류대로 "새 정보"를 얹지 않는다 — 로그에 흩어진 제안·반증을 모아서
+         한 줄로 읽히게 하는 것이 전부다(대신 로그 쪽 중복 2줄은 main.ts가 걷어낸다). */
+      .sg-row {
+        padding: 4px 6px; border-bottom: 1px solid #2c251c;
+        border-left: 3px solid #5b9bd5; border-radius: 3px; margin-bottom: 2px;
+        background: #1f2b3a;
+      }
+      .sg-top { display: flex; align-items: baseline; gap: 5px; }
+      .sg-n { flex: none; color: #8f8574; font-size: 10px; min-width: 12px; }
+      .sg-by {
+        flex: 1; min-width: 0; color: #f0e9dc;
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      }
+      .sg-res { flex: none; font-size: 10px; color: #cbbfa8; }
+      .sg-res.none { color: #d5b45b; font-weight: 600; }
+      .sg-combo { margin-top: 2px; padding-left: 17px; color: #a89778; line-height: 1.4; }
+
+      /* 우측 컬럼 접힘 — `display:none`이라야 hud-inset의 ResizeObserver가 즉시
+         zero-rect로 재측정해 카메라 인셋이 0으로 떨어진다(§7.8). transform으로
+         밀어내면 크기가 안 바뀌어 관찰자가 깨어나지 않는다. */
+      .rp-col.rp-off { display: none; }
+      /* 접힘 토글 — 좁은 화면에서만 노출. 컬럼(z-index 5) 위에 있어야 다시 닫을 수 있다. */
+      #rpToggle {
+        display: none; position: fixed; z-index: 6;
+        right: calc(6px + var(--sa-r, 0px)); top: 50%; transform: translateY(-50%);
+        min-width: 34px; min-height: 46px; padding: 8px 6px;
+        font-size: 15px; line-height: 1; border-radius: 10px;
+        background: rgba(13, 11, 8, 0.9); border: 1px solid #3a3126;
+      }
+      #rpToggle:hover { background: rgba(13, 11, 8, 0.9); border-color: #b4622b; }
+
       /* 반응형: 좁은 화면에서 HUD 축소·모서리 정리 */
       @media (max-width: 680px) {
         .hud { font-size: 11px; padding: 8px 10px; }
@@ -482,18 +559,20 @@
         .hud-view {
           left: calc(8px + var(--sa-l, 0px)); bottom: calc(64px + var(--sa-b, 0px));
         }
+        /* 폰에서 260px 고정 컬럼이 화면 폭의 2/3를 덮어 보드·턴 배너를 가렸다(§7.8 부수).
+           기존 반응형은 DOM에 없는 `.hud-evi`/`.hud-log`를 잡고 있어 죽은 코드였다. */
         .rp-col {
           top: calc(8px + var(--sa-t, 0px)); right: calc(8px + var(--sa-r, 0px));
           bottom: calc(8px + var(--sa-b, 0px));
+          width: min(86vw, 300px);
         }
-        .hud-evi { right: calc(8px + var(--sa-r, 0px)); top: calc(8px + var(--sa-t, 0px)); width: 46vw; max-height: 40vh; }
-        .hud-log { right: calc(8px + var(--sa-r, 0px)); bottom: calc(8px + var(--sa-b, 0px)); width: 46vw; }
-        #log { height: 84px; }
+        /* 컬럼 좌측 너비 핸들은 좁은 화면에서 보드 조작과 충돌한다 */
+        .rp-wresizer { display: none; }
+        #rpToggle { display: block; }
         .hud-help { display: none; }
       }
       @media (max-width: 420px) {
-        .hud-hand, .hud-evi, .hud-log { max-width: 92vw; width: auto; }
-        .hud-hand { right: 8px; }
+        .hud-hand { max-width: 92vw; width: auto; right: 8px; }
       }
 
       /* ── 카드 선택 모달 ── */
@@ -676,14 +755,46 @@
         </div>
       </div>
 
-      <!-- 우측 컬럼: 증거노트(위) + 기록(아래). 좌측 모서리 드래그=너비, 사이 드래그=높이 -->
+      <!-- 좁은 화면에서 우측 컬럼을 접었다 펴는 토글(≤680px에서만 노출) -->
+      <button
+        id="rpToggle"
+        type="button"
+        aria-expanded="true"
+        aria-controls="rightPanel"
+        title="🔍 증거 노트 · 📜 기록 / 알림"
+      >
+        🔍
+      </button>
+
+      <!-- 우측 컬럼: AI 계측 · 증거노트 · 제안 기록표 · 기록.
+           좌측 모서리 드래그=너비, 노트↔기록 사이 드래그=높이 -->
       <div class="rp-col" id="rightPanel">
         <div class="rp-wresizer" id="colWResizer" title="드래그로 너비 조절"></div>
+        <!-- AI 계측(§7.7) — 칩은 기본 노출, 상세만 접힘. 서버 계측이 도착해야 나타난다. -->
+        <div class="rp-panel rp-fold rp-ai hidden" id="aiPanel">
+          <details>
+            <summary>
+              <span class="ai-title">🤖 AI 대사</span>
+              <span id="aiChip" class="ai-chip"></span>
+            </summary>
+            <div id="aiDetail"></div>
+          </details>
+        </div>
         <div class="rp-panel rp-evi" id="eviPanel">
           <div class="rp-head">🔍 증거 노트 <span class="rp-sub">(나만 봄)</span></div>
           <div id="evidence" class="rp-body"></div>
         </div>
         <div class="rp-hresizer" id="colResizer" title="드래그로 높이 조절"></div>
+        <!-- 제안 기록표(§1.2) — 서버 `suggestLog`가 도착해야 나타난다. -->
+        <div class="rp-panel rp-fold rp-sug hidden" id="sugPanel">
+          <details open>
+            <summary>
+              <span class="ai-title">🧾 제안 기록표</span>
+              <span class="rp-sub">(모두 공개)</span>
+            </summary>
+            <div id="sugBody" class="rp-body"></div>
+          </details>
+        </div>
         <div class="rp-panel rp-log" id="logPanel">
           <div class="rp-head">📜 기록 / 알림</div>
           <div id="log" class="rp-body"></div>
