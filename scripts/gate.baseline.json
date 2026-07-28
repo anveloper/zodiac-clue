@@ -1,0 +1,41 @@
+{
+  "$note": "회귀 게이트 기준선. 손으로 고치지 말고 각 게이트의 --update-baseline --reason=\"...\" 로 갱신한다. reason 은 '왜 이 값이 바뀌는 것이 의도된 변경인가'를 적는 칸이다.",
+  "sim": {
+    "recordedAt": "2026-07-28 04:45:50",
+    "reason": "최초 기준선 — 봇 도박 고발(§7.5.3) 반영된 현재 규칙 ⑦. 20,000판·시드 20260728 고정.",
+    "variant": "⑦ ⑥ + 봇 도박 고발 (§7.5.3 · 변경 후)",
+    "seed": 20260728,
+    "games": 20000,
+    "rules": {
+      "sharedRevealed": false,
+      "humanInstantAccuse": true,
+      "suggestCap": 75,
+      "reentry": true,
+      "gamble": true
+    },
+    "metrics": {
+      "humanWinPct": 21.45,
+      "avgRounds": 7.23,
+      "p95Suggestions": 67,
+      "avgHumanRooms": 5.092,
+      "capHitPct": 0.06,
+      "drawPct": 0,
+      "avgSuggestions": 40.417,
+      "maxSuggestions": 77
+    }
+  },
+  "bundle": {
+    "recordedAt": "2026-07-28 04:48:03",
+    "reason": "§9.1 코드 스플리팅 착지 직후 — 초기 로드 JS 2,175 kB(단일 청크) → 115.66 kB(8청크, phaser·three·씬 지연). 목표 120 kB 달성분을 래칫 상한으로 잠근다.",
+    "initialJsBytes": 115656,
+    "initialJsGzip": 37704,
+    "initialTotalBytes": 157948,
+    "chunkCount": 8,
+    "initialChunkCount": 1,
+    "note": "초기 로드 JS 115.66 kB (gzip 37.7 kB) · 청크 8개",
+    "previous": {
+      "recordedAt": "2026-07-28 04:46:30",
+      "reason": "§9.1 코드 스플리팅 착지 직후 — 초기 로드 JS 2,175 kB(단일 청크) → 115.66 kB(8청크). 목표 120 kB 달성. 이 값을 래칫 상한으로 잠근다."
+    }
+  }
+}
