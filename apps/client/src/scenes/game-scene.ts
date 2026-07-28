@@ -11,6 +11,10 @@ import {
   SPENT_ALPHA,
   TOKEN_OUTLINE_COLOR,
   TOKEN_OUTLINE_PX,
+  PASSAGE_ALPHA_HOVER,
+  PASSAGE_ALPHA_IDLE,
+  PASSAGE_FADE_MS,
+  PASSAGE_HOVER_PX,
   bubbleLifeMs,
   emoji,
   hexString,
@@ -161,6 +165,17 @@ type PlayerView = {
   eliminated: boolean;
 };
 
+/** 점 → 선분 최단거리. 통로 선 근접 판정에만 쓴다. */
+const distToSeg = (
+  px: number, py: number, ax: number, ay: number, bx: number, by: number,
+): number => {
+  const dx = bx - ax;
+  const dy = by - ay;
+  const len2 = dx * dx + dy * dy;
+  const t = len2 === 0 ? 0 : Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / len2));
+  return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
+};
+
 export class GameScene extends Phaser.Scene implements ViewContract {
   /** 뷰1 = 2D 이모지. */
   readonly viewId: ViewId = "2d-emoji";
@@ -193,6 +208,8 @@ export class GameScene extends Phaser.Scene implements ViewContract {
   private roomRects = new Map<string, Phaser.Geom.Rectangle>();
   /** 비밀 통로 정적 표기 레이어. */
   private passageLayer?: Phaser.GameObjects.Container;
+  /** 통로 선분(월드 좌표) — 커서 근접 판정용. 선분 3개뿐이라 매 프레임 재도 싸다. */
+  private passageSegs: readonly [number, number, number, number][] = [];
   /** 승리 연출 오브젝트 — `setOutcome(null)`이 걷는다. */
   private outcomeFx: Phaser.GameObjects.GameObject[] = [];
   /** 감속 프로파일 타이밍(§1.3). 보간 길이는 매번 여기서 재조회한다. */
@@ -342,6 +359,7 @@ export class GameScene extends Phaser.Scene implements ViewContract {
 
   /** 매 프레임: 말풍선 위치 + HUD 패널 보정(줌·드래그에 실시간 반응). */
   update(): void {
+    this.updatePassageHover();
     this.bubbles.forEach((b, id) => {
       const anchor = this.tokens.get(id)?.c ?? this.helperSprites.get(id);
       if (!anchor) return;
@@ -948,11 +966,14 @@ export class GameScene extends Phaser.Scene implements ViewContract {
   setPassages(links: readonly PassageLink[]): void {
     this.passageLayer?.destroy(true);
     this.passageLayer = undefined;
+    this.passageSegs = [];
     if (links.length === 0) return;
     const layer = this.add.container(0, 0).setDepth(1);
+    layer.setAlpha(PASSAGE_ALPHA_IDLE);
     const g = this.add.graphics();
     g.lineStyle(3, BOARD.gold, 0.5);
     layer.add(g);
+    const segs: [number, number, number, number][] = [];
     for (const l of links) {
       const a = this.roomRects.get(l.from);
       const b = this.roomRects.get(l.to);
@@ -962,6 +983,7 @@ export class GameScene extends Phaser.Scene implements ViewContract {
       const bx = b.x + b.width / 2;
       const by = b.y + b.height / 2;
       drawDashedLine(g, ax, ay, bx, by);
+      segs.push([ax, ay, bx, by]);
       for (const [px, py] of [
         [ax, ay],
         [bx, by],
@@ -972,6 +994,33 @@ export class GameScene extends Phaser.Scene implements ViewContract {
       }
     }
     this.passageLayer = layer;
+    this.passageSegs = segs;
+  }
+
+  /**
+   * 커서가 통로 선 근처면 드러내고 아니면 다시 잠근다.
+   * 임계는 화면 px 기준이라 줌으로 나눠 월드 거리로 바꾼다 — 안 그러면 축소했을 때
+   * 화면상 멀리 있는 선이 켜진다.
+   */
+  private updatePassageHover(): void {
+    const layer = this.passageLayer;
+    if (!layer || this.passageSegs.length === 0) return;
+    const p = this.input.activePointer;
+    const near = p.active
+      ? this.passageSegs.some(
+          ([ax, ay, bx, by]) =>
+            distToSeg(p.worldX, p.worldY, ax, ay, bx, by) <
+            PASSAGE_HOVER_PX / this.cam.zoom,
+        )
+      : false;
+    const want = near ? PASSAGE_ALPHA_HOVER : PASSAGE_ALPHA_IDLE;
+    if (Math.abs(layer.alpha - want) < 0.01) return;
+    this.tweens.killTweensOf(layer);
+    this.tweens.add({
+      targets: layer,
+      alpha: want,
+      duration: PASSAGE_FADE_MS,
+    });
   }
 
   /** 승리 — 승자 토큰에 금색 링 확산(§5 행 22). `null`이면 연출 해제. */

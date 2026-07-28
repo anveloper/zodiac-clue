@@ -25,6 +25,10 @@ import {
   type MotionProfile,
   type ViewTiming,
   type ZodiacCue,
+  PASSAGE_ALPHA_HOVER,
+  PASSAGE_ALPHA_IDLE,
+  PASSAGE_FADE_MS,
+  PASSAGE_HOVER_PX,
 } from "@zodiac-clue/shared";
 import { acquireHudInset, hudRightInset, releaseHudInset } from "./hud-inset";
 import { currentTiming, cvdMode } from "./view-motion";
@@ -297,6 +301,12 @@ export class IsoView implements ViewContract {
   private feastMat?: THREE.MeshStandardMaterial;
   /** 비밀 통로 정적 표기(아치 + 파선). `setPassages`가 통째로 교체한다. */
   private passageGroup?: THREE.Group;
+  /** 통로 파선 머티리얼 — 한 벌을 공유하므로 여기서 opacity 하나만 바꾸면 전부 따라온다. */
+  private passageMat?: THREE.MeshBasicMaterial;
+  /** 통로 선분(월드) — 화면 투영해 커서 근접을 잰다. */
+  private passageSegs: readonly [THREE.Vector3, THREE.Vector3][] = [];
+  /** 마지막 커서 위치(클라이언트 px). 캔버스 밖이면 null. */
+  private hoverPx: { x: number; y: number } | null = null;
   /** 승리 연출(PointLight). `setOutcome(null)`이 걷는다. */
   private outcomeLight?: THREE.PointLight;
   /** `focusRoom("camera")`가 잡아 둔 시선 목표와 만료 시각(ms). */
@@ -1003,6 +1013,7 @@ export class IsoView implements ViewContract {
     // 토큰 위치 보간 — 프레임 시간 기반 지수 보간 k = 1 - exp(-dt/τ).
     // (기존 lerp(0.25)는 **프레임레이트 종속**이라 120Hz에서 뷰1의 tween 110ms보다
     //  두 배 빨리 도착했다. 같은 이동이 뷰마다 다른 속도로 보이면 그건 정보 차이다.)
+    this.updatePassageHover(dtMs);
     const moveK = expK(dtMs, this.timing.MOVE_TWEEN_MS);
     this.tokens.forEach((t) => {
       t.cur.lerp(t.target, t.placed ? moveK : 1);
@@ -1301,14 +1312,18 @@ export class IsoView implements ViewContract {
       disposeObject(this.passageGroup);
       this.passageGroup = undefined;
     }
+    this.passageMat = undefined;
+    this.passageSegs = [];
     if (links.length === 0) return;
     const group = new THREE.Group();
+    // 기본은 거의 안 보인다 — 보드를 가로지르는 선이라 항상 선명하면 판을 읽는 것을 방해한다.
     const dashMat = new THREE.MeshBasicMaterial({
       color: BOARD.gold,
       transparent: true,
-      opacity: 0.45,
+      opacity: PASSAGE_ALPHA_IDLE,
       depthWrite: false,
     });
+    const segs: [THREE.Vector3, THREE.Vector3][] = [];
     const archMat = new THREE.MeshStandardMaterial({ color: BOARD.wood });
     for (const l of links) {
       const a = regionOf(l.from);
@@ -1318,6 +1333,10 @@ export class IsoView implements ViewContract {
       const az = worldZ(a.y) + (a.h - 1) / 2;
       const bx = worldX(b.x) + (b.w - 1) / 2;
       const bz = worldZ(b.y) + (b.h - 1) / 2;
+      segs.push([
+        new THREE.Vector3(ax, 0.03, az),
+        new THREE.Vector3(bx, 0.03, bz),
+      ]);
       const len = Math.hypot(bx - ax, bz - az);
       const steps = Math.max(2, Math.floor(len / 1.2));
       for (let i = 0; i <= steps; i++) {
@@ -1342,6 +1361,50 @@ export class IsoView implements ViewContract {
     }
     this.scene.add(group);
     this.passageGroup = group;
+    this.passageMat = dashMat;
+    this.passageSegs = segs;
+  }
+
+  /**
+   * 커서가 통로 선 근처면 드러내고 아니면 다시 잠근다(뷰1·4와 같은 규칙).
+   * 42° 피치라 월드 거리로는 화면 거리를 알 수 없어 **양 끝점을 화면에 투영해** 잰다.
+   */
+  private updatePassageHover(dtMs: number): void {
+    const mat = this.passageMat;
+    if (!mat || this.passageSegs.length === 0) return;
+    let near = false;
+    const p = this.hoverPx;
+    if (p) {
+      const r = this.canvas.getBoundingClientRect();
+      const toPx = (v: THREE.Vector3): [number, number] => {
+        const c = v.clone().project(this.camera);
+        return [
+          r.left + ((c.x + 1) / 2) * r.width,
+          r.top + ((1 - c.y) / 2) * r.height,
+        ];
+      };
+      near = this.passageSegs.some(([a, b]) => {
+        const [ax, ay] = toPx(a);
+        const [bx, by] = toPx(b);
+        const dx = bx - ax;
+        const dy = by - ay;
+        const l2 = dx * dx + dy * dy;
+        const t =
+          l2 === 0
+            ? 0
+            : Math.max(
+                0,
+                Math.min(1, ((p.x - ax) * dx + (p.y - ay) * dy) / l2),
+              );
+        return (
+          Math.hypot(p.x - (ax + t * dx), p.y - (ay + t * dy)) <
+          PASSAGE_HOVER_PX
+        );
+      });
+    }
+    const want = near ? PASSAGE_ALPHA_HOVER : PASSAGE_ALPHA_IDLE;
+    // 툭 켜지면 그것대로 시선을 뺏는다 — dt 지수 보간으로 부드럽게.
+    mat.opacity += (want - mat.opacity) * expK(dtMs, PASSAGE_FADE_MS);
   }
 
   /** 승리 — `PointLight` + 팬(§5 행 22). `null`이면 연출 해제. */
@@ -1437,6 +1500,15 @@ export class IsoView implements ViewContract {
   }
 
   private onPointerMove(e: PointerEvent): void {
+    // 드래그 중이 아니어도 통로 호버 판정에 좌표가 필요하다.
+    const r = this.canvas.getBoundingClientRect();
+    this.hoverPx =
+      e.clientX >= r.left &&
+      e.clientX <= r.right &&
+      e.clientY >= r.top &&
+      e.clientY <= r.bottom
+        ? { x: e.clientX, y: e.clientY }
+        : null;
     if (!this.dragging) return;
     const dx = e.clientX - this.lastPointer.x;
     const dy = e.clientY - this.lastPointer.y;

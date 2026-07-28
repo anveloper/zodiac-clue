@@ -207,6 +207,19 @@ export const desaturate = (hex: number, keep: number): number => {
 export const SCHEME_DESAT_KEEP = 0.2;
 
 /** 보드 팔레트 단일 정의(한옥·사극 톤). 뷰1·뷰2·뷰3가 그대로 쓴다. */
+/**
+ * 비밀 통로 표기의 밝기 — 보드를 가로지르는 선이라 **기본값은 거의 안 보여야 한다.**
+ * 항상 선명하면 방·토큰보다 먼저 눈에 들어와 판을 읽는 것을 방해한다(07-28 사용자 피드백).
+ * 마우스를 가져가면 드러나고, 떼면 다시 잠긴다. 4뷰가 같은 값을 쓴다.
+ */
+export const PASSAGE_ALPHA_IDLE = 0.09;
+/** 마우스가 선 근처일 때. */
+export const PASSAGE_ALPHA_HOVER = 0.75;
+/** 커서에서 선까지 이 화면 거리(px) 안이면 드러난다. */
+export const PASSAGE_HOVER_PX = 34;
+/** 밝기 전환 시간(ms) — 툭 켜지면 그것대로 시선을 뺏는다. */
+export const PASSAGE_FADE_MS = 160;
+
 export const BOARD = {
   /** 복도 바닥 = 먹빛. 도트 뷰의 잉크(윤곽)와 같은 색이다. */
   corridor: 0x2a2118,
