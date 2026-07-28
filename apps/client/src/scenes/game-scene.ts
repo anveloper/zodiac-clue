@@ -15,6 +15,8 @@ import {
   PASSAGE_ALPHA_IDLE,
   PASSAGE_FADE_MS,
   PASSAGE_HOVER_PX,
+  SUMMON_ANCHOR_ALPHA,
+  SUMMON_ANCHOR_ICON,
   bubbleLifeMs,
   emoji,
   hexString,
@@ -67,6 +69,24 @@ const PAN_STEP = 48;
 
 /** 이름표 좌측 색 스트라이프 두께(px) — 색과 이름을 같은 픽셀에(§4.2). */
 const NAME_STRIPE_PX = 3;
+
+/**
+ * 방 명패 안 "살펴봄" ✓ 스탬프 — **명패 내부 좌측**에 찍는다(§5 행 16).
+ *
+ * 🔴 왜 옮겼나: 예전 자리는 명패 **바깥 오른쪽**(`x + 10 + plW + 6`)이었는데,
+ *    명패 폭 `plW = min(w-16, 글자수*20+24)`가 좁은 방에서는 그 좌표가 **입구 타일과
+ *    겹친다.** 입구는 명패보다 뒤에 그려지므로 ✓가 문 뒤로 사라졌다 —
+ *    행랑채(문 (11,18))는 ✓가 문 정중앙(460,745)에 찍혀 완전히 가려졌고,
+ *    안방(3,18)·별당(20,20)도 문 타일에 절반 이상 먹혔다. 나머지 6방은 우연히 보였다.
+ *    즉 "같은 정보가 방마다 보이기도 하고 안 보이기도" 하던 상태다.
+ *
+ * 새 자리는 명패 안쪽이라 **폭·문 위치와 무관하게 항상 명패 배경 위**에 있다.
+ * 명패의 좌우 여백은 `(plW - 글자폭)/2 ≈ 글자수 + 12 px`(≥14)이므로 13px ✓(글리프 ≈11px)가
+ * 이름과 겹치지 않는다 — 명패를 넓히지 않는 것이 조건이었다(넓히면 이번엔 이름이 문 밑으로 간다).
+ * 읽는 순서도 뷰2·3(명패 **좌측** ✓)과 같아진다.
+ */
+const SURVEY_CHECK_INSET_PX = 3;
+const SURVEY_CHECK_FONT_PX = 13;
 
 /** `pulseCell`의 의미 → 뷰1 팔레트 번역(색이 아니라 의미를 받는다). */
 const TONE_COLOR: Record<PulseTone, number> = {
@@ -478,15 +498,42 @@ export class GameScene extends Phaser.Scene implements ViewContract {
           color: hexString(BOARD.plaqueText),
         })
         .setOrigin(0.5);
-      // "이미 살펴본 방" ✓ 스탬프 — 기본 숨김, `setSurveyed`가 켠다(§5 행 16).
+      // "이미 살펴본 방" ✓ 스탬프 — 명패 **내부 좌측**(사유는 `SURVEY_CHECK_*` 주석).
+      // 기본 숨김, `setSurveyed`가 켠다(§5 행 16).
       const check = this.add
-        .text(x + 10 + plW + 6, y + 25, "✓", {
-          fontSize: "18px",
+        .text(x + 10 + SURVEY_CHECK_INSET_PX, y + 25, "✓", {
+          fontSize: `${SURVEY_CHECK_FONT_PX}px`,
           color: hexString(BOARD.gold),
         })
         .setOrigin(0, 0.5)
         .setVisible(false);
       this.surveyMarks.set(r.name, check);
+
+      // ── 소환 앵커(§5 행 18) ──
+      // 제안이 성립하면 지목된 인물이 **이 칸을 기준으로** 방 안에 선다.
+      // ⚠ 좌표는 만들지 않는다 — `r.summon`은 서버 `freeCellIn()`이 자리 배정의 정렬
+      //   기준으로 쓰는 바로 그 값(shared 단일 소스)이고, 뷰는 그 칸을 표시만 한다.
+      // 겹침(같은 방에 여럿 소환)은 서버가 결정론적으로 푼다 — 앵커에서 가까운 순 +
+      //   명패행·외곽 페널티 + 문 칸 제외. 클라가 다시 계산하면 서버와 갈라진다.
+      const scx = r.summon.x * CELL + CELL / 2;
+      const scy = r.summon.y * CELL + CELL / 2;
+      const anchor = this.add.graphics().setAlpha(SUMMON_ANCHOR_ALPHA);
+      anchor.lineStyle(2, BOARD.gold, 1);
+      drawDashedRect(
+        anchor,
+        scx - CELL * 0.42,
+        scy - CELL * 0.42,
+        CELL * 0.84,
+        CELL * 0.84,
+        6,
+        5,
+      );
+      this.add
+        .text(scx, scy, SUMMON_ANCHOR_ICON, {
+          fontSize: `${Math.floor(CELL * 0.34)}px`,
+        })
+        .setOrigin(0.5)
+        .setAlpha(SUMMON_ANCHOR_ALPHA);
 
       // 입구(door) — 이 칸으로만 출입. 밝은 금색 타일 + 🚪 + "입구" 라벨로 명확히.
       const dcx = r.door.x * CELL + CELL / 2;

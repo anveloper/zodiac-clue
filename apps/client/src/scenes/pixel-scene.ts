@@ -24,10 +24,12 @@ import {
   PASSAGE_ALPHA_IDLE,
   PASSAGE_FADE_MS,
   PASSAGE_HOVER_PX,
+  SUMMON_ANCHOR_ALPHA,
 } from "@zodiac-clue/shared";
 import { currentTiming, cvdMode } from "./view-motion";
 import {
   CVD_CELL,
+  SUMMON_MARK,
   cvdCueDots,
   gridCells,
   lootStamp,
@@ -276,6 +278,53 @@ export class PixelScene extends Phaser.Scene implements ViewContract {
         })
         .setOrigin(0.5, 0)
         .setDepth(3);
+
+      // ── 소환 앵커(§5 행 18) ──
+      // ⚠ 좌표는 만들지 않는다 — `r.summon`은 서버 `freeCellIn()`이 자리 배정의 정렬
+      //   기준으로 쓰는 값(shared 단일 소스)이고, 뷰는 그 칸을 표시만 한다.
+      // 도트 문법이라 파선 사각은 **계단 도트**로, 🔔은 3×3 `SUMMON_MARK`로 옮긴다.
+      // 밝기는 4뷰 공용 `SUMMON_ANCHOR_ALPHA` — 뷰마다 다르면 "언제 눈에 들어오는가"가 갈린다.
+      const sx = r.summon.x * CELL;
+      const sy = r.summon.y * CELL;
+      const anchor = this.add
+        .container(0, 0)
+        .setDepth(1)
+        .setAlpha(SUMMON_ANCHOR_ALPHA);
+      for (let i = DOT; i + DOT * 2 <= CELL - DOT; i += DOT * 4) {
+        anchor.add(
+          this.add
+            .rectangle(sx + i, sy + DOT, DOT * 2, DOT, PAL.gold)
+            .setOrigin(0),
+        );
+        anchor.add(
+          this.add
+            .rectangle(sx + i, sy + CELL - DOT * 2, DOT * 2, DOT, PAL.gold)
+            .setOrigin(0),
+        );
+        anchor.add(
+          this.add
+            .rectangle(sx + DOT, sy + i, DOT, DOT * 2, PAL.gold)
+            .setOrigin(0),
+        );
+        anchor.add(
+          this.add
+            .rectangle(sx + CELL - DOT * 2, sy + i, DOT, DOT * 2, PAL.gold)
+            .setOrigin(0),
+        );
+      }
+      const mcx = sx + CELL / 2;
+      const mcy = sy + CELL / 2;
+      for (const { col, row } of gridCells(SUMMON_MARK)) {
+        anchor.add(
+          this.add.rectangle(
+            mcx + (col - 1) * DOT,
+            mcy + (row - 1) * DOT,
+            DOT,
+            DOT,
+            PAL.gold,
+          ),
+        );
+      }
     }
   }
 

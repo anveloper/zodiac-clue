@@ -29,6 +29,8 @@ import {
   PASSAGE_ALPHA_IDLE,
   PASSAGE_FADE_MS,
   PASSAGE_HOVER_PX,
+  SUMMON_ANCHOR_ALPHA,
+  SUMMON_ANCHOR_ICON,
 } from "@zodiac-clue/shared";
 import { acquireHudInset, hudRightInset, releaseHudInset } from "./hud-inset";
 import { currentTiming, cvdMode } from "./view-motion";
@@ -614,17 +616,25 @@ export class IsoView implements ViewContract {
       });
       plaque.position.set(box.position.x, 0.9, worldZ(r.y) - 0.1);
       this.scene.add(plaque);
-      // 살펴봄 ✓ 스탬프 — 명패 오른쪽. 기본 숨김(§5 행 16).
+      // 살펴봄 ✓ 스탬프 — 명패 **왼쪽**. 기본 숨김(§5 행 16).
+      // 오른쪽에서 왼쪽으로 옮긴 이유는 두 가지다.
+      //  ① 뷰1이 ✓를 명패 **내부 좌측**으로 옮겼다(그쪽은 문 타일에 가려지는 방이 3개였다).
+      //     4뷰의 읽는 순서를 "✓ 다음 이름"으로 맞춘다 — 같은 정보가 뷰마다 다른 자리에
+      //     있으면 뷰를 갈아타며 보는 심사 동선에서 그대로 오독이 된다.
+      //  ② 명패 오른쪽은 문(입구) 빌보드와 겹치는 방이 있었다(안방 — 문 (3,18)이 명패
+      //     오른쪽 바로 옆에 선다). 문 스프라이트가 뒤에 추가돼 ✓ 위에 그려졌다.
+      // 그래도 남는 겹침은 `renderOrder`로 잘라낸다 — ✓는 문(10)보다 위(12)에 둔다.
       const check = makeSprite("✓", {
         fontPx: 44,
         color: hexString(BOARD.gold),
         worldH: 0.42,
       });
       check.position.set(
-        box.position.x + plaque.scale.x / 2 + 0.22,
+        box.position.x - plaque.scale.x / 2 - 0.22,
         0.9,
         worldZ(r.y) - 0.1,
       );
+      check.renderOrder = 12;
       check.visible = false;
       this.scene.add(check);
       this.surveyMarks.set(r.name, check);
@@ -664,6 +674,40 @@ export class IsoView implements ViewContract {
       });
       doorLabel.position.set(dx, 1.15, dz);
       this.scene.add(doorLabel);
+
+      // ── 소환 앵커(§5 행 18) ──
+      // 제안이 성립하면 지목된 인물이 **이 칸을 기준으로** 방 안에 선다.
+      // ⚠ 좌표는 만들지 않는다 — `r.summon`은 서버 `freeCellIn()`이 자리 배정의 정렬
+      //   기준으로 쓰는 값(shared 단일 소스)이고, 뷰는 그 칸을 표시만 한다.
+      // 지오메트리는 **공유 상수 + scale**만 쓴다(§9.3 G1 — 런타임 생성 0건).
+      //   WARP_RING(0.56~0.68)을 0.72배 → 반지름 0.40~0.49로 칸(1.0) 안에 딱 들어간다.
+      //   `warp()`의 소환 링과 같은 도형인 것이 의도다 — 앵커는 그 연출이 착지하는 자리다.
+      const sx = worldX(r.summon.x);
+      const sz = worldZ(r.summon.y);
+      const anchorRing = new THREE.Mesh(
+        WARP_RING,
+        new THREE.MeshBasicMaterial({
+          color: BOARD.gold,
+          side: THREE.DoubleSide,
+          transparent: true,
+          opacity: SUMMON_ANCHOR_ALPHA,
+          depthWrite: false,
+        }),
+      );
+      anchorRing.rotation.x = -Math.PI / 2;
+      anchorRing.scale.set(0.72, 0.72, 1);
+      // 방 박스 윗면(y=0.2) 바로 위 · 토큰 disc(0.22)보다는 아래.
+      anchorRing.position.set(sx, 0.205, sz);
+      this.scene.add(anchorRing);
+      const anchorIcon = makeSprite(SUMMON_ANCHOR_ICON, {
+        fontPx: 64,
+        worldH: 0.4,
+      });
+      (anchorIcon.material as THREE.SpriteMaterial).opacity =
+        SUMMON_ANCHOR_ALPHA;
+      // 토큰 얼굴(0.85)보다 낮게 띄워 소환된 말이 마크를 덮도록 둔다.
+      anchorIcon.position.set(sx, 0.45, sz);
+      this.scene.add(anchorIcon);
     }
 
     // 중앙 잔치상
