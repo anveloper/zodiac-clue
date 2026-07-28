@@ -217,7 +217,8 @@
     <div class="fl"><div class="n">5</div><div class="b"><b>커밋·푸시</b> — 초록일 때만. 기능별로 나눠 커밋 후 <code>git push origin main</code>. AI 협력 문구 제외. <b>라운드마다 커밋</b>(§3.4)</div></div>
     <div class="fl"><div class="n">6</div><div class="b"><b>문서 갱신</b> — 코드 변경으로 사실이 바뀐 문서를 <b>오케스트레이터가</b>(<code>.md</code> 수정 시 짝 <code>.html</code>도). <code>execution-plan</code> 항목 완료 표기</div></div>
     <div class="fl"><div class="n">7</div><div class="b"><b>상태 갱신</b> — <code>brief.md</code>의 "최근 완료 / 알려진 결함"(§2.2), <code>ledger.md</code>에 라운드 행 추가</div></div>
-    <div class="fl"><div class="n">8</div><div class="b"><b>보고</b> — Discord 채널 <code>1526444095646597170</code>에 3~5줄(구현 내용 · 검증 결과 · 다음 후보)</div></div>
+    <div class="fl"><div class="n">8</div><div class="b"><b>보고</b> — Discord 채널 <code>1526444095646597170</code>에 3~5줄(구현 내용 · 검증 결과 · 다음 후보).
+      <b class="ok">화면이 바뀐 라운드는 스크린샷을 첨부한다(§4.4)</b> — 글로만 보고하면 디자인 변경을 확인할 방법이 없다</div></div>
     <div class="fl"><div class="n">9</div><div class="b"><b>종료 판정</b> — 지정한 마지막 시각을 넘겼으면 <code>CronList</code>→<code>CronDelete</code> 후 누적 성과 종합 요약</div></div>
   </div>
 
@@ -241,14 +242,30 @@
     <b>6. 제약</b> — 진실값 경계 · 4뷰 대응 · 배정 파일 밖 금지 · docs 금지 · ui-copy 사용 · typecheck 통과 · 커밋 금지
   </div>
 
+  <h3 style="margin-top:20px">4.4 화면 검증 · 스크린샷 <span class="note">(헤드리스 CDP)</span></h3>
+  <div class="card">
+    <p style="margin:0 0 10px">디자인·연출을 바꾼 라운드는 <b>실제로 띄워서 찍는다.</b> typecheck·build는 화면이 맞는지 말해주지 않는다.</p>
+    <ul style="margin:0;padding-left:18px">
+      <li><code>pnpm dev</code>를 백그라운드로 띄우고 Chrome을 <code>--headless=new --remote-debugging-port=&lt;포트&gt;</code>로 실행해 <b>CDP에 직결</b>한다.
+        <code>ws</code> 모듈은 <code>node_modules/.pnpm/ws@*/node_modules/ws</code>에 있다. 러너는 세션 스크래치패드에 둔다.</li>
+      <li>찍을 것 — <b>뷰1~4 각각</b>(<code>#viewList li[i].click()</code>) · 모바일 에뮬(<code>Emulation.setDeviceMetricsOverride</code> 390×844) ·
+        <code>Tab</code> 후 포커스 링 · <b>이번 라운드가 고친 경로</b>(예: 패널 <code>display:none</code> 후 카메라 붕괴 여부)</li>
+      <li>수치는 눈이 아니라 <code>Runtime.evaluate</code>로 뽑는다 — <code>getComputedStyle</code> 색상, <code>scrollWidth vs innerWidth</code>,
+        <code>touch-action</code>, <code>document.activeElement</code>. <b>스크린샷은 근거이지 측정이 아니다.</b></li>
+      <li class="no"><b>⚠️ <code>--virtual-time-budget</code>을 쓰지 마라.</b> 가상 시간이 웹소켓 왕복을 앞질러 가서 <b>정상 동작을 고장으로 오판한다</b>
+        (07-28에 <code>?solo=1</code>이 대기실에 멈춘 것처럼 보였으나 실시간 구동에서는 정상이었다). 실시간 <code>sleep</code>으로 기다린다.</li>
+      <li>첨부는 Discord <code>reply</code>의 <code>files</code>로. 캡션에 무엇을 보는 화면인지 한 줄.</li>
+    </ul>
+  </div>
+
   <h2>5. 실행 이력</h2>
   <div class="scroll"><table>
     <tr><th>일자</th><th>라운드</th><th>성격</th><th>결과</th></tr>
     <tr><td>07-27</td><td>6 (에이전트 18)</td><td>진단 → 초안 생산</td><td>신규 문서 6종 · ④ 2판 개정 · 배포 · LLM 장애 해결</td></tr>
-    <tr><td>07-28</td><td>(진행)</td><td class="ok"><b>기획 · 디자인 · 개발</b></td><td>—</td></tr>
+    <tr><td>07-28</td><td>1 (에이전트 3)</td><td class="ok"><b>첫 개발 라운드</b></td><td>조사 30건 · 배지 44개 · 대비/포커스/터치 T0 · <code>?solo=1</code> · hudInset 가드 · iso 표기 P0 3건</td></tr>
   </table></div>
 
-  <p class="sub" style="margin-top:32px">변경 이력 — 2026-07-28 최초 작성(07-27 6라운드 경험 규약화 + 개발 라운드 규칙 §3 신설).</p>
+  <p class="sub" style="margin-top:32px">변경 이력 — 2026-07-28 최초 작성(07-27 6라운드 경험 규약화 + 개발 라운드 규칙 §3 신설) · 같은 날 §4 라운드 실행 절차 · §4.4 화면 검증 추가.</p>
 </div>
 </body>
 </html>
