@@ -704,8 +704,10 @@
         .hud-dpad {
           bottom: calc(74px + var(--sa-b, 0px));
           right: calc(8px + var(--sa-r, 0px));
-          grid-template-columns: repeat(3, 42px);
-          grid-template-rows: repeat(3, 42px);
+          /* 46 → 42로 줄였다가 **스스로 정한 44px 하한을 깼다**(화면 게이트가 잡음).
+             시각을 위해 조작을 깎으면 안 된다 — 간격·패딩으로 가볍게 만든다. */
+          grid-template-columns: repeat(3, 44px);
+          grid-template-rows: repeat(3, 44px);
           gap: 3px; padding: 5px; border-radius: 12px;
         }
         /* 손패는 턴 배너 **아래 한 줄**. 상단에 검은 띠 두 개가 겹치면 보드가 사라진다. */
@@ -726,7 +728,9 @@
           padding: 3px; border-radius: 10px;
         }
         .hud-view #viewToggle {
-          min-width: 0; padding: 6px 10px; font-size: 11px;
+          /* 관람 설정이라 **시각적으로는** 가볍게 두되, 손가락 타깃은 하한을 지킨다.
+             작게 보이는 것과 누르기 어려운 것은 다르다. */
+          min-width: 0; min-height: 44px; padding: 6px 12px; font-size: 11px;
           background: rgba(58, 49, 38, 0.92); color: #cbbfa8;
           border-color: #4a3d2b;
         }
@@ -967,8 +971,12 @@
       <div class="hud hud-spectate hidden" id="spectateBar">
         <!-- 문안 확정본: ui-copy §7.2. 버튼 라벨 교체([나가기])는 «확인 다이얼로그
              DOM» 선행(§7.2 🚧)이라 여기서 바꾸지 않는다 — 확인 절차 없이 라벨만
-             바꾸면 파괴적 동작이 한 번에 실행된다. -->
-        ❌ 고발 실패 · 관전 중 — 내 손패로 반증은 계속돼요.
+             바꾸면 파괴적 동작이 한 번에 실행된다.
+
+             본문을 `<span>`으로 감싼 이유: 이 배너에 도달하는 상태가 **둘**이다.
+             ① 진행 중 탈락(§7.2 확정 문안) ② 진행 중 입장한 **좌석 없는 관전자**
+             (§8.1 행 268 확정 문안). 문장은 main.ts가 갈아 끼운다 — 새 문안은 짓지 않는다. -->
+        <span id="specText">❌ 고발 실패 · 관전 중 — 내 손패로 반증은 계속돼요.</span>
         <button id="specHome">메인으로</button>
       </div>
 
