@@ -139,8 +139,11 @@ export const narrate = async (i: NarrationInput): Promise<string | null> => {
           generationConfig: {
             temperature: 0.95,
             maxOutputTokens: 64,
-            // flash 계열은 thinking 모델 → 끄지 않으면 생각 토큰이 예산을 먹고 빈 응답.
-            thinkingConfig: { thinkingBudget: 0 },
+            // thinkingConfig는 보내지 않는다.
+            // `gemini-flash-lite-latest` 별칭이 신세대 모델로 이동하면서
+            // `thinkingBudget: 0`이 400 INVALID_ARGUMENT로 거부된다(2026-07-28 실측).
+            // 그 400이 조용히 폴백으로 흡수돼 전 대사가 규칙 대사로 나가고 있었다.
+            // 미지정 시 정상 응답하며 64토큰 예산도 충분하다(5/5 검증).
           },
         }),
 
@@ -148,7 +151,10 @@ export const narrate = async (i: NarrationInput): Promise<string | null> => {
       },
     );
     if (!res.ok) {
-      console.warn(`[narrate] HTTP ${res.status}`);
+      // 상태코드만 남기면 원인이 묻힌다 — 실제로 400의 사유가 로그에 없어
+      // "LLM이 조용히 폴백되는" 상태를 오래 못 알아챘다. 본문 앞부분까지 남긴다.
+      const detail = await res.text().catch(() => "");
+      console.warn(`[narrate] HTTP ${res.status} ${detail.slice(0, 200)}`);
       return null;
     }
     const data = (await res.json()) as {
