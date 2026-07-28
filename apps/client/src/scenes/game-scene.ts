@@ -17,7 +17,10 @@ import {
   PASSAGE_HOVER_PX,
   SUMMON_ANCHOR_ALPHA,
   SUMMON_ANCHOR_ICON,
+  BUBBLE_BORDER_PX,
+  BUBBLE_SAFE_PAD_PX,
   bubbleLifeMs,
+  fitZoom,
   doorOutward,
   doorSideOf,
   emoji,
@@ -32,7 +35,13 @@ import {
   type MotionProfile,
   type ViewTiming,
 } from "@zodiac-clue/shared";
-import { acquireHudInset, hudInset, releaseHudInset } from "./hud-inset";
+import {
+  acquireHudInset,
+  clampToSafe,
+  hudInset,
+  releaseHudInset,
+  safeWidth,
+} from "./hud-inset";
 import { currentTiming, cvdMode } from "./view-motion";
 import { CVD_CELL, cvdCueDots } from "./pixel-glyphs";
 import {
@@ -170,8 +179,10 @@ type Token = {
 /** 말풍선 1건이 소유한 오브젝트·타이머 전부. 정리 경로를 한 곳으로 모은다. */
 type BubbleRec = {
   txt: Phaser.GameObjects.Text;
-  /** 귓속말 파선 테두리(공개 대사와 구분 — 계약 §2). */
+  /** 배경 분리 테두리 + (귓속말이면) 파선 테두리. 공개/귓속말 모두 존재한다. */
   deco?: Phaser.GameObjects.Graphics;
+  /** 귓속말 여부 — 테두리 문법을 가른다(계약 §2). */
+  whisper?: boolean;
   /** 타자기 마스크(§9.3 — `setText` 재업로드 금지). */
   reveal?: TypeReveal;
   tick?: Phaser.Time.TimerEvent;
@@ -254,11 +265,17 @@ export class GameScene extends Phaser.Scene implements ViewContract {
     this.events.once(Phaser.Scenes.Events.DESTROY, () => this.dispose());
     this.drawBoard();
 
-    // ── 카메라: 내 캐릭터 추적 탑뷰 (bounds 없음 → 캐릭터가 항상 중앙, 보드 밖 여백 허용) ──
+    // ── 카메라: 내 캐릭터 추적 탑뷰 ──
+    // bounds는 매 프레임 `applyCamBounds()`가 **인셋·줌을 반영해** 다시 잡는다.
+    // 고정 bounds를 여기서 한 번 거는 방식은 쓸 수 없다 — 우측 패널 인셋과 줌이
+    // 런타임에 바뀌는데 bounds는 그 둘의 함수이기 때문이다(아래 주석 참조).
     const cam = this.cameras.main;
-    cam.setZoom(INIT_ZOOM);
+    // 초기 줌: 폰 세로처럼 짧은 변이 좁으면 «어디로 가야 하는지»가 안 보인다.
+    // 넓은 화면에서는 `fitZoom`이 INIT_ZOOM을 그대로 돌려주므로 데스크톱은 불변이다.
+    cam.setZoom(fitZoom(Math.min(cam.width, cam.height), INIT_ZOOM, MIN_ZOOM));
     cam.centerOn(BOARD_W / 2, BOARD_H / 2);
     this.cam = cam;
+    this.applyCamBounds();
 
     this.room.onStateChange((state) => this.render(state));
     // 씬 생성 시점엔 상태가 이미 적용돼 있으므로 즉시 1회 렌더(입력 전 오브젝트 표시)
@@ -379,13 +396,99 @@ export class GameScene extends Phaser.Scene implements ViewContract {
     return -hudInset().bottom / 2 / this.cam.zoom;
   }
 
+  /**
+   * 카메라를 **보드 경계**로 묶는다 — 따라가는 말이 가장자리에 있어도 보드 밖 여백이
+   * 화면을 채우지 않게(실측: 좌·상단 40%가 검은 여백).
+   *
+   * ⚠ 인셋과 충돌하지 않는 이유가 이 함수의 전부다.
+   *   `insetOffset()`은 토큰을 **보이는 영역(우측 패널을 뺀 폭)의 중앙**에 두려고
+   *   카메라를 오른쪽으로 `inset/2` 만큼 민다. 그런데 bounds를 보드에 딱 맞게 걸면
+   *   그 이동이 오른쪽 경계에서 먼저 잘려 인셋 보정이 무효가 된다.
+   *   그래서 bounds를 **오른쪽으로 정확히 `inset/zoom` 만큼 넓힌다** —
+   *   Phaser의 clamp가 보장하는 것은 `worldView.right ≤ bounds.right`이고,
+   *   `보이는 영역의 오른쪽 = worldView.right − inset/zoom`이므로 결과는
+   *   **«보이는 영역이 보드를 벗어나지 않는다»**가 된다. 인셋 보정은 그 안에서 온전히 산다.
+   *   (하단 시트 레이아웃의 bottom 인셋도 같은 방식.)
+   *
+   * 줌아웃해서 보드가 화면보다 작아지면 Phaser의 clamp는 한쪽 끝에 **달라붙는다**
+   * (`bx > bw`가 되어 항상 `bw`로 떨어진다). 그때는 bounds를 화면 크기까지
+   * 대칭으로 넓혀 «가운데»가 되게 한다.
+   */
+  private applyCamBounds(): void {
+    const cam = this.cam;
+    if (!cam) return;
+    const z = cam.zoom || 1;
+    const ins = hudInset();
+    let bx = 0;
+    let by = 0;
+    let bw = BOARD_W + ins.right / z;
+    let bh = BOARD_H + ins.bottom / z;
+    const dw = cam.width / z;
+    const dh = cam.height / z;
+    if (bw < dw) {
+      bx -= (dw - bw) / 2;
+      bw = dw;
+    }
+    if (bh < dh) {
+      by -= (dh - bh) / 2;
+      bh = dh;
+    }
+    cam.setBounds(bx, by, bw, bh);
+    // Phaser는 `preRender`에서 클램프하는데, 뷰4로 전환하면 뷰1은 **보이지 않아
+    // preRender가 돌지 않는다**(그래도 update는 돈다). 뷰4가 이 카메라를 미러링하므로
+    // 여기서 한 번 더 직접 클램프해 두 경로가 같은 값을 보게 한다.
+    cam.scrollX = cam.clampX(cam.scrollX);
+    cam.scrollY = cam.clampY(cam.scrollY);
+  }
+
+  /** 카메라 좌표계: 화면 px → 월드. `worldView`는 preRender 시점 값이라 직접 계산한다. */
+  private viewOrigin(): { x: number; y: number; z: number } {
+    const cam = this.cam;
+    const z = cam.zoom || 1;
+    return {
+      x: cam.scrollX + (cam.width * (1 - 1 / z)) / 2,
+      y: cam.scrollY + (cam.height * (1 - 1 / z)) / 2,
+      z,
+    };
+  }
+
+  /**
+   * 말풍선 1건을 **화면 안 · HUD 비가림 영역**에 놓는다.
+   *
+   * ① 크기: 줌과 무관하게 같은 화면 크기로 읽히도록 `1/zoom`으로 역스케일한다.
+   *    (폰 초기 줌 0.6에서 15px 글자가 9px이 되던 것 — LLM 대사는 그러면 증거가 못 된다.)
+   *    안전 영역보다 넓어지면 그만큼 더 줄여 **잘리는 것보다 작아지는 쪽**을 택한다.
+   * ② 위치: 화자 위가 원칙. 위로 안 들어가면 아래로 뒤집고, 그래도 남으면 클램프한다.
+   */
+  private placeBubble(rec: BubbleRec, ax: number, ay: number): void {
+    const cam = this.cam;
+    if (!cam) return;
+    const { x: vx, y: vy, z } = this.viewOrigin();
+    const txt = rec.txt;
+    const pad = BUBBLE_SAFE_PAD_PX;
+    const maxW = Math.max(1, safeWidth(cam.width) - pad * 2);
+    const fit = Math.min(1, maxW / Math.max(1, txt.width));
+    txt.setScale(fit / z);
+    const w = txt.width * fit; // 화면 px
+    const h = txt.height * fit;
+    const asx = (ax - vx) * z;
+    const asy = (ay - vy) * z;
+    const above = asy - CELL * 0.95 * z - h;
+    // 위로 못 들어가면 아래로 — 클램프만 하면 말풍선이 화자 얼굴을 덮어
+    // "누가 말했는가"가 사라진다.
+    const sy0 = above >= pad ? above : asy + CELL * 0.62 * z;
+    const p = clampToSafe(asx - w / 2, sy0, w, h, pad, cam.width, cam.height);
+    txt.setPosition(vx + (p.x + w / 2) / z, vy + (p.y + h) / z);
+  }
+
   /** 매 프레임: 말풍선 위치 + HUD 패널 보정(줌·드래그에 실시간 반응). */
   update(): void {
     this.updatePassageHover();
+    this.applyCamBounds();
     this.bubbles.forEach((b, id) => {
       const anchor = this.tokens.get(id)?.c ?? this.helperSprites.get(id);
       if (!anchor) return;
-      b.txt.setPosition(anchor.x, anchor.y - CELL * 0.95);
+      this.placeBubble(b, anchor.x, anchor.y);
       this.layoutBubbleDeco(b);
       // 마스크는 월드 좌표라 말풍선이 움직이면 다시 칠해야 한다(텍스처 업로드는 없다).
       if (b.reveal) paintReveal(b.reveal);
@@ -950,8 +1053,10 @@ export class GameScene extends Phaser.Scene implements ViewContract {
       })
       .setOrigin(0.5, 1)
       .setDepth(100);
-    const rec: BubbleRec = { txt };
-    if (opts.whisper) rec.deco = this.add.graphics().setDepth(101);
+    // 테두리는 **항상** 그린다 — 말풍선 바탕과 방바닥의 대비가 1.55:1뿐이라
+    // 선이 없으면 밝은 방 위에서 말풍선 경계가 녹는다(§1.6 `BOARD.bubbleEdge`).
+    const rec: BubbleRec = { txt, deco: this.add.graphics().setDepth(101) };
+    rec.whisper = opts.whisper === true;
     this.bubbles.set(id, rec);
 
     // 총 수명은 shared `bubbleLifeMs`가 계산한다(서버 SPEAK_HOLD와 정합을 맞추는 지점).
@@ -963,6 +1068,10 @@ export class GameScene extends Phaser.Scene implements ViewContract {
 
     const reveal = beginReveal(this, txt, body);
     rec.reveal = reveal;
+    // 첫 프레임부터 안전 영역 안에 있어야 한다 — `update()`를 기다리면 한 프레임
+    // 화면 밖에 그려진다(타자기 첫 글자가 잘리는 자리다).
+    this.placeBubble(rec, anchor.x, anchor.y);
+    paintReveal(reveal);
     this.layoutBubbleDeco(rec);
 
     // reduced 프로파일(TYPE_MS=0)은 타자기 없이 전문을 즉시 띄운다.
@@ -994,19 +1103,34 @@ export class GameScene extends Phaser.Scene implements ViewContract {
     });
   }
 
-  /** 귓속말 파선 테두리를 말풍선 위치에 맞춘다. */
+  /**
+   * 말풍선 테두리를 위치·스케일에 맞춘다.
+   * - 공개 대사: 먹빛 실선 1겹(배경 분리 — 비텍스트 대비 §1.6).
+   * - 귓속말: 그 위에 금색 파선 1겹(공개 대사와 구분 — 계약 §2). 두 겹이라
+   *   "귓속말인가"와 "말풍선인가"가 서로를 지우지 않는다.
+   * 선 두께는 월드가 아니라 **화면** 기준이어야 줌아웃에서 사라지지 않는다.
+   */
   private layoutBubbleDeco(rec: BubbleRec): void {
     const g = rec.deco;
     if (!g) return;
     const tl = rec.txt.getTopLeft();
+    const w = rec.txt.displayWidth;
+    const h = rec.txt.displayHeight;
+    const z = this.cam?.zoom || 1;
+    const lw = BUBBLE_BORDER_PX / z;
     g.clear();
-    g.lineStyle(2, BOARD.gold, 0.95);
+    g.lineStyle(lw, BOARD.bubbleEdge, 1);
+    g.strokeRect(tl.x - lw / 2, tl.y - lw / 2, w + lw, h + lw);
+    if (!rec.whisper) return;
+    g.lineStyle(lw, BOARD.gold, 0.95);
     drawDashedRect(
       g,
-      tl.x - 2,
-      tl.y - 2,
-      rec.txt.displayWidth + 4,
-      rec.txt.displayHeight + 4,
+      tl.x - lw * 2,
+      tl.y - lw * 2,
+      w + lw * 4,
+      h + lw * 4,
+      lw * 2,
+      lw * 1.5,
     );
   }
 

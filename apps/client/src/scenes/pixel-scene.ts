@@ -25,9 +25,12 @@ import {
   PASSAGE_FADE_MS,
   PASSAGE_HOVER_PX,
   SUMMON_ANCHOR_ALPHA,
+  BUBBLE_BORDER_PX,
+  BUBBLE_SAFE_PAD_PX,
   doorOutward,
   doorSideOf,
 } from "@zodiac-clue/shared";
+import { clampToSafe, safeWidth } from "./hud-inset";
 import { currentTiming, cvdMode } from "./view-motion";
 import {
   CVD_CELL,
@@ -128,7 +131,10 @@ type LootBox = {
 /** 말풍선 1건이 소유한 오브젝트·타이머 전부. */
 type BubbleRec = {
   txt: Phaser.GameObjects.Text;
+  /** 배경 분리 테두리 + (귓속말이면) 도트 파선. 공개/귓속말 모두 존재한다. */
   deco?: Phaser.GameObjects.Graphics;
+  /** 귓속말 여부 — 테두리 문법을 가른다(계약 §2). */
+  whisper?: boolean;
   reveal?: TypeReveal;
   tick?: Phaser.Time.TimerEvent;
   hold?: Phaser.Time.TimerEvent;
@@ -551,10 +557,35 @@ export class PixelScene extends Phaser.Scene implements ViewContract {
     this.bubbles.forEach((b, id) => {
       const anchor = this.tokens.get(id)?.c ?? this.helpers.get(id);
       if (!anchor) return;
-      b.txt.setPosition(anchor.x, anchor.y - CELL * 0.9);
+      this.placeBubble(b, anchor.x, anchor.y);
       this.layoutBubbleDeco(b);
       if (b.reveal) paintReveal(b.reveal);
     });
+  }
+
+  /**
+   * 말풍선을 화면 안 · HUD 비가림 영역에 놓는다 — 뷰1 `placeBubble`과 **같은 규칙**.
+   * 카메라는 뷰1을 미러링하므로(`mirrorCamera`) 좌표계도 뷰1과 같다.
+   * 도트 뷰는 `setRoundPixels(true)`라 역스케일 결과가 정수 격자에 스냅된다.
+   */
+  private placeBubble(rec: BubbleRec, ax: number, ay: number): void {
+    const cam = this.cameras.main;
+    const z = cam.zoom || 1;
+    const vx = cam.scrollX + (cam.width * (1 - 1 / z)) / 2;
+    const vy = cam.scrollY + (cam.height * (1 - 1 / z)) / 2;
+    const txt = rec.txt;
+    const pad = BUBBLE_SAFE_PAD_PX;
+    const maxW = Math.max(1, safeWidth(cam.width) - pad * 2);
+    const fit = Math.min(1, maxW / Math.max(1, txt.width));
+    txt.setScale(fit / z);
+    const w = txt.width * fit;
+    const h = txt.height * fit;
+    const asx = (ax - vx) * z;
+    const asy = (ay - vy) * z;
+    const above = asy - CELL * 0.9 * z - h;
+    const sy0 = above >= pad ? above : asy + CELL * 0.62 * z;
+    const p = clampToSafe(asx - w / 2, sy0, w, h, pad, cam.width, cam.height);
+    txt.setPosition(vx + (p.x + w / 2) / z, vy + (p.y + h) / z);
   }
 
   // ── 계약: 대사 ───────────────────────────────────────────
@@ -585,8 +616,9 @@ export class PixelScene extends Phaser.Scene implements ViewContract {
       })
       .setOrigin(0.5, 1)
       .setDepth(100);
-    const rec: BubbleRec = { txt };
-    if (opts.whisper) rec.deco = this.add.graphics().setDepth(101);
+    // 테두리는 **항상** — 크림 바탕과 잔디/마루의 대비가 낮아 선이 없으면 경계가 녹는다.
+    const rec: BubbleRec = { txt, deco: this.add.graphics().setDepth(101) };
+    rec.whisper = opts.whisper === true;
     this.bubbles.set(id, rec);
 
     // 수명·타자기 속도는 4뷰 공용값 — 뷰4만 3200ms 하드코딩이던 것을 제거했다.
@@ -597,6 +629,10 @@ export class PixelScene extends Phaser.Scene implements ViewContract {
     };
     const reveal = beginReveal(this, txt, body);
     rec.reveal = reveal;
+    // 첫 프레임부터 안전 영역 안에서 시작한다(폴링 뷰라 `update`가 곧 따라오지만,
+    // 그 한 프레임에 화면 밖에 그려지면 타자기 첫 글자가 잘린 채로 보인다).
+    this.placeBubble(rec, anchor.x, anchor.y);
+    paintReveal(reveal);
     this.layoutBubbleDeco(rec);
 
     if (typeMs <= 0) {
@@ -626,22 +662,32 @@ export class PixelScene extends Phaser.Scene implements ViewContract {
     });
   }
 
-  /** 귓속말 파선 테두리를 도트 문법(3px 계단)으로 두른다. */
+  /**
+   * 말풍선 테두리. 공개 대사는 잉크 실선(배경 분리 §1.6),
+   * 귓속말은 그 바깥에 금색 도트 파선(3px 계단 — 도트 문법 유지).
+   * 두께·도트 크기는 **화면 기준**이라 줌아웃에서도 같은 굵기로 남는다.
+   */
   private layoutBubbleDeco(rec: BubbleRec): void {
     const g = rec.deco;
     if (!g) return;
     const tl = rec.txt.getTopLeft();
     const w = rec.txt.displayWidth;
     const h = rec.txt.displayHeight;
+    const z = this.cameras.main.zoom || 1;
+    const lw = BUBBLE_BORDER_PX / z;
     g.clear();
+    g.lineStyle(lw, PAL.ink, 1);
+    g.strokeRect(tl.x - lw / 2, tl.y - lw / 2, w + lw, h + lw);
+    if (!rec.whisper) return;
+    const d = DOT / z;
     g.fillStyle(PAL.gold, 1);
-    for (let x = 0; x < w; x += DOT * 2) {
-      g.fillRect(tl.x + x, tl.y - DOT, DOT, DOT);
-      g.fillRect(tl.x + x, tl.y + h, DOT, DOT);
+    for (let x = 0; x < w; x += d * 2) {
+      g.fillRect(tl.x + x, tl.y - lw - d, d, d);
+      g.fillRect(tl.x + x, tl.y + h + lw, d, d);
     }
-    for (let y = 0; y < h; y += DOT * 2) {
-      g.fillRect(tl.x - DOT, tl.y + y, DOT, DOT);
-      g.fillRect(tl.x + w, tl.y + y, DOT, DOT);
+    for (let y = 0; y < h; y += d * 2) {
+      g.fillRect(tl.x - lw - d, tl.y + y, d, d);
+      g.fillRect(tl.x + w + lw, tl.y + y, d, d);
     }
   }
 

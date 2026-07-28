@@ -59,6 +59,13 @@ export const paintReveal = (r: TypeReveal): void => {
   const tl = text.getTopLeft();
   const inner = Math.max(1, text.height - padTop - padBottom);
   const lh = inner / Math.max(1, lines.length);
+  // ⚠ `getTopLeft()`·`displayWidth`는 **스케일이 적용된** 월드 값이고
+  //    `text.height`·`measureText`는 스케일 이전 값이다. 말풍선은 줌과 무관하게
+  //    같은 화면 크기로 읽히도록 `1/zoom`으로 역스케일되므로(뷰1·뷰4),
+  //    두 계열을 섞으면 마스크가 글자와 어긋난다 — 스케일 이전 값에만 `s`를 곱한다.
+  //    (스케일 1이면 아래 식은 예전과 완전히 같다.)
+  const sx = text.scaleX;
+  const sy = text.scaleY;
   // 폰트를 컨텍스트에 동기화해야 measureText가 실제 렌더와 같은 폭을 준다.
   text.style.syncFont(text.canvas, text.context);
   let rest = r.shown;
@@ -68,8 +75,13 @@ export const paintReveal = (r: TypeReveal): void => {
     const w =
       take >= line.length
         ? text.displayWidth
-        : padLeft + text.context.measureText(line.slice(0, take)).width;
-    mask.fillRect(tl.x, tl.y + padTop + i * lh, w, lh + (i === 0 ? padTop : 0));
+        : (padLeft + text.context.measureText(line.slice(0, take)).width) * sx;
+    mask.fillRect(
+      tl.x,
+      tl.y + (padTop + i * lh) * sy,
+      w,
+      (lh + (i === 0 ? padTop : 0)) * sy,
+    );
     // 줄바꿈에서 소비된 공백 1자를 함께 센다(래핑으로 사라진 구분자).
     rest -= take + 1;
   }

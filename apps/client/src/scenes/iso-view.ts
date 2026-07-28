@@ -32,8 +32,17 @@ import {
   PASSAGE_HOVER_PX,
   SUMMON_ANCHOR_ALPHA,
   SUMMON_ANCHOR_ICON,
+  BUBBLE_BORDER_PX,
+  BUBBLE_SAFE_PAD_PX,
+  INIT_MIN_CELLS_PERSPECTIVE,
 } from "@zodiac-clue/shared";
-import { acquireHudInset, hudRightInset, releaseHudInset } from "./hud-inset";
+import {
+  acquireHudInset,
+  clampToSafe,
+  hudRightInset,
+  releaseHudInset,
+  safeWidth,
+} from "./hud-inset";
 import { currentTiming, cvdMode } from "./view-motion";
 import { CVD_CELL, cvdCueDots } from "./pixel-glyphs";
 import {
@@ -92,6 +101,14 @@ const SURVEYED_DIM = 0.7;
 // 그리드(gx,gy) → 월드(x,0,z). 보드 중심을 원점에.
 const worldX = (gx: number): number => gx - GRID_WIDTH / 2 + 0.5;
 const worldZ = (gy: number): number => gy - GRID_HEIGHT / 2 + 0.5;
+
+/**
+ * `[lo, hi]`로 묶되 **범위가 뒤집히면 중점**을 준다.
+ * 뒤집힘 = 「가시 영역이 보드보다 넓다」 → 어느 쪽으로도 붙일 수 없으므로 가운데가 답이다
+ * (한쪽 끝으로 보내면 반대편에 여백이 몰린다 — 이번 과제 ②가 고치려는 바로 그 그림).
+ */
+const fitRange = (v: number, lo: number, hi: number): number =>
+  hi <= lo ? (lo + hi) / 2 : v < lo ? lo : v > hi ? hi : v;
 
 type Token = {
   group: THREE.Group;
@@ -274,6 +291,8 @@ export class IsoView implements ViewContract {
   private look = new THREE.Vector3(0, 0, 0); // 현재 카메라가 보는 지점(보간)
   private panOffset = new THREE.Vector3(0, 0, 0); // 자유시점 이동
   private camDist = INIT_DIST;
+  /** 첫 활성화에서 뷰포트에 맞춘 초기 거리를 한 번만 잡는다(이후 사용자 줌을 존중). */
+  private distInit = false;
   private freeLook = false;
   private dragging = false;
   private lastPointer = new THREE.Vector2();
@@ -384,6 +403,7 @@ export class IsoView implements ViewContract {
       this.resize();
       // 인셋 캐시 구독(뷰1과 공유·refcount). 비활성화 때 반드시 해제한다.
       acquireHudInset();
+      this.initDistOnce();
       this.lastFrameMs = 0; // 숨어 있던 시간이 dt로 새지 않도록 리셋
       window.addEventListener("keydown", this.onKeyDown);
       window.addEventListener("keyup", this.onKeyUp);
@@ -1097,6 +1117,9 @@ export class IsoView implements ViewContract {
         this.look.lerp(desired, this.freeLook || this.dragging ? 1 : l);
       }
     }
+    // 추적·focusRoom·자유시점 드래그가 어디로 보냈든 마지막에 한 번 묶는다 —
+    // 경로마다 따로 걸면 새 경로가 생길 때 조용히 빠진다.
+    this.clampLook();
     const off = new THREE.Vector3(
       0,
       Math.sin(CAM_PITCH),
@@ -1248,6 +1271,77 @@ export class IsoView implements ViewContract {
     return (frac * viewW) / 2;
   }
 
+  // ── 조망: 초기 거리 · 보드 경계 클램프 ───────────────────────
+  /** 시선점 기준 **가로** 가시 반폭(월드 유닛). */
+  private halfViewW(): number {
+    const aspect = this.camera.aspect || 1;
+    return this.camDist * Math.tan((this.camera.fov * Math.PI) / 360) * aspect;
+  }
+
+  /**
+   * 첫 활성화에서만 카메라 거리를 뷰포트에 맞춘다.
+   *
+   * 폰 세로(390×844)는 aspect 0.46이라 `INIT_DIST 17`에서 **가로 6.5칸**밖에 안 들어온다 —
+   * 방 하나가 화면을 채우고 «어디로 가야 하는지»가 사라진다. 가로 목표를
+   * `INIT_MIN_CELLS_PERSPECTIVE`로 두고 거기 필요한 거리를 역산한다.
+   * 데스크톱(aspect 1.6)에서 역산값은 8.3으로 `INIT_DIST`보다 작아
+   * `Math.max`가 17을 그대로 돌려준다 — **데스크톱 초기 줌은 불변**이다.
+   */
+  private initDistOnce(): void {
+    if (this.distInit) return;
+    this.distInit = true;
+    const aspect = this.camera.aspect || 1;
+    const need =
+      INIT_MIN_CELLS_PERSPECTIVE /
+      (2 * Math.tan((this.camera.fov * Math.PI) / 360) * aspect);
+    this.camDist = THREE.MathUtils.clamp(
+      Math.max(INIT_DIST, need),
+      MIN_DIST,
+      MAX_DIST,
+    );
+  }
+
+  /**
+   * 시선점을 **보이는 바닥이 보드를 벗어나지 않는 범위**로 묶는다(과제 ②의 원근 뷰 이행).
+   *
+   * 직교 뷰(뷰1)는 Phaser bounds가 같은 일을 하지만 여기는 원근 + 피치 42°라
+   * 화면-세로 ↔ 월드-z가 선형이 아니다. 그래서 **화면 네 변이 바닥과 만나는 지점**을
+   * 직접 푼다: 카메라 높이 `h = sin(pitch)·d`, 지면 투영점 `look.z + cos(pitch)·d`,
+   * 화면 위/아래 변의 부각은 `pitch ∓ fov/2`이므로 각 변의 지면 거리는 `h / tan(각)`이다.
+   *
+   * ⚠ 인셋과 충돌하지 않는다: 우측 패널이 덮는 폭을 «보이지만 못 보는 영역»으로 보고
+   *   가시 사각형의 **오른쪽 변을 그만큼 당겨** 계산한다. 그래서 `insetWorld()`가 만드는
+   *   오른쪽 이동은 클램프 범위 안쪽에 있고, 보드 가장자리에서만 잘린다(그 자리는
+   *   애초에 «보이는 영역 중앙»을 만들 수 없는 곳이다).
+   *
+   * 보드보다 가시 영역이 넓으면(줌아웃·폰 세로) 범위가 뒤집히는데, 그때는 **가운데**로
+   * 보낸다 — 한쪽 끝에 달라붙으면 반대쪽에 큰 여백이 생긴다.
+   */
+  private clampLook(): void {
+    const d = this.camDist;
+    const halfFov = (this.camera.fov * Math.PI) / 360;
+    // 가로 — 시선점 기준 가시 구간 [−halfW, +halfW] 에서 패널이 덮는 폭을 뺀다.
+    const halfW = this.halfViewW();
+    const cover = Math.min(
+      0.5,
+      hudRightInset() / Math.max(1, window.innerWidth),
+    );
+    const visL = -halfW;
+    const visR = halfW - 2 * halfW * cover;
+    // 세로(깊이) — 화면 위/아래 변이 바닥과 만나는 지점. 부각이 0 이하면 지평선이
+    // 화면에 들어온 것이라 «먼 쪽 경계»가 없다(그때는 보드 전체를 담는 값으로 둔다).
+    const h = Math.sin(CAM_PITCH) * d;
+    const ground = Math.cos(CAM_PITCH) * d;
+    const aTop = CAM_PITCH - halfFov;
+    const aBot = CAM_PITCH + halfFov;
+    const visFar = aTop > 1e-3 ? ground - h / Math.tan(aTop) : -1e6;
+    const visNear = ground - h / Math.tan(aBot);
+    const bx = GRID_WIDTH / 2;
+    const bz = GRID_HEIGHT / 2;
+    this.look.x = fitRange(this.look.x, -bx - visL, bx - visR);
+    this.look.z = fitRange(this.look.z, -bz - visFar, bz - visNear);
+  }
+
   // ── 말풍선(DOM 오버레이 + 타자기) ──
   /** `say` 라우팅의 기존 진입점. 계약 메서드로 넘긴다(이름 호환 유지). */
   showBubble(id: string, text: string): void {
@@ -1265,13 +1359,21 @@ export class IsoView implements ViewContract {
     // 귓속말은 공개 대사와 반드시 구분된다(계약 §2) — 접두 + 파선 테두리.
     const body = opts.whisper ? `(귓속말) ${text}` : text;
     const el = document.createElement("div");
+    // ⚠ `transform:translate(-50%,-100%)`를 쓰지 않는다 — `left/top`이 **좌상단**이어야
+    //   화면 안 클램프(`clampToSafe`)와 좌표계가 같아진다(변환이 끼면 두 벌이 된다).
+    // 테두리는 항상 실선 1겹(배경 분리 §1.6). 귓속말은 그 **바깥**에 금색 파선을
+    //   `outline`으로 덧대 두 신호가 서로를 지우지 않게 한다(계약 §2).
     el.style.cssText =
-      "position:absolute; transform:translate(-50%,-100%); max-width:260px;" +
+      "position:absolute; left:0; top:0; max-width:260px;" +
       `background:${hexString(BOARD.bubbleBg)}; color:${hexString(BOARD.bubbleText)};` +
       "padding:4px 8px; border-radius:8px;" +
+      `border:${BUBBLE_BORDER_PX}px solid ${hexString(BOARD.bubbleEdge)};` +
       "font-size:15px; line-height:1.35; text-align:center; white-space:pre-wrap;" +
       "box-shadow:0 2px 8px #0008;" +
-      (opts.whisper ? `border:2px dashed ${hexString(BOARD.gold)};` : "");
+      (opts.whisper
+        ? `outline:${BUBBLE_BORDER_PX}px dashed ${hexString(BOARD.gold)};` +
+          "outline-offset:2px;"
+        : "");
     this.bubbleLayer.appendChild(el);
     const b: Bubble = {
       el,
@@ -1307,12 +1409,28 @@ export class IsoView implements ViewContract {
       }, typeMs);
     }
     this.bubbles.set(id, b);
+    // 같은 틱에 자리를 잡는다 — `left/top`이 0인 채로 한 프레임이라도 남으면
+    // 말풍선이 **좌상단 액션바 밑에서 깜빡였다**(45초 심사에서 눈에 띄는 결함).
+    this.updateBubbles();
   }
 
+  /**
+   * DOM 말풍선을 화면 안 · HUD 비가림 영역에 놓는다 — 뷰1·4 `placeBubble`과 같은 규칙.
+   *
+   * 뷰2·3의 말풍선은 DOM이라 **크기가 이미 화면 px**이다(역스케일이 필요 없다).
+   * 대신 화자가 화면 위쪽에 있으면 `top`이 음수가 되어 윗줄부터 잘려 나갔다 —
+   * 그 자리가 이번 과제 ①의 증상이다. 위로 안 들어가면 화자 아래로 뒤집는다.
+   *
+   * 측정(offsetWidth)과 기록(style)을 **두 패스로 나눈다** — 한 루프에서 섞으면
+   * 말풍선 수만큼 강제 리플로우가 반복된다(§9.2와 같은 이유).
+   */
   private updateBubbles(): void {
     if (this.bubbles.size === 0) return;
     const w = window.innerWidth;
     const h = window.innerHeight;
+    const pad = BUBBLE_SAFE_PAD_PX;
+    const maxW = Math.max(120, safeWidth(w) - pad * 2);
+    const plan: { el: HTMLDivElement; x: number; y: number; on: boolean }[] = [];
     this.bubbles.forEach((b) => {
       const token = this.tokens.get(b.id);
       const helper = this.helpers.get(b.id);
@@ -1321,10 +1439,21 @@ export class IsoView implements ViewContract {
       const pos = new THREE.Vector3(base.x, 1.6, base.z).project(this.camera);
       const sx = (pos.x * 0.5 + 0.5) * w;
       const sy = (-pos.y * 0.5 + 0.5) * h;
-      b.el.style.left = `${sx}px`;
-      b.el.style.top = `${sy}px`;
-      b.el.style.display = pos.z > 1 ? "none" : "block";
+      const bw = b.el.offsetWidth;
+      const bh = b.el.offsetHeight;
+      const above = sy - bh;
+      // 위로 못 들어가면 화자 **아래**로. 클램프만 하면 말풍선이 화자를 덮어
+      // "누가 말했는가"가 사라진다.
+      const y0 = above >= pad ? above : sy + 26;
+      const p = clampToSafe(sx - bw / 2, y0, bw, bh, pad, w, h);
+      plan.push({ el: b.el, x: p.x, y: p.y, on: pos.z <= 1 });
     });
+    for (const q of plan) {
+      q.el.style.left = `${q.x}px`;
+      q.el.style.top = `${q.y}px`;
+      q.el.style.maxWidth = `${Math.min(260, maxW)}px`;
+      q.el.style.display = q.on ? "block" : "none";
+    }
   }
 
   // ── 계약: 식별·파생 정보·종료 ────────────────────────────
