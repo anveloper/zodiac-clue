@@ -9,7 +9,10 @@ import {
   label,
   passageOf,
   persona,
+  zodiacColorHex,
+  zodiacCue,
   type Card,
+  type ZodiacFamily,
 } from "@zodiac-clue/shared";
 import type { Room } from "colyseus.js";
 import {
@@ -22,6 +25,7 @@ import {
 import { GameScene } from "./scenes/game-scene";
 import { PixelScene } from "./scenes/pixel-scene";
 import { IsoView } from "./scenes/iso-view";
+import { cvdMode } from "./scenes/view-motion";
 
 /** 재접속 토큰 저장 키. sessionStorage = 탭 단위(새로고침엔 유지, 새 탭엔 없음). */
 const RECONNECT_KEY = "zc_reconnect";
@@ -68,6 +72,46 @@ const addLog = (text: string, opts: LogOpts = {}): void => {
   $("log").prepend(div);
 };
 
+// ── HUD 12색 (view-contract-spec §4.2 · 로드맵 §7.11) ─────────────────
+// 보드(캔버스)에는 `ZODIAC_COLOR`가 들어갔는데 HUD는 무채색이라 **같은 인물이
+// 화면과 패널에서 다르게 보였다**. 색은 `zodiacColorHex()`에서만 온다 — 여기서
+// 새 색을 고르지 않는다.
+//
+// ⚠ 색 단독 식별 금지(§4.1: 회색조로는 12색이 분리되지 않는다).
+//    HUD의 모든 색 적용 지점에는 2차 단서가 함께 붙는다:
+//      · 턴 배너 칩  = 이모지 + 이름 첫 글자
+//      · 대기실 카드 = 이모지 + 이름 전체
+//      · 증거노트 칩 = 이모지 + 이름 전체
+//      · 턴 원형     = 이모지 + 이름 전체 + 순번/현재/다음 배지
+// HUD는 DOM이라 뷰1~4 어느 렌더러가 떠 있어도 같은 마크업이 뜬다(뷰 독립).
+
+/** 색 밑줄(§7.11 `inset 0 -3px 0 <색>`) — 턴 배너 칩·턴 원형 바에 쓴다. */
+const colorUnderline = (suspect: string): string =>
+  `inset 0 -3px 0 ${zodiacColorHex(suspect)}`;
+/** 좌측 3px 스트라이프(§4.2 "색과 이름을 같은 픽셀에") — 대기실·증거노트 칩. */
+const colorStripe = (suspect: string): string =>
+  `inset 3px 0 0 ${zodiacColorHex(suspect)}`;
+
+/**
+ * `?cvd=1` 색각 대체 표기(§4.3)를 HUD 문자 버전으로 옮긴 것.
+ * 인코딩은 팔레트 구조 그대로 — **계열(4) × 명도단(3)**, 최대 3개만 세면 된다.
+ * 글리프도 §4.3 규정 그대로: 적 ▌· 벽 ▀· 자 ▐· 청 ▄ / 핍 ● ●● ●●●.
+ * 색은 흰색 고정(CSS `.cvd-cue`) — 색 대체 표기가 색에 의존하면 의미가 없다.
+ */
+const CVD_BAR: Record<ZodiacFamily, string> = {
+  red: "▌",
+  jade: "▀",
+  violet: "▐",
+  blue: "▄",
+};
+const cvdOn = cvdMode();
+const cvdTag = (suspect: string): string => {
+  if (!cvdOn) return "";
+  const cue = zodiacCue(suspect);
+  if (!cue) return "";
+  return `<span class="cvd-cue">${CVD_BAR[cue.family]}${"●".repeat(cue.tier + 1)}</span>`;
+};
+
 // ── 카드 선택 모달 ─────────────────────────────
 type Pick = { suspect: string; weapon: string; room?: string };
 
@@ -78,11 +122,21 @@ type Pick = { suspect: string; weapon: string; room?: string };
 const ROOM_SET: ReadonlySet<string> = new Set<string>(ROOMS);
 const cardIcon = (v: string): string => (ROOM_SET.has(v) ? "📍" : emoji(v));
 
+/**
+ * 카드 셀렉트. `mine`(내 손패)은 **표시**만 다를 수도, 선택 불가일 수도 있다.
+ *
+ * - 고발(`lockMine=true`): 내 패를 고르는 것은 자멸이므로 `disabled` 유지(ui-copy §6.2).
+ * - 제안(`lockMine=false`): **선택 가능**(ui-copy §6.1 · 로드맵 §7.5.2).
+ *   "내 카드를 지목해 반증자를 통제"는 클루의 정석 전술인데 서버는 이미 허용하고
+ *   클라만 막고 있었다. 접미 문안은 §6.1의 `— 내 패`.
+ */
 const selectFrom = (
   values: readonly string[],
-  disabled?: Set<string>,
+  mine?: Set<string>,
   /** 내 패 옵션 접미 — 제안/고발이 다르다(ui-copy §6.1·§6.2) */
   mySuffix = " — 내 패",
+  /** 내 패를 선택 불가로 잠글지(고발만 true) */
+  lockMine = true,
 ): HTMLSelectElement => {
   const sel = document.createElement("select");
   for (const v of values) {
@@ -90,13 +144,15 @@ const selectFrom = (
     opt.value = v;
     // 셀렉트 옵션 라벨: 이모지 + 라벨 (ui-copy §6 공통 규칙)
     opt.textContent =
-      `${cardIcon(v)} ${label(v)}` + (disabled?.has(v) ? mySuffix : "");
-    if (disabled?.has(v)) opt.disabled = true;
+      `${cardIcon(v)} ${label(v)}` + (mine?.has(v) ? mySuffix : "");
+    if (lockMine && mine?.has(v)) opt.disabled = true;
     sel.appendChild(opt);
   }
-  // 비활성(내 패)이 아닌 첫 옵션을 기본 선택
-  const firstEnabled = [...sel.options].find((o) => !o.disabled);
-  if (firstEnabled) sel.value = firstEnabled.value;
+  // 내 패가 아닌 첫 옵션을 기본 선택 — 제안에서 선택은 열어 두되 기본값으로 밀지 않는다.
+  const first =
+    [...sel.options].find((o) => !o.disabled && !mine?.has(o.value)) ??
+    [...sel.options].find((o) => !o.disabled);
+  if (first) sel.value = first.value;
   return sel;
 };
 
@@ -123,6 +179,8 @@ type PickerOpts = {
   okLabel: string;
   okDanger?: boolean;
   mySuffix: string;
+  /** 내 손패를 선택 불가로 잠글지 — 고발만 true(ui-copy §6.2). */
+  lockMine: boolean;
 };
 
 const openPicker = (opts: PickerOpts): Promise<Pick | null> =>
@@ -143,10 +201,20 @@ const openPicker = (opts: PickerOpts): Promise<Pick | null> =>
       modal.appendChild(w);
     }
 
-    const suspectSel = selectFrom(participantSuspects(), myCards, opts.mySuffix);
-    const weaponSel = selectFrom(WEAPONS, myCards, opts.mySuffix);
+    const suspectSel = selectFrom(
+      participantSuspects(),
+      myCards,
+      opts.mySuffix,
+      opts.lockMine,
+    );
+    const weaponSel = selectFrom(
+      WEAPONS,
+      myCards,
+      opts.mySuffix,
+      opts.lockMine,
+    );
     const roomSel = opts.needRoom
-      ? selectFrom(ROOMS, myCards, opts.mySuffix)
+      ? selectFrom(ROOMS, myCards, opts.mySuffix, opts.lockMine)
       : null;
 
     const row = (labelText: string, sel: HTMLSelectElement): HTMLDivElement => {
@@ -311,6 +379,8 @@ const wireRoom = (r: Room): void => {
       kind: m.correct ? "win" : "accuse",
     });
   });
+  // 즉시고발 창(§7.5.1) — 서버가 연 창을 표시만 한다. 만료 판정은 서버 몫.
+  r.onMessage("canAccuse", (m: { ms: number }) => openAccuseWindow(m.ms));
   r.onMessage("say", (m: { id: string; from: string; text: string }) => {
     addLog(`💬 ${m.from}: ${m.text}`, { kind: "info" });
     const kind = STAGES[stageIndex].kind;
@@ -613,7 +683,13 @@ const renderTurnStrip = (state: Room["state"]): string => {
       const cls =
         "ti-chip" + (id === curId ? " cur" : "") + (p.eliminated ? " elim" : "");
       const tag = id === curId ? " (현재)" : i === 1 ? " (다음)" : "";
-      const chip = `<span class="${cls}" title="${label(p.suspect)}${tag}">${emoji(p.suspect)}</span>`;
+      // §4.2 HUD — 색 밑줄 3px + 18px + 이름 첫 글자. 색은 2차 단서(이모지·첫 글자)와
+      // 항상 함께 나온다(색 단독 식별 금지).
+      const nm = label(p.suspect);
+      const chip =
+        `<span class="${cls}" style="box-shadow:${colorUnderline(p.suspect)}"` +
+        ` title="${nm}${tag}">${emoji(p.suspect)}` +
+        `<i class="ti-ini">${nm.charAt(0)}</i>${cvdTag(p.suspect)}</span>`;
       const arrow =
         i < seq.length - 1
           ? `<span class="ti-arrow">→</span>`
@@ -654,12 +730,73 @@ const openTurnCircle = (): void => {
       : isNext
         ? `<div class="tc-badge next">다음</div>`
         : `<div class="tc-badge">${i + 1}</div>`;
+    // §4.2 HUD — 턴 원형 배지에도 고유색. 이모지·이름·순번 배지가 2차 단서.
     node.innerHTML =
       `<div class="tc-em">${emoji(p.suspect)}</div>` +
-      `<div class="tc-name">${p.name}</div>${badge}`;
+      `<div class="tc-bar" style="background:${zodiacColorHex(p.suspect)}"></div>` +
+      `<div class="tc-name">${p.name}${cvdTag(p.suspect)}</div>${badge}`;
     ring.appendChild(node);
   });
   $("turnCircle").classList.remove("hidden");
+};
+
+// ── 즉시고발 창 (로드맵 §7.5.1 · 문안 ui-copy §9.5·§5.2) ─────────────
+// 서버는 사람의 제안이 성립하면 `canAccuse {ms, suggestion}`을 **제안자에게만** 보내
+// 같은 턴에 [고발]/[턴 종료]를 고를 창을 열어 둔다. 클라에 핸들러가 없어 이 안내가
+// 화면에 아예 없었다.
+//
+// ⚠ 진실값 경계 — **클라는 창의 만료를 판정하지 않는다.**
+//   · 창을 여는 것도, 만료시켜 턴을 넘기는 것도 서버(`armTimer(TURN_TIMER, …)`)다.
+//   · 여기서 도는 타이머는 **표시 갱신 전용**이다. 남은 시간이 0이 되어도 스스로
+//     창을 닫거나 `endTurn`을 보내지 않고 0초에 고정한 채 서버 상태를 기다린다.
+//   · 표시를 지우는 조건은 전부 서버발 사실이다 — `phase !== "playing"`,
+//     `currentTurn`이 바뀜. 사용자가 [고발]/[턴 종료]를 실제로 보낸 순간도 정리한다.
+//
+// 타이머 소유권 — 이 창은 **전면 오버레이가 아니다**(턴 배너 부제 1줄). 오버레이 버스는
+// 전면 점유 조정이 소관이므로 큐에 넣지 않는다. 대신 버스와 같은 규칙을 지킨다:
+// 타이머 핸들은 이 모듈 밖으로 새지 않고 `clearAccuseWindow()` 하나가 회수한다.
+/** 서버가 알려준 창 마감 시각(ms, 로컬 시계). null이면 창이 닫힌 것으로 **표시**한다. */
+let accuseDeadline: number | null = null;
+let accuseTicker: number | undefined;
+
+/** 남은 시간 문안 — ui-copy §9.5 "제안 후 고발 대기" 확정 문안에 초만 대입. */
+const accuseSubText = (): string => {
+  if (accuseDeadline === null) return "";
+  const left = Math.max(0, Math.ceil((accuseDeadline - Date.now()) / 1000));
+  return `⏳ 지금 고발할 수 있어요 (${left}초). 넘기려면 [턴 종료]`;
+};
+
+/** 턴 배너 부제(`.ti-sub`)에 들어갈 조각. 배너 전체 재렌더와 같은 경로를 탄다. */
+const accuseSubHtml = (): string =>
+  accuseDeadline === null
+    ? ""
+    : `<div class="ti-sub" id="tiSub">${accuseSubText()}</div>`;
+
+/** 초 표시만 갱신(배너 전체를 다시 그리지 않는다 — 클릭 핸들러·칩이 살아 있어야 한다). */
+const paintAccuseSub = (): void => {
+  const el = document.getElementById("tiSub");
+  if (el) el.textContent = accuseSubText();
+};
+
+/** 창 표시 정리 — 타이머 회수 지점은 여기 하나뿐. */
+const clearAccuseWindow = (): void => {
+  if (accuseTicker !== undefined) {
+    window.clearInterval(accuseTicker);
+    accuseTicker = undefined;
+  }
+  if (accuseDeadline === null) return;
+  accuseDeadline = null;
+  document.getElementById("tiSub")?.remove();
+};
+
+/** 서버 `canAccuse` 수신 — 남은 시간을 카운트다운으로 **표시만** 한다. */
+const openAccuseWindow = (ms: number): void => {
+  clearAccuseWindow();
+  accuseDeadline = Date.now() + ms;
+  // 0.25s 간격 — 초 단위 표시가 최대 0.25s 늦게 바뀐다(1s면 첫 감소가 1s 늦게 보인다).
+  accuseTicker = window.setInterval(paintAccuseSub, 250);
+  // 이 메시지만으로는 상태 변경이 없어 배너가 다시 그려지지 않는다 → 즉시 1회 렌더.
+  if (room) updateTurnInfo(room.state);
 };
 
 // ── 액션 버튼 상태·문안 (ui-copy §5) ─────────────────────────────
@@ -735,11 +872,13 @@ const updateActionButtons = (state: Room["state"]): void => {
     "이 방에서 용의자와 훔친 것을 지목해요. 장소는 현재 방으로 고정.",
   );
 
-  // 고발 (§5.2)
+  // 고발 (§5.2) — 즉시고발 창이 열려 있으면 활성 툴팁을 §5.2 "제안 직후" 문안으로.
   setAction(
     "accuse",
     idle ? NOT_STARTED : elim ? ELIMINATED : !mine ? NOT_MY_TURN : null,
-    "정답 3장을 지목해요. 틀리면 즉시 탈락합니다.",
+    accuseDeadline !== null
+      ? "지금 고발할 수 있어요. 넘기려면 [턴 종료]."
+      : "정답 3장을 지목해요. 틀리면 즉시 탈락합니다.",
   );
 
   // 비밀 통로 (§5.3) — 1순위 문안은 §5.2 재사용
@@ -805,6 +944,8 @@ const BASE_TITLE = document.title;
 
 const updateTurnInfo = (state: Room["state"]): void => {
   const el = $("turnInfo");
+  // 즉시고발 창 정리 ① — 판이 끝났다는 **서버발 사실**. 클라가 시간을 보고 닫는 게 아니다.
+  if (state.phase !== "playing") clearAccuseWindow();
   updateActionButtons(state); // phase와 무관하게 항상 최신 사유를 유지
   if (state.phase !== "playing") {
     el.classList.add("hidden");
@@ -820,6 +961,11 @@ const updateTurnInfo = (state: Room["state"]): void => {
   document.title = mine ? `🎲 내 턴 — ${BASE_TITLE}` : BASE_TITLE;
   const turnChanged = state.currentTurn !== lastTurn;
   lastTurn = state.currentTurn;
+  // 즉시고발 창 정리 ② — 턴이 넘어갔다는 **서버발 사실**(만료 자동 종료도 여기로 온다).
+  if (turnChanged) {
+    clearAccuseWindow();
+    updateActionButtons(state); // 툴팁을 평시 문안으로 되돌린다
+  }
   el.classList.toggle("mine", mine);
   el.classList.add("clickable");
 
@@ -827,7 +973,8 @@ const updateTurnInfo = (state: Room["state"]): void => {
   const status = mine
     ? `<div class="ti-status">${myTurnText(state.stepsLeft ?? 0)}</div>`
     : `<div class="ti-status">${cur ? `⏳ ${emoji(cur.suspect)} ${cur.name} 님의 턴` : ""}</div>`;
-  el.innerHTML = status + renderTurnStrip(state);
+  // 부제(.ti-sub) = 즉시고발 창 카운트다운(§9.5). 창이 닫혀 있으면 빈 문자열이다.
+  el.innerHTML = status + renderTurnStrip(state) + accuseSubHtml();
   el.title = "클릭: 전체 턴 순서(원형) 보기";
   el.onclick = openTurnCircle;
   if (mine && turnChanged) showDiceRoll(); // 내 턴 시작 → 중앙 주사위
@@ -890,8 +1037,12 @@ const renderLobbyChars = (state: Room["state"]): void => {
     const mine = z === mySuspect;
     cell.className =
       "char" + (takenByOther ? " locked" : "") + (mine ? " selected" : "");
+    // §4.2 HUD — 좌측 3px 스트라이프. 게임 진입 **전에** 색을 학습시키는 자리다.
+    // 2차 단서는 이미 있는 이모지 + 이름 전체.
+    cell.style.boxShadow = colorStripe(z);
     cell.innerHTML =
-      `<span class="em">${emoji(z)}</span>` + `<span>${label(z)}</span>`;
+      `<span class="em">${emoji(z)}</span>` +
+      `<span>${label(z)}${cvdTag(z)}</span>`;
     // 직업 뜻풀이를 툴팁으로도 노출(생소한 단어 설명).
     const j = job(z);
     cell.title = j
@@ -939,12 +1090,15 @@ const buildEvidence = (roomId: string): void => {
   const commonSet = new Set<string>(
     room ? ([...((room.state.commonCards as string[]) ?? [])] as string[]) : [],
   );
-  const groups: [string, readonly string[]][] = [
-    ["용의자", participantSuspects()],
-    ["훔친 것", WEAPONS],
-    ["장소", ROOMS],
+  // 3번째 원소 = 십이지 고유색 적용 대상인지(§4.2 "증거노트 용의자 칩").
+  // 훔친 것·장소는 십이지가 아니므로 색이 없다(`zodiacColorHex`가 중립색을 주는 것과 별개로
+  // 의미 없는 색을 칠하지 않는다).
+  const groups: [string, readonly string[], boolean][] = [
+    ["용의자", participantSuspects(), true],
+    ["훔친 것", WEAPONS, false],
+    ["장소", ROOMS, false],
   ];
-  for (const [cat, values] of groups) {
+  for (const [cat, values, colored] of groups) {
     const g = document.createElement("div");
     g.className = "evi-group";
     const c = document.createElement("div");
@@ -955,19 +1109,24 @@ const buildEvidence = (roomId: string): void => {
     chips.className = "evi-chips";
     for (const v of values) {
       const chip = document.createElement("div");
+      // §4.2 HUD — 용의자 칩 좌측 3px 스트라이프. 이모지 + 이름이 2차 단서로 남는다.
+      // `base`는 아래 apply()가 className을 다시 조립할 때도 스트라이프 여백을 지키기 위함.
+      const base = "evi-chip" + (colored ? " zc" : "");
+      if (colored) chip.style.boxShadow = colorStripe(v);
       // 장소는 EMOJI 맵에 없어 아이콘 칸이 비었다 → cardIcon()이 📍로 채운다(§2)
       chip.innerHTML =
-        `<span>${cardIcon(v)}</span>` + `<span>${label(v)}</span>`;
+        `<span>${cardIcon(v)}</span>` +
+        `<span class="evi-name">${label(v)}${colored ? cvdTag(v) : ""}</span>`;
       // 내 패 또는 공통 단서 → 정답 아님, 자동 제외·잠금
       const own = myCards.has(v) || commonSet.has(v);
       if (own) {
-        chip.className = "evi-chip cleared own";
+        chip.className = base + " cleared own";
         chip.title = commonSet.has(v) ? "공통 단서 (정답 아님)" : "내 패 (정답 아님)";
       } else {
         chip.title = "클릭: 없음(제외) → 의심 → 초기화";
         const apply = (): void => {
           const st = data[v] ?? "";
-          chip.className = "evi-chip" + (st ? " " + st : "");
+          chip.className = base + (st ? " " + st : "");
         };
         chip.onclick = () => {
           const next = EVI_NEXT[data[v] ?? ""];
@@ -1067,6 +1226,7 @@ const enterGame = (): void => {
       note: "지목한 인물과 물건이 이 방으로 소환돼요.",
       okLabel: "이 조합으로 제안",
       mySuffix: " — 내 패",
+      lockMine: false, // §6.1 — 제안에서는 내 패도 고를 수 있다(반증자 통제 전술)
     });
     if (pick) {
       // 장소는 서버가 player.room에서 가져간다 — 고정행은 표시일 뿐 값을 바꾸지 않는다.
@@ -1087,6 +1247,7 @@ const enterGame = (): void => {
       okLabel: "고발한다",
       okDanger: true,
       mySuffix: " — 내 패 (정답 아님)",
+      lockMine: true, // §6.2 — 고발에서 내 패 지목은 자멸이므로 잠금 유지
     });
     if (pick && pick.room) {
       room?.send("accuse", {
@@ -1094,11 +1255,16 @@ const enterGame = (): void => {
         weapon: pick.weapon,
         room: pick.room,
       });
+      // 즉시고발 창 정리 ③ — 선택을 실제로 보냈다. (취소로 닫았으면 창은 그대로 둔다)
+      clearAccuseWindow();
+      if (room) updateTurnInfo(room.state);
     }
   };
   ($("endTurn") as HTMLButtonElement).onclick = () => {
     if (blockedBy("endTurn")) return;
     room?.send("endTurn", {});
+    clearAccuseWindow(); // 즉시고발 창 정리 ③
+    if (room) updateTurnInfo(room.state);
   };
   ($("passage") as HTMLButtonElement).onclick = () => {
     if (blockedBy("passage")) return;

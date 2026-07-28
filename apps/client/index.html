@@ -198,14 +198,35 @@
         display: flex; align-items: center; justify-content: center;
         gap: 2px; margin-top: 5px;
       }
-      .ti-chip { font-size: 15px; line-height: 1; opacity: 0.8; transition: transform .15s; }
+      /* 12색(spec §4.2): 색 밑줄 3px + 18px + 이름 첫 글자.
+         inline-flex인 이유 — inline 요소에는 box-shadow/transform이 안정적으로 걸리지
+         않는다(기존 .cur의 scale도 사실상 무시되고 있었다). */
+      .ti-chip {
+        display: inline-flex; align-items: baseline; gap: 2px;
+        font-size: 18px; line-height: 1.1; opacity: 0.8;
+        padding: 1px 3px 4px; border-radius: 4px;
+        transition: transform .15s;
+      }
+      .ti-chip .ti-ini {
+        font-size: 10px; font-style: normal; font-weight: 700; color: #cbbfa8;
+      }
       .ti-chip.cur {
-        transform: scale(1.35); opacity: 1;
+        transform: scale(1.2); opacity: 1;
         filter: drop-shadow(0 0 3px #ffd479);
       }
+      .ti-chip.cur .ti-ini { color: #f0d9a8; }
       .ti-chip.elim { opacity: 0.28; }
       .ti-arrow { color: #9a8a6a; font-size: 10px; }
       .ti-arrow.ti-wrap { color: #b4622b; }
+      /* 턴 배너 부제 — 즉시고발 창 카운트다운(ui-copy §9.5). 강조색. */
+      .hud-turn .ti-sub {
+        margin-top: 5px; font-size: 11px; color: #ffd479; font-weight: 600;
+      }
+      /* `?cvd=1` 색각 대체 표기(spec §4.3) — 계열 바 + 명도 핍. 흰색 고정. */
+      .cvd-cue {
+        margin-left: 3px; font-size: 9px; line-height: 1;
+        color: #fff; letter-spacing: -1px; vertical-align: middle;
+      }
       /* 턴 순서 원형 오버레이 */
       .tc-overlay {
         position: fixed; inset: 0; z-index: 45; background: rgba(0, 0, 0, 0.6);
@@ -228,6 +249,10 @@
         width: 72px; text-align: center;
       }
       .tc-node .tc-em { font-size: 30px; line-height: 1; }
+      /* 12색(spec §4.2) — 턴 원형 배지의 고유색 바. 이모지와 이름 사이 3px. */
+      .tc-node .tc-bar {
+        width: 34px; height: 3px; margin: 3px auto 2px; border-radius: 2px;
+      }
       .tc-node .tc-name {
         font-size: 11px; color: #cbbfa8; white-space: nowrap;
         overflow: hidden; text-overflow: ellipsis;
@@ -433,7 +458,9 @@
         font-size: 11px; color: #cbbfa8; user-select: none;
         white-space: nowrap; overflow: hidden;
       }
-      .evi-chip > span:last-child { overflow: hidden; text-overflow: ellipsis; }
+      .evi-chip > .evi-name { overflow: hidden; text-overflow: ellipsis; }
+      /* 12색(spec §4.2) — 용의자 칩 좌측 3px 스트라이프(inline box-shadow)의 여백. */
+      .evi-chip.zc { padding-left: 10px; }
       .evi-chip:hover { border-color: #b4622b; }
       .evi-chip.cleared { opacity: 0.4; text-decoration: line-through; }
       .evi-chip.suspect { background: #3a2b1a; border-color: #e0a35a; color: #f0d9a8; }
