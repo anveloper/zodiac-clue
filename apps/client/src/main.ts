@@ -1050,7 +1050,15 @@ const wireRoom = (r: Room): void => {
     renderLobby(state);
     updateTurnInfo(state);
     updateEndState(state);
-    if (state.phase === "playing" && !phaserStarted) void enterGame();
+    // `ended`도 게임 화면을 띄운다 — 결과 오버레이(`#endOverlay`)와 관전 배너는
+    // **`#gameScreen` 안에** 있다. 끝난 판으로 새로고침·관전 입장하면 예전에는
+    // 이 조건이 `playing`만 봐서 대기실 화면에 머물렀고, 서버가 봉투를 보내줘도
+    // 결과가 숨겨진 채였다(= 판을 잃은 것처럼 보였다).
+    if (
+      (state.phase === "playing" || state.phase === "ended") &&
+      !phaserStarted
+    )
+      void enterGame();
     // 연출 라우팅은 **뷰가 생긴 뒤에** — `enterGame()` 뒤에 오는 것이 조건이다.
     applyFx(state);
   });
@@ -2510,12 +2518,28 @@ const init = async (): Promise<void> => {
     setLandingMsg("이전 세션에 재접속 중…");
     try {
       wireRoom(await client.reconnect(token));
+      return;
     } catch {
       sessionStorage.removeItem(RECONNECT_KEY);
-      setLandingMsg(
-        invited ? "초대 링크로 들어왔어요. [참가] 후 대기실에서 캐릭터를 고르세요." : "",
-      );
     }
+    // 재접속 실패는 «좌석으로 돌아갈 수 없다»일 뿐 «판이 없다»가 아니다.
+    // (창 만료·좌석이 이미 대리 NPC에게 넘어간 뒤·서버 재시작 등)
+    // 주소에 방 코드가 남아 있으면 **관전으로라도 받는다** — 랜딩으로 떨구지 않는다.
+    // 좌석을 줄지 관전으로 받을지는 서버 `onJoin`이 정한다(클라는 좌석을 만들지 않는다).
+    if (invited) {
+      try {
+        wireRoom(await joinRoomById(invited));
+        return;
+      } catch {
+        /* 방 자체가 사라졌다 → 아래 랜딩 문구 */
+      }
+      goMain();
+      setLandingMsg(
+        "없는 방이거나 참가할 수 없어요. 코드를 확인하거나 새 방을 만드세요.",
+      );
+      return;
+    }
+    setLandingMsg("");
   }
 };
 

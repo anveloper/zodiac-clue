@@ -583,22 +583,33 @@ export class ClueRoom extends Room<GameState> {
   }
 
   async onLeave(client: Client, consented: boolean): Promise<void> {
-    this.spectators.delete(client.sessionId);
+    const wasSpectator = this.spectators.delete(client.sessionId);
     const player = this.state.players.get(client.sessionId);
     if (player) player.connected = false;
     // 끊긴 좌석이 턴을 쥐고 있으면 45초가 아니라 8초 클럭으로 갈아탄다(§8.2).
     if (this.state.currentTurn === client.sessionId) this.armTurnClock();
 
-    // 게임 중 비자발적 이탈만 재접속을 기다린다(대기실에선 즉시 제거).
-    if (!consented && this.state.phase === "playing") {
-      this.broadcast("log", {
-        text: `📡 연결 끊김 — ${player?.name ?? "누군가"} 님 · 재접속 대기`,
-      });
+    // 비자발적 이탈은 **판이 끝난 뒤에도** 재접속을 기다린다(대기실에선 즉시 제거).
+    //
+    // 예전 게이트는 `phase === "playing"`이었다. 그래서 **결과 화면에서 새로고침하면**
+    // `allowReconnection`이 아예 걸리지 않아 좌석이 즉시 제거되고, 솔로 판에서는 방까지
+    // 사라져(`autoDispose`) 클라의 `client.reconnect()`가 «token invalid»로 튕겼다 →
+    // 랜딩으로 떨어져 결과·정답 봉투를 통째로 잃었다. `ended`도 「돌아올 수 있는 상태」다.
+    if (!consented && this.state.phase !== "lobby") {
+      // 대리 NPC 유예는 **진행 중일 때만** 의미가 있다 — 끝난 판엔 이어받을 턴이 없다.
+      const playing = this.state.phase === "playing";
+      if (playing && !wasSpectator) {
+        this.broadcast("log", {
+          text: `📡 연결 끊김 — ${player?.name ?? "누군가"} 님 · 재접속 대기`,
+        });
+      }
       // §8.2 — 재접속 창은 120초로 늘리되 **20초 시점에 대리 NPC가 좌석을 이어받는다.**
       // 예전엔 60초 창 동안 `currentTurn`이 이탈자에게 고정돼 판이 최대 60초 완전 정지했다.
-      const grace = this.armTimer(`away:${client.sessionId}`, HANDOVER_GRACE_MS, () =>
-        this.handoverToBot(client.sessionId),
-      );
+      const grace = playing
+        ? this.armTimer(`away:${client.sessionId}`, HANDOVER_GRACE_MS, () =>
+            this.handoverToBot(client.sessionId),
+          )
+        : { cancel: (): void => undefined };
       try {
         const back = await this.allowReconnection(client, RECONNECT_WINDOW_SEC);
         grace.cancel();
@@ -663,7 +674,17 @@ export class ClueRoom extends Room<GameState> {
    */
   private restoreSeat(client: Client): void {
     const p = this.state.players.get(client.sessionId);
-    if (!p) return;
+    if (!p) {
+      // 좌석이 없는 **관전자**의 재접속. 예전엔 여기서 그냥 돌아가 ①관전 명단에서 빠지고
+      // (다음 판 `seatSpectators()`가 영영 자리를 주지 않는다) ②제안 기록이 빈 채로 남았다.
+      // `onJoin`의 관전 분기와 **같은 것만** 되돌려준다 — 공개 정보뿐, 손패는 없다.
+      if (this.state.phase === "lobby") return;
+      this.spectators.add(client.sessionId);
+      this.sendSuggestLog(client);
+      client.send("aiStats", this.ai.snapshot());
+      this.sendSolutionTo(client); // 진행 중이면 첫 줄에서 스스로 막는다
+      return;
+    }
     p.connected = true;
     if (p.awayBot) {
       p.isBot = false;

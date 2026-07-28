@@ -742,7 +742,11 @@
       <div class="hud hud-turn hidden" id="turnInfo"></div>
 
       <div class="hud hud-spectate hidden" id="spectateBar">
-        ❌ 탈락 · 관전 중 <button id="specHome">메인으로</button>
+        <!-- 문안 확정본: ui-copy §7.2. 버튼 라벨 교체([나가기])는 «확인 다이얼로그
+             DOM» 선행(§7.2 🚧)이라 여기서 바꾸지 않는다 — 확인 절차 없이 라벨만
+             바꾸면 파괴적 동작이 한 번에 실행된다. -->
+        ❌ 고발 실패 · 관전 중 — 내 손패로 반증은 계속돼요.
+        <button id="specHome">메인으로</button>
       </div>
 
       <div id="diceOverlay" class="dice-overlay hidden"></div>
