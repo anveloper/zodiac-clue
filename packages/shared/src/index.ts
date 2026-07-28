@@ -1,5 +1,6 @@
 export * from "./cards";
 export * from "./types";
+export * from "./view-consts";
 
 /** 접속 가능한 최대 인원 (기본 클루 = 6인). */
 export const MAX_PLAYERS = 6;

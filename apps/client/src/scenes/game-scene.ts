@@ -1,26 +1,35 @@
 import Phaser from "phaser";
 import type { Room } from "colyseus.js";
 import {
+  BOARD,
+  CELL_PX,
+  ELIM_ALPHA,
   GRID_HEIGHT,
   GRID_WIDTH,
+  RING_CURRENT,
   ROOM_REGIONS,
+  SPENT_ALPHA,
+  TOKEN_OUTLINE_COLOR,
+  TOKEN_OUTLINE_PX,
+  bubbleLifeMs,
   emoji,
+  hexString,
   inFeast,
   label,
   roomAt,
+  timingOf,
+  zodiacColor,
+  type MotionProfile,
+  type ViewTiming,
 } from "@zodiac-clue/shared";
 import { acquireHudInset, hudInset, releaseHudInset } from "./hud-inset";
+import { currentTiming } from "./view-motion";
 
 // 셀 크기 = 근접(줌 1.0) 기준 해상도. 크게 잡아 줌 1.0에서 선명하게 보이도록.
-export const CELL = 40;
+// 값의 단일 소스는 shared의 `CELL_PX` — 여기서는 호환용으로 재수출만 한다.
+export const CELL = CELL_PX;
 export const BOARD_W = GRID_WIDTH * CELL;
 export const BOARD_H = GRID_HEIGHT * CELL;
-
-const PLAYER_COLORS = [
-  0xef4444, 0xf59e0b, 0x84cc16, 0x22c55e, 0x38bdf8, 0xa855f7,
-];
-const MOVE_COOLDOWN_MS = 110;
-const MOVE_TWEEN_MS = 110; // 칸 이동 보간
 
 // 카메라: 근접(1.0)이 기본·최대 근처, 축소(<1)로 전체 조망
 const MIN_ZOOM = 0.3;
@@ -29,16 +38,38 @@ const INIT_ZOOM = 1.0;
 const CAM_LERP = 0.12; // 내 캐릭터 추적(빠름)
 const SLOW_LERP = 0.06; // NPC 턴 추적(천천히)
 const PAN_STEP = 48;
-const CAM_SWITCH_DELAY = 900; // 턴 바뀔 때 카메라 전환 지연(반증 먼저 인지 → 덜 어지러움)
-const TYPE_MS = 55; // 대사 타이핑 속도(글자당) — 추후 TTS 속도에 맞춤
-const BUBBLE_HOLD_MS = 2600; // 타이핑 완료 후 유지
 
-// 보드 팔레트 (한옥/사극 톤)
-const C_CORRIDOR = 0x2a2118;
-const C_GRID = 0x5a4a34;
-const C_ROOM = 0xcbb489;
-const C_ROOM_EDGE = 0x7c6238;
-const C_GOLD = 0xffd479;
+/** 이름표 좌측 색 스트라이프 두께(px) — 색과 이름을 같은 픽셀에(§4.2). */
+const NAME_STRIPE_PX = 3;
+
+/**
+ * 파선 사각형 — 탈락 2차 표기(§1.2 `ELIM_NEEDS_SECOND_CUE`).
+ * 알파만으로는 저대비·회색조에서 탈락이 사라지므로 이름표에 파선을 두른다.
+ */
+const drawDashedRect = (
+  g: Phaser.GameObjects.Graphics,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  dash = 4,
+  gap = 3,
+): void => {
+  const seg = (x1: number, y1: number, x2: number, y2: number): void => {
+    const len = Math.hypot(x2 - x1, y2 - y1);
+    if (len === 0) return;
+    const ux = (x2 - x1) / len;
+    const uy = (y2 - y1) / len;
+    for (let d = 0; d < len; d += dash + gap) {
+      const e = Math.min(d + dash, len);
+      g.lineBetween(x1 + ux * d, y1 + uy * d, x1 + ux * e, y1 + uy * e);
+    }
+  };
+  seg(x, y, x + w, y);
+  seg(x + w, y, x + w, y + h);
+  seg(x + w, y + h, x, y + h);
+  seg(x, y + h, x, y);
+};
 
 type Token = {
   c: Phaser.GameObjects.Container;
@@ -46,6 +77,10 @@ type Token = {
   disc: Phaser.GameObjects.Arc;
   face: Phaser.GameObjects.Text;
   name: Phaser.GameObjects.Text;
+  /** 이름표 좌측 색 스트라이프 — 색과 이름을 같은 픽셀에. */
+  stripe: Phaser.GameObjects.Rectangle;
+  /** 탈락 파선 테두리(2차 표기). */
+  elimDash: Phaser.GameObjects.Graphics;
   placed: boolean;
 };
 
@@ -75,6 +110,8 @@ export class GameScene extends Phaser.Scene {
   private weaponSprites = new Map<string, Phaser.GameObjects.Text>();
   private helperSprites = new Map<string, Phaser.GameObjects.Container>();
   private insetHeld = false;
+  /** 감속 프로파일 타이밍(§1.3). 보간 길이는 매번 여기서 재조회한다. */
+  private timing: ViewTiming = currentTiming();
 
   constructor() {
     super("game");
@@ -195,7 +232,7 @@ export class GameScene extends Phaser.Scene {
         if (roomAt(tx, ty) === null && !inFeast(tx, ty)) return;
       }
       const now = this.time.now;
-      if (now - this.lastMove < MOVE_COOLDOWN_MS) return;
+      if (now - this.lastMove < this.timing.MOVE_COOLDOWN_MS) return;
       this.lastMove = now;
       this.room.send("move", { dx, dy });
     });
@@ -224,6 +261,11 @@ export class GameScene extends Phaser.Scene {
       this.cam.followOffset.x = this.insetOffset();
       this.cam.followOffset.y = this.insetOffsetY();
     }
+  }
+
+  /** 감속 프로파일 전환(§1.3). 이후 보간 길이를 이 표에서 재조회한다. */
+  setMotion(p: MotionProfile): void {
+    this.timing = timingOf(p);
   }
 
   /** 인셋 캐시 참조 획득/해제 — 씬 종료 시 ResizeObserver가 남지 않도록. */
@@ -258,9 +300,9 @@ export class GameScene extends Phaser.Scene {
 
   // ── 보드 그리기 (복도 + 방 + 중앙 잔치상) ──
   private drawBoard(): void {
-    this.add.rectangle(0, 0, BOARD_W, BOARD_H, C_CORRIDOR).setOrigin(0);
+    this.add.rectangle(0, 0, BOARD_W, BOARD_H, BOARD.corridor).setOrigin(0);
     const grid = this.add.graphics();
-    grid.lineStyle(1, C_GRID, 0.9);
+    grid.lineStyle(1, BOARD.grid, 0.9);
     for (let x = 0; x <= GRID_WIDTH; x++) {
       grid.lineBetween(x * CELL, 0, x * CELL, BOARD_H);
     }
@@ -274,9 +316,9 @@ export class GameScene extends Phaser.Scene {
     const fw = 6 * CELL;
     const fh = 6 * CELL;
     const feast = this.add.graphics();
-    feast.fillStyle(0x3a2b1a, 1);
+    feast.fillStyle(BOARD.feast, 1);
     feast.fillRoundedRect(fx, fy, fw, fh, 16);
-    feast.lineStyle(3, 0xb8933f, 1);
+    feast.lineStyle(3, BOARD.feastEdge, 1);
     feast.strokeRoundedRect(fx, fy, fw, fh, 16);
     this.add
       .text(fx + fw / 2, fy + fh / 2 - 18, "🎁", {
@@ -287,7 +329,7 @@ export class GameScene extends Phaser.Scene {
     this.add
       .text(fx + fw / 2, fy + fh / 2 + 36, "잔치상", {
         fontSize: "22px",
-        color: "#d8c188",
+        color: hexString(BOARD.feastText),
       })
       .setOrigin(0.5);
 
@@ -298,20 +340,20 @@ export class GameScene extends Phaser.Scene {
       const w = r.w * CELL;
       const h = r.h * CELL;
       const g = this.add.graphics();
-      g.fillStyle(C_ROOM, 1);
+      g.fillStyle(BOARD.room, 1);
       g.fillRoundedRect(x, y, w, h, 12);
-      g.lineStyle(3, C_ROOM_EDGE, 1);
+      g.lineStyle(3, BOARD.roomEdge, 1);
       g.strokeRoundedRect(x, y, w, h, 12);
 
       const name = label(r.name);
       const plW = Math.min(w - 16, name.length * 20 + 24);
       const plaque = this.add.graphics();
-      plaque.fillStyle(0x2b2013, 0.92);
+      plaque.fillStyle(BOARD.plaque, 0.92);
       plaque.fillRoundedRect(x + 10, y + 10, plW, 30, 7);
       this.add
         .text(x + 10 + plW / 2, y + 25, name, {
           fontSize: "18px",
-          color: "#f0d9a8",
+          color: hexString(BOARD.plaqueText),
         })
         .setOrigin(0.5);
 
@@ -319,8 +361,8 @@ export class GameScene extends Phaser.Scene {
       const dcx = r.door.x * CELL + CELL / 2;
       const dcy = r.door.y * CELL + CELL / 2;
       this.add
-        .rectangle(dcx, dcy, CELL * 0.94, CELL * 0.94, 0x6b4a1e, 1)
-        .setStrokeStyle(3, C_GOLD);
+        .rectangle(dcx, dcy, CELL * 0.94, CELL * 0.94, BOARD.doorTile, 1)
+        .setStrokeStyle(3, BOARD.gold);
       this.add
         .text(dcx, dcy - CELL * 0.08, "🚪", {
           fontSize: `${Math.floor(CELL * 0.55)}px`,
@@ -329,8 +371,8 @@ export class GameScene extends Phaser.Scene {
       this.add
         .text(dcx, dcy + CELL * 0.34, "입구", {
           fontSize: "11px",
-          color: "#2a2118",
-          backgroundColor: "#ffd479",
+          color: hexString(BOARD.corridor),
+          backgroundColor: hexString(BOARD.gold),
           padding: { x: 3, y: 1 },
         })
         .setOrigin(0.5);
@@ -340,14 +382,12 @@ export class GameScene extends Phaser.Scene {
   // ── 말(플레이어/NPC) 렌더 ──
   private render(state: Room["state"]): void {
     const players = state.players as Map<string, PlayerView>;
-    const ids = [...players.keys()];
     const current = (state.currentTurn as string) ?? "";
     const seen = new Set<string>();
 
     players.forEach((p, id) => {
       seen.add(id);
-      const token =
-        this.tokens.get(id) ?? this.createToken(id, ids.indexOf(id), p);
+      const token = this.tokens.get(id) ?? this.createToken(id, p);
       // 칸 정중앙에 정렬(겹침 방지는 서버가 빈 칸 배치로 처리)
       const cx = p.x * CELL + CELL / 2;
       const cy = p.y * CELL + CELL / 2;
@@ -361,18 +401,26 @@ export class GameScene extends Phaser.Scene {
           targets: token.c,
           x: cx,
           y: cy,
-          duration: MOVE_TWEEN_MS,
+          duration: this.timing.MOVE_TWEEN_MS,
           ease: "Quad.Out",
         });
       }
 
       const isCurrent = id === current;
       token.ring.setVisible(isCurrent);
-      token.disc.setStrokeStyle(2, isCurrent ? C_GOLD : 0xffffff);
-      const alpha = p.eliminated ? 0.3 : 1;
+      token.disc.setStrokeStyle(
+        TOKEN_OUTLINE_PX,
+        isCurrent ? RING_CURRENT : TOKEN_OUTLINE_COLOR,
+      );
+      // 탈락 감쇠는 ring을 포함한 **토큰 전체**에(뷰2·3·4와 같은 정보 강도).
+      const alpha = p.eliminated ? ELIM_ALPHA : 1;
+      token.ring.setAlpha(alpha);
       token.disc.setAlpha(alpha);
       token.face.setAlpha(alpha);
       token.name.setAlpha(alpha);
+      token.stripe.setAlpha(alpha);
+      // 2차 표기(파선)는 감쇠 대상이 아니다 — 감쇠되면 2중 표기의 의미가 사라진다.
+      token.elimDash.setVisible(p.eliminated);
     });
 
     // ── 장물(훔친 것) 토큰 렌더 ──
@@ -391,11 +439,17 @@ export class GameScene extends Phaser.Scene {
           })
           .setOrigin(0.5)
           .setDepth(2);
-        s.setStroke("#2a2118", 4);
+        s.setStroke(hexString(BOARD.corridor), 4);
         this.weaponSprites.set(key, s);
       } else if (s.x !== cx || s.y !== cy) {
         this.tweens.killTweensOf(s);
-        this.tweens.add({ targets: s, x: cx, y: cy, duration: 260, ease: "Quad.Out" });
+        this.tweens.add({
+          targets: s,
+          x: cx,
+          y: cy,
+          duration: this.timing.LOOT_TWEEN_MS,
+          ease: "Quad.Out",
+        });
       }
     });
 
@@ -410,8 +464,8 @@ export class GameScene extends Phaser.Scene {
       let c = this.helperSprites.get(key);
       if (!c) {
         const disc = this.add
-          .circle(0, 0, CELL * 0.42, 0x2b2013)
-          .setStrokeStyle(2, 0x8a6a3a);
+          .circle(0, 0, CELL * 0.42, BOARD.helperDisc)
+          .setStrokeStyle(TOKEN_OUTLINE_PX, BOARD.helperEdge);
         const face = this.add
           .text(0, 0, emoji(h.value), {
             fontSize: `${Math.floor(CELL * 0.5)}px`,
@@ -423,7 +477,7 @@ export class GameScene extends Phaser.Scene {
         const tag = this.add
           .text(0, CELL * 0.52, "계략", {
             fontSize: "10px",
-            color: "#e0a35a",
+            color: hexString(BOARD.helperTag),
             backgroundColor: "#000000aa",
             padding: { x: 3, y: 1 },
           })
@@ -431,7 +485,7 @@ export class GameScene extends Phaser.Scene {
         c = this.add.container(cx, cy, [disc, face, mark, tag]).setDepth(1);
         this.helperSprites.set(key, c);
       }
-      c.setAlpha(h.used ? 0.3 : 1);
+      c.setAlpha(h.used ? SPENT_ALPHA : 1);
     });
 
     // 카메라: 현재 턴 캐릭터로 이동. 전환은 잠깐 지연(반증 먼저 인지 → 덜 어지러움).
@@ -445,14 +499,18 @@ export class GameScene extends Phaser.Scene {
         const isMe = followId === this.myId;
         const l = isMe ? CAM_LERP : SLOW_LERP;
         this.camSwitchTimer = this.time.delayedCall(
-          isMe ? 150 : CAM_SWITCH_DELAY,
+          isMe
+            ? this.timing.CAM_SWITCH_SELF_MS
+            : this.timing.CAM_SWITCH_OTHER_MS,
           () => {
             if (this.followId !== followId || this.freeLook) return;
             this.cam.stopFollow();
             this.cam.pan(
               t.x - this.insetOffset(),
               t.y - this.insetOffsetY(),
-              isMe ? 350 : 1000,
+              isMe
+                ? this.timing.CAM_PAN_SELF_MS
+                : this.timing.CAM_PAN_OTHER_MS,
               "Sine.easeInOut",
               true,
               (_c, prog) => {
@@ -491,8 +549,8 @@ export class GameScene extends Phaser.Scene {
     const bubble = this.add
       .text(anchor.x, anchor.y - CELL * 0.95, "", {
         fontSize: "15px",
-        color: "#2a2118",
-        backgroundColor: "#f0e0c0",
+        color: hexString(BOARD.bubbleText),
+        backgroundColor: hexString(BOARD.bubbleBg),
         padding: { x: 8, y: 4 },
         align: "center",
         wordWrap: { width: 260 },
@@ -501,10 +559,26 @@ export class GameScene extends Phaser.Scene {
       .setDepth(100);
     this.bubbles.set(id, bubble);
 
-    // 타이핑 효과 (추후 TTS 속도에 맞춰 TYPE_MS 조정)
+    // 총 수명은 shared `bubbleLifeMs`가 계산한다(서버 SPEAK_HOLD와 정합을 맞추는 지점).
+    const total = bubbleLifeMs(text, this.timing);
+    const typeMs = this.timing.TYPE_MS;
+    const expire = (): void => {
+      if (this.bubbles.get(id) === bubble) {
+        this.bubbles.delete(id);
+        bubble.destroy();
+      }
+    };
+
+    // reduced 프로파일(TYPE_MS=0)은 타자기 없이 전문을 즉시 띄운다.
+    if (typeMs <= 0) {
+      bubble.setText(text);
+      this.time.delayedCall(total, expire);
+      return;
+    }
+
     let i = 0;
     const timer = this.time.addEvent({
-      delay: TYPE_MS,
+      delay: typeMs,
       loop: true,
       callback: () => {
         if (this.bubbles.get(id) !== bubble) {
@@ -516,27 +590,25 @@ export class GameScene extends Phaser.Scene {
         if (i >= text.length) {
           timer.remove();
           this.bubbleTimers.delete(id);
-          this.time.delayedCall(BUBBLE_HOLD_MS, () => {
-            if (this.bubbles.get(id) === bubble) {
-              this.bubbles.delete(id);
-              bubble.destroy();
-            }
-          });
+          this.time.delayedCall(Math.max(0, total - text.length * typeMs), expire);
         }
       },
     });
     this.bubbleTimers.set(id, timer);
   }
 
-  private createToken(id: string, index: number, p: PlayerView): Token {
-    const color = PLAYER_COLORS[index % PLAYER_COLORS.length];
+  private createToken(id: string, p: PlayerView): Token {
+    // 색은 접속 순서가 아니라 `suspect`로 결정된다 — 판 도중에도 불변(§4).
+    const color = zodiacColor(p.suspect);
     const ring = this.add
       .circle(0, 0, CELL * 0.55, 0x000000, 0)
-      .setStrokeStyle(3, C_GOLD)
+      .setStrokeStyle(3, RING_CURRENT)
       .setVisible(false);
+    // 색면에는 반드시 아웃라인(§4.1) — 밝은 방바닥과 대비가 1.0까지 떨어지는 색이 있다.
     const disc = this.add
       .circle(0, 0, CELL * 0.4, color)
-      .setStrokeStyle(2, 0xffffff);
+      .setStrokeStyle(TOKEN_OUTLINE_PX, TOKEN_OUTLINE_COLOR);
+    // 이모지 = 색에 의존하지 않는 1차 식별자. 색은 보조 단서다.
     const face = this.add
       .text(0, 0, emoji(p.suspect), {
         fontSize: `${Math.floor(CELL * 0.52)}px`,
@@ -545,13 +617,50 @@ export class GameScene extends Phaser.Scene {
     const name = this.add
       .text(0, CELL * 0.55, `${p.isBot ? "🤖" : ""}${p.name}`, {
         fontSize: "13px",
-        color: "#f0e9dc",
+        color: hexString(BOARD.nameText),
         backgroundColor: "#000000aa",
         padding: { x: 4, y: 1 },
       })
       .setOrigin(0.5, 0);
-    const c = this.add.container(0, 0, [ring, disc, face, name]);
-    const token: Token = { c, ring, disc, face, name, placed: false };
+    // 이름표 좌측 색 스트라이프 — 색과 이름을 같은 픽셀에 둔다(§4.2).
+    const stripe = this.add
+      .rectangle(
+        -name.width / 2 + NAME_STRIPE_PX / 2,
+        CELL * 0.55 + name.height / 2,
+        NAME_STRIPE_PX,
+        name.height,
+        color,
+      )
+      .setOrigin(0.5);
+    // 탈락 2차 표기 — 이름표를 파선으로 두른다(§1.2).
+    const elimDash = this.add.graphics();
+    elimDash.lineStyle(2, 0xffffff, 0.95);
+    drawDashedRect(
+      elimDash,
+      -name.width / 2 - 2,
+      CELL * 0.55 - 2,
+      name.width + 4,
+      name.height + 4,
+    );
+    elimDash.setVisible(false);
+    const c = this.add.container(0, 0, [
+      ring,
+      disc,
+      face,
+      name,
+      stripe,
+      elimDash,
+    ]);
+    const token: Token = {
+      c,
+      ring,
+      disc,
+      face,
+      name,
+      stripe,
+      elimDash,
+      placed: false,
+    };
     this.tokens.set(id, token);
     return token;
   }

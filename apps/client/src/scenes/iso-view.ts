@@ -1,24 +1,36 @@
 import * as THREE from "three";
 import type { Room } from "colyseus.js";
 import {
+  BOARD,
+  DT_MAX_MS,
+  ELIM_ALPHA,
   FEAST,
   GRID_HEIGHT,
   GRID_WIDTH,
+  RING_CURRENT,
   ROOM_REGIONS,
+  SPENT_ALPHA,
+  TOKEN_OUTLINE_COLOR,
+  bubbleLifeMs,
   emoji,
+  expK,
+  hexString,
   inFeast,
   label,
   roomAt,
+  timingOf,
+  zodiacColor,
+  type MotionProfile,
+  type ViewTiming,
 } from "@zodiac-clue/shared";
 import { acquireHudInset, hudRightInset, releaseHudInset } from "./hud-inset";
+import { currentTiming } from "./view-motion";
 
 // 2.5D 뷰: 평면 보드를 카메라로 살짝 내려다보는(피치) 원근 뷰.
 // 서버 상태(그리드 x,y)를 그대로 읽어 3D 월드로 매핑한다. 룰/입력은 2D와 동일.
-
-const PLAYER_COLORS = [
-  0xef4444, 0xf59e0b, 0x84cc16, 0x22c55e, 0x38bdf8, 0xa855f7,
-];
-const MOVE_COOLDOWN_MS = 110;
+//
+// ⚠ 표기 수치(알파·보간 길이·타자기 속도·팔레트)는 전부 shared의 view-consts에서 온다.
+//   여기서 리터럴로 다시 쓰면 뷰1·뷰4와 갈라진다.
 
 const CAM_PITCH = (42 * Math.PI) / 180; // 내려다보는 각(수평 기준)
 const MIN_DIST = 9; // 근접
@@ -26,30 +38,7 @@ const MAX_DIST = 34; // 전체 조망
 const INIT_DIST = 17;
 const LERP_ME = 0.14; // 내 턴 추적(빠름)
 const LERP_OTHER = 0.06; // 남 턴 추적(천천히)
-const CAM_SWITCH_DELAY = 900; // 턴 전환 지연(반증 먼저 인지)
 const PAN_STEP = 0.6; // 자유시점 방향키 팬
-const TYPE_MS = 55;
-const BUBBLE_HOLD_MS = 2600;
-
-// ── 표기 강도(view-contract-spec §1.2) — 4뷰 동일 값 ──
-/** 탈락(고발 실패) 토큰의 불투명도. 뷰1 0.3 / 뷰4 0.35와 같은 정보 강도. */
-const ELIM_ALPHA = 0.35;
-/** 이미 사용된 계략 NPC의 불투명도. */
-const SPENT_ALPHA = 0.3;
-
-// ── 장물 보간(view-contract-spec §1.3 `LOOT_TWEEN_MS` 260 · §3 "스냅 → 보간 도입") ──
-/** 계약상 장물 이동 연출 길이(ms). */
-const LOOT_TWEEN_MS = 260;
-/**
- * 지수 보간 시상수 τ(ms). `k = 1 - exp(-dt/τ)`.
- * τ = LOOT_TWEEN_MS/3 이면 LOOT_TWEEN_MS 경과 시 잔차가 e⁻³ ≈ 5%로,
- * 뷰1·뷰4의 tween(260ms)과 "같은 시간에 도착한 것처럼" 보인다.
- * 뷰2·3이 프레임 종속 lerp였던 것을 dt 기반으로 바꾸는 것이 목적이므로
- * 계수가 아니라 시간을 상수로 둔다.
- */
-const LOOT_TAU_MS = LOOT_TWEEN_MS / 3;
-/** 탭 복귀·긴 스톨 후 한 프레임에 순간이동하지 않도록 dt 상한(ms). */
-const DT_MAX_MS = 100;
 
 // 그리드(gx,gy) → 월드(x,0,z). 보드 중심을 원점에.
 const worldX = (gx: number): number => gx - GRID_WIDTH / 2 + 0.5;
@@ -101,16 +90,28 @@ const makeSprite = (
     padX?: number;
     padY?: number;
     worldH: number;
+    /** 좌측 색 스트라이프(§4.2) — 색과 이름을 같은 픽셀에 둔다. */
+    stripe?: string;
   },
 ): THREE.Sprite => {
-  const { fontPx, color = "#ffffff", bg, padX = 0, padY = 0, worldH } = opts;
+  const {
+    fontPx,
+    color = "#ffffff",
+    bg,
+    padX = 0,
+    padY = 0,
+    worldH,
+    stripe,
+  } = opts;
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
   if (!ctx) return new THREE.Sprite();
   const font = `${fontPx}px system-ui, "Apple SD Gothic Neo", sans-serif`;
   ctx.font = font;
   const metrics = ctx.measureText(text);
-  const tw = Math.ceil(metrics.width) + padX * 2;
+  // 스트라이프 폭은 폰트에 비례(3px @ 13px 기준) — 어느 줌에서도 같은 굵기로 읽힌다.
+  const stripeW = stripe ? Math.max(4, Math.round(fontPx * 0.22)) : 0;
+  const tw = Math.ceil(metrics.width) + padX * 2 + stripeW;
   const th = Math.ceil(fontPx * 1.3) + padY * 2;
   canvas.width = tw;
   canvas.height = th;
@@ -124,8 +125,12 @@ const makeSprite = (
     ctx.roundRect(0, 0, tw, th, r);
     ctx.fill();
   }
+  if (stripe) {
+    ctx.fillStyle = stripe;
+    ctx.fillRect(0, 0, stripeW, th);
+  }
   ctx.fillStyle = color;
-  ctx.fillText(text, tw / 2, th / 2);
+  ctx.fillText(text, stripeW + (tw - stripeW) / 2, th / 2);
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.minFilter = THREE.LinearFilter;
@@ -192,6 +197,8 @@ export class IsoView {
   private lastMove = 0;
   private active = false;
   private raf = 0;
+  /** 감속 프로파일 타이밍(§1.3). 보간 길이는 매 프레임 여기서 재조회한다. */
+  private timing: ViewTiming = currentTiming();
   /** 직전 프레임의 rAF 타임스탬프(ms). 0이면 "첫 프레임"(dt 기본값 사용). */
   private lastFrameMs = 0;
 
@@ -278,9 +285,27 @@ export class IsoView {
       window.removeEventListener("resize", this.onResize);
       cancelAnimationFrame(this.raf);
       this.lastFrameMs = 0;
+      // 숨은 뷰에서 말풍선 타자기/유지 타이머가 계속 도는 것을 막는다.
+      // (rAF는 멈췄으므로 위치 갱신도 없다 — 남겨두면 보이지 않는 DOM만 갱신된다.)
+      this.clearBubbles();
       // 마지막 사용자면 hud-inset이 ResizeObserver를 disconnect 한다.
       releaseHudInset();
     }
+  }
+
+  /** 감속 프로파일 전환(§1.3). */
+  setMotion(p: MotionProfile): void {
+    this.timing = timingOf(p);
+  }
+
+  /** 말풍선 DOM·타이머 전량 정리. 비활성화·퇴장 시 반드시 호출된다. */
+  private clearBubbles(): void {
+    this.bubbles.forEach((b) => {
+      window.clearInterval(b.typeTimer);
+      window.clearTimeout(b.holdTimer);
+      b.el.remove();
+    });
+    this.bubbles.clear();
   }
 
   // ── 뷰3(에셋 모드) 토글 ──
@@ -292,12 +317,12 @@ export class IsoView {
 
     // 방 바닥 텍스처(룸 종횡비=박스 UV). 없으면 원래 단색으로 복귀.
     this.roomMats.forEach((mat, name) => {
-      if (on) this.applyTexture(mat, `/assets/room/${name}-floor.svg`, 0xcbb489);
-      else this.clearTexture(mat, 0xcbb489);
+      if (on) this.applyTexture(mat, `/assets/room/${name}-floor.svg`, BOARD.room);
+      else this.clearTexture(mat, BOARD.room);
     });
     if (this.feastMat) {
-      if (on) this.applyTexture(this.feastMat, "/assets/room/feast.svg", 0x3a2b1a);
-      else this.clearTexture(this.feastMat, 0x3a2b1a);
+      if (on) this.applyTexture(this.feastMat, "/assets/room/feast.svg", BOARD.feast);
+      else this.clearTexture(this.feastMat, BOARD.feast);
     }
 
     // 토큰·장물·NPC 스프라이트는 지워두면 다음 syncState에서 새 플래그로 재생성.
@@ -396,13 +421,13 @@ export class IsoView {
     // 복도 바닥
     const floor = new THREE.Mesh(
       new THREE.PlaneGeometry(W, H),
-      new THREE.MeshStandardMaterial({ color: 0x2a2118 }),
+      new THREE.MeshStandardMaterial({ color: BOARD.corridor }),
     );
     floor.rotation.x = -Math.PI / 2;
     this.scene.add(floor);
 
     // 그리드 선
-    const grid = new THREE.GridHelper(W, W, 0x5a4a34, 0x453a2a);
+    const grid = new THREE.GridHelper(W, W, BOARD.grid, BOARD.gridMinor);
     (grid.material as THREE.Material).opacity = 0.5;
     (grid.material as THREE.Material).transparent = true;
     grid.position.y = 0.01;
@@ -410,7 +435,7 @@ export class IsoView {
 
     // 방(살짝 높은 박스 → 2.5D 깊이감) + 명패 + 문
     for (const r of ROOM_REGIONS) {
-      const roomMat = new THREE.MeshStandardMaterial({ color: 0xcbb489 });
+      const roomMat = new THREE.MeshStandardMaterial({ color: BOARD.room });
       this.roomMats.set(r.name, roomMat);
       const box = new THREE.Mesh(new THREE.BoxGeometry(r.w, 0.2, r.h), roomMat);
       box.position.set(
@@ -421,7 +446,7 @@ export class IsoView {
       this.scene.add(box);
       const edge = new THREE.LineSegments(
         new THREE.EdgesGeometry(box.geometry),
-        new THREE.LineBasicMaterial({ color: 0x7c6238 }),
+        new THREE.LineBasicMaterial({ color: BOARD.roomEdge }),
       );
       edge.position.copy(box.position);
       this.scene.add(edge);
@@ -429,8 +454,8 @@ export class IsoView {
       // 명패(방 이름) — 방 위쪽에 빌보드
       const plaque = makeSprite(label(r.name), {
         fontPx: 44,
-        color: "#f0d9a8",
-        bg: "#2b2013e8",
+        color: hexString(BOARD.plaqueText),
+        bg: `${hexString(BOARD.plaque)}e8`,
         padX: 18,
         padY: 10,
         worldH: 0.7,
@@ -444,7 +469,7 @@ export class IsoView {
       const mark = new THREE.Mesh(
         new THREE.PlaneGeometry(0.94, 0.94),
         new THREE.MeshBasicMaterial({
-          color: 0xffd479,
+          color: BOARD.gold,
           transparent: true,
           opacity: 0.85,
         }),
@@ -452,7 +477,7 @@ export class IsoView {
       mark.rotation.x = -Math.PI / 2;
       mark.position.set(dx, 0.24, dz);
       this.scene.add(mark);
-      const post = new THREE.MeshStandardMaterial({ color: 0x8a5a2a });
+      const post = new THREE.MeshStandardMaterial({ color: BOARD.wood });
       for (const sx of [-0.42, 0.42]) {
         const pillar = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.7, 0.14), post);
         pillar.position.set(dx + sx, 0.35, dz);
@@ -463,8 +488,8 @@ export class IsoView {
       this.scene.add(door);
       const doorLabel = makeSprite("입구", {
         fontPx: 30,
-        color: "#2a2118",
-        bg: "#ffd479",
+        color: hexString(BOARD.corridor),
+        bg: hexString(BOARD.gold),
         padX: 8,
         padY: 4,
         worldH: 0.3,
@@ -474,7 +499,7 @@ export class IsoView {
     }
 
     // 중앙 잔치상
-    const feastMat = new THREE.MeshStandardMaterial({ color: 0x3a2b1a });
+    const feastMat = new THREE.MeshStandardMaterial({ color: BOARD.feast });
     this.feastMat = feastMat;
     const feast = new THREE.Mesh(
       new THREE.BoxGeometry(FEAST.w, 0.34, FEAST.h),
@@ -488,7 +513,7 @@ export class IsoView {
     this.scene.add(feast);
     const feastEdge = new THREE.LineSegments(
       new THREE.EdgesGeometry(feast.geometry),
-      new THREE.LineBasicMaterial({ color: 0xb8933f }),
+      new THREE.LineBasicMaterial({ color: BOARD.feastEdge }),
     );
     feastEdge.position.copy(feast.position);
     this.scene.add(feastEdge);
@@ -497,7 +522,7 @@ export class IsoView {
     this.scene.add(gift);
     const feastLabel = makeSprite("잔치상", {
       fontPx: 46,
-      color: "#d8c188",
+      color: hexString(BOARD.feastText),
       worldH: 0.6,
     });
     feastLabel.position.set(feast.position.x, 0.5, feast.position.z + 1.4);
@@ -505,9 +530,10 @@ export class IsoView {
   }
 
   // ── 토큰 생성 ──
-  private createToken(id: string, index: number, p: PlayerView): Token {
+  private createToken(id: string, p: PlayerView): Token {
     const group = new THREE.Group();
-    const color = PLAYER_COLORS[index % PLAYER_COLORS.length];
+    // 색은 접속 순서가 아니라 `suspect`로 결정된다 — 판 도중에도 불변(§4).
+    const color = zodiacColor(p.suspect);
     const disc = new THREE.Mesh(
       new THREE.CircleGeometry(0.42, 32),
       // transparent를 켜두지 않으면 탈락 시 opacity가 무시돼 disc만 불투명하게 남는다.
@@ -517,10 +543,40 @@ export class IsoView {
     disc.position.y = 0.22;
     group.add(disc);
 
+    // 색면 아웃라인(§4.1) — disc에는 스트로크가 없어 밝은 방바닥 위에서 색면이 번진다.
+    const outline = new THREE.Mesh(
+      new THREE.RingGeometry(0.42, 0.46, 32),
+      new THREE.MeshBasicMaterial({
+        color: TOKEN_OUTLINE_COLOR,
+        side: THREE.DoubleSide,
+        transparent: true,
+      }),
+    );
+    outline.rotation.x = -Math.PI / 2;
+    outline.position.y = 0.221;
+    group.add(outline);
+
+    // 뷰3(에셋 모드)에서는 아트가 얼굴을 덮으므로 **색은 발밑으로** 내린다(§4.2).
+    // 아트 색과 팀 색을 섞지 않기 위해 접지 데칼로만 색을 반복한다.
+    if (this.useAssets) {
+      const decal = new THREE.Mesh(
+        new THREE.CircleGeometry(0.62, 32),
+        new THREE.MeshBasicMaterial({
+          color,
+          transparent: true,
+          opacity: 0.4,
+          depthWrite: false,
+        }),
+      );
+      decal.rotation.x = -Math.PI / 2;
+      decal.position.y = 0.205;
+      group.add(decal);
+    }
+
     const ring = new THREE.Mesh(
       new THREE.RingGeometry(0.5, 0.6, 32),
       new THREE.MeshBasicMaterial({
-        color: 0xffd479,
+        color: RING_CURRENT,
         side: THREE.DoubleSide,
         transparent: true,
         depthTest: false,
@@ -538,11 +594,13 @@ export class IsoView {
 
     const nameSprite = makeSprite(`${p.isBot ? "🤖" : ""}${p.name}`, {
       fontPx: 34,
-      color: "#f0e9dc",
+      color: hexString(BOARD.nameText),
       bg: "#000000aa",
       padX: 10,
       padY: 6,
       worldH: 0.36,
+      // 이름표 좌측 색 스트라이프 — 색과 이름을 같은 픽셀에(§4.2).
+      stripe: hexString(color),
     });
     nameSprite.position.set(0, 0.35, 0.15);
     group.add(nameSprite);
@@ -581,13 +639,12 @@ export class IsoView {
       currentTurn: string;
     };
     const players = state.players;
-    const ids = [...players.keys()];
     const current = state.currentTurn ?? "";
     const seen = new Set<string>();
 
     players.forEach((p, id) => {
       seen.add(id);
-      const token = this.tokens.get(id) ?? this.createToken(id, ids.indexOf(id), p);
+      const token = this.tokens.get(id) ?? this.createToken(id, p);
       token.target.set(p.x, p.y);
       const isCurrent = id === current;
       token.ring.visible = isCurrent;
@@ -625,7 +682,7 @@ export class IsoView {
         const disc = new THREE.Mesh(
           new THREE.CircleGeometry(0.42, 32),
           // helper 감광도 disc를 포함해야 하므로 transparent를 켜둔다.
-          new THREE.MeshStandardMaterial({ color: 0x2b2013, transparent: true }),
+          new THREE.MeshStandardMaterial({ color: BOARD.helperDisc, transparent: true }),
         );
         disc.rotation.x = -Math.PI / 2;
         disc.position.y = 0.22;
@@ -638,7 +695,7 @@ export class IsoView {
         g.add(mark);
         const tag = makeSprite("계략", {
           fontPx: 30,
-          color: "#e0a35a",
+          color: hexString(BOARD.helperTag),
           bg: "#000000aa",
           padX: 8,
           padY: 4,
@@ -664,7 +721,9 @@ export class IsoView {
           this.switchTimer = 0;
           this.panOffset.set(0, 0, 0); // 새 턴 대상으로 리센터
         },
-        isMe ? 150 : CAM_SWITCH_DELAY,
+        isMe
+          ? this.timing.CAM_SWITCH_SELF_MS
+          : this.timing.CAM_SWITCH_OTHER_MS,
       );
     }
     if (this.followId === "") this.followId = followCand;
@@ -675,6 +734,14 @@ export class IsoView {
         const t = this.tokens.get(id);
         if (t) this.scene.remove(t.group);
         this.tokens.delete(id);
+        // 퇴장 시 말풍선·타이머까지 뷰가 정리한다(계약 §2 removeActor).
+        const b = this.bubbles.get(id);
+        if (b) {
+          window.clearInterval(b.typeTimer);
+          window.clearTimeout(b.holdTimer);
+          b.el.remove();
+          this.bubbles.delete(id);
+        }
       }
     }
   }
@@ -690,17 +757,19 @@ export class IsoView {
     this.lastFrameMs = now;
     this.syncState();
 
-    // 토큰 위치 보간(그리드→월드)
+    // 토큰 위치 보간 — 프레임 시간 기반 지수 보간 k = 1 - exp(-dt/τ).
+    // (기존 lerp(0.25)는 **프레임레이트 종속**이라 120Hz에서 뷰1의 tween 110ms보다
+    //  두 배 빨리 도착했다. 같은 이동이 뷰마다 다른 속도로 보이면 그건 정보 차이다.)
+    const moveK = expK(dtMs, this.timing.MOVE_TWEEN_MS);
     this.tokens.forEach((t) => {
-      const k = t.placed ? 0.25 : 1;
-      t.cur.lerp(t.target, k);
+      t.cur.lerp(t.target, t.placed ? moveK : 1);
       t.placed = true;
       t.group.position.set(worldX(t.cur.x), 0, worldZ(t.cur.y));
     });
 
-    // 장물 위치 보간 — 프레임 시간 기반 지수 보간 k = 1 - exp(-dt/τ).
+    // 장물 위치 보간 — 동일한 dt 기반 지수 보간.
     // (기존: 매 프레임 position.set으로 순간이동해 "무슨 일이 일어났는지" 안 읽혔다)
-    const lootK = 1 - Math.exp(-dtMs / LOOT_TAU_MS);
+    const lootK = expK(dtMs, this.timing.LOOT_TWEEN_MS);
     this.weapons.forEach((lt) => {
       lt.cur.lerp(lt.target, lt.placed ? lootK : 1);
       lt.placed = true;
@@ -759,7 +828,8 @@ export class IsoView {
     const el = document.createElement("div");
     el.style.cssText =
       "position:absolute; transform:translate(-50%,-100%); max-width:260px;" +
-      "background:#f0e0c0; color:#2a2118; padding:4px 8px; border-radius:8px;" +
+      `background:${hexString(BOARD.bubbleBg)}; color:${hexString(BOARD.bubbleText)};` +
+      "padding:4px 8px; border-radius:8px;" +
       "font-size:15px; line-height:1.35; text-align:center; white-space:pre-wrap;" +
       "box-shadow:0 2px 8px #0008;";
     this.bubbleLayer.appendChild(el);
@@ -771,17 +841,31 @@ export class IsoView {
       typeTimer: 0,
       holdTimer: 0,
     };
-    b.typeTimer = window.setInterval(() => {
-      b.shown += 1;
-      el.textContent = text.slice(0, b.shown);
-      if (b.shown >= text.length) {
-        window.clearInterval(b.typeTimer);
-        b.holdTimer = window.setTimeout(() => {
-          el.remove();
-          this.bubbles.delete(id);
-        }, BUBBLE_HOLD_MS);
-      }
-    }, TYPE_MS);
+    // 총 수명은 shared `bubbleLifeMs`가 계산한다(서버 SPEAK_HOLD와 정합을 맞추는 지점).
+    const total = bubbleLifeMs(text, this.timing);
+    const typeMs = this.timing.TYPE_MS;
+    const expire = (): void => {
+      el.remove();
+      this.bubbles.delete(id);
+    };
+    if (typeMs <= 0) {
+      // reduced 프로파일: 타자기 없이 전문을 즉시 띄운다.
+      el.textContent = text;
+      b.shown = text.length;
+      b.holdTimer = window.setTimeout(expire, total);
+    } else {
+      b.typeTimer = window.setInterval(() => {
+        b.shown += 1;
+        el.textContent = text.slice(0, b.shown);
+        if (b.shown >= text.length) {
+          window.clearInterval(b.typeTimer);
+          b.holdTimer = window.setTimeout(
+            expire,
+            Math.max(0, total - text.length * typeMs),
+          );
+        }
+      }, typeMs);
+    }
     this.bubbles.set(id, b);
   }
 
@@ -890,7 +974,7 @@ export class IsoView {
       if (roomAt(tx, ty) === null && !inFeast(tx, ty)) return;
     }
     const now = performance.now();
-    if (now - this.lastMove < MOVE_COOLDOWN_MS) return;
+    if (now - this.lastMove < this.timing.MOVE_COOLDOWN_MS) return;
     this.lastMove = now;
     this.room.send("move", { dx, dy });
   }

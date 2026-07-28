@@ -25,6 +25,73 @@ export type Zodiac = (typeof ZODIAC)[number];
 export const HOST: Zodiac = "tiger";
 
 /**
+ * 십이지 고유색 — view-contract-spec §4에서 CIEDE2000·색각 시뮬레이션으로 확정한 12색.
+ *
+ * 키가 `suspect`(로비에서 확정, 판 중 불변)이므로 **결정론적**이다.
+ * (구 `PLAYER_COLORS[ids.indexOf(id) % 6]`은 접속 순서 기반이라 봇 충원·재접속으로
+ *  판 도중에도 색이 바뀌었다.)
+ *
+ * 설계: 오방정색 적(赤)·청(靑) + 오간색 벽(碧)·자(紫) 4계 × 명도 3단을 라틴방진으로 배치.
+ * 황(黃) 계열을 뺀 것이 금색 현재-턴 링과의 충돌을 원천 제거한다.
+ * 검증: 66쌍 전수 최소 ΔE00 — 정상 10.0 / 2형 9.6 / 1형 9.6. 충돌(<6) 0쌍.
+ * ⚠ 회색조 단독으로는 분리되지 않는다(1차원에 12점을 넣는 문제의 수학적 한계).
+ *    따라서 **색 단독 식별 금지** — 아웃라인·이름표 스트라이프·이모지/아트가 함께 붙는다.
+ */
+export const ZODIAC_COLOR: Record<Zodiac, number> = {
+  rat: 0xb94d48, // 적 T0
+  ox: 0x69b0a4, // 벽 T1
+  tiger: 0xefc8f0, // 자 T2
+  rabbit: 0x017cb6, // 청 T0
+  gecko: 0xfe887f, // 적 T2
+  snake: 0x4b9186, // 벽 T0
+  horse: 0xa683a8, // 자 T1
+  sheep: 0x6abcfb, // 청 T2
+  monkey: 0xd96861, // 적 T1
+  rooster: 0x8ed6c8, // 벽 T2
+  dog: 0x866488, // 자 T0
+  pig: 0x419ad7, // 청 T1
+};
+
+/** 색을 못 찾은 값(장물·미지 id)에 쓰는 중립색. 진실값과 무관한 표기 폴백. */
+export const NEUTRAL_COLOR = 0x9aa0a6;
+
+/** 십이지 고유색(숫자). 알 수 없는 값이면 중립색. */
+export const zodiacColor = (value: string): number =>
+  ZODIAC_COLOR[value as Zodiac] ?? NEUTRAL_COLOR;
+
+/** 십이지 고유색(`#rrggbb`) — CSS·Phaser 텍스트 스타일용. */
+export const zodiacColorHex = (value: string): string =>
+  `#${zodiacColor(value).toString(16).padStart(6, "0")}`;
+
+/** 팔레트 계열 — 적(赤)·벽(碧)·자(紫)·청(靑). */
+export type ZodiacFamily = "red" | "jade" | "violet" | "blue";
+
+/**
+ * 색각이상 대체 표기(§4.3)의 인코딩 좌표.
+ * 색을 **끄지 않고 보강**한다: 계열(4) × 명도단(3) — 최대 3개만 세면 된다.
+ * `family` = 8×8 셀의 어느 변에 2px 바를 그릴지, `tier` = 중앙 가로열의 핍 개수-1.
+ */
+export type ZodiacCue = { family: ZodiacFamily; tier: 0 | 1 | 2 };
+
+const CUE_FAMILY: readonly ZodiacFamily[] = ["red", "jade", "violet", "blue"];
+
+/** 라틴방진 배치: family = i % 4, tier = (i + ⌊i/4⌋) % 3. */
+export const ZODIAC_CUE: Record<Zodiac, ZodiacCue> = ZODIAC.reduce(
+  (acc, id, i) => {
+    acc[id] = {
+      family: CUE_FAMILY[i % 4],
+      tier: ((i + Math.floor(i / 4)) % 3) as 0 | 1 | 2,
+    };
+    return acc;
+  },
+  {} as Record<Zodiac, ZodiacCue>,
+);
+
+/** 대체 표기 좌표. 알 수 없는 값이면 undefined(표기를 생략한다). */
+export const zodiacCue = (value: string): ZodiacCue | undefined =>
+  ZODIAC_CUE[value as Zodiac];
+
+/**
  * 용의자 = 플레이 가능한 십이지 손님 12명 (호랑이 포함).
  * 클루의 "누가?" 후보이자, 플레이어가 고르는 캐릭터.
  */
