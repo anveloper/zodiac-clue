@@ -139,7 +139,7 @@
 <div class="wrap">
 
   <h1>제출물 ④ — AI 활용 기술 문서</h1>
-  <p class="sub">zodiac-clue · 초판 2026-07-20 · <b class="ok">개정 2판 2026-07-27 · 보정 2026-07-28(§4.1)</b> ·
+  <p class="sub">zodiac-clue · 초판 2026-07-20 · <b class="ok">개정 4판 2026-07-28</b> ·
     저장소 <code>github.com/anveloper/zodiac-clue</code> (public) · 라이브 <code>zodiac-clue.vercel.app</code></p>
   <p class="sub">AI 압축본 <code>20260720-ai-tech-doc.md</code> · 본 문서의 모든 경로·심볼은 저장소 실측값이며,
     미구현 항목은 <span class="badge b-amber">요구사항</span>으로 명시한다.</p>
@@ -301,7 +301,7 @@
   <!-- ══════ 1 ══════ -->
   <h2 id="s1">1. 계층 구조 (실측 파일 맵)</h2>
 
-  <h3>1.1 진실 계층 — 규칙엔진 <span class="pill">clue-room.ts · 1823줄</span></h3>
+  <h3>1.1 진실 계층 — 규칙엔진 <span class="pill">clue-room.ts · 1937줄</span></h3>
   <p>전부 결정론 함수. <b>LLM 호출 0.</b></p>
   <div class="scroll"><table>
     <tr><th style="width:130px">요소</th><th>내용</th></tr>
@@ -316,7 +316,7 @@
 
   <h3>1.2 에이전트 계층 — NPC 추리</h3>
   <p>각 봇은 후보집합 3개를 들고 자기 손패와 자기 제안의 반증 결과를 소거한다.
-     턴은 2박자: 이동 → <code>BOT_ACT_GAP</code> 1300ms → 제안 → <code>SPEAK_HOLD</code> 2400ms → 판단.</p>
+     턴은 2박자: 이동 → <code>BOT_ACT_GAP</code> <b>600ms</b> → 제안 → <b>대사 길이에 비례한 홀드</b> → 판단(§6.1).</p>
   <p><b>알려진 결함 2건 — <span class="badge b-green">둘 다 2026-07-28 해소</span></b> 진단 원문을 지우지 않고 이력으로 남긴다.</p>
 
   <div class="card good">
@@ -352,9 +352,18 @@
        문서 주장이 아니라 <b>재현 가능한 측정값</b>이 됐다(§2.4 표의 <code>nerve</code> 열).</p>
   </div>
 
-  <h3>1.3 표현 계층 — LLM <span class="pill">ai/narrator.ts · 313줄</span></h3>
-  <p><code>narrate()</code> 하나가 전부. 실패하면 <code>null</code>을 돌려주고 호출부가 <code>fallbackLine()</code>으로 대체한다.
-     <b>호출 지점 4곳, 액션 3종.</b></p>
+  <h3>1.3 표현 계층 — LLM <span class="pill">ai/narrator.ts · 544줄</span></h3>
+  <p><code>narrate()</code> 하나가 전부. 실패하면 <code>text: null</code>을 돌려주고 호출부가 <code>fallbackLine()</code>으로 대체한다.
+     <b>호출 지점 5곳, 액션 3종.</b></p>
+  <div class="card warn">
+    <h4><span class="badge b-amber">07-28 정정</span>“4곳”은 틀렸다</h4>
+    <p class="s13">심사자 시선 검수에서 세어 보니 <code>speak()</code> 콜사이트가 <b>4개</b>
+      (<code>clue-room.ts</code> 제안 · 미반증 즉시 고발 · 후보 수렴 고발 · <b>도박 고발</b>)이고
+      <code>helperWhisper()</code>가 1개다 — 합계 <b>5곳</b>.
+      누락된 것은 §1.2 결함 b 해소 때 새로 생긴 <b>도박 고발</b>이다.
+      <b>기능을 넣고, 그 기능이 LLM을 부른다는 사실을 문서에 반영하지 않았다.</b>
+      액션은 여전히 3종이다(도박 고발도 <code>action: "accuse"</code>).</p>
+  </div>
 
   <!-- ══════ 2 ══════ -->
   <h2 id="s2">2. 디렉팅 명세 (Directing Spec)</h2>
@@ -371,9 +380,10 @@
     <tr><td><code>intro</code> <code>outro</code></td><td><code>VOICE</code> 추임새. <b>폴백 전용</b>(LLM 경로 미사용)</td></tr>
     <tr><td><code>disproved</code></td><td><code>doSuggestion()</code>의 반환값</td></tr>
   </table></div>
-  <p class="note"><b>호출 지점</b> — <code>speak()</code> ← ① 제안 ② 미반증 즉시 고발 ③ 후보 수렴 고발 /
-     <code>helperWhisper()</code> ← ④ 계략 귓속말.
-     <code>speak()</code>가 화자의 <code>suspect</code>로 말투를 자동 주입하므로 콜사이트는 말투를 몰라도 된다.</p>
+  <p class="note"><b>호출 지점 5곳</b> — <code>speak()</code> ← ① 제안 ② 미반증 즉시 고발 ③ 후보 수렴 고발
+     <b>④ 도박 고발</b>(§1.2 b) / <code>helperWhisper()</code> ← ⑤ 계략 귓속말.
+     <code>speak()</code>가 화자의 <code>suspect</code>로 말투를 자동 주입하므로 콜사이트는 말투를 몰라도 된다.
+     <b>④는 규칙 함수 <code>gambleAccusation()</code>이 먼저 판정하고 대사는 그 뒤에 붙는다</b> — 대사가 고발 여부를 정하지 않는다.</p>
 
   <h3>2.2 절대 넘기지 않는 값</h3>
   <div class="scroll"><table>
@@ -403,7 +413,7 @@
     <div class="card info">
       <h4>systemInstruction 요지</h4>
       <p class="s13">사극풍 NPC. “결정된 행동”을 <b>대사 한 문장으로만</b> 변환.
-        머리말·설명·선택지·마크다운·따옴표 전부 금지, <b>12~40자</b>,
+        머리말·설명·선택지·마크다운·따옴표 전부 금지, 규약 길이 <b>12~40자</b>,
         <b>정답이나 남의 손패를 아는 척 금지, 주어진 정보만 사용.</b></p>
     </div>
     <div class="card info">
@@ -418,20 +428,78 @@
         <b>모델 별칭은 계약이 아니다</b> — <code>-latest</code>는 언제든 파라미터 수용 범위가 바뀌므로 §3 C7이 회귀 검사 역할을 한다.</p>
     </div>
   </div>
+  <div class="card warn">
+    <h4><span class="badge b-green">07-28 3차</span>목표 길이를 내렸다 — <b>상한 40은 불변</b></h4>
+    <p class="s13">라이브 실측에서 <b class="no">원문의 22%가 40자를 넘겨 폐기</b>되고 있었다(§4 구현 결과).
+      상한을 올리는 대신 <b>모델에게 주는 목표</b>를 내렸다.</p>
+    <ul class="s13" style="margin:0;padding-left:18px">
+      <li><b>32자 유도</b> — 관측된 최대 원문 50자 = 상한 40 대비 <b>초과율 1.25배</b>.
+        같은 초과율이 유지된다면 목표를 <code>LINE_MAX / 1.25 = 32</code>로 뒀을 때 최악의 원문이 40자 안에 들어온다
+        (<code>LINE_TARGET_LOUD</code>). 제안은 페이싱 예산(§6.2)이 더 빡빡해 <b>25자</b>(<code>LINE_BUDGET_SUGGEST</code>)를 그대로 쓴다.</li>
+      <li><b>어절 앵커</b> — <b>모델은 글자를 못 세지만 어절은 센다.</b>
+        목표를 «어절 N개 이하»(<code>target / 4</code>, 한국어 어절 ≈ 3자 + 공백)로 함께 주고,
+        시스템 지시에 <b>실제 길이 예시 3개</b>(“그 셈속이 훤히 보이는구먼 = 14자” 등)를 넣었다.
+        문구를 베끼지 말라고 못 박아 대사 다양성은 유지한다.</li>
+      <li><b class="ok">규약을 느슨하게 한 것이 아니다</b> — <code>LINE_MAX 40</code> · <code>LINE_MIN 12</code> ·
+        <code>LINE_BUDGET_SUGGEST 25</code>는 전부 그대로다. 바뀐 것은 <b>프롬프트가 요구하는 목표</b>뿐이다.</li>
+    </ul>
+    <p class="s13" style="margin-bottom:0"><b class="no">⚠ 1차 시도가 C4를 깼고 실측이 그것을 잡았다.</b>
+      짧게 쓰라는 압력으로 «세 요소를 다 읊지 말고 한둘만 집어라»를 넣었더니
+      <b>8콜 중 2콜이 라벨을 하나도 넣지 않아</b> §3 C4(진실값 유지)가 <b class="no">6/8</b>로 떨어졌다.
+      짧게 쓰라는 압력과 “결정된 값을 말하라”는 계약은 <b>같은 문장에서 못을 박아야 한다</b> →
+      <b>“최소 하나는 준 글자 그대로”</b>로 고정해 <b class="ok">8/8 복구</b>.
+      프롬프트 변경이 진실값 계약을 무너뜨릴 수 있다는 것을 <b>문서가 아니라 계측이 보여줬다.</b></p>
+  </div>
+
   <p><b>사후 정규화</b> — 프롬프트를 신뢰하지 않고 <b>코드로 강제</b>한다:
-     <span class="tag">① 첫 줄만</span> <span class="tag">② 앞뒤 따옴표·별표 제거</span> <span class="tag">③ 80자 하드컷</span></p>
+     <span class="tag">① 첫 줄만</span>
+     <span class="tag">② 따옴표·별표·밑줄·해시·백틱 제거(양끝 + 문장 중간)</span>
+     <span class="tag">③ 상한 초과 시 3단 절단(문장 → 절 → 어절), 못 자르면 폐기 → 규칙 폴백</span></p>
+
+  <div class="card crit">
+    <h4><span class="badge b-green">07-28 3차</span>1순위 절단은 <b>원리적으로 발동할 수 없었다</b></h4>
+    <p class="s13">라이브 계측이 답을 이미 갖고 있었다: <code>ops {drop: 9}</code>인데
+      <b class="no">truncate가 단 1건도 없다.</b>
+      프롬프트가 «한 문장만»을 요구하므로 종결부호는 문장 맨 끝에 하나뿐이고,
+      <b>원문이 상한을 넘겼다는 말은 곧 그 유일한 경계가 상한 밖</b>이라는 뜻이다.
+      그래서 초과분 100%가 폐기로 떨어졌다 — <b>우연이 아니라 구조였다.</b></p>
+    <ul class="s13" style="margin:0;padding-left:18px">
+      <li><b>넓힌 것은 경계 후보이지 규약이 아니다.</b> 문장 경계가 없으면 <b>절</b>(<code>, · ;</code> 등) →
+        그것도 없으면 <b>어절</b>로 후보를 내리고 미완결은 <code>…</code>로 닫는다.
+        절·어절 두 후보 중 <b>더 많이 살리는 쪽</b>을 쓴다(잘려나간 뒷부분에 3요소 라벨이 있을 수 있다).</li>
+      <li><b>어절 중간은 어느 단계에서도 자르지 않는다.</b> 공백이 하나도 없는 덩어리는
+        자를 곳이 어절 중간뿐이므로 <b>여전히 폐기</b>한다. 결과 문장은 항상 <code>LINE_MAX</code> 이내다.</li>
+      <li><b>살린 문장에는 <code>truncate</code>가 남아 준수율의 분자에서 빠진다</b> —
+        통과시킨 것이 아니라 <b>못 지킨 사실을 기록한 채 문장을 살린 것</b>이다.</li>
+      <li><b>상한 인상은 기각했다</b> — 40 → 50이면 <code>bubbleLifeMs</code>가 늘어
+        봇 1턴 <b>+550ms</b>, 판당 <b>+15.4초</b>다(§6.2). 계산상 손해라 버렸다.</li>
+      <li class="ok">이 불변식은 §3 <b>P6</b>(절단 구제)가 기계로 감시한다.</li>
+    </ul>
+  </div>
 
   <h4>알려진 간극 (정직하게 기재)</h4>
   <div class="scroll"><table>
-    <tr><th style="width:150px">간극</th><th>내용</th><th style="width:230px">판단</th></tr>
-    <tr><td class="part">길이 상한 불일치</td><td>프롬프트 “12~40자” vs 코드 상한 <b>80자</b>. 41~80자는 통과</td>
-        <td>의도적 여유(40자 하드컷은 문장을 중간에서 자른다). §3 <b>C2</b>가 분포를 계측</td></tr>
-    <tr><td class="part">마크업 제거가 양끝 한정</td><td>문장 <b>중간</b>의 <code>**</code> · <code>_</code>는 남는다</td>
-        <td>§3 <b>C3</b> 계측 후 결정 <span class="badge b-amber">요구사항</span></td></tr>
+    <tr><th style="width:150px">간극</th><th>내용</th><th style="width:280px">판단</th></tr>
+    <tr><td class="dim"><del>길이 상한 불일치</del></td><td class="dim"><del>프롬프트 “12~40자” vs 코드 상한 <b>80자</b></del></td>
+        <td><span class="badge b-green">07-28 해소</span>어절 중간 하드컷이 문장을 망친다는 문제는 <b>경계 절단</b>으로 풀었다.
+            재시도는 택하지 않았다(4초 타임아웃을 한 번 더 물어 페이싱을 되살리고 “이벤트당 1콜” 규약을 깬다)</td></tr>
+    <tr><td class="dim"><del>마크업 제거가 양끝 한정</del></td><td class="dim"><del>문장 <b>중간</b>의 <code>**</code> · <code>_</code>는 남는다</del></td>
+        <td><span class="badge b-green">07-28 해소</span>문장 전역 제거로 바꾸고 집합을 <b>C3 사전과 일치</b>시켰다.
+            낫표 <code>「」</code> · 말줄임표 · 물결 · 가운뎃점은 <b>남긴다</b>(폴백 문안이 실제로 쓰고 C3 사전에 없다)</td></tr>
+    <tr><td class="dim"><del>상한 초과분이 전부 폐기된다</del></td>
+        <td class="dim"><del>라이브 실측 <code>fallback 9/41</code> <b>사유 전부 <code>toolong</code></b> —
+            NPC 대사 5개 중 1개가 조용히 규칙 템플릿으로 대체되고 있었다.
+            폴백은 캐릭터색을 유지하도록 잘 만들어져 <b>육안으로 구분되지 않는다</b> — 계측이 없었으면 몰랐다</del></td>
+        <td><span class="badge b-green">07-28 3차 해소</span>목표 길이 인하 + 3단 절단.
+            실호출 <b>16콜</b> 검증에서 <b class="ok">폐기 22% → 0%</b>, 최대 원문 50 → <b>34자</b>, 준수율 0.78 → <b>1.00</b>.<br>
+            <b class="part">⚠ 표본 8건이라 “한 자릿수 확정”은 아니다</b> — 한 판 완주 후 <code>/health</code> 재확인이 필요하다</td></tr>
     <tr><td class="part">최소 길이 미강제</td><td>12자 미만 가드 없음</td>
-        <td>말풍선 최소 수명으로 완화 <span class="badge b-amber">요구사항</span></td></tr>
-    <tr><td class="no">조사 미처리</td><td><b>폴백 경로</b>에 종성 판정이 없어 <code>"떡시루이 사라졌던걸"</code> 발생(실측)</td>
-        <td>조사 헬퍼 15줄 <span class="badge b-red">요구사항 · P0</span></td></tr>
+        <td><b>판단 대기.</b> 폴백은 전수 최소 16자로 위반 0이지만 <b>LLM 경로는 하한 가드가 없다.</b>
+            ① 하한 미달 폐기 → 폴백(왕복 1회를 버리고 대사 색이 규칙 문안이 된다) ② 현행 유지 +
+            eval L3 비차단 계측. <b>임의로 정하지 않는다</b> <span class="badge b-amber">사람 판단</span></td></tr>
+    <tr><td class="dim"><del>조사 미처리</del></td><td class="dim"><del><b>폴백 경로</b>에 종성 판정이 없어 <code>"떡시루이 사라졌던걸"</code> 발생(실측)</del></td>
+        <td><span class="badge b-green">07-28 해소</span><code>util/josa.ts</code> 종성 판정 +
+            로그·대사 30건을 확정 문안(조사를 쓰지 않는 어순)으로 교체</td></tr>
     <tr><td class="dim">재현성</td><td><code>temperature 0.95</code>라 LLM 출력은 매번 다르다. 캐시 히트 시에만 동일</td>
         <td>표현 계층이므로 허용. <b>진실값은 캐시와 무관하게 동일</b>하다는 것이 §3 <b>C4</b>의 검사 대상</td></tr>
   </table></div>
@@ -476,7 +544,8 @@
 
   <h3>2.5 폴백 결정 트리</h3>
 <pre>narrate(input)
-├─ GEMINI_API_KEY 없음 ─────────► null     (기동 로그 "폴백(규칙)")
+├─ AI_NARRATE=off ─────────────► null     (reason: disabled · 폴백 회귀 확인용 킬 스위치)
+├─ GEMINI_API_KEY 없음 ─────────► null     (reason: nokey · 기동 로그 "폴백(규칙)")
 ├─ 캐시 히트 ──────────────────► cached   (API 호출 0)
 ├─ 4000ms 초과 → AbortError ───► null
 ├─ res.ok = false (429 / 5xx) ─► null
@@ -487,6 +556,24 @@
         ※ 대사가 비는 경로는 존재하지 않는다</pre>
   <p class="note"><code>cacheKey</code> = <code>[action, suspect, weapon, room, persona, tone, disproved, hint]</code>
      — <b>진실값 조합이 키다.</b> LRU 200.</p>
+
+  <div class="card info">
+    <h4><span class="badge b-green">07-28 3차</span>캐시 적중률 0%는 <b>고장이 아니라 설계가 예측하는 값</b>이다</h4>
+    <p class="s13">키가 진실값 조합이므로 키 공간은 용의자 12 × 장물 6 × 장소 9 × 페르소나 12 × <code>disproved</code> 2 =
+      <b>15,552</b>이고 한 판의 발화는 <b>약 30건</b>이다 → <b>기대 충돌 0.03건.</b>
+      한 판에서 캐시가 맞을 일이 원리적으로 거의 없다.</p>
+    <ul class="s13" style="margin:0;padding-left:18px">
+      <li><b class="no">적중률을 올리려면 3요소를 키에서 빼야 하는데, 그러면 캐시된 문장이 다른 제안의 라벨을 말하게 된다</b>
+        — 정확히 §3 <b>C4</b>가 blocking으로 막는 위반이다. 그래서 <b>의도적으로 올리지 않았다.</b>
+        캐시는 “적중률 지표”가 아니라 <b>같은 진실값 조합이 반복될 때의 호출 절약 장치</b>다.</li>
+      <li><code>GET /health</code>에 <code>cache{size, max, lookups, keyFields}</code>를 노출한다 —
+        <b><code>hits: 0</code>만으로는 “고장”과 “칠 일이 없었다”가 구분되지 않는다.</b>
+        <code>lookups</code>(조회 시도 = 적중률의 <b>분모</b>)와 <code>keyFields</code>(무엇이 키인가)를 함께 내보내야 0이 설명된다.</li>
+      <li>같은 이유로 <code>normalizeTiers</code>(절단이 <b>어느 단계에서</b> 살렸는가 ·
+        <code>sentence</code>/<code>clause</code>/<code>word</code>/<code>drop</code>)를 추가했다.
+        폐기율 0%가 “안 잘렸다”인지 “잘 잘랐다”인지를 숫자가 말한다.</li>
+    </ul>
+  </div>
 
   <div class="card warn">
     <h4>폴백의 설계 의도와 그 대가 <span class="badge b-amber">정직 항목</span></h4>
@@ -530,7 +617,8 @@
       페르소나는 <code>cards.ts</code> 실값 사용(테스트 전용 문자열 금지)</span></div>
     <div class="stat"><b>캐시 무시</b><span>키에 실행 nonce → 36콜 전부 실제 API.
       무료 쿼터 보호를 위해 <b>1회만</b> 실행하고 리포트를 커밋</span></div>
-    <div class="stat"><b>원문 + 정규화본 병기</b><span>정규화가 몇 번 발동했는지가 곧 <b>프롬프트 준수율</b>이다</span></div>
+    <div class="stat"><b>원문 <u>길이</u> + 정규화 발동</b><span>정규화가 몇 번 발동했는지가 곧 <b>프롬프트 준수율</b>이다.
+      <b class="part">원문 텍스트는 저장하지 않는다</b> — 계측이 유출 경로가 되지 않게 <b>길이와 발동 종류만</b> 남긴다</span></div>
   </div>
 
   <h3>3.2 판정 규칙</h3>
@@ -539,8 +627,13 @@
   <div class="scroll"><table>
     <tr><th style="width:48px">#</th><th style="width:140px">검사</th><th>기계 판정</th><th style="width:165px">통과 기준</th></tr>
     <tr><td><b>C1</b></td><td>한 줄</td><td>개행 미포함</td><td><b>36/36</b></td></tr>
-    <tr><td><b>C2</b></td><td>길이</td><td>원문 <code>12 ≤ len ≤ 40</code> / 정규화본 <code>≤ 80</code></td>
-        <td>원문 <b>≥ 33/36</b><br>정규화본 <b>36/36</b></td></tr>
+    <tr><td><b>C2</b></td><td>길이</td>
+        <td>정규화본 상한 — <b>제안 25자 / 그 외 40자</b>
+            (코드 상수 <code>LINE_BUDGET_SUGGEST</code> · <code>LINE_MAX</code>)<br>
+            <span class="note"><b>07-28 정정</b>: 이 행은 원래 “정규화본 ≤ 80”이었다. 80자 하드컷이 경계 절단으로 바뀌면서 무효가 됐고
+            폴백 예산도 25/40으로 조여졌다(§6.2). 원문 <code>12 ≤ len ≤ 40</code> 기준은
+            <code>narrate()</code>가 원문을 반환하지 않아 <b>오프라인에서는 판정 불가</b>다(§3.5).</span></td>
+        <td>정규화본 <b>전건</b><br>원문 기준은 <code>--live</code>에서만</td></tr>
     <tr><td><b>C3</b></td><td>마크업·머리말</td><td>따옴표·별표·해시·<code>NPC:</code>·리스트 머리 전부 미매치</td><td><b>36/36</b></td></tr>
     <tr><td><b>C4</b></td><td><b>진실값 치환 없음</b></td>
         <td>① <code>A</code>의 라벨 최소 1개 포함<br>② <code>A</code>에 없는 라벨 중 <b>같은 카테고리</b>의 것이 0개</td>
@@ -619,6 +712,17 @@
         S2는 <code>narrator.ts</code>가 <code>rooms/</code>·<code>schema/</code>를 import하지 않음(비밀에 손이 닿지 않음)을,
         S4는 대화 히스토리 0(<b>인젝션 표면 0</b>)을 확인한다.</li>
       <li><b>P3 fetch 하드 트랩</b> — 오프라인 모드에서 <code>globalThis.fetch</code>를 거부 함수로 교체해 네트워크 0을 <b>실행으로 보증</b>한다. “안 하도록 짰다”가 아니다.</li>
+      <li><b>P6 절단 구제 불변식</b> <span class="badge b-green">07-28 3차 신설</span> —
+        3단 절단(§2.3)이 <b>규약을 지킨 채로</b> 문장을 살리는지 매 실행 검사한다.
+        합성 코퍼스 <b>16종</b>(41~50자, 종결부호를 끝에만 둔 형태)에 대해
+        ① 상한 이내 ② 하한 이상 ③ <b>어절 중간 절단 0</b> ④ C3 통과 ⑤ <code>ops</code>에 <code>truncate</code> 기록 —
+        5개를 전부 만족해야 PASS. 공백 없는 덩어리 2종은 <b>폐기돼야</b> PASS다.
+        결과: 이전 규칙 생존 <b class="no">0/16</b> → 현재 <b class="ok">16/16</b>.
+        <div class="note" style="margin-top:6px">🔴 <b>이 코퍼스는 실측 표본이 아니다.</b>
+          계측 규약(§2.3)이 원문 텍스트를 저장하지 않으므로 실제로 폐기된 원문은 리포에 남아 있지 않다.
+          코퍼스는 라이브 <code>/health</code>가 관측한 <b>형태</b>(전부 <code>toolong</code> · <code>truncate</code> 0건 · 최대 원문 50자)를
+          재현한 것이고, 따라서 여기서 재는 것은 <b>“관측된 형태에 대한 구제율”</b>이지 실측 구제율이 아니다.
+          이 구분을 리포트에도 그대로 인쇄한다.</div></li>
     </ul>
     <p class="s13" style="margin-bottom:0"><b>쿼터 안전장치</b> — 기본은 오프라인, 실호출은 <code>--live</code>로만.
       콜 수 상한(기본/최대 36) + 시작 전 소모량 고지 + 5초 중단 유예 + 키 없으면 거부.
@@ -644,6 +748,20 @@
     <li><b>SKIP은 사유와 함께 인쇄된다.</b> 조용히 건너뛴 검사는 통과와 구분되지 않는다는 것이
         §3의 “스스로를 의심하는 방식”과 같은 원칙이다.</li>
   </ul>
+
+  <div class="card warn">
+    <h4>판정 불가로 남긴 것 <span class="badge b-amber">추정으로 채우지 않음</span></h4>
+    <ul class="s13" style="margin:0;padding-left:18px">
+      <li><b>C7 경로 분포</b> — 실호출이 필요하다. 실행 여부는 <b>사람이 결정</b>(무료 쿼터).</li>
+      <li><del><b>C2 원문 기준</b></del> <span class="badge b-green">07-28 해소</span>
+        <code>rawLen</code>·<code>norm</code>이 붙어 <code>--live</code>에서
+        <b>12~40자 준수(기준 ≥ 33/36)</b>와 <b>프롬프트 준수율</b>(정규화 무발동 비율)을 판정한다.
+        폐기된 원문(<code>toolong</code>)도 분모에 포함한다 —
+        <b>가장 크게 어긴 표본을 빼면 숫자가 프롬프트를 고칠 근거가 되지 못한다.</b>
+        <b>오프라인에서는 여전히 미판정</b>이다(원문은 실호출에서만 생긴다).</li>
+      <li><b>C2 하한 12자</b> — 코드에 강제 수단이 없다(§2.3 알려진 간극). 비차단 계측만 — 실측 위반 0(최소 16자).</li>
+    </ul>
+  </div>
 
   <!-- ══════ 4 ══════ -->
   <h2 id="s4">4. 관측 가능성 <span class="badge b-green" style="vertical-align:3px">2026-07-28 구현 완료</span></h2>
@@ -672,6 +790,51 @@
     <p class="s13"><b>경계 확인</b> — 추가 필드는 전부 <b>운영 메타데이터</b>이며 게임 상태가 아니다.
       <code>GameState</code> 스키마는 변경되지 않는다. <b class="ok">진실값 경계 불변.</b></p>
   </div>
+
+  <h4><span class="badge b-green">구현 결과</span>요구사항 5개 전부 구현 — 설계에서 바꾼 것과 그 이유</h4>
+  <div class="scroll"><table>
+    <tr><th style="width:44px">#</th><th style="width:250px">구현</th><th>설계에서 바뀐 점</th></tr>
+    <tr><td><b>1</b></td><td><code>narrate()</code> → <code>{text, source, ms, model, reason?}</code></td>
+        <td><b>폴백 사유 6종을 추가</b>했다 — <code>timeout</code> · <code>http</code> · <code>empty</code> ·
+            <code>toolong</code> · <code>nokey</code> · <code>disabled</code>.
+            §4.1 장애를 즉시 잡았을 조건이 “폴백이다”가 아니라 <b>“왜 폴백인가”</b>였다.
+            또 <code>narrate()</code>가 <b>더 이상 throw하지 않는다</b>: 예외로 새면 호출부 catch가 사유를 삼켜 같은 장애가 재현된다</td></tr>
+    <tr><td><b>2</b></td><td><code>broadcast("say", {…, ai})</code> + <code>aiStats</code></td>
+        <td><code>AiStats</code>를 <b class="no">스키마에 넣지 않았다.</b> 운영 메타를 진실값과 같은 채널에 섞으면
+            “AI가 판정에 관여한다”는 오독이 생기고, 관전자·재접속자에게 자동 동기화돼 전송 시점을 통제할 수 없다</td></tr>
+    <tr><td><b>3</b></td><td>칩 기본 노출 + 로그 배지 + <code>✨♻⚙</code> 범례</td>
+        <td><b>말풍선에는 배지를 붙이지 않았다</b> — 서버가 <code>bubbleLifeMs(line)</code>으로 턴을 붙들고
+            클라가 같은 함수로 말풍선을 재는데, 접두를 붙이면 두 계산이 다른 문자열을 보게 되어 §6.1 정합이 다시 깨진다</td></tr>
+    <tr><td><b>4</b></td><td><code>GET /health</code></td>
+        <td>키 <b>보유 여부</b>(boolean)만. 키 값을 담는 필드가 <b>타입에 존재하지 않는다.</b>
+            07-28 3차에 <code>cache{size,max,lookups,keyFields}</code> · <code>normalizeTiers</code>가 추가됐다(§2.5)</td></tr>
+    <tr><td><b>5</b></td><td>폴백 사유 표기</td>
+        <td>429는 <code>quotaErrors</code> 카운트 + <code>reason: "http"</code>.
+            전부 폴백인 상태에서도 세 값을 함께 보여준다 —
+            <b>폴백만 세는 칩은 자백서지만 값을 감추는 칩은 계측이 없는 것과 같다</b></td></tr>
+  </table></div>
+
+  <div class="card warn">
+    <h4><span class="badge b-amber">07-28 4차 정정</span>패널을 <b>판 시작과 동시에</b> 띄운다</h4>
+    <p class="s13">원래는 “<b>측정이 하나도 없으면 패널을 띄우지 않는다</b>”였다. 근거는 옳았지만
+      (빈 스냅샷으로 <code>0 · 0 · 0</code>을 그리면 서버가 하지 않은 주장을 화면이 대신한다)
+      <b class="no">첫 LLM 호출까지 27초가 걸린다</b> — 45초 안에 판단하는 심사자가 계측을 아예 못 보고 나갈 수 있다.
+      심사축 1위의 증거가 “있는데 늦게 뜨는” 상태였다.</p>
+    <ul class="s13" style="margin:0;padding-left:18px">
+      <li><b>자리는 띄우되 값은 말하지 않는다.</b> <code>0 · 0 · 0</code>은 여전히 그리지 않고,
+        값 자리는 확정 문안의 <b><code>—</code> 관례</b>로만 채운다.
+        “아직 측정이 없다”와 “0건이었다”는 다른 주장이고 <b>화면이 후자를 말하면 안 된다.</b></li>
+      <li>서버 빈 스냅샷의 <code>avgMs: 0</code>이 <code>평균 0.0s</code>로 새던 경로도 같이 막았다.</li>
+      <li><b><code>✨</code>/<code>♻</code>/<code>⚙</code> 범례를 넣었다</b> — 기호만 있고 뜻이 없으면 계측이 아니라 장식이다.</li>
+    </ul>
+  </div>
+
+  <p class="note"><b>실측 1판</b>(23제안 · 24발화 · 07-28 2차 시점):
+    <code>llm 19(avg 923ms) · cache 0 · fallback 4(전부 toolong)</code>.
+    그 뒤 <b class="no">07-28 3차에 <code>fallback 9/41</code>(22%)이 재현</b>돼 목표 길이 인하 + 3단 절단으로 대응했고,
+    실호출 16콜 검증에서 <b class="ok">폐기 0% · 준수율 1.00</b>이 나왔다(§2.3).
+    <b class="part">⚠ 표본 8건이라 확정이 아니다</b> — 한 판 완주 후 <code>/health</code> 재확인이 남아 있다.
+    키 없이 같은 판을 돌리면 <b>첫 발화부터</b> <code>fallback(nokey)</code> — §4.1 장애가 즉시 드러난다.</p>
   <div class="card" style="border-left:3px solid var(--green)">
     <h3 class="ok">4.1 실제 장애 사례 — 이 절이 요구사항인 이유 (2026-07-28 해결)</h3>
     <p>라이브에서 NPC 대사가 <b>100% 규칙 폴백</b>으로 나가고 있었고, 화면에도 로그에도 아무 신호가 없었다.</p>
@@ -688,6 +851,24 @@
     <p>이 사건이 §4의 5개 요구사항을 정당화한다. <b>가용성을 위한 폴백은 관측 가능성을 갖추지 않으면 장애를 숨기는 장치가 된다.</b>
     <code>source</code>/<code>ms</code> 계측과 AI 카운터 칩이 있었다면 첫 판에서 드러났을 문제다.</p>
   </div>
+  <div class="card crit">
+    <h3 class="no" style="margin-top:0">4.2 07-28 4차 — 계측이 <b>심사자에게 도달하는가</b> (랜딩 노출)</h3>
+    <p class="s13">계측을 잘 만들어도 <b>아무도 못 보는 자리에 있으면 없는 것과 같다.</b>
+      심사자 시선으로 라이브를 열어 본 결과 <b class="no">첫 45초의 AI 신호가 정확히 0</b>이었다 —
+      랜딩 DOM에 <code>&lt;a&gt;</code> <b>0개</b>, “AI” · “LLM” · “Gemini” 문자열 <b>0개</b>.</p>
+    <ul class="s13" style="margin:0;padding-left:18px">
+      <li>랜딩 첫 화면에 <b>경계를 밝힌다</b> — “NPC 대사는 Gemini가 실시간 생성 ·
+        <b>판정과 정답은 규칙 엔진만</b>” + 게임 화면에서 호출 수가 실시간으로 보인다는 안내.
+        이 문서 §0의 주장을 <b>게임 입구에서 한 문장으로 반복</b>하는 것이다.</li>
+      <li><b>링크는 배포본에 실제로 있는 경로만 건다.</b> 없는 링크를 거는 것은 그 자체로 감점이다.</li>
+      <li>같은 라운드에서 <b class="no">§3 · §10이 “생성한다”고 적은
+        <code>docs/design/eval-narrator-report.md</code>가 실제로는 리포에 없었다</b>는 것도 잡혔다.
+        가장 강한 정량 주장(폴백 전수 112,752문장)의 근거 파일이 없으면 확인하러 온 사람이 못 찾고,
+        그 순간 <b>나머지 참인 주장까지 함께 의심받는다.</b>
+        이제 eval이 매 실행마다 갱신한다(<code>--no-report</code>로 끌 수 있다).</li>
+    </ul>
+  </div>
+
   <p class="note"><b>운영 선행 조건(사람 담당)</b> — 무료 쿼터는 심사 기간 내내 다수 심사자가 소모하는 구조이므로,
      심사 기간에는 쿼터 잔량을 주기적으로 확인한다 — <b><code>GET /health</code>가 구현돼(위 표 #4)
      <code>llmCalls</code>·<code>fallbackCalls</code>·<code>quotaErrors</code>를 서버 로그 없이 확인할 수 있다.</b></p>
@@ -698,7 +879,9 @@
     <tr><th style="width:150px">항목</th><th>내용</th></tr>
     <tr><td>모델</td><td><code>gemini-flash-lite-latest</code> (<code>GEMINI_MODEL</code> env로 교체 가능)</td></tr>
     <tr><td>필수 파라미터</td><td><code>thinkingConfig</code> <b>미지정</b> (§2.3 · §4.1)</td></tr>
-    <tr><td>호출 상한</td><td><b>이벤트당 1콜</b>, <b>프레임 루프 호출 0</b>. 동일 진실값 조합은 LRU(200) 재사용</td></tr>
+    <tr><td>호출 상한</td><td><b>이벤트당 1콜</b>, <b>프레임 루프 호출 0</b>. 동일 진실값 조합은 LRU(200) 재사용
+        — <span class="note">키 공간 15,552 대 판당 발화 30이라 <b>한 판 안에서는 거의 안 맞는다.</b>
+        올리려면 C4를 깨야 해서 의도적으로 올리지 않았다(§2.5)</span></td></tr>
     <tr><td>타임아웃</td><td>4000ms + <code>AbortController</code> — 응답이 없어도 턴이 멈추지 않는다</td></tr>
     <tr><td>키 관리</td><td><code>apps/server/.env</code>만 사용, gitignore. <code>.env.example</code>은 키 이름·발급 URL·모델 기본값만.
         <b>클라 번들·로그·커밋 어디에도 키가 없다</b></td></tr>
@@ -747,9 +930,14 @@
     <ul class="s13" style="margin:0;padding-left:18px">
       <li>왕복 실측 <b>평균 926ms</b>(756~1194ms) — 1.2초보다 낮다.</li>
       <li class="no"><b>캐시 히트 0건 / 24발화.</b> <code>cacheKey</code>가 제안 3요소 + <code>disproved</code> 조합이라
-        한 판에서 같은 조합이 거의 재현되지 않는다. <b>완충 논리가 실제로는 발동하지 않으므로 왕복은 상시 비용이다.</b></li>
+        한 판에서 같은 조합이 거의 재현되지 않는다. <b>완충 논리가 실제로는 발동하지 않으므로 왕복은 상시 비용이다.</b><br>
+        <span class="badge b-green">07-28 3차 후속</span>이것은 고장이 아니라 <b>키 공간 15,552 대 판당 발화 30</b>이 예측하는 값이며,
+        올리려면 C4를 깨야 하므로 <b>의도적으로 올리지 않기로 확정</b>했다(§2.5).</li>
       <li class="part"><b>LLM 응답의 17%(4/24)가 40자를 넘겨 폐기</b>됐고, 살아남은 문장도 31~39자로 제안 예산 25자를 크게 넘었다.
-        <b>페이싱의 실질 레버는 왕복보다 출력 길이 강제일 수 있다.</b></li>
+        <b>페이싱의 실질 레버는 왕복보다 출력 길이 강제일 수 있다.</b><br>
+        <span class="badge b-green">07-28 3차</span><b class="ok">그 레버를 당겼다</b> — 목표 길이 인하 + 3단 절단으로
+        폐기 <b>22% → 0%</b>, 최대 원문 50 → <b>34자</b>(§2.3).
+        상한을 40 → 50으로 올리는 반대 방향은 <b>봇 1턴 +550ms · 판당 +15.4초</b>라 기각했다.</li>
     </ul>
     <p class="s13" style="margin-bottom:0"><b>해법 후보를 07-28에 의도적으로 착수하지 않았다.</b>
       홀드 기점을 LLM 도착 시각으로 옮기면 총 턴시간은 그대로이고, 폴백 방송 시각에 고정하면
@@ -765,9 +953,9 @@
     사용 내역의 증거는 커밋 메시지가 아니라 <b>저장소에 남은 워크플로 산출물</b>로 제시한다.
   </div>
   <div class="g3">
-    <div class="stat"><b>커밋 148개 · 커미터 1명</b><span>anveloper · 2026-07-19 ~ 07-28</span></div>
-    <div class="stat"><b>문서 66편</b><span><code>.md</code> 50편(AI용 압축) + 사람용 <code>.html</code> 16편</span></div>
-    <div class="stat"><b>플랜 워크플로</b><span>done 10 / active 3 / hold 1 — <code>git mv</code>로 이관</span></div>
+    <div class="stat"><b>커밋 166개 · 커미터 1명</b><span>anveloper · 2026-07-19 ~ 07-28</span></div>
+    <div class="stat"><b>문서 69편</b><span><code>.md</code> 53편(AI용 압축) + 사람용 <code>.html</code> 16편</span></div>
+    <div class="stat"><b>플랜 워크플로</b><span>done 11 / active 3 / hold 1 — <code>git mv</code>로 이관</span></div>
   </div>
 
   <h3>7.1 도구 · 용도 · 산출물 · 사람 검토 지점</h3>
@@ -777,12 +965,12 @@
     <tr>
       <td><b>Claude Code</b><br><span class="note">에이전트 CLI</span></td><td>코드·문서 전반</td>
       <td><code>CLAUDE.md</code> / <code>AGENTS.md</code> single-source, <code>docs/plans/README.md</code>가 정의한
-        <b>active → done <code>git mv</code> 워크플로</b>와 결과물(done 10 / active 3 / hold 1)</td>
+        <b>active → done <code>git mv</code> 워크플로</b>와 결과물(done 11 / active 3 / hold 1)</td>
       <td>플랜 단위 승인, <code>done</code> 이관 판정, <code>hold/02</code> 보류 결정</td>
     </tr>
     <tr>
       <td class="dim">↳ 개발 일지</td><td>하루 작업을 커밋 타입별로 그룹화</td>
-      <td><code>docs/logs/</code> <b>10편</b>. 예: <code>20260720-npc-llm-persona.md</code>는 thinking 모델 빈응답 문제와 해결을 기록</td>
+      <td><code>docs/logs/</code> <b>11편</b>. 예: <code>20260720-npc-llm-persona.md</code>는 thinking 모델 빈응답 문제와 해결을 기록</td>
       <td>일지에 남길 결함(= 공개할 실패)의 범위</td>
     </tr>
     <tr>
@@ -824,7 +1012,7 @@
     </tr>
     <tr>
       <td><b>Google Gemini API</b></td><td><b>게임 내 유일한 LLM 사용처</b> — NPC 대사</td>
-      <td><code>apps/server/src/ai/narrator.ts</code>(313줄) · <code>.env.example</code></td>
+      <td><code>apps/server/src/ai/narrator.ts</code>(544줄) · <code>.env.example</code></td>
       <td>프롬프트 계약 문안, 금지 목록(§2.2), 파라미터</td>
     </tr>
     <tr>
@@ -951,11 +1139,23 @@
   <h2 style="border:0;margin-bottom:6px">변경 이력</h2>
   <div class="card">
     <p class="s13"><span class="badge">2026-07-20</span><b>초판(66줄)</b> — 구조 · 프롬프트 · 에셋 출처.</p>
+    <p class="s13"><span class="badge b-green">2026-07-28</span><b>4판 보정</b> —
+      §2.3 <b>목표 길이 인하(32 / 25) + 어절 앵커 + 3단 절단</b> 반영(상한 40 불변) 및
+      «1차 시도가 C4를 6/8로 떨어뜨린 것을 실측이 잡았다» 기록 ·
+      §2.3 간극표에 «상한 초과분 전부 폐기» 행 신설 · 해소(22% → 0%) ·
+      §2.5 <b>캐시 0%는 설계 예측값</b>임을 논증하고 <code>/health</code> <code>cache</code> · <code>normalizeTiers</code> 반영 ·
+      §3 <b>P6(절단 구제 불변식)</b> 신설 및 «합성 코퍼스는 실측 표본이 아니다» 명시 ·
+      §3.2 C2 행을 «제안 25자 / 그 외 40자»로 정정 · §3.5에 «판정 불가로 남긴 것» 편입 ·
+      §4 <b>구현 결과 표</b> 편입 및 #3을 <b>판 시작 동시 노출(값은 <code>—</code>)</b>로 정정 ·
+      <b>§4.2 랜딩 AI 노출 · eval 리포트 실제 생성</b> 신설 ·
+      §6.2 남은 간극 2건에 후속 결과 병기 ·
+      <b>실측 정정: 호출 지점 4곳 → 5곳</b>(도박 고발 누락) ·
+      줄 수 정정(<code>clue-room.ts</code> 1823 → 1937 · <code>narrator.ts</code> 313 → 544).</p>
     <p class="s13"><span class="badge b-green">2026-07-28</span><b>3판 보정</b> —
       §1.2 결함 b <b>봇 오답 고발 불가 해소</b>(페르소나 배짱 + 시드 해시 RNG, 봇 탈락 판 0.0% → 7.0%) 및 §0.3 정정 노트 5행 갱신 ·
       결함 a도 해소 표기 · §2.4 페르소나 표에 <b><code>nerve</code> 열</b> 추가(하나의 페르소나가 표현·진실 두 계층으로 갈라져 흐른다) ·
       §2.6 4뷰 말풍선 간극 <b>해소</b> 표기 · <b>§3.5 회귀 게이트 편입 신설</b> · §4 <code>GET /health</code> 구현 반영 ·
-      §7.1 실측 수치 갱신(커밋 148 · logs 10 · plans done 10) 및 회귀 게이트 · 시뮬레이터 행 추가 · §10 파일 맵 갱신 ·
+      §7.1 실측 수치 갱신(4판에서 커밋 166 · <code>.md</code> 53 · logs 11 · plans done 11로 재측정) 및 회귀 게이트 · 시뮬레이터 행 추가 · §10 파일 맵 갱신 ·
       실측 줄 수 정정(<code>clue-room.ts</code> 1030 → 1823 · <code>narrator.ts</code> 175 → 313).</p>
     <p class="s13"><span class="badge b-green">2026-07-27</span><b>2판</b> — 실코드 · 라이브 실측 기반 전면 개정.
       §0 핵심 원칙 재작성(load-bearing 용어 정정 + <b>초판 정정 노트 6건</b>) ·

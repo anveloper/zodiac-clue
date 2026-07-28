@@ -141,7 +141,7 @@
   </div>
 
   <div class="card crit">
-    <h3><span class="p p0">P0</span> 심사축 1위(AI)가 화면에 없다</h3>
+    <h3><span class="p p0">P0</span> 심사축 1위(AI)가 화면에 없다 <span class="ok">✅ 07-28 해소 (§7.7 · ④ §4)</span></h3>
     <p>LLM 기여는 <code>broadcast("say", {id, from, text})</code> 한 줄뿐이다. <b>LLM인지 캐시인지 규칙 폴백인지, 몇 ms 걸렸는지 플레이어도 심사자도 알 수 없다.</b>
     30~60초 영상에서 "AI가 일한다"를 증명할 화면이 없다는 뜻이다.</p>
     <p><b>조치</b> — <code>narrate()</code> 반환을 <code>{ text, source: "llm"|"cache"|"fallback", ms, model }</code>로 확장 →
@@ -149,6 +149,10 @@
     로그 배지 <code>✨</code>llm / <code>♻</code>cache / <code>⚙</code>fallback.</p>
     <p class="note"><b>경계 확인</b> — 추가 필드는 전부 "문장이 어느 경로로 왔는가" 메타데이터이며 게임 상태가 아니다. 진실값 경계 불변.
     말풍선은 3개 렌더러가 이미 동일한 <code>showBubble(id, text)</code> 계약이라, 배지를 문자열 접두로 넣으면 <b>4뷰 자동 대응</b>.</p>
+    <p class="note"><b>📌 07-28 구현 시 정정 2건</b> — ① <code>?ai=1</code> 게이팅은 <b>폐기</b>됐다(§7.7).
+    ② <b class="no">말풍선에는 배지를 붙이지 않았다</b> — 서버가 <code>bubbleLifeMs(line)</code>으로 턴을 붙들고 클라가 같은 함수로 말풍선을 재는데,
+    접두를 붙이면 두 계산이 <b>다른 문자열</b>을 보게 되어 4뷰 계약 §1.3 정합이 다시 깨진다.
+    배지는 <b>로그 줄과 AI 패널에만</b> 붙는다.</p>
   </div>
 
   <div class="card warn">
@@ -371,8 +375,56 @@
     코드 주석("flash 계열은 thinking 모델이라 꺼야 빈 응답을 막는다")은 <b>이전 모델에선 옳았지만 지금은 파라미터 자체가 무효</b>다.</p>
     <p class="no"><b>발견이 늦은 이유</b> — 실패 로그가 <code>[narrate] HTTP 400</code>으로 <b>상태코드만</b> 남겨 사유가 어디에도 없었다.</p>
     <p><b class="ok">조치 완료</b> — <code>thinkingConfig</code> 제거 + 실패 로그에 응답 본문 포함(<code>477c88b</code>). 배포 후 라이브 재검증 <b class="ok">12/12 LLM · 폴백 0</b>.<br>
-    남은 조치: ① <code>GET /health</code> ② §1.3 계측을 P0로 승격하고 <code>?ai=1</code> 게이팅 제거(7.7) ③ 429 시 "AI 대사 일시 폴백" 배지.</p>
+    <del>남은 조치</del> → <b class="ok">07-28 전건 완료</b>: ① <code>GET /health</code>
+    (+ <code>cache{size,max,lookups,keyFields}</code> · <code>normalizeTiers</code>)
+    ② §1.3 계측 P0 승격 · <code>?ai=1</code> 게이팅 제거(7.7)
+    ③ 429 시 <code>quotaErrors</code> + <code>reason: "http"</code> 표기.</p>
     <p class="note"><b>교훈</b> — 폴백이 조용하면 장애도 조용하다. 관측 가능성(§4)은 편의 기능이 아니라 <b>이 장애를 오래 놓치지 않기 위한 조건</b>이다.</p>
+  </div>
+
+  <div class="card crit">
+    <h3><span class="p p0">P0</span> 7.1.1 폴백이 <b>22%로 되살아났다</b> <span class="ok">✅ 07-28 해소 · <code>6d3a8a9</code></span></h3>
+    <p>§7.1을 고친 뒤 계측을 붙이고 라이브 1판을 완주시켰더니 <b class="no">NPC 대사 5개 중 1개가 조용히 규칙 템플릿으로 대체</b>되고 있었다:
+    <code>fallback 9/41</code> · <b>사유 전부 <code>toolong</code></b>.
+    §7.1과 같은 함정이다 — 폴백이 캐릭터색을 유지하도록 잘 만들어져 <b>육안으로는 구분되지 않는다.</b> 계측이 없었으면 이번에도 몰랐다.</p>
+
+    <div class="lead" style="border-left:3px solid var(--green);padding-left:12px">
+      <b>원인은 계측이 이미 갖고 있었다.</b> <code>ops {drop: 9}</code>인데 <code>truncate</code>가 <b>0건</b>.
+      프롬프트가 “한 문장만”을 요구하니 종결부호는 문장 맨 끝에 하나뿐이고, 원문이 상한을 넘겼다는 말은 곧
+      <b>그 유일한 경계가 상한 밖</b>이라는 뜻이다 → <b class="no">1순위 절단은 원리적으로 발동할 수 없었고</b> 초과분 100%가 폐기로 떨어졌다.
+    </div>
+
+    <div class="scroll"><table>
+      <tr><th style="width:220px">조치</th><th>내용</th></tr>
+      <tr><td class="ok"><b>① 목표 길이 인하</b><br><span class="note">상한 40 불변</span></td>
+          <td>관측 초과율 1.25배에서 역산해 <code>LINE_MAX/1.25 = 32</code>자, 제안은 페이싱 예산 때문에 25자.
+            <b>모델은 글자를 못 세지만 어절은 세므로</b> “어절 6개 이하” 앵커 + 실제 길이 예시 3개를 함께 준다.
+            <b>규약을 느슨하게 한 것이 아니라 지키기 쉬운 목표를 준 것</b></td></tr>
+      <tr><td class="ok"><b>② 3단 절단</b><br><span class="note">문장 → 절 → 어절</span></td>
+          <td>미완결은 <code>…</code>로 닫는다. 어절 중간은 어느 단계에서도 안 자르고, 공백 없는 덩어리는 <b>여전히 폐기</b>.
+            결과에 <code>truncate</code>가 남아 준수율 분자에서 빠진다 —
+            <b>통과시킨 게 아니라 못 지킨 사실을 기록한 채 살린 것</b></td></tr>
+      <tr><td class="no"><b>✗ 상한 인상(40→50)</b></td>
+          <td><b>기각.</b> 봇 1턴 +550ms → <b>판당 +15.4초</b>. §7.5.4가 어렵게 회수한 페이싱을 도로 뱉는다</td></tr>
+    </table></div>
+
+    <ul>
+      <li><b class="ok">실호출 16콜 검증</b> — 폐기 <b>22% → 0%</b> · 최대 원문 <b>50 → 34자</b> · 준수율 <b>0.78 → 1.00</b>.
+        <span class="part"><b>⚠ 표본 8건이라 “한 자릿수 확정”은 아니다</b></span> — 한 판 완주 후 <code>/health</code> 재확인이 필요하다(체크리스트 §3).</li>
+      <li class="no"><b>⚠ 1차 시도가 C4를 깼고 실측이 그것을 잡았다.</b> 짧게 쓰라는 압력으로 “세 요소를 다 읊지 말라”를 넣었더니
+        라벨을 <b>하나도 안 넣는</b> 응답이 나와 ④ §3 <b>C4(진실값 유지)가 6/8</b>로 떨어졌다.
+        “최소 하나는 준 글자 그대로”로 못 박아 <b class="ok">8/8 복구</b>.
+        프롬프트 한 줄이 진실값 계약을 무너뜨릴 수 있다는 것을 <b>문서가 아니라 계측이 보여줬다.</b></li>
+      <li><b>캐시 0%는 고장이 아니다.</b> 키가 진실값 조합이라 키 공간 <b>15,552</b> 대 판당 발화 <b>30</b> → 기대 충돌 <b>0.03건</b>.
+        적중률을 올리려면 3요소를 키에서 빼야 하는데 그러면 캐시된 문장이 <b>다른 제안의 라벨을 말한다</b>(C4 위반)
+        → <b>의도적으로 올리지 않았다.</b> <code>/health</code>에 <code>cache{…}</code>·<code>normalizeTiers</code>를 추가 —
+        <code>hits:0</code>만으로는 “고장”과 “칠 일이 없었다”가 구분되지 않는다.</li>
+      <li><b>회귀 방어</b> — eval에 전제조건 <b>P6</b>(절단 구제 불변식) 신설.
+        합성 코퍼스 16종으로 <b>이전 규칙 생존 0/16 → 현재 16/16.</b>
+        <span class="no"><b>🔴 이 코퍼스는 실측 표본이 아니다</b></span>(폐기된 원문은 저장하지 않는다) —
+        재는 것은 “관측된 <b>형태</b>에 대한 구제율”이다.</li>
+    </ul>
+    <p class="note">근거: ④ §2.3 · §2.5 · §3</p>
   </div>
 
   <div class="card crit">
@@ -560,7 +612,38 @@
     <p><b>7.6</b> — §3은 "실제 플레이 화면만·AI합성 금지"를 <b>컷 편집 금지</b>로 읽었으나, 조항이 금지하는 것은 <b>합성·타인 영상</b>이다.
     55초 원테이크는 불가능하다(로드맵 자신이 "봇 5명 = 33.5초"라고 계산했다). → <b>실플레이 클립 5~6개의 컷 편집</b>으로 재설계하고 원본 보관.</p>
     <p><b>7.7</b> — §1.3은 문제를 "AI가 화면에 안 보임"이라 진단해놓고 해결책을 <b>"쿼리 파라미터를 붙여야 보이는 접힌 패널"</b>로 설계했다. 심사자는 파라미터 없는 URL로 들어온다.
-    → <b>AI 카운터 칩은 기본 노출</b>, 상세 로그만 접힘.</p>
+    → <b>AI 카운터 칩은 기본 노출</b>, 상세 로그만 접힘. <span class="ok">✅ 07-28 완료</span></p>
+  </div>
+
+  <div class="card good">
+    <h3>✅ 7.7 완료 — 그런데 “기본 노출”만으로는 부족했다 <span class="note"><code>55297c0</code></span></h3>
+    <p>게이팅은 제거했는데 <b class="no">첫 LLM 호출까지 27초</b>가 걸린다. 45초 안에 판단하는 심사자가 계측을 <b>아예 못 보고 나갈 수 있다</b>
+    — 게이팅을 지운 자리에 “늦게 뜸”이라는 같은 문제가 남아 있었다.</p>
+    <ul>
+      <li><b>패널을 판 시작과 동시에 노출</b>한다. 다만 <b class="no"><code>0 · 0 · 0</code>은 그리지 않는다</b> —
+        그건 서버가 하지 않은 주장(“대사가 없었다”)을 화면이 대신하는 것이다.
+        <b>자리는 띄우되 값은 확정 문안의 <code>—</code> 관례로만</b> 말한다.
+        서버 빈 스냅샷의 <code>avgMs: 0</code>이 <code>평균 0.0s</code>로 새던 경로도 함께 막았다.</li>
+      <li><b><code>✨</code>/<code>♻</code>/<code>⚙</code> 범례를 넣었다</b> — 기호만 있고 뜻이 없으면 계측이 아니라 장식이다.</li>
+      <li>턴 HUD가 보드 방 이름을 가리던 것을 좌표로 잡아 해소.</li>
+    </ul>
+  </div>
+
+  <div class="card crit">
+    <h3>🔴 07-28 후속 — 계측을 만들어도 <b>랜딩에서는 신호가 0이었다</b> <span class="note"><code>c90c723</code></span></h3>
+    <p>심사자 시선으로 라이브를 열어 본 결과 <b class="no">첫 45초의 AI 신호가 정확히 0</b>이었다 —
+    랜딩 DOM에 <code>&lt;a&gt;</code> <b>0개</b>, “AI” · “LLM” · “Gemini” 문자열 <b>0개</b>.
+    심사 1순위 축이 AI인데 <b>잘 만든 계측을 아무도 못 보는 자리에 둔 셈</b>이었다
+    (§7.4가 “무엇을 감출까”를 다뤘다면 이건 <b>“무엇을 반드시 보여야 하는가”</b>다).</p>
+    <ul>
+      <li>랜딩 첫 화면에 경계를 밝힌다 — “NPC 대사는 Gemini가 실시간 생성 · <b>판정과 정답은 규칙 엔진만</b>” +
+        게임 화면에서 호출 수가 실시간으로 보인다는 안내.</li>
+      <li><b>링크는 배포본에 실제로 있는 경로만 건다.</b> 없는 링크를 거는 것은 그것대로 감점이다.</li>
+      <li>함께 잡힌 것 — ④ §3 · §10이 “생성한다”고 적은 <code>docs/design/eval-narrator-report.md</code>가
+        <b class="no">실제로는 리포에 없었다.</b> 가장 강한 정량 주장(전수 112,752문장)의 근거 파일이 없으면
+        확인하러 온 사람이 못 찾고, 그 순간 <b>나머지 참인 주장까지 함께 의심받는다.</b>
+        이제 eval이 매 실행 갱신한다(<code>--no-report</code>로 끌 수 있다).</li>
+    </ul>
   </div>
 
   <div class="card crit">
@@ -608,17 +691,36 @@
     <p class="note"><b>§2.3(뷰4 실루엣)보다 먼저</b> 넣어야 <code>makeCritter</code> 시그니처를 두 번 고치지 않는다.</p>
   </div>
 
-  <div class="card info">
-    <h3><span class="p p1">P1</span> 7.12 터치 기기에서는 이동이 아예 불가능하다</h3>
+  <div class="card crit">
+    <h3><span class="p p0">P0</span> 7.12 터치 기기에서는 이동이 아예 불가능하다 <span class="ok">✅ T0·T1 07-28 완료</span></h3>
     <p>이동은 <b>키보드 전용</b>, 팬은 우/중클릭 게이트(터치는 <code>button===0</code>), 줌은 <code>wheel</code>만.
     <code>touch-action</code> 선언 <b>0건</b>이라 폰에서 핀치가 <b>페이지 전체를 확대</b>해 HUD가 잘린다. 조작 안내는 680px 미만에서 <code>display:none</code>.</p>
     <p class="no">→ 심사자가 폰으로 열면 <b>보드는 보이는데 캐릭터를 1칸도 못 움직인다</b>(방에 못 들어가니 <code>[제안]</code>도 영구 비활성).</p>
     <div class="scroll"><table>
       <tr><th>티어</th><th>내용</th><th>비용</th></tr>
-      <tr><td><b>T0 (협상 불가)</b></td><td><code>viewport-fit=cover</code> · <code>100vh→100dvh</code> · <code>overscroll-behavior:none</code> · 캔버스 <code>touch-action:none</code> · 터치용 조작 안내</td><td>30분</td></tr>
-      <tr><td>T1 (권장)</td><td>우하단 D-패드(48px, 기존 <code>move</code> 재사용 → <b>서버 변경 0</b>) + 1손가락 팬 + 2손가락 핀치 + 버튼 <code>min-height:44px</code></td><td>2h</td></tr>
-      <tr><td>T2</td><td>탭-투-무브(그리드 역변환 → <code>move</code> 큐). 뷰4는 GameScene 좌표계를 그대로 써서 추가 코드 0</td><td>0.5d</td></tr>
+      <tr><td class="ok"><b>T0 (협상 불가)</b> ✅</td><td><code>viewport-fit=cover</code> · <code>100vh→100dvh</code> · <code>overscroll-behavior:none</code> · 캔버스 <code>touch-action:none</code> · 터치용 조작 안내</td><td>30분</td></tr>
+      <tr><td class="ok"><b>T1 (권장)</b> ✅</td><td>우하단 D-패드(48px, 기존 <code>move</code> 재사용 → <b>서버 변경 0</b>)</td><td>2h</td></tr>
+      <tr><td class="no">T2 <b>폐기</b></td><td>탭-투-무브(그리드 역변환 → <code>move</code> 큐) — <b>클라가 판정하게 된다</b>(아래)</td><td>0.5d</td></tr>
     </table></div>
+
+    <div class="lead" style="border-left:3px solid var(--red);padding-left:12px">
+      <b class="no">🔴 07-28 — T1을 컷했던 결정을 뒤집었다</b> <span class="note">(<code>55297c0</code>)</span><br>
+      실행계획 §5.1 컷라인은 T1 D-패드를 “<b>T0로 화면이 깨지는 것은 막힌다. 폰 실플레이는 본행사</b>”라며 잘랐다. <b>그 판단이 틀렸다.</b>
+      심사자 검수에서 iPhone 에뮬레이션으로 캔버스를 탭해도 말이 움직이지 않았다 — 이동이 <code>keydown</code> 전용이라
+      <b>키보드가 없으면 게임 진행 자체가 불가능</b>했고, 이는 제출물 ①(“웹에서 즉시 플레이”) 요건의 <b>절반이 성립하지 않는다</b>는 뜻이다.<br>
+      <b>화면이 안 깨지는 것과 플레이가 되는 것은 다르다.</b> T0의 성공(레이아웃)이 T1의 필요(조작)를 가린 것이 컷 판단의 오류다
+      → <b>실행계획 §5.1 컷 목록에서 빼고 완료로 옮긴다.</b>
+    </div>
+    <ul>
+      <li><b>DOM D-패드</b>(<code>pointer: coarse</code>에서만 노출 — 마우스 데스크톱에는 뜨지 않는다). 우측 패널이 열리면 <code>dp-off</code>로 숨긴다.</li>
+      <li><b class="no">탭-투-무브(T2)는 버렸다</b> — 클라가 경로를 계산해 <code>move</code>를 여러 번 큐잉해야 하고,
+        그 순간 벽 · 입구 · 충돌 · 한도를 <b>클라가 판정</b>하게 된다. D-패드는 <b>방향 1칸만</b> 보낸다.
+        진실값 경계를 지키는 쪽이 코드도 작다.</li>
+      <li><b class="ok">실측</b> — 패드가 보낸 프레임이 키보드 <code>ArrowLeft</code>와 <b>바이트 단위로 동일</b>하다
+        → “서버 변경 0”이 말이 아니라 측정으로 확인됐다. 390×844 터치 에뮬레이션으로 <b>4뷰 전부에서</b> 실제로 말을 움직여 확인했다.</li>
+      <li>조작 안내가 키보드 전용(<code>휠</code> · <code>우클릭</code>)이라 터치에서는 <b class="no">거짓 안내</b>였다 →
+        확정 문안에서 <b>존재하지 않는 조작 절만 덜어내는</b> 방식으로 처리했다(새 낱말 0 = ui-copy 재확정 불필요).</li>
+    </ul>
   </div>
 
   <div class="card info">
@@ -845,7 +947,13 @@
   2026-07-28 §7.1 원인 규명·해결(<code>thinkingBudget: 0</code> 400) ·
   <b>2026-07-28(4차) 구현 완료 반영</b> — §7.5.3 봇 도박 고발(<code>1f55b28</code>, <b>"탈락 알파 버그는 솔로에서 발현되지 않는다"를 정정</b>) ·
   §9.1 코드 스플리팅(<code>63c46be</code>) · §9.6 <code>pnpm verify</code> 게이트 신설(<code>4244e5c</code>) ·
-  §2.5 비밀 통로 표기 상수(<code>41c7a52</code>) · §8.3 방 공개 상태 복귀 · §9.3 <code>dispose()</code> 완료.</p>
+  §2.5 비밀 통로 표기 상수(<code>41c7a52</code>) · §8.3 방 공개 상태 복귀 · §9.3 <code>dispose()</code> 완료 ·
+  <b>2026-07-28(5차) 마지막 세 라운드 반영</b> — <b>§7.1.1 신설</b>(폴백률 22% → 실측 0%, <code>6d3a8a9</code>.
+  목표 길이 인하 + 3단 절단 · 1차 시도가 C4를 6/8로 떨어뜨린 것을 실측이 포착 · 캐시 0%는 설계 예측값이라 의도적 유지 · eval <b>P6</b> 신설) ·
+  <b>§7.12 정정</b>(T1 D-패드 <b>컷 결정을 뒤집었다</b>, <code>55297c0</code> — 폰에서 말을 못 움직여 제출물 ① 요건 절반이 성립 안 함. T2는 클라 판정을 부르므로 폐기) ·
+  <b>§7.7 완료·확장</b>(AI 패널 판 시작 동시 노출 · <code>0·0·0</code> 미표기 · <code>✨♻⚙</code> 범례 · 턴 HUD 겹침 해소 ·
+  랜딩 AI 신호 0 해소와 <code>eval-narrator-report.md</code> 실제 생성, <code>c90c723</code>) ·
+  §1.3 구현 시 정정 2건 병기 · §7.1 남은 조치 전건 완료 표기.</p>
 </div>
 </body>
 </html>

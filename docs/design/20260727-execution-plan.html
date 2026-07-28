@@ -371,6 +371,9 @@
 <tr><td><span class="ok">✅ [승격]</span> <b>페이싱 재조정</b> <span class="tag src">§7.5.4</span> — <span class="note">07-28 완료. 1차 적용 후 목표 미달(4.4~5.7분)이었으나 <b>대사 길이 해소로 봇 1턴 7.6초 → 3.8초</b></span></td><td>0.5h</td></tr>
 <tr><td><span class="ok">✅ [신규]</span> <b>대사 길이를 디렉팅 규약 안으로</b> — <span class="note">07-28 완료 · 제안 47.1→<b>21.3자</b> · <code>BUBBLE_HOLD_MS</code> 2600→1200 · <b>봇 1턴 3.8초</b>(실측 80표본). <code>TYPE_MS</code>는 "AI 활용의 유일한 가시적 증거"라 불변</span></td><td>0.5h <span class="note">추정</span></td></tr>
 <tr><td><span class="ok">✅ [신규]</span> <b>제안 상한 재산정</b> — <span class="note">07-28 완료 · <b>60 → 75</b>(도달률 17.0% → 0.1%). 자연 분포 p99.5=74·최대 76 — 80 이상은 자연 최대를 넘어 백스톱 구실을 못 한다</span></td><td>0.3h <span class="note">추정</span></td></tr>
+<tr><td><span class="ok">✅ [신규]</span> <b>폴백률 22% → 실측 0%</b> <span class="tag src">로드맵 §7.1.1</span> — <span class="note">07-28 완료(<code>6d3a8a9</code>). <b>대사 길이 축의 마지막 조각</b>이다: 위 두 행이 <i>폴백 템플릿</i>을 규약 안으로 넣었다면 이 행은 <i>LLM 원문</i>을 넣었다.
+목표 길이 인하(32/25, <b>상한 40 불변</b>) + 3단 절단(문장→절→어절). 실호출 16콜 검증 <b>폐기 22% → 0% · 준수율 0.78 → 1.00</b>.
+<b class="part">⚠ 표본 8건 — 한 판 완주 후 <code>/health</code> 재확인 필요</b></span></td><td>1h <span class="note">추정</span></td></tr>
 <tr><td><span class="ok">✅ [신규]</span> <code>SPEAK_HOLD</code> ↔ <code>bubbleLifeMs</code> <b>정합</b> — <span class="note">07-28 완료 · 고정 상수 폐기, <code>speak()</code>가 실제 문장을 반환해 길이로 홀드를 건다. 서버·클라가 같은 shared 함수를 쓴다</span></td><td>0.3h <span class="note">추정</span></td></tr>
 
 <tr><td rowspan="6"><b>07-30</b><br><span class="note">목</span></td><td><span class="ok">✅</span> 재진입 규칙 <code>suggestedIn</code> + <b>제안 모달 손패 지목 허용</b> <span class="tag src">§7.5.2</span> — <span class="note">07-28 완료 · 방문 방 2.41 → <b>5.11/9</b></span></td><td>2h</td></tr>
@@ -406,7 +409,11 @@
 
 <tr class="mile"><td rowspan="3"><b>08-03</b><br><span class="note">월</span></td><td>★ 제출 형태 확정 반영 — ⑤ 완성 or 삭제 <span class="tag src">§7.2</span></td><td>0.5h</td></tr>
 <tr class="mile"><td><span class="ok">✅</span> 계측 — <code>narrate()</code> <code>{source,ms,model,reason?}</code> + <code>speak</code> 메타 동봉 + <code>GET /health</code> <span class="tag src">§1.3 · ④§4</span> — <span class="note"><b>07-28로 앞당겨 완료</b> · 폴백 사유 6종 구분</span></td><td>1.5h</td></tr>
-<tr class="mile"><td><span class="ok">✅</span> AI 카운터 칩 <b>기본 노출</b> + 로그 배지 <code>✨♻⚙</code> + 폴백 사유 표기 <span class="tag src">§7.7</span> — <span class="note">07-28 완료 · 측정이 없으면 패널 자체를 띄우지 않는다</span></td><td>1.5h</td></tr>
+<tr class="mile"><td><span class="ok">✅</span> AI 카운터 칩 <b>기본 노출</b> + 로그 배지 <code>✨♻⚙</code> + 폴백 사유 표기 <span class="tag src">§7.7</span> — <span class="note">07-28 완료</span></td><td>1.5h</td></tr>
+<tr><td><span class="ok">✅ [신규]</span> <b>AI 패널을 판 시작과 동시에</b> <span class="tag src">§7.7 후속 · ④ §4</span> — <span class="note">07-28 완료(<code>55297c0</code>). 게이팅을 지웠어도 <b>첫 호출까지 27초</b>라 45초 심사자가 못 볼 수 있었다.
+<b class="no"><code>0·0·0</code>은 그리지 않는다</b>(서버가 하지 않은 주장) — 자리만 띄우고 값은 <code>—</code> 관례. <code>✨♻⚙</code> 범례 + 턴 HUD 겹침 해소</span></td><td>0.5h <span class="note">추정</span></td></tr>
+<tr><td><span class="ok">✅ [신규]</span> <b>랜딩에 AI 경계 노출</b> <span class="tag src">④ §4.2</span> — <span class="note">07-28 완료(<code>c90c723</code>). 심사자 시선 검수에서 <b class="no">첫 45초의 AI 신호가 0</b>(랜딩 DOM에 <code>&lt;a&gt;</code> 0개 · "AI/LLM/Gemini" 0개).
+경계 고지 + <b>배포본에 실제로 있는 경로만</b> 링크</span></td><td>0.5h <span class="note">추정</span></td></tr>
 
 <tr><td rowspan="4"><b>08-04</b><br><span class="note">화</span></td><td><span class="ok">✅</span> <code>disposeObject()</code> + 공유 지오메트리 상수화 + <code>THREE.Cache</code> + <b>Sprite 지오메트리 예외</b> <span class="tag src">§9.3</span> —
 <span class="note"><b>07-28로 앞당겨 완료</b> · <code>scenes/three-res.ts</code>가 공유 지오메트리 7종을 소유 → three 런타임 geometry 생성 <b>0건</b></span></td><td>2h</td></tr>
@@ -415,6 +422,9 @@
 <tr><td><span class="ok">✅ [신규]</span> <b>비밀 통로 표기 재설계</b> —
 <span class="note">07-28 완료(<code>41c7a52</code>) · 기본 알파 0.09 / 커서 34px 안이면 0.75(160ms 페이드). 상수 4종은 <code>view-consts.ts</code>.
 뷰1·4는 임계를 <b>줌으로 나누고</b>, 뷰2·3은 42° 피치라 <b>양 끝점을 화면에 투영</b>해 잰다</span></td><td>0.5h <span class="note">추정</span></td></tr>
+<tr><td><span class="ok">✅ [신규 · 컷라인에서 되살림]</span> <b>터치 T1 D-패드</b> <span class="tag src">§7.12</span> — <span class="note">07-28 완료(<code>55297c0</code>).
+<b class="no">§5.1이 컷했던 판단을 뒤집었다</b> — 폰에서 말이 1칸도 안 움직여 <b>제출물 ①(“웹에서 즉시 플레이”) 요건의 절반이 성립하지 않았다.</b>
+탭-투-무브(T2)는 <b>클라가 벽·입구·한도를 판정</b>하게 되므로 폐기. 실측: 패드 프레임이 키보드와 <b>바이트 동일</b> · 390×844로 4뷰 전부 확인</span></td><td>2h</td></tr>
 <tr><td>우측 컬럼 탭 도크 <span class="tag src">§7.9</span> — 뒤처지면 <code>&lt;details&gt;</code> 최소안 0.5h</td><td>1.5h <span class="note">추정</span></td></tr>
 
 <tr><td rowspan="2"><b>08-05</b><br><span class="note">수</span></td><td>overlay-bus 완전판(우선순위 큐 · 타이머 소유권 단일화) <span class="tag src">§7.10</span></td><td>1h</td></tr>
@@ -423,6 +433,12 @@
 <tr><td rowspan="3"><b>08-06</b><br><span class="note">목</span></td><td><span class="ok">✅</span> <code>suggestLog</code> + 제안 기록표 패널 <span class="tag src">§1.2</span> — <span class="note"><b>07-28로 앞당겨 완료</b> · 실시간·리플레이가 같은 배열 · 같은 사건의 로그 줄은 소급 제거</span></td><td>2h <span class="note">추정</span></td></tr>
 <tr><td>로그 리플레이 <code>publicLog</code>/<code>privateLog</code> <span class="tag src">§8.3 b</span></td><td>1h</td></tr>
 <tr><td><span class="ok">✅</span> <code>scripts/eval-narrator.mjs</code> 작성 <span class="tag src">④§3</span> — <span class="note"><b>07-28로 앞당겨 완료</b> · 폴백 전수 112,752문장 C1~C6 위반 0건 · 기본 오프라인(쿼터 0)</span></td><td>1h <span class="note">추정</span></td></tr>
+<tr><td><span class="ok">✅ [신규]</span> <b>eval 리포트 파일을 실제로 생성</b> <span class="tag src">④§3·§10</span> — <span class="note">07-28 완료(<code>c90c723</code>).
+④가 “이 스크립트가 <code>eval-narrator-report.md</code>를 생성한다”고 명시하는데 <b class="no">실제로는 아무 파일도 남기지 않았다.</b>
+가장 강한 정량 주장의 근거 파일이 없으면 <b>나머지 참인 주장까지 의심받는다.</b> 매 실행 갱신(<code>--no-report</code>로 끔)</span></td><td>0.3h <span class="note">추정</span></td></tr>
+<tr><td><span class="ok">✅ [신규]</span> <b>eval 전제조건 <code>P6</code>(절단 구제 불변식)</b> <span class="tag src">④§3</span> — <span class="note">07-28 완료.
+합성 코퍼스 16종 <b>이전 규칙 0/16 → 현재 16/16</b>.
+<b class="no">🔴 코퍼스는 실측 표본이 아니다</b>(원문을 저장하지 않으므로) — 재는 것은 “관측된 <b>형태</b>에 대한 구제율”</span></td><td>0.3h <span class="note">추정</span></td></tr>
 
 <tr><td rowspan="3"><b>08-07</b><br><span class="note">금</span></td><td><span class="part">⬜</span> eval <code>--live</code> <b>1회 실행</b>(36콜) + 리포트 커밋 <span class="tag src">④§3.1·§3.4</span> — <span class="note"><b>C7(경로 분포)만 남았다.</b> 오프라인 결과는 §3.4에 반영됨. 실행은 쿼터를 먹으므로 <b>사람이 결정</b></span></td><td>0.5h</td></tr>
 <tr><td>④ 문서 승격 3개 절 — 디렉팅 명세 · 환각 검증 · 도구 사용내역 + load-bearing 용어 정정 <span class="tag src">§4 · §7.16</span></td><td>2.5h <span class="note">추정</span></td></tr>
@@ -467,7 +483,14 @@
 <div class="hu">
 <article style="border-left:3px solid var(--green)"><div class="when">07-28<br><b>해결</b></div><div>
   <h4>A · <s>라이브 <code>GEMINI_API_KEY</code> 확인 + 유료 키 충전</s> → <b>해결 완료</b> <span class="tag src">§7.1 · ④§4.1</span></h4>
-  <p><b>사람 작업이 아니라 코드 수정이었다.</b> 원인은 키·쿼터가 아니라 <code>thinkingBudget: 0</code>이 400으로 거부된 것. 파라미터 제거 후 라이브 재검증 <b>12/12 LLM · 폴백 0</b>. 이로써 AI 칩 · eval · ④ §3.4 · 클립 C 자막의 선행 조건이 <b>모두 풀렸다</b>.<br>남은 사람 몫은 <b>심사 기간 중 쿼터 잔량 확인</b>뿐.</p>
+  <p><b>사람 작업이 아니라 코드 수정이었다.</b> 원인은 키·쿼터가 아니라 <code>thinkingBudget: 0</code>이 400으로 거부된 것. 파라미터 제거 후 라이브 재검증 <b>12/12 LLM · 폴백 0</b>. 이로써 AI 칩 · eval · ④ §3.4 · 클립 C 자막의 선행 조건이 <b>모두 풀렸다</b>.<br>남은 사람 몫은 <b>심사 기간 중 쿼터 잔량 확인</b>뿐 — <code>GET /health</code>로 서버 로그 없이 본다.</p>
+</div></article>
+
+<article><div class="when">촬영 전</div><div>
+  <h4>A′ · 한 판 완주 후 <code>/health</code> <b>재확인</b> <span class="tag src">로드맵 §7.1.1</span></h4>
+  <p>폴백률 0%의 표본이 <b class="part">8건뿐</b>이다. <code>fallbackCalls</code> · <code>normalizeTiers</code> · <code>cache.lookups</code>를 눈으로 확인한다.<br>
+  ④ §2.3이 “0%”를 <b>8건 표본</b>이라 정직하게 적어 뒀으므로 미실행이 거짓말이 되지는 않는다.
+  다만 <b>촬영본에 폴백 대사가 섞이면 클립 C의 “LLM” 자막과 화면이 어긋난다.</b></p>
 </div></article>
 
 <article><div class="when">07-27</div><div>
@@ -536,7 +559,12 @@
 <tr><td>적응 해상도 · <code>antialias:false</code> · InstancedMesh · 컨텍스트 로스 핸들러</td><td><span class="tag src">§9.4</span> 2h</td><td><code>loop(t)</code> dt 클럭 <b>최소분만</b> §9.2 작업에 흡수(spec의 <code>k=1−exp(−dt/τ)</code>가 요구). 나머지는 저사양 최적화라 45초에 드러나지 않음</td></tr>
 <tr><td>대기실 로그 · 닉네임 · <code>.pending</code> · 시작 카운트다운</td><td><span class="tag src">§8.4</span> 2h</td><td>다인 대기실 UX. 심사자는 대부분 솔로 링크로 들어온다. 닉네임은 <b>XSS 이스케이프 부채</b>까지 동반.<br><span class="note">부수 — <code>20260727-ui-copy.md</code> §8의 대기실·닉네임 문안이 함께 미적용으로 남는다 → <b>ui-copy의 🚧 표기를 유지</b>(적용 완료로 오독 방지)</span></td></tr>
 <tr><td>리매치 합의 · 선공 셔플 · 시리즈 스코어보드</td><td><span class="tag src">§8.5</span> 2.5h</td><td>"2판째를 할 이유"는 심사 시나리오에 없다. 단 <b>NPC 재충원 루프 이동 1줄만</b> §8.1 커밋에 포함(3인 판 붕괴 방지)</td></tr>
-<tr><td>터치 T1 D-패드 · T2 탭-투-무브</td><td><span class="tag src">§7.12</span></td><td>T0(30분)로 "화면이 깨지는" 것은 막힌다. 폰 실플레이는 본행사</td></tr>
+<tr><td><del>터치 T1 D-패드</del> · T2 탭-투-무브</td><td><span class="tag src">§7.12</span></td>
+    <td><del>T0(30분)로 "화면이 깨지는" 것은 막힌다. 폰 실플레이는 본행사</del><br>
+    <b class="no">🔴 07-28 컷 취소 — T1은 구현했다.</b> 이 컷 사유가 <b>틀렸다</b>: T0가 막은 것은 <b>레이아웃</b>이고,
+    이동은 <code>keydown</code> 전용이라 <b>키보드가 없으면 게임 진행 자체가 불가능</b>했다.
+    <b>화면이 안 깨지는 것과 플레이가 되는 것은 다르다</b> — 제출물 ① 요건의 절반이 걸린 문제였으므로
+    “점수”가 아니라 <b>“자격”</b> 쪽이다. <b>T2는 컷 유지가 아니라 폐기</b>(§5.2로 이동)</td></tr>
 <tr><td>뷰3 렌더 품질(접지 데칼 · Fog · 등불 · 야간 배경)</td><td><span class="tag src">§2.4 조치2</span></td><td>배지 제거(10분)만으로 <b>역효과는 사라진다</b>. 나머지는 "그래픽 퀄리티"이고 §6.1의 자기 논리에 걸린다</td></tr>
 <tr><td>도달 가능 칸 하이라이트 <code>reachable()</code></td><td><span class="tag src">§1.5 P1</span></td><td>온보딩 본체(3줄 오버레이·고정행)로 "60초 이해"는 확보된다</td></tr>
 <tr><td>시맨틱 마크업 · ESC · 포커스 트랩</td><td><span class="tag src">§7.13 P2</span></td><td>대비·포커스 2건(20분)이 완성도 문제의 8할</td></tr>
@@ -558,6 +586,10 @@
 <tr><td class="dim">원테이크 55초 영상</td><td><span class="tag cut">§3</span> → §7.6</td><td>물리적으로 불가(§3 자신이 "봇 5명 = 33.5초"라고 계산). 컷 편집판이 유일한 실행안</td></tr>
 <tr><td class="dim">총 제안 상한 40</td><td><span class="tag cut">§1.1</span> → §7.5</td><td>분리 후 p95 = 53~60. 정상 게임의 25%를 강제 종료시킨다 → 60 → <b>07-28 재산정으로 최종 75</b>(재진입 규칙 투입 후 p95 65 · 자연 p99.5 73 · 최대 76. 60은 판의 17%에서 작동해 백스톱이 아니라 밸런스 손잡이가 됐다)</td></tr>
 <tr><td class="dim">"⑤ 해당 없음" 확정</td><td><span class="tag cut">§6.3</span> → §7.2</td><td>상류 회의록에 3인 팀 명시. <b>AI가 임의로 내릴 수 없는 결정</b></td></tr>
+<tr><td class="dim">탭-투-무브(터치 T2)</td><td><span class="tag cut">§7.12</span> → 07-28</td><td>클라가 경로를 계산해 <code>move</code>를 큐잉하면 그 순간 <b>벽 · 입구 · 충돌 · 한도를 클라가 판정</b>하게 된다.
+    D-패드는 <b>방향 1칸만</b> 보내고 서버 변경이 0이다(패드 프레임이 키보드와 <b>바이트 동일</b>). <b>진실값 경계를 지키는 쪽이 코드도 작다</b></td></tr>
+<tr><td class="dim">AI 패널의 <code>0 · 0 · 0</code> 표기</td><td><span class="tag cut">④ §4</span> → 07-28</td><td>입장 시 빈 스냅샷으로 <code>0·0·0</code>을 그리면 <b>서버가 하지 않은 주장</b>(“대사가 없었다”)을 화면이 대신한다.
+    패널은 판 시작과 동시에 띄우되 값은 확정 문안의 <code>—</code> 관례로만</td></tr>
 <tr><td class="dim"><code>?ai=1</code> 게이팅</td><td><span class="tag cut">§1.3</span> → §7.7</td><td>심사자는 파라미터 없는 URL로 들어온다</td></tr>
 </tbody>
 </table>
@@ -689,6 +721,14 @@
 <b>통합 회귀 게이트 <code>pnpm verify</code> 신설</b>. §6 머리에 커밋 전/종료 시 게이트 명령을 명시.
 §5.1·§7.2 ③④의 최소 방어 항목(<code>STAGES.load</code>)을 이행 완료로 표기.
 미착수로 남은 것은 <b>§9.2(<code>loop.sleep/wake</code>)와 §9.6 런타임 순회</b>뿐.</li>
+<li><b>2026-07-28(2차)</b> <b>마지막 세 라운드 반영.</b>
+§2 07-29 슬롯에 <b>폴백률 22% → 0%</b>(<code>6d3a8a9</code>) 편입 — 대사 길이 축의 마지막 조각이다(폴백 템플릿 → LLM 원문).
+§2 08-03 슬롯에 <b>AI 패널 판 시작 동시 노출</b> · <b>랜딩 AI 경계 노출</b>(<code>55297c0</code> · <code>c90c723</code>),
+08-06 슬롯에 <b>eval 리포트 실제 생성</b> · <b>P6</b> 편입.
+§2 08-04 슬롯에 <b>터치 T1 D-패드</b>를 <b class="no">컷라인에서 되살려</b> 편입(<code>55297c0</code>).
+§5.1에서 T1을 <b>컷 취소</b>로 표기하고 그 컷 사유가 틀렸음을 명시 ·
+§5.2에 <b>탭-투-무브(T2)</b>와 <b>AI 패널 <code>0·0·0</code> 표기</b>를 폐기 항목으로 신설.
+§3에 <b>A′(한 판 완주 후 <code>/health</code> 재확인)</b> 추가.</li>
 </ul>
 
 </div>
