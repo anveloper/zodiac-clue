@@ -3,132 +3,809 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>제출물 ④ AI 기술 문서 — zodiac-clue</title>
+<title>제출물 ④ AI 활용 기술 문서 — zodiac-clue</title>
 <style>
-  :root { --bg:#16130f; --card:#211c16; --edge:#3a3126; --ink:#f0e9dc; --dim:#a89778; --gold:#f0d9a8; --accent:#b4622b; }
+  :root { --bg:#16130f; --card:#211c16; --edge:#3a3126; --ink:#f0e9dc; --dim:#a89778; --gold:#f0d9a8; --accent:#b4622b;
+          --red:#e0736b; --green:#7ee29a; --amber:#e0c25a; --blue:#7ec8e0; }
   * { box-sizing: border-box; }
   body { margin:0; background:var(--bg); color:var(--ink);
     font-family: system-ui,-apple-system,"Apple SD Gothic Neo",sans-serif; line-height:1.6; }
-  .wrap { max-width: 900px; margin: 0 auto; padding: 32px 20px 80px; }
-  h1 { color:var(--gold); font-size:26px; margin:0 0 4px; }
-  .sub { color:var(--dim); font-size:13px; margin:0 0 28px; }
-  h2 { color:var(--gold); font-size:19px; margin:32px 0 10px; border-bottom:1px solid var(--edge); padding-bottom:6px; }
-  h3 { font-size:15px; margin:16px 0 6px; }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { color:var(--gold); font-size:26px; margin:0 0 6px; letter-spacing:-.01em; }
+  h2 { color:var(--gold); font-size:19px; margin:40px 0 12px; border-bottom:1px solid var(--edge); padding-bottom:6px; }
+  h3 { font-size:15px; margin:20px 0 8px; }
+  h4 { font-size:13.5px; margin:14px 0 6px; color:var(--gold); }
   p, li { font-size:14px; }
-  code { background:#2c2519; border:1px solid var(--edge); border-radius:4px; padding:1px 5px; font-size:13px; }
-  .pill { background:#2c2519; border:1px solid var(--edge); border-radius:6px; padding:2px 8px; font-size:12px; color:var(--dim); }
-  .card { background:var(--card); border:1px solid var(--edge); border-radius:10px; padding:16px 20px; margin:12px 0; }
-  ul { padding-left:20px; }
-  .lead { background:#2b2013; border:1px solid #7c6238; border-radius:8px; padding:12px 16px; font-size:14px; }
-
-  .flow { display:flex; align-items:stretch; gap:12px; flex-wrap:wrap; margin:16px 0; }
-  .layer { flex:1; min-width:260px; background:#211c16; border:1px solid var(--edge); border-radius:10px; padding:14px 16px; }
-  .layer h3 { margin:0 0 6px; color:var(--gold); }
-  .layer .tag { font-size:11px; padding:2px 8px; border-radius:20px; }
-  .t-rule { background:#1f3a24; color:#7ee29a; }
-  .t-llm { background:#22303d; color:#7ec8e0; }
+  ul, ol { padding-left:20px; margin:8px 0; }
+  li { margin:3px 0; }
+  .sub { color:var(--dim); font-size:13px; margin:0 0 6px; }
+  .note { font-size:12.5px; color:var(--dim); }
+  .s13 { font-size:13px; }
+  code { background:#2c2519; border:1px solid var(--edge); border-radius:4px; padding:1px 5px; font-size:12.5px;
+    font-family: ui-monospace,SFMono-Regular,Menlo,monospace; word-break:break-word; }
+  pre { background:#191510; border:1px solid var(--edge); border-radius:8px; padding:14px 16px; overflow-x:auto;
+    font-size:12.5px; line-height:1.65; font-family: ui-monospace,SFMono-Regular,Menlo,monospace; color:#e7dcc6; }
   table { width:100%; border-collapse:collapse; margin:12px 0; font-size:13px; }
   th, td { border:1px solid var(--edge); padding:8px 10px; text-align:left; vertical-align:top; }
-  th { background:#2c2519; color:var(--gold); }
-  .same { color:#7ee29a; }
-  /* scrollbar-theme */
+  th { background:#2c2519; color:var(--gold); font-weight:700; }
+  tbody tr:nth-child(even) td { background:rgba(255,255,255,.018); }
+  .scroll { overflow-x:auto; }
+  .card { background:var(--card); border:1px solid var(--edge); border-radius:10px; padding:16px 20px; margin:14px 0; }
+  .card > :first-child { margin-top:0; } .card > :last-child { margin-bottom:0; }
+  .card.crit { border-left:3px solid var(--red); }
+  .card.warn { border-left:3px solid var(--amber); }
+  .card.info { border-left:3px solid var(--blue); }
+  .card.good { border-left:3px solid var(--green); }
+  .lead { background:#2b2013; border:1px solid #7c6238; border-radius:8px; padding:12px 16px; font-size:13.5px; margin:14px 0; }
+  .lead b { color:var(--gold); }
+  .pill { display:inline-block; background:#2c2519; border:1px solid var(--edge); border-radius:6px;
+    padding:2px 8px; font-size:12px; color:var(--dim); }
+  .badge { display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:6px;
+    letter-spacing:.02em; margin-right:6px; background:#2c2519; color:var(--dim); border:1px solid var(--edge); }
+  .b-red { background:#3a1f1a; color:#e0857a; border-color:#5c2f26; }
+  .b-amber { background:#3a2b1a; color:#e0a35a; border-color:#5c452a; }
+  .b-green { background:#1c3325; color:#8fdca8; border-color:#2c5238; }
+  .b-blue { background:#1f2b3a; color:#7ec8e0; border-color:#2e4257; }
+  .tag { display:inline-block; background:#2c2519; border:1px solid var(--edge); border-radius:5px;
+    padding:1px 6px; font-size:11.5px; color:var(--dim); }
+  .ok { color:var(--green); } .no { color:var(--red); } .part { color:var(--amber); } .dim { color:var(--dim); }
+  .g3 { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:12px; margin:14px 0; }
+  .g2 { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:12px; margin:14px 0; }
+  .stat { background:var(--card); border:1px solid var(--edge); border-radius:10px; padding:14px 16px; }
+  .stat b { display:block; color:var(--gold); font-size:13px; margin-bottom:4px; }
+  .stat span { font-size:12.5px; color:var(--dim); }
+
+  /* 계층 다이어그램 */
+  .layers { display:grid; grid-template-columns:repeat(auto-fit,minmax(270px,1fr)); gap:12px; margin:16px 0 6px; }
+  .lay { background:var(--card); border:1px solid var(--edge); border-radius:10px; padding:0; overflow:hidden; }
+  .lay .hd { padding:10px 14px; font-size:13.5px; font-weight:700; border-bottom:1px solid var(--edge); }
+  .lay .bd { padding:12px 14px; font-size:12.8px; }
+  .lay dl { margin:0; } .lay dt { color:var(--dim); font-size:11.5px; margin-top:8px; }
+  .lay dt:first-child { margin-top:0; } .lay dd { margin:2px 0 0; }
+  .lay.truth { border-top:3px solid var(--green); } .lay.truth .hd { background:#1c2a20; color:#9fe0b4; }
+  .lay.agent { border-top:3px solid var(--amber); } .lay.agent .hd { background:#33291a; color:#e8c877; }
+  .lay.voice { border-top:3px solid var(--blue); } .lay.voice .hd { background:#1c2733; color:#95d2e6; }
+
+  /* 정정 노트 */
+  .fix { display:grid; grid-template-columns:34px 1fr; gap:12px; padding:12px 0; border-top:1px solid var(--edge); }
+  .fix:first-of-type { border-top:0; padding-top:0; }
+  .fix .n { font-size:17px; font-weight:700; color:var(--accent); text-align:center; line-height:1.3; }
+  .fix .old { font-size:13px; color:var(--dim); }
+  .fix .old q { color:#c9b48f; }
+  .fix .why { font-size:13px; margin:5px 0 0; }
+  .fix .new { font-size:13px; background:#1b2a1f; border-left:2px solid var(--green); padding:6px 10px;
+    border-radius:0 6px 6px 0; margin-top:6px; }
+
+  /* 단계 */
+  .step { display:grid; grid-template-columns:30px 1fr; gap:12px; align-items:start; margin:10px 0; font-size:13.5px; }
+  .step .k { width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    font-size:13px; font-weight:700; background:#2c2519; border:1px solid var(--edge); color:var(--gold); }
+  .arrowdown { text-align:center; color:var(--dim); font-size:15px; margin:-4px 0; }
+
+  a { color:var(--gold); }
+  .toc { display:flex; flex-wrap:wrap; gap:6px; margin:16px 0 4px; }
+  .toc a { text-decoration:none; font-size:12.5px; color:var(--dim); background:#2c2519;
+    border:1px solid var(--edge); border-radius:6px; padding:3px 9px; }
+  hr { border:0; border-top:1px solid var(--edge); margin:34px 0; }
   * { scrollbar-width: thin; scrollbar-color: #4a3d2b #16130f; }
   ::-webkit-scrollbar { width:9px; height:9px; }
   ::-webkit-scrollbar-track { background:#16130f; }
   ::-webkit-scrollbar-thumb { background:#4a3d2b; border-radius:5px; border:2px solid #16130f; }
-  ::-webkit-scrollbar-thumb:hover { background:#6b5838; }
+
+@media print {
+  @page { size: A4; margin: 14mm 12mm; }
+  :root { --bg:#fff; --card:#faf7f0; --edge:#c7bba4; --ink:#1a1712; --dim:#4f4738; --gold:#5b430f; --accent:#8a4718; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { background:#fff !important; color:var(--ink) !important; line-height:1.5; }
+  .wrap { max-width:none !important; padding:0 0 8mm !important; }
+  code, kbd, th, .pill, .badge, .tag { background:#f1ece0 !important; color:#2c2519 !important; border-color:var(--edge) !important; }
+  th { color:var(--gold) !important; }
+  pre { background:#f7f4ec !important; color:#1a1712 !important; border:1px solid var(--edge) !important; white-space:pre-wrap !important; word-break:break-word; }
+  .lead { background:#fdf6e4 !important; border-color:#b08b3e !important; color:#1a1712 !important; }
+  .card { background:var(--card) !important; }
+  a { color:#0b4a8f !important; text-decoration:underline; }
+  a[href^="http"]::after { content:" (" attr(href) ")"; font-size:10px; color:#4f4738; word-break:break-all; }
+  a[href^="#"]::after { content:""; }
+  .scroll { overflow:visible !important; }
+  table { min-width:0 !important; width:100% !important; } th, td { word-break:break-word; }
+  h1,h2,h3,h4 { break-after:avoid; page-break-after:avoid; }
+  .card, pre, table, tr, .lead, .stat, .lay, .fix, .step { break-inside:avoid; page-break-inside:avoid; }
+  ::-webkit-scrollbar { display:none; }
+  /* 이 문서 고유 클래스 인쇄 보정 */
+  .toc { display:none !important; }
+  tbody tr:nth-child(even) td { background:#f6f2e8 !important; }
+  .stat, .lay { background:var(--card) !important; border-color:var(--edge) !important; }
+  .lay .hd { border-bottom:1px solid var(--edge) !important; }
+  .lay.truth .hd { background:#e6f1e7 !important; color:#1d5b33 !important; }
+  .lay.agent .hd { background:#f7ecd6 !important; color:#7a5209 !important; }
+  .lay.voice .hd { background:#e4eef4 !important; color:#14506b !important; }
+  .b-red { background:#fbe6e2 !important; color:#8f2418 !important; border-color:#d7a79d !important; }
+  .b-amber { background:#fbf0d8 !important; color:#7a5209 !important; border-color:#d6bb85 !important; }
+  .b-green { background:#e4f2e7 !important; color:#1d6b3a !important; border-color:#a5c8ae !important; }
+  .b-blue { background:#e2eef4 !important; color:#14506b !important; border-color:#a3c2d1 !important; }
+  .ok { color:#1d6b3a !important; } .no { color:#a1281e !important; } .part { color:#8a5b0a !important; }
+  .dim, .note { color:var(--dim) !important; }
+  .fix .new { background:#eef5ef !important; border-left-color:#4d8a63 !important; }
+  .fix .old q { color:#5a5041 !important; }
+  .step .k { background:#f1ece0 !important; color:var(--gold) !important; border-color:var(--edge) !important; }
+  .card.crit { border-left-color:#a1281e !important; } .card.warn { border-left-color:#8a5b0a !important; }
+  .card.info { border-left-color:#14506b !important; } .card.good { border-left-color:#1d6b3a !important; }
+  .lay dd, .lay dt { color:inherit; }
+  h2 { margin-top:24px; }
+}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>🤖 제출물 ④ — AI 기술 문서</h1>
-  <p class="sub">zodiac-clue · 2026-07-20 초안 · <span class="pill">사람용 .html</span></p>
 
-  <div class="lead"><b>핵심 원칙 — load-bearing AI는 "표현 전용".</b><br>
-  <b>무엇을 하는가(결정·진실값)</b>는 <b>결정론적 규칙엔진</b>이, <b>어떻게 보이는가(대사·연출)</b>는 <b>LLM</b>이 담당한다.
-  LLM은 정답이나 남의 패를 만들지 않는다 → <b>환각 차단 · 무료티어 안전 · 재현성</b>.</div>
+  <h1>제출물 ④ — AI 활용 기술 문서</h1>
+  <p class="sub">zodiac-clue · 초판 2026-07-20 · <b class="ok">개정 2판 2026-07-27</b> ·
+    저장소 <code>github.com/anveloper/zodiac-clue</code> (public) · 라이브 <code>zodiac-clue.vercel.app</code></p>
+  <p class="sub">AI 압축본 <code>20260720-ai-tech-doc.md</code> · 본 문서의 모든 경로·심볼은 저장소 실측값이며,
+    미구현 항목은 <span class="badge b-amber">요구사항</span>으로 명시한다.</p>
 
-  <h2>2계층 구조</h2>
-  <div class="flow">
-    <div class="layer">
-      <h3>① 결정 계층 <span class="tag t-rule">규칙엔진</span></h3>
-      <p>서버 <code>clue-room.ts</code>. 정답 봉투·카드 분배·이동(입구/주사위/통로)·제안·반증·고발 판정이 전부 결정론.</p>
-      <ul>
-        <li><b>NPC 추리</b>: 후보집합에서 자기 손패·자기 제안 반증·<b>공유 공개카드</b>를 소거 → 남은 후보로 제안.</li>
-        <li>반증 안 됨 + 자기 미보유 → 그 3장이 봉투 → <b>정확한 고발</b>(봇은 오답 고발 안 함).</li>
-        <li>LLM 장애와 무관하게 진행·판정 항상 정상.</li>
-      </ul>
+  <div class="lead">
+    이 문서의 논지는 <b>“AI를 게임에 넣었다”가 아니라 “AI를 어떻게 지휘하고 검수했는가”</b>다.<br>
+    판정·정답 같은 <b>진실값은 결정론적 규칙엔진에만</b> 두고, LLM은 <b>표현(대사)에만</b> 가뒀다.
+    그 경계가 실제로 지켜졌는지는 사람 눈이 아니라 <b>기계 판정 규칙(§3)</b>으로 검사한다.
+  </div>
+
+  <div class="toc">
+    <a href="#s0">0. 이중 계층</a><a href="#s03">0.3 초판 정정 6건</a><a href="#s1">1. 계층 구조</a>
+    <a href="#s2">2. 디렉팅 명세</a><a href="#s24">2.4 페르소나 12종</a><a href="#s3">3. 환각 검증</a>
+    <a href="#s4">4. 관측 가능성</a><a href="#s5">5. Gemini 운용</a><a href="#s6">6. 템포</a>
+    <a href="#s7">7. AI 도구 사용내역</a><a href="#s72">7.2 비위임 결정권</a><a href="#s8">8. 본행사 계승</a>
+    <a href="#s9">9. 에셋 출처</a><a href="#s10">10. 파일 맵</a>
+  </div>
+
+  <!-- ══════ 0 ══════ -->
+  <h2 id="s0">0. 핵심 원칙 — 이중 계층: 결정론적 진실 + LLM 표현</h2>
+
+  <p>이 게임은 <b>AI를 두 층으로 나눠 쓴다.</b> 한 층은 게임이 성립하기 위해 반드시 있어야 하고(load-bearing),
+     다른 한 층은 그 결정을 사람이 읽을 수 있는 말로 바꾼다.</p>
+
+  <div class="layers">
+    <div class="lay truth">
+      <div class="hd">① 진실 계층 <span class="badge b-green" style="float:right;margin:0">AI 없음</span></div>
+      <div class="bd"><dl>
+        <dt>담당</dt><dd>정답 봉투 · 카드 분배 · 반증 · 고발 판정</dd>
+        <dt>구현</dt><dd><code>server/src/rooms/clue-room.ts</code></dd>
+        <dt>AI 종류</dt><dd>없음 (순수 규칙 함수)</dd>
+        <dt>없으면</dt><dd class="no"><b>게임이 성립 안 함</b></dd>
+      </dl></div>
     </div>
-    <div class="layer">
-      <h3>② 표현 계층 <span class="tag t-llm">LLM(Gemini)</span></h3>
-      <p>서버 <code>ai/narrator.ts</code>. 규칙엔진이 확정한 <b>결정된 정보만</b> 입력 → 사극 대사 한 문장.</p>
-      <ul>
-        <li><code>systemInstruction</code>으로 형식·길이·<b>진실값 생성 금지</b> 계약.</li>
-        <li><b>성격(PERSONA)·말투(VOICE)</b> 주입 → 같은 결정도 캐릭터별 말투 상이.</li>
-        <li><b>폴백</b>: 키없음/타임아웃/429/오류 시 규칙기반 대사(intro/outro로 캐릭터색 유지).</li>
-      </ul>
+    <div class="lay agent">
+      <div class="hd">② 에이전트 계층 <span class="badge b-amber" style="float:right;margin:0">load-bearing</span></div>
+      <div class="bd"><dl>
+        <dt>담당</dt><dd>빈 좌석을 채우는 NPC의 <b>추리·의사결정</b></dd>
+        <dt>구현</dt><dd><code>runBotTurn</code> / <code>botSuggestPhase</code> / <code>initBotKnowledge</code></dd>
+        <dt>AI 종류</dt><dd><b>결정론적 추론 엔진</b></dd>
+        <dt>없으면</dt><dd class="no"><b>게임이 성립 안 함</b> — 심사자가 혼자 접속하면 상대가 0명</dd>
+      </dl></div>
+    </div>
+    <div class="lay voice">
+      <div class="hd">③ 표현 계층 <span class="badge b-blue" style="float:right;margin:0">LLM</span></div>
+      <div class="bd"><dl>
+        <dt>담당</dt><dd>NPC 대사 · 연출</dd>
+        <dt>구현</dt><dd><code>server/src/ai/narrator.ts</code></dd>
+        <dt>AI 종류</dt><dd><b>LLM (Google Gemini)</b></dd>
+        <dt>없으면</dt><dd class="part">게임은 굴러가나 <b>캐릭터가 사라진다</b></dd>
+      </dl></div>
     </div>
   </div>
 
-  <h2>Gemini 운용 (무료티어 안전)</h2>
+  <h3>0.1 무엇이 load-bearing인가</h3>
+  <p>상류 정의(<code>docs/planning/brainstorming/20260714-game-ideas.md</code>)는 <b>“AI 없으면 게임이 성립 안 되는 설계”</b>를 요구한다.
+     이 프로젝트에서 그 조건을 지는 것은 <b>에이전트 계층</b>이다.</p>
+  <ul>
+    <li>07-18 회의에서 <b>“심사자는 링크를 눌러 혼자 플레이한다”</b>는 제약이 확정됐다.
+        클루는 3~6인 불완전정보 게임이라 <b>상대가 없으면 규칙 자체가 작동하지 않는다.</b></li>
+    <li><code>addBot()</code>이 빈 좌석을 십이지 캐릭터로 채우고, 각 봇은 <b>자기만의 지식 상태(후보집합)</b>로 소거 추리를 수행한다.
+        이 층을 빼면 1인 게임이 되어 <b>제출물 ①(플레이 가능한 빌드) 요건 자체가 무너진다</b> → load-bearing.</li>
+    <li>표현 계층(LLM)은 load-bearing이 <b>아니다. 그렇게 설계했다.</b> 이유는 §0.2.</li>
+  </ul>
+  <p class="note"><span class="badge b-red">초판 오류</span>초판은 “load-bearing AI = 표현 전용”이라 썼다.
+     상류 용어를 뒤집어 쓴 것이며, 같은 문서의 “LLM 장애와 무관하게 게임은 정상”과 자기모순이었다. §0.3에서 정정한다.</p>
+
+  <h3>0.2 왜 판정에서 LLM을 배제했는가 — 설계 판단 4근거</h3>
+  <div class="g2">
+    <div class="card crit">
+      <h4>1. 환각이 곧 규칙 위반이 된다</h4>
+      <p class="s13">반증은 “내 카드 중 제안 3장과 일치하는 것”이라는 전칭 판정이다.
+        LLM이 이를 하면 없는 카드로 반증(위양성)하거나 가진 카드를 놓치는(위음성) 순간 <b>정답이 도달 불가능해진다.</b>
+        게임이 “틀리는” 게 아니라 <b class="no">끝나지 않는다.</b></p>
+    </div>
+    <div class="card crit">
+      <h4>2. 재현성이 없으면 검증도 없다</h4>
+      <p class="s13"><code>temperature 0.95</code> 생성기는 같은 입력에 같은 출력을 주지 않는다.
+        판정이 여기 걸리면 버그 재현이 불가능하고 밸런스 시뮬레이션(1만 판)도 원리적으로 못 돌린다.
+        진실값을 규칙 함수로 고정했기에 <b>판을 오프라인에서 1만 번 재생할 수 있다.</b></p>
+    </div>
+    <div class="card crit">
+      <h4>3. 치트 불가능성은 “안 준다”로만 증명된다</h4>
+      <p class="s13"><code>this.solution</code>은 <code>private</code>이고 <code>GameState</code> 스키마에 없어 <b>동기화 자체가 안 된다.</b>
+        손패도 서버 전용 Map에 두고 해당 클라에게만 전송하며 LLM 프롬프트에도 넣지 않는다(예외 1건은 §2.2).
+        <b>“정답을 알려주고 말하지 말라고 지시”하는 방식은 인젝션 한 번에 무너지지만, 주지 않은 정보는 새어나갈 수 없다.</b></p>
+    </div>
+    <div class="card crit">
+      <h4>4. 무료티어에서 판정은 못 산다</h4>
+      <p class="s13">판정을 LLM에 걸면 호출이 행동에 비례해 폭증하고 429 한 번에 <b class="no">게임이 멈춘다.</b>
+        표현에만 걸면 429는 <b class="part">말투가 단조로워지는 것</b>으로 끝난다.</p>
+    </div>
+  </div>
+  <div class="lead">
+    <b>LLM을 표현에 가둔 것은 능력 부족의 인정이 아니라, 검증 가능성과 가용성을 사기 위해 지불한 설계 비용이다.</b>
+    그래서 본 문서의 본론은 “AI를 어떻게 게임에 넣었나”가 아니라 <b>“AI를 어떻게 지휘·검수했나”(§2 · §3 · §7)</b>다.
+  </div>
+
+  <h3 id="s03">0.3 초판(2026-07-20) 정정 노트 — 6건</h3>
+  <p class="note">초판 66줄 중 아래 6건은 틀렸거나 오해를 부르는 서술이었다. <b>지우지 않고 이력으로 남긴다.</b></p>
+
   <div class="card">
-    <ul>
-      <li>모델 <code>gemini-flash-lite-latest</code>(~1s). flash 계열은 thinking 모델 → <code>thinkingConfig.thinkingBudget:0</code>으로 꺼야 빈 응답 방지.</li>
-      <li><code>maxOutputTokens:64</code> · <code>temperature:0.95</code> · AbortController <b>4초 타임아웃</b>.</li>
-      <li><b>호출 최소화</b>: 이벤트당 1콜 + <b>동일상황 캐시(LRU 200)</b> 재사용, 프레임 루프 호출 0.</li>
-      <li>키는 서버 <code>.env</code>(gitignore)에만 — 클라·로그·커밋 노출 없음.</li>
+    <div class="fix">
+      <div class="n">1</div>
+      <div>
+        <div class="old"><span class="badge b-red">초판</span><q>핵심 원칙: load-bearing AI = 표현 전용</q></div>
+        <div class="why">상류 정의와 정반대이며 같은 문서 안에서 자기모순.</div>
+        <div class="new"><b>2판</b> — §0 전면 재작성. load-bearing = <b>에이전트 계층</b>.</div>
+      </div>
+    </div>
+    <div class="fix">
+      <div class="n">2</div>
+      <div>
+        <div class="old"><span class="badge b-red">초판</span><q>LLM 장애와 무관하게 판정은 항상 정상</q></div>
+        <div class="why">사실이지만 <b>자기변호로 사용</b>했다. 2026-07-27 라이브 실측에서 <b>NPC 대사 5/5가 규칙 폴백</b>이었고,
+          폴백은 “캐릭터색 유지”가 목표라 <b>의도적으로 구분 불가능</b>하다 → 심사자가 플레이해도 AI 흔적이 0.</div>
+        <div class="new"><b>2판</b> — 폴백은 <b>가용성 장치이지 성과가 아니다.</b> §4 관측 가능성을 요구사항으로 승격.</div>
+      </div>
+    </div>
+    <div class="fix">
+      <div class="n">3</div>
+      <div>
+        <div class="old"><span class="badge b-red">초판</span><q>프롬프트에 정답·손패를 넣지 않음 → 치트 불가</q></div>
+        <div class="why"><b>부분적으로 사실이 아니다.</b> <code>scheme</code>(계략 귓속말)은 <code>hint</code>로
+          <b>다른 플레이어의 실제 손패 라벨 1~2장</b>을 LLM에 넘긴다(<code>helperWhisper</code>).</div>
+        <div class="new"><b>2판</b> — 정확한 진술로 교체: <b>정답 봉투는 어떤 경로로도 넘기지 않는다.</b>
+          손패는 “규칙엔진이 이미 그 수신자에게 공개하기로 결정한 카드”에 한해 넘기며,
+          그 출력은 <b>동일 수신자에게만</b> 전송된다. → §2.2</div>
+      </div>
+    </div>
+    <div class="fix">
+      <div class="n">4</div>
+      <div>
+        <div class="old"><span class="badge b-red">초판</span><q>공유 공개카드(revealed)로 봇 추리 가속</q> — <b>기능으로 서술</b></div>
+        <div class="why"><code>revealed</code>는 룸 전역 Set이고 <b>모든 봇</b>이 소거에 쓴다. 사람은 자기에게 보인 카드만 안다
+          → <b>봇에게만 주는 정보 우위.</b> 자랑처럼 적혀 “AI가 치트한다”로 읽힌다.</div>
+        <div class="new"><b>2판</b> — <b>공정성 결함으로 재분류</b> (§1.2 결함 a).</div>
+      </div>
+    </div>
+    <div class="fix">
+      <div class="n">5</div>
+      <div>
+        <div class="old"><span class="badge b-red">초판</span><q>봇은 틀린 고발을 하지 않음</q> — <b>장점으로 서술</b></div>
+        <div class="why"><code>eff()</code>가 빼는 값은 전부 비정답 → 정답은 항상 후보에 남는다 → 고발 정확도 100%,
+          <b>봇 탈락 판 0.0%</b>. 탈락 리스크를 사람만 진다.</div>
+        <div class="new"><b>2판</b> — <b>밸런스 결함으로 재분류</b> (§1.2 결함 b).</div>
+      </div>
+    </div>
+    <div class="fix">
+      <div class="n">6</div>
+      <div>
+        <div class="old"><span class="badge b-red">초판</span><q>봇 수렴 측정 ~40s · 제안 13회</q></div>
+        <div class="why">재현 절차·측정 로그가 저장소에 없다.</div>
+        <div class="new"><b>2판</b> — <b>삭제.</b> 검증 절차가 없는 수치는 싣지 않는다.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════ 1 ══════ -->
+  <h2 id="s1">1. 계층 구조 (실측 파일 맵)</h2>
+
+  <h3>1.1 진실 계층 — 규칙엔진 <span class="pill">clue-room.ts · 1030줄</span></h3>
+  <p>전부 결정론 함수. <b>LLM 호출 0.</b></p>
+  <div class="scroll"><table>
+    <tr><th style="width:130px">요소</th><th>내용</th></tr>
+    <tr><td>정답 봉투</td><td>용의자·장물·장소 각 1 → <code>this.solution</code> (private, 스키마 밖)</td></tr>
+    <tr><td>덱 18장</td><td>참여 캐릭터 6−1=5 · 장물 6−1=5 · 장소 9−1=8. <b>전부 비정답</b></td></tr>
+    <tr><td>솔로 완화</td><td>사람 1명이면 딜 전 2장을 <code>commonCards</code>로 공개(정답 아님)</td></tr>
+    <tr><td>이동</td><td>2d6 · <code>canCross()</code>(방↔방 직접 이동 불가, 입구 1칸으로만) · 비밀 통로 3쌍</td></tr>
+    <tr><td>제안</td><td>용의자·장물 토큰을 방 <code>summon</code> 앵커로 소환 → 시계방향 첫 매치 1장 반증</td></tr>
+    <tr><td>고발</td><td>3필드 완전 일치만 승리, 불일치면 <code>eliminated = true</code>(반증만 가능)</td></tr>
+    <tr><td>비밀 격리</td><td><code>solution</code> · <code>hands</code> · <code>botKnowledge</code> 전부 private. <code>GameState</code>에 없음</td></tr>
+  </table></div>
+
+  <h3>1.2 에이전트 계층 — NPC 추리</h3>
+  <p>각 봇은 후보집합 3개를 들고 자기 손패와 자기 제안의 반증 결과를 소거한다.
+     턴은 2박자: 이동 → <code>BOT_ACT_GAP</code> 1300ms → 제안 → <code>SPEAK_HOLD</code> 2400ms → 판단.</p>
+  <p><b>알려진 결함 2건 — 현재 코드 그대로다. 은폐하지 않는다.</b></p>
+
+  <div class="card crit">
+    <h4><span class="badge b-red">결함 a</span>봇 간 정보 공유 <span class="pill">공정성</span></h4>
+    <p class="s13"><code>private revealed</code>는 <b>룸 전역</b>이며 반증으로 드러난 카드가 <b>모든 봇</b>의 소거에 쓰인다.
+       사람은 자기에게 보인 카드만 안다.</p>
+    <p class="s13"><b>조치</b> — 봇별 <code>seen</code>으로 분리. 수렴은 <b>공개 정보만 쓰는 추론</b>(“패스한 사람은 그 3장을 안 가짐”)으로 대체.
+       사람도 로그로 도달 가능하므로 비대칭이 아니다. 근거: <code>20260727-improvement-roadmap.md</code> §1.1 · §7.5</p>
+  </div>
+  <div class="card crit">
+    <h4><span class="badge b-red">결함 b</span>봇은 수학적으로 오답 고발이 불가능하다 <span class="pill">밸런스</span></h4>
+    <p class="s13">소거에서 빼는 값이 전부 비정답이라 정답은 항상 후보에 남는다.
+      <b>봇 탈락 판 0.0%</b>, 탈락 리스크는 사람만 진다.</p>
+    <p class="s13"><b>조치</b> <span class="badge b-amber">요구사항</span> — <code>BOT_NERVE[suspect]</code> 페르소나 상수 +
+       <b>시드 RNG</b>로 후보가 좁혀졌을 때 확률적 도박 고발. 시드 고정이므로 <b>결정론·재현성 유지</b>(§0.2-2 위배 없음).
+       호랑이 대감은 성급히 고발하고 양 목동은 안 한다 → <b>페르소나가 대사뿐 아니라 의사결정에도 반영된다.</b></p>
+  </div>
+
+  <h3>1.3 표현 계층 — LLM <span class="pill">ai/narrator.ts · 175줄</span></h3>
+  <p><code>narrate()</code> 하나가 전부. 실패하면 <code>null</code>을 돌려주고 호출부가 <code>fallbackLine()</code>으로 대체한다.
+     <b>호출 지점 4곳, 액션 3종.</b></p>
+
+  <!-- ══════ 2 ══════ -->
+  <h2 id="s2">2. 디렉팅 명세 (Directing Spec)</h2>
+
+  <h3>2.1 입력 계약 — 규칙엔진이 이미 확정한 필드만</h3>
+  <p><b>모든 필드는 결정이 끝난 값이다. LLM은 결정에 참여하지 않는다.</b></p>
+  <div class="scroll"><table>
+    <tr><th style="width:200px">필드</th><th>출처 — 누가 확정했나</th></tr>
+    <tr><td><code>name</code></td><td><code>label(suspect)</code></td></tr>
+    <tr><td><code>action</code></td><td>규칙엔진의 턴 판단 (<code>suggest</code> / <code>accuse</code> / <code>scheme</code>)</td></tr>
+    <tr><td><code>suspect</code> <code>weapon</code> <code>room</code></td><td><code>botSuggestPhase</code>가 후보집합에서 확정한 한글 라벨</td></tr>
+    <tr><td><code>hint</code></td><td><code>peek</code> 결과 카드 라벨. <b><code>scheme</code> 전용</b> (§2.2)</td></tr>
+    <tr><td><code>persona</code> <code>tone</code></td><td><code>PERSONA</code> / <code>VOICE[*].tone</code> 상수</td></tr>
+    <tr><td><code>intro</code> <code>outro</code></td><td><code>VOICE</code> 추임새. <b>폴백 전용</b>(LLM 경로 미사용)</td></tr>
+    <tr><td><code>disproved</code></td><td><code>doSuggestion()</code>의 반환값</td></tr>
+  </table></div>
+  <p class="note"><b>호출 지점</b> — <code>speak()</code> ← ① 제안 ② 미반증 즉시 고발 ③ 후보 수렴 고발 /
+     <code>helperWhisper()</code> ← ④ 계략 귓속말.
+     <code>speak()</code>가 화자의 <code>suspect</code>로 말투를 자동 주입하므로 콜사이트는 말투를 몰라도 된다.</p>
+
+  <h3>2.2 절대 넘기지 않는 값</h3>
+  <div class="scroll"><table>
+    <tr><th style="width:200px">값</th><th style="width:120px">LLM 전달</th><th>근거</th></tr>
+    <tr><td><b>정답 봉투</b> <code>solution</code></td><td class="ok"><b>없음 (전 경로)</b></td><td>입력 타입에 대응 필드 자체가 없다</td></tr>
+    <tr><td>임의 플레이어의 손패 <code>hands</code></td><td class="ok"><b>없음</b></td><td>동일</td></tr>
+    <tr><td>봇 후보집합 <code>botKnowledge</code></td><td class="ok"><b>없음</b></td><td>“무엇을 아직 모르는지”는 표현에 불필요</td></tr>
+    <tr><td><code>revealed</code> 전역 집합</td><td class="ok"><b>없음</b></td><td>봇의 내부 지식이지 대사 소재가 아님</td></tr>
+    <tr><td>이전 대사 히스토리</td><td class="ok"><b>없음</b></td><td>대화 문맥 없음 = <b>인젝션 표면 0</b></td></tr>
+  </table></div>
+
+  <div class="card warn">
+    <h4>단 하나의 예외 — <code>scheme</code>의 <code>hint</code></h4>
+    <p class="s13">계략 사용자에게 규칙엔진이 <b>이미 공개하기로 결정한</b> 카드(모서리 2장 / 그 외 1장)의 라벨이 LLM에 전달된다.
+       경계 위반이 <b>아닌</b> 이유:</p>
+    <ol class="s13">
+      <li><b>결정은 이미 끝났다</b> — 어떤 카드를 볼지는 규칙엔진의 셔플이 정한다. LLM은 고르지 않는다.</li>
+      <li><b>수신자가 이미 아는 정보다</b> — 같은 카드가 <code>peek</code> 메시지로 평문 전달된 뒤에 대사가 나간다.</li>
+      <li><b>출력이 봉인된다</b> — LLM 문장은 <b>당사자에게만</b> 가고 나머지 전원에게는 <b><code>"(귓속말)"</code>만</b> 브로드캐스트된다.
+          흘려도 <b>도달 대상은 이미 그 정보를 가진 1명뿐</b>이다.</li>
+      <li>그 카드들은 <b>정의상 전부 비정답</b>이다(덱은 정답 3장을 제외하고 구성된다).</li>
+    </ol>
+  </div>
+
+  <h3>2.3 출력 계약</h3>
+  <div class="g2">
+    <div class="card info">
+      <h4>systemInstruction 요지</h4>
+      <p class="s13">사극풍 NPC. “결정된 행동”을 <b>대사 한 문장으로만</b> 변환.
+        머리말·설명·선택지·마크다운·따옴표 전부 금지, <b>12~40자</b>,
+        <b>정답이나 남의 손패를 아는 척 금지, 주어진 정보만 사용.</b></p>
+    </div>
+    <div class="card info">
+      <h4>생성 파라미터</h4>
+      <p class="s13"><code>temperature 0.95</code> · <code>maxOutputTokens 64</code> ·
+        <code>thinkingConfig.thinkingBudget 0</code> · <code>AbortController</code> 4000ms</p>
+      <p class="s13"><code>thinkingBudget:0</code>은 선택이 아니라 <b>필수</b>다 — flash 계열은 thinking 모델이라 끄지 않으면
+        <b>생각 토큰이 64 예산을 전부 먹고 빈 응답</b>이 온다(실제로 겪은 결함, <code>docs/logs/20260720-npc-llm-persona.md</code>).</p>
+    </div>
+  </div>
+  <p><b>사후 정규화</b> — 프롬프트를 신뢰하지 않고 <b>코드로 강제</b>한다:
+     <span class="tag">① 첫 줄만</span> <span class="tag">② 앞뒤 따옴표·별표 제거</span> <span class="tag">③ 80자 하드컷</span></p>
+
+  <h4>알려진 간극 (정직하게 기재)</h4>
+  <div class="scroll"><table>
+    <tr><th style="width:150px">간극</th><th>내용</th><th style="width:230px">판단</th></tr>
+    <tr><td class="part">길이 상한 불일치</td><td>프롬프트 “12~40자” vs 코드 상한 <b>80자</b>. 41~80자는 통과</td>
+        <td>의도적 여유(40자 하드컷은 문장을 중간에서 자른다). §3 <b>C2</b>가 분포를 계측</td></tr>
+    <tr><td class="part">마크업 제거가 양끝 한정</td><td>문장 <b>중간</b>의 <code>**</code> · <code>_</code>는 남는다</td>
+        <td>§3 <b>C3</b> 계측 후 결정 <span class="badge b-amber">요구사항</span></td></tr>
+    <tr><td class="part">최소 길이 미강제</td><td>12자 미만 가드 없음</td>
+        <td>말풍선 최소 수명으로 완화 <span class="badge b-amber">요구사항</span></td></tr>
+    <tr><td class="no">조사 미처리</td><td><b>폴백 경로</b>에 종성 판정이 없어 <code>"떡시루이 사라졌던걸"</code> 발생(실측)</td>
+        <td>조사 헬퍼 15줄 <span class="badge b-red">요구사항 · P0</span></td></tr>
+    <tr><td class="dim">재현성</td><td><code>temperature 0.95</code>라 LLM 출력은 매번 다르다. 캐시 히트 시에만 동일</td>
+        <td>표현 계층이므로 허용. <b>진실값은 캐시와 무관하게 동일</b>하다는 것이 §3 <b>C4</b>의 검사 대상</td></tr>
+  </table></div>
+
+  <h3 id="s24">2.4 페르소나 12종 — <code>packages/shared/src/cards.ts</code> <span class="badge b-green">단일 소스</span></h3>
+  <p>동일 상수가 <b>랜딩 성격 도감 · LLM 프롬프트 · 폴백 추임새</b> 3곳에 공용으로 쓰인다.
+     <b>캐릭터가 세 화면에서 갈라지지 않는다.</b></p>
+  <div class="scroll"><table>
+    <tr>
+      <th style="width:104px">캐릭터</th><th style="width:94px">직업 뜻풀이</th><th>성격</th>
+      <th style="width:142px">말투 <span class="badge b-blue" style="margin:0">→LLM</span></th>
+      <th style="width:186px">추임새 <span class="badge b-amber" style="margin:0">→폴백</span></th>
+    </tr>
+    <tr><td><b>생쥐 서생</b><br><code>rat</code></td><td>글공부하는 선비</td><td>약삭빠르고 잔꾀 많은 책상물림</td><td>잔꾀 섞어 이문 따지듯</td><td><code>허, </code> ⋯ <code> 셈속이 그러하렷다.</code></td></tr>
+    <tr><td><b>황소 역사</b><br><code>ox</code></td><td>힘이 아주 센 장사</td><td>우직하고 뚝심 있다. 말수 적음</td><td>말수 적고 직설적으로</td><td><span class="dim">(없음)</span> ⋯ <code> 에두를 것 없네.</code></td></tr>
+    <tr><td><b>호랑이 대감</b><br><code>tiger</code></td><td>높은 벼슬아치</td><td>위엄 넘치고 오만한 주최자</td><td>위엄 있게 호령하듯</td><td><code>어험— </code> ⋯ <code> 감히 누구 앞이라고!</code></td></tr>
+    <tr><td><b>토끼 낭자</b><br><code>rabbit</code></td><td>젊은 여인</td><td>영민하고 새침. 눈치가 밝다</td><td>새침하고 빠르게 쏘아붙이듯</td><td><code>어머, </code> ⋯ <code> 눈치 못 챌 줄 알고?</code></td></tr>
+    <tr><td><b>게코 도령</b><br><code>gecko</code></td><td>양반집 도련님</td><td>자존심 세고 허풍이 심하다</td><td>허풍 섞어 과장되게</td><td><code>핫핫, </code> ⋯ <code> 내 눈은 못 속이지!</code></td></tr>
+    <tr><td><b>뱀 무녀</b><br><code>snake</code></td><td>굿을 하는 무당</td><td>음산하고 속을 알 수 없다</td><td>음산하게 에둘러</td><td><code>스으…, </code> ⋯ <code>… 두고 보면 알겠지.</code></td></tr>
+    <tr><td><b>말 장수</b><br><code>horse</code></td><td>장사꾼</td><td>발 넓고 수다스러운 장돌뱅이</td><td>수다스럽게 소문 옮기듯</td><td><code>그거 아나, </code> ⋯ <code> 소문이 파다하더군!</code></td></tr>
+    <tr><td><b>양 목동</b><br><code>sheep</code></td><td>가축 치는 아이</td><td>순박하고 겁 많다</td><td>조심스럽고 겁먹은 듯</td><td><code>저, 저기… </code> ⋯ <code>… 아니면 말고요.</code></td></tr>
+    <tr><td><b>잔나비 광대</b><br><code>monkey</code></td><td>연희 놀이꾼</td><td>익살맞고 촐랑댄다</td><td>익살맞게 농치듯</td><td><code>낄낄, </code> ⋯ <code> 이거 아주 볼만하구먼!</code></td></tr>
+    <tr><td><b>닭 훈장</b><br><code>rooster</code></td><td>서당의 글 선생</td><td>깐깐하고 원칙주의</td><td>훈계조로 꾸짖듯</td><td><code>쯧쯧, </code> ⋯ <code> 마땅히 그러하렷다.</code></td></tr>
+    <tr><td><b>삽살 포교</b><br><code>dog</code></td><td>포도청 관리</td><td>충직하고 우직</td><td>딱딱한 공무 말투로</td><td><code>고하오— </code> ⋯ <code> 지체 없이 밝히겠소.</code></td></tr>
+    <tr><td><b>돼지 객주</b><br><code>pig</code></td><td>숙식·중개 상인</td><td>넉살 좋고 셈에 밝다</td><td>넉살 좋게 흥정하듯</td><td><code>어이구, </code> ⋯ <code> 밑질 거래는 아니지 않소?</code></td></tr>
+  </table></div>
+
+  <div class="card good">
+    <h4>분리 검증 — 동일 결정, 다른 표현</h4>
+    <p class="s13"><b>규칙엔진의 결정</b>: 제안 = <code>뱀 무녀 / 술동이 / 후원</code></p>
+    <ul class="s13">
+      <li><b>잔나비 광대</b> → “낄낄, 후원서 술동이를 훔쳤다니 아주 볼만하구먼!”</li>
+      <li><b>닭 훈장</b> → “쯧쯧, 술동이를 훔치다니 엄히 다스림이 마땅하렷다.”</li>
+    </ul>
+    <p class="s13">→ <b>진실값(제안 3필드)은 바이트 동일, 표현만 다르다.</b> 이 불변식을 기계 검사하는 것이 §3 <b>C4</b>다.</p>
+  </div>
+
+  <h3>2.5 폴백 결정 트리</h3>
+<pre>narrate(input)
+├─ GEMINI_API_KEY 없음 ─────────► null     (기동 로그 "폴백(규칙)")
+├─ 캐시 히트 ──────────────────► cached   (API 호출 0)
+├─ 4000ms 초과 → AbortError ───► null
+├─ res.ok = false (429 / 5xx) ─► null
+├─ candidates 텍스트 비어 있음 ─► null     (thinkingBudget 미차단 시 발생)
+└─ 성공 → 정규화 → 캐시 저장 → 반환
+
+호출부: text === null → fallbackLine(input)
+        ※ 대사가 비는 경로는 존재하지 않는다</pre>
+  <p class="note"><code>cacheKey</code> = <code>[action, suspect, weapon, room, persona, tone, disproved, hint]</code>
+     — <b>진실값 조합이 키다.</b> LRU 200.</p>
+
+  <div class="card warn">
+    <h4>폴백의 설계 의도와 그 대가 <span class="badge b-amber">정직 항목</span></h4>
+    <p class="s13">추임새는 LLM이 죽어도 캐릭터색을 유지하기 위한 것이다. 그 결과 <b>폴백과 LLM 출력이 육안으로 구분되지 않는다.</b>
+      2026-07-27 라이브 실측에서 대사 <b>5/5가 폴백</b>이었음에도 “AI가 꺼져 있다”는 사실이 화면에 전혀 드러나지 않았다.
+      <b class="no">가용성을 위한 설계가 관측 가능성을 죽인 것이다.</b> → §4가 해소를 요구사항으로 규정한다.</p>
+  </div>
+
+  <h3>2.6 4뷰 공통 전달 계약 — 표현 계층은 렌더러에 독립이다</h3>
+  <p>서버는 렌더러를 모른다. <code>broadcast("say", { id, from, text })</code> 하나만 내보내고
+     <b>4개 뷰가 전부 동일한 <code>showBubble(id, text)</code> 시그니처</b>를 구현한다
+     (뷰1 <code>game-scene.ts</code> / 뷰2·3 <code>iso-view.ts</code> 공용 / 뷰4 <code>pixel-scene.ts</code>).
+     라우팅은 <code>main.ts</code> 한 곳뿐.</p>
+  <ul>
+    <li><code>id</code>는 플레이어 세션 id 또는 십이지 값(고정 헬퍼)이며 4뷰가 동일한 폴백 순서로 해석한다
+        → 계략 귓속말이 헬퍼 토큰 위에 뜨는 동작이 뷰를 바꿔도 유지된다.</li>
+    <li><b>의미</b>: 결정/표현 분리가 서버에서 끝나지 않고 <b>렌더 계층까지 관통한다.</b> 뷰5를 붙여도 표현 계층은 손대지 않는다.
+        반대로 <b>뷰를 4개나 만들 수 있었던 것은 표현 계층이 렌더러를 모르기 때문</b>이다.</li>
+  </ul>
+  <p class="note"><span class="badge b-amber">알려진 간극</span>타자기 효과가 뷰1·2·3은 <code>TYPE_MS 55</code>인데 <b>뷰4는 없고</b>
+     유지 시간도 2600 vs <b>3200 인라인</b>이다. → 상수를 <code>packages/shared/src/view-consts.ts</code>로 승격해
+     4뷰 + 서버가 같은 값을 보게 하고, 서버 <code>SPEAK_HOLD</code>(2400)와 말풍선 수명의 정합을 한 곳에서 계산한다
+     (어긋나면 <b>봇이 말하는 도중 턴이 넘어가 카메라가 튄다</b>). 설계: <code>20260727-view-contract-spec.md</code>
+     <span class="badge b-amber">요구사항</span></p>
+
+  <!-- ══════ 3 ══════ -->
+  <h2 id="s3">3. 환각 검증 프로토콜</h2>
+  <div class="lead">
+    <b>“LLM이 진실값을 바꾸지 않았는가”를 사람 눈이 아니라 기계로 판정한다.</b><br>
+    실행체 <code>scripts/eval-narrator.mjs</code> <span class="badge b-red">요구사항 · 미구현</span>
+    → <code>docs/design/eval-narrator-report.md</code> 자동 생성
+  </div>
+
+  <h3>3.1 실행 절차</h3>
+  <div class="g3">
+    <div class="stat"><b>36케이스</b><span>12캐릭터 × 3액션. 각 케이스의 3요소는 <b>시드 고정 RNG</b>로 뽑아 재현 가능.
+      페르소나는 <code>cards.ts</code> 실값 사용(테스트 전용 문자열 금지)</span></div>
+    <div class="stat"><b>캐시 무시</b><span>키에 실행 nonce → 36콜 전부 실제 API.
+      무료 쿼터 보호를 위해 <b>1회만</b> 실행하고 리포트를 커밋</span></div>
+    <div class="stat"><b>원문 + 정규화본 병기</b><span>정규화가 몇 번 발동했는지가 곧 <b>프롬프트 준수율</b>이다</span></div>
+  </div>
+
+  <h3>3.2 판정 규칙</h3>
+  <p class="note">공통 사전: <code>LABELS</code> 한글 라벨 <b>27종</b>(용의자 12 · 장물 6 · 장소 9).
+     케이스별 <b>허용 라벨 집합 <code>A</code></b> = 그 호출에 실제로 넣은 라벨들.</p>
+  <div class="scroll"><table>
+    <tr><th style="width:48px">#</th><th style="width:140px">검사</th><th>기계 판정</th><th style="width:165px">통과 기준</th></tr>
+    <tr><td><b>C1</b></td><td>한 줄</td><td>개행 미포함</td><td><b>36/36</b></td></tr>
+    <tr><td><b>C2</b></td><td>길이</td><td>원문 <code>12 ≤ len ≤ 40</code> / 정규화본 <code>≤ 80</code></td>
+        <td>원문 <b>≥ 33/36</b><br>정규화본 <b>36/36</b></td></tr>
+    <tr><td><b>C3</b></td><td>마크업·머리말</td><td>따옴표·별표·해시·<code>NPC:</code>·리스트 머리 전부 미매치</td><td><b>36/36</b></td></tr>
+    <tr><td><b>C4</b></td><td><b>진실값 치환 없음</b></td>
+        <td>① <code>A</code>의 라벨 최소 1개 포함<br>② <code>A</code>에 없는 라벨 중 <b>같은 카테고리</b>의 것이 0개</td>
+        <td><b>36/36</b> <span class="badge b-red">blocking</span></td></tr>
+    <tr><td><b>C5</b></td><td><b>미제공 카드·금지어 누출</b></td>
+        <td>① 27종 스캔 결과 ∖ <code>A</code> = ∅ &nbsp; ② 금지어 사전 미매치</td>
+        <td><b>36/36</b> <span class="badge b-red">blocking</span></td></tr>
+    <tr><td><b>C6</b></td><td><code>scheme</code> 전용</td>
+        <td><code>hint</code> 외 다른 플레이어의 손패 라벨이 등장하지 않았는지 실제 <code>hands</code> 스냅샷과 대조</td>
+        <td>등장 시 <b>즉시 FAIL</b> <span class="badge b-red">blocking</span><br>
+            <span class="note">프롬프트에 없던 정보를 지어낸 순수 환각</span></td></tr>
+  </table></div>
+
+  <div class="card info">
+    <h4>C5 ①의 기계 판정 — 왜 부분문자열 스캔으로 충분한가</h4>
+    <ul class="s13">
+      <li>27종 라벨을 부분문자열로 스캔해 <code>A</code>에 없는 것이 하나라도 나오면 FAIL(라벨·원문·케이스 id 기록).</li>
+      <li>라벨 27종은 <b>서로 부분문자열 관계가 없다</b>(<code>사랑방</code> / <code>사랑채</code>는 어느 쪽도 다른 쪽을 포함하지 않는다).</li>
+      <li><b>오탐 후보 1건을 미리 격리</b>: <code>후원</code>은 장소 라벨이자 “뒷받침하다”의 일반 명사다.
+          자동 FAIL이 아니라 <b>수동 확인 큐</b>로 분리하고 <b>리포트에 그대로 인쇄</b>한다
+          (예외를 조용히 두면 검사 자체가 무의미해진다).</li>
+      <li><b>금지어 사전</b>: <code>정답</code> <code>봉투</code> <code>손패</code> <code>내 패</code>
+          <code>solution</code> <code>envelope</code> <code>카드를 가지고 있</code></li>
     </ul>
   </div>
 
-  <h2>사람다운 템포</h2>
-  <p>NPC 행동 딜레이 = <b>사용자 평균 턴시간의 절반</b>(EMA, 1800~7000ms 클램프). 턴 내 <b>2박자</b>(방 이동 → 잠깐 쉬고 → 제안)로 흐름 인지. 행동 종류: <code>suggest</code>·<code>accuse</code>·<b><code>scheme</code>(계략 귓속말)</b> — 귓속말은 당사자만 전문, 타인은 「귓속말」만.</p>
-
-  <h2>검증 — 결정 vs 표현 분리</h2>
-  <table>
-    <tr><th>결정(규칙엔진, 동일)</th><th>표현(LLM, 페르소나별)</th></tr>
-    <tr>
-      <td rowspan="2" class="same">제안 = 뱀 무녀 / 술동이 / 후원 <span class="dim">(진실값 동일)</span></td>
-      <td><b>잔나비 광대</b>(익살): "낄낄, 후원서 술동이를 훔쳤다니 아주 볼만하구먼!"</td>
-    </tr>
-    <tr><td><b>닭 훈장</b>(훈계조): "쯧쯧, 술동이를 훔치다니 엄히 다스림이 마땅하렷다."</td></tr>
-  </table>
-  <p class="dim">봇 수렴: 공유 공개카드 도입 후, 사람 전멸 뒤 봇만 남아도 유한 시간에 종결(측정 ~40s·제안 13회).</p>
-
-  <h2>재현성 · 안전 요약</h2>
-  <ul>
-    <li>LLM 실패해도 게임 로직·판정 불변(폴백).</li>
-    <li>LLM은 정답/손패를 모름 → 치트·환각 불가.</li>
-    <li>무료티어: thinking off + 캐시 + 타임아웃 + 이벤트당 1콜.</li>
-  </ul>
-
-  <h2>주요 프롬프트·지시 (실제)</h2>
-  <div class="card">
-    <p><b>systemInstruction</b>: "조선 사극풍 추리 보드게임 NPC. 배경: 호랑이 대감 생신 잔치에서 누군가 음식·선물을 훔침. 누가(도둑)·무엇을(훔친 것)·어디서(장소)를 추리. … 오직 대사 한 문장만 출력 … 정답·남의 손패 아는 척 금지, 주어진 정보만."</p>
-    <p><b>userText</b>(결정된 정보만): <code>NPC: {이름} (성격: {persona}; 말투: {tone}). 행동: 고발 — 도둑 {도둑}, 훔친 것 {장물}, 장소 {장소}.</code></p>
-    <p><b>generationConfig</b>: <code>temperature 0.95</code> · <code>maxOutputTokens 64</code> · <code>thinkingConfig.thinkingBudget 0</code> · 4초 타임아웃. 프롬프트에 <b>정답·손패 미포함</b> → 치트 불가.</p>
+  <div class="card crit">
+    <h4>C4가 잡아내는 것 — 입력 <code>뱀 무녀 / 술동이 / 후원</code></h4>
+    <p class="s13"><span class="badge b-green">PASS</span>“낄낄, 후원서 <b>술동이</b>를 훔쳤다니 볼만하구먼!”</p>
+    <p class="s13"><span class="badge b-red">FAIL</span>“낄낄, 후원서 <b class="no">떡시루</b>를 훔쳤다니 볼만하구먼!”
+      → <code>A</code>에 없는 장물</p>
+    <p class="s13">= LLM이 <b>제안 내용을 바꿔 말한</b> 경우. 게임은 정상인데 <b>로그와 대사가 모순</b>되어 플레이어가 오추리한다.
+      표현 계층이 낼 수 있는 유일하면서 가장 치명적인 환각이며, <b>문서가 아니라 테스트로 막아야 하는 것</b>이다.</p>
   </div>
 
-  <h2>외부 에셋·오픈소스 출처</h2>
-  <table>
-    <tr><th>항목</th><th>출처/라이선스</th></tr>
-    <tr><td>실시간 서버 / 클라 네트워크</td><td>Colyseus 0.15 · colyseus.js (MIT)</td></tr>
-    <tr><td>렌더 / 빌드 / 언어</td><td>Phaser 3 (MIT, 2D) · Three.js (MIT, 2.5D 뷰2/뷰3) · Vite (MIT) · TypeScript (Apache-2.0)</td></tr>
-    <tr><td>NPC 대사</td><td>Google Gemini API (<code>gemini-flash-lite-latest</code>)</td></tr>
-    <tr><td>그래픽·아이콘</td><td>보드/토큰은 코드(Phaser Graphics / Three 지오메트리), 아이콘은 시스템 유니코드 이모지. <b>뷰3용 placeholder 이미지 44종</b>(<code>scripts/gen-placeholder-assets.mjs</code> → <code>public/assets/</code>, 추후 GPT 이미지 2.0 PNG 교체), 시스템 폰트 <span style="opacity:.7">(갱신 2026-07-22)</span></td></tr>
-    <tr><td>인프라</td><td>Oracle Cloud(Always Free) · Vercel · Caddy+Let's Encrypt · sslip.io</td></tr>
-  </table>
+  <h3>3.3 경로·지연 분포 (C7)</h3>
+  <div class="scroll"><table>
+    <tr><th style="width:220px">지표</th><th>통과 기준</th></tr>
+    <tr><td>LLM 경로 성공률</td><td><b>≥ 90%</b> (폴백 ≤ 3건)</td></tr>
+    <tr><td>p50 / p95 지연</td><td>≤ 1200ms / ≤ 2500ms</td></tr>
+    <tr><td>타임아웃 발생</td><td>0건</td></tr>
+  </table></div>
 
-  <h2>AI 도구 사용내역 (심사 요건)</h2>
+  <h3>3.4 실행 결과</h3>
+  <div class="card crit" style="border-left-width:5px">
+    <h4 style="font-size:15px"><span class="badge b-red">⚠ 미실행</span>2026-07-27 개정 시점 — 스크립트가 아직 저장소에 없다</h4>
+    <p class="s13">아래 표는 <b>빈 양식이다.</b> 실행 후 표를 채우고 리포트를 커밋한다.</p>
+    <p class="s13"><b class="no">결과를 채우기 전에는 이 문서 어디에도 “환각 0건” 류의 주장을 쓰지 않는다.</b></p>
+    <div class="scroll"><table>
+      <tr><th style="width:330px">검사</th><th>통과 / 전체</th></tr>
+      <tr><td class="dim">C1 한 줄 / C2 길이 / C3 마크업</td><td class="dim"><b>— / 36</b></td></tr>
+      <tr><td class="dim">C4 치환 없음 · C5 누출 없음 · C6 hint 외 손패</td>
+          <td class="dim"><b>—</b> <span class="badge b-red">blocking</span></td></tr>
+      <tr><td class="dim">C7 경로 분포</td><td class="dim">llm <b>—</b> / cache <b>—</b> / fallback <b>—</b></td></tr>
+    </table></div>
+  </div>
+
+  <!-- ══════ 4 ══════ -->
+  <h2 id="s4">4. 관측 가능성 <span class="badge b-red" style="vertical-align:3px">P0 · 미구현</span></h2>
+  <div class="card crit">
+    <h4>문제</h4>
+    <p class="s13"><code>broadcast("say")</code>에 <b>그 문장이 어디서 왔는지가 없다.</b>
+      그 결과 2026-07-27 라이브 실측에서 대사 <b>5/5가 폴백</b>이었음에도
+      (폴백 접미 5건 바이트 동일 · 지연 0.2~0.6초 · <code>temperature 0.95</code>에서 불가능한 반복)
+      화면상 아무 신호도 없었다.
+      <b class="no">심사자가 링크를 눌러 플레이하면 AI 흔적이 0이고, 이 문서의 모든 주장이 입증 불가다.</b></p>
+  </div>
+
+  <h4>요구사항</h4>
+  <div class="step"><div class="k">1</div><div><code>narrate()</code> 반환을
+    <code>{ text, source: "llm"|"cache"|"fallback", ms, model }</code>로 확장</div></div>
+  <div class="step"><div class="k">2</div><div><code>speak()</code> / <code>helperWhisper()</code>가 메타를 동봉해 브로드캐스트</div></div>
+  <div class="step"><div class="k">3</div><div>클라: 로그 배지 <code>✨</code> / <code>♻</code> / <code>⚙</code> +
+    <b>AI 카운터 칩 기본 노출</b>(<code>✨LLM 12 · ♻캐시 3 · ⚙폴백 0</code>).
+    <b class="no">쿼리 파라미터 게이팅 금지</b> — 심사자는 파라미터 없는 URL로 들어온다</div></div>
+  <div class="step"><div class="k">4</div><div>서버 <code>GET /health</code> →
+    <code>{ ai, model, llmCalls, fallbackCalls, quotaErrors }</code></div></div>
+  <div class="step"><div class="k">5</div><div>429 수신 시 <b>“AI 대사 일시 폴백” 배지</b>
+    — 조용한 성능 저하가 조용한 감점이 되는 것을 막는다</div></div>
+
+  <div class="card good">
+    <p class="s13"><b>경계 확인</b> — 추가 필드는 전부 <b>운영 메타데이터</b>이며 게임 상태가 아니다.
+      <code>GameState</code> 스키마는 변경되지 않는다. <b class="ok">진실값 경계 불변.</b></p>
+  </div>
+  <p class="note"><b>운영 선행 조건(사람 담당)</b> — OCI 호스트의 <code>GEMINI_API_KEY</code> 확인.
+     기동 로그가 이미 <code>NPC 대사: Gemini ON | 폴백(규칙)</code>을 찍는다.
+     무료 쿼터는 심사 기간 내내 다수 심사자가 소모하는 구조이므로 <b>키를 켜는 것만으로는 부족하다.</b></p>
+
+  <!-- ══════ 5·6 ══════ -->
+  <h2 id="s5">5. Gemini 운용 (무료티어 안전)</h2>
+  <div class="scroll"><table>
+    <tr><th style="width:150px">항목</th><th>내용</th></tr>
+    <tr><td>모델</td><td><code>gemini-flash-lite-latest</code> (<code>GEMINI_MODEL</code> env로 교체 가능)</td></tr>
+    <tr><td>필수 파라미터</td><td><code>thinkingBudget: 0</code> (§2.3)</td></tr>
+    <tr><td>호출 상한</td><td><b>이벤트당 1콜</b>, <b>프레임 루프 호출 0</b>. 동일 진실값 조합은 LRU(200) 재사용</td></tr>
+    <tr><td>타임아웃</td><td>4000ms + <code>AbortController</code> — 응답이 없어도 턴이 멈추지 않는다</td></tr>
+    <tr><td>키 관리</td><td><code>apps/server/.env</code>만 사용, gitignore. <code>.env.example</code>은 키 이름·발급 URL·모델 기본값만.
+        <b>클라 번들·로그·커밋 어디에도 키가 없다</b></td></tr>
+    <tr><td>스트리밍</td><td>미사용 — 64토큰 단문에 스트리밍은 오버헤드</td></tr>
+  </table></div>
+
+  <h2 id="s6">6. 사람다운 템포 (엔진 규약)</h2>
   <ul>
-    <li>개발 보조로 <b>Claude Code</b>(에이전트) 사용 — 코드 작성·리팩터·문서화. 최종 판단·구조 설계는 사람 검토.</li>
-    <li>게임 내 AI는 <b>Gemini(NPC 대사)</b>뿐. 결정/판정에는 LLM 미사용.</li>
+    <li><b>NPC 딜레이 = 사용자 평균 턴 시간의 절반.</b> <code>clamp(avg/2, 1800, 7000)</code>, 데이터 없으면 3000</li>
+    <li>EMA <code>avg = avg×0.6 + dur×0.4</code>, <b>사람 턴만 표본에 넣는다</b>
+        (봇 턴을 섞으면 봇이 자기 속도를 자기가 정하는 되먹임이 생긴다)</li>
+    <li>턴 내 2박자: 이동 → <code>BOT_ACT_GAP</code> 1300 → 제안 → <code>SPEAK_HOLD</code> 2400. 타이핑 중 턴을 넘기면 카메라가 튄다</li>
+    <li><span class="badge b-amber">요구사항</span>규칙 개선 후 판이 3.1 → 6.8라운드로 길어지므로
+        <code>BOT_ACT_GAP</code> 1300→600, <code>npcDelay</code> 상한 7000→1600. 근거: 로드맵 §7.5.4</li>
+    <li><span class="badge b-amber">요구사항</span>다인 플레이에서는 <code>avg</code>가 <b>모든 사람의 단일 EMA</b>라
+        가장 느린 한 명이 모두의 봇 딜레이를 끌어올린다 → 사람 수로 나누는 해석 필요(로드맵 §8.2)</li>
   </ul>
 
-  <h2>파일 맵</h2>
-  <ul>
-    <li>결정: <code>apps/server/src/rooms/clue-room.ts</code>, <code>schema/game-state.ts</code>, <code>packages/shared</code></li>
-    <li>표현: <code>apps/server/src/ai/narrator.ts</code>, 성격/말투 <code>packages/shared/src/cards.ts</code>(PERSONA/VOICE)</li>
-  </ul>
+  <!-- ══════ 7 ══════ -->
+  <h2 id="s7">7. AI 도구 사용내역 (심사 요건 · 실증)</h2>
+  <div class="lead">
+    이 저장소의 커밋 규약은 <b>“AI 협력 문구 제외”</b>(<code>CLAUDE.md</code>)다. 따라서 <b>git 로그에는 AI 흔적이 없다.</b>
+    사용 내역의 증거는 커밋 메시지가 아니라 <b>저장소에 남은 워크플로 산출물</b>로 제시한다.
+  </div>
+  <div class="g3">
+    <div class="stat"><b>커밋 102개 · 커미터 1명</b><span>anveloper · 2026-07-19 ~ 07-25</span></div>
+    <div class="stat"><b>문서 55편</b><span><code>.md</code> 44편(AI용 압축) + 사람용 <code>.html</code> 11편</span></div>
+    <div class="stat"><b>플랜 워크플로</b><span>done 8 / active 3 / hold 1 — <code>git mv</code>로 이관</span></div>
+  </div>
+
+  <h3>7.1 도구 · 용도 · 산출물 · 사람 검토 지점</h3>
+  <div class="scroll"><table>
+    <tr><th style="width:140px">도구</th><th style="width:118px">용도</th><th>저장소에서 확인 가능한 산출물</th>
+        <th style="width:175px">사람이 검토·결정한 지점</th></tr>
+    <tr>
+      <td><b>Claude Code</b><br><span class="note">에이전트 CLI</span></td><td>코드·문서 전반</td>
+      <td><code>CLAUDE.md</code> / <code>AGENTS.md</code> single-source, <code>docs/plans/README.md</code>가 정의한
+        <b>active → done <code>git mv</code> 워크플로</b>와 결과물(done 8 / active 3 / hold 1)</td>
+      <td>플랜 단위 승인, <code>done</code> 이관 판정, <code>hold/02</code> 보류 결정</td>
+    </tr>
+    <tr>
+      <td class="dim">↳ 개발 일지</td><td>하루 작업을 커밋 타입별로 그룹화</td>
+      <td><code>docs/logs/</code> <b>9편</b>. 예: <code>20260720-npc-llm-persona.md</code>는 thinking 모델 빈응답 문제와 해결을 기록</td>
+      <td>일지에 남길 결함(= 공개할 실패)의 범위</td>
+    </tr>
+    <tr>
+      <td class="dim">↳ 문서 이원화</td><td><code>.md</code>(압축) + <code>.html</code>(수기 디자인)</td>
+      <td><code>docs/design/</code> <code>.md</code> ↔ <code>.html</code> 쌍, <code>docs/index.html</code> 대시보드.
+        <b>md → html 자동 변환 금지</b></td>
+      <td>어느 문서를 <code>.html</code>로 승격할지</td>
+    </tr>
+    <tr>
+      <td class="dim">↳ <b>서브에이전트 병렬 검수</b></td><td>심사축·플레이경험·4뷰디자인 동시 실코드 검수</td>
+      <td><code>20260727-improvement-roadmap.md</code> §7 — 라이브 실접속 실측(폴백 5/5) ·
+        규칙 포팅 1만 판 시뮬(사람 승률 3.9%) · <code>20260727-view-contract-spec.md</code></td>
+      <td><b>검수 결과의 채택/기각.</b> D-14 신규 기능(자유 심문) 구현은 <b class="no">사람이 기각</b> (§8)</td>
+    </tr>
+    <tr>
+      <td class="dim">↳ 자동화 스크립트</td><td>문서 색인·플레이스홀더 에셋</td>
+      <td><code>scripts/gen-docs-manifest.mjs</code> → <code>docs/manifest.json</code> ·
+        <code>scripts/gen-placeholder-assets.mjs</code> → <b>SVG 44개</b>(char 24 · room 10 · loot 6 · bg 3 · ui 1)</td>
+      <td>공개 문서 범위</td>
+    </tr>
+    <tr>
+      <td class="dim">↳ 배포 파이프라인</td><td>CI 작성</td>
+      <td><code>.github/workflows/deploy-server.yml</code> · <code>vercel.json</code></td>
+      <td>서버 자격증명·시크릿, 배포 승인</td>
+    </tr>
+    <tr>
+      <td><b>Google Gemini API</b></td><td><b>게임 내 유일한 LLM 사용처</b> — NPC 대사</td>
+      <td><code>apps/server/src/ai/narrator.ts</code>(175줄) · <code>.env.example</code></td>
+      <td>프롬프트 계약 문안, 금지 목록(§2.2), 파라미터</td>
+    </tr>
+    <tr>
+      <td><b>이미지 생성 도구</b><br><span class="note">(계획)</span></td><td>뷰3 아트</td>
+      <td><code>docs/assets/20260721-image-prompts.md</code> — <b class="part">프롬프트만 작성됨, 실제 생성 미실행.</b>
+        현재 뷰3은 코드 생성 SVG placeholder</td>
+      <td>스타일 프리셋·해상도 규칙</td>
+    </tr>
+  </table></div>
+  <p class="note"><span class="badge b-amber">사람 확인 필요</span>위 표는 저장소 산출물로 역추적 가능한 범위만 기재했다.
+     세션 중 사용한 보조 도구가 더 있다면 제출 전 추가할 것.</p>
+
+  <h3 id="s72">7.2 사람이 AI에 위임하지 않은 결정권</h3>
+  <div class="lead"><b>AI가 코드를 썼다는 사실보다, 무엇을 AI에게 맡기지 않았는지가 이 프로젝트의 설계다.</b></div>
+  <div class="scroll"><table>
+    <tr><th style="width:52%">결정</th><th>근거</th></tr>
+    <tr><td><b>게임 주제·컨셉 확정</b></td><td><code>planning/meetings/20260718-meeting-notes.md</code></td></tr>
+    <tr><td><b>스코프 결정</b> — 실시간 멀티 vs 싱글 → AI 봇 충원 병행</td><td>동 문서</td></tr>
+    <tr><td><b>진실값 경계 규약 자체</b> — “LLM은 표현 전용”이라는 제약을 건 것은 사람이다</td>
+        <td><code>CLAUDE.md</code> / <code>AGENTS.md</code><br><b class="ok">AI가 자기 권한을 정하지 않는다</b></td></tr>
+    <tr><td><b>D-14 신규 기능 기각</b> — 자유 심문 · 거짓말 축</td><td>본 문서 §8</td></tr>
+    <tr><td><b>제출 형태(개인/팀) 및 ⑤ 작성 여부</b></td><td><code>submission-checklist.md</code> (기한 08-03, 담당: 사람)</td></tr>
+    <tr><td><b>API 키 발급 · 과금 · 환경변수 주입</b></td><td><code>.env</code>는 gitignore. <b>에이전트는 키를 본 적이 없다</b></td></tr>
+    <tr><td><b>커밋 단위 · 메시지 규약, 배포 승인</b></td><td><code>CLAUDE.md</code></td></tr>
+    <tr><td><b>실제 플레이 영상 촬영 · 업로드</b></td><td>규정상 AI 합성 금지 → 사람이 직접 녹화</td></tr>
+    <tr><td><b>공개 문서 범위</b> — 어떤 내부 문서를 심사자에게 노출할지</td><td>로드맵 §7.4</td></tr>
+  </table></div>
+
+  <!-- ══════ 8 ══════ -->
+  <h2 id="s8">8. 본행사 계승 — 자유 심문 · 거짓말/뇌물 축</h2>
+  <p>07-18 회의에서 확정한 차별점 중 <b>자유 심문(자연어 질의)</b> · <b>정직 | 뇌물(거짓말) 축</b>은
+     사전과제 빌드에 <b>구현되지 않았다.</b> 숨기지 않고, 왜 미루었고 어떻게 얹을지를 명시한다.</p>
+
+  <h3>8.1 왜 사전과제에서 하지 않았나</h3>
+  <div class="g3">
+    <div class="card warn"><h4>1. 경계가 이동한다</h4>
+      <p class="s13">자유 심문은 진실값 경계를 LLM 쪽으로 옮긴다. 자연어 질의를 규칙에 비추어 판정하려면
+        <b>판정 결과가 LLM 출력에 의존</b>하게 된다.
+        <b>경계를 먼저 세우고 검증 프로토콜을 갖춘 뒤</b>에 넘어가야 할 순서지, 반대가 아니다.</p></div>
+    <div class="card warn"><h4>2. 검증 없는 기능 추가는 감점</h4>
+      <p class="s13">D-14에 새 축을 넣으면 §3의 검사 5종을 전부 새로 설계해야 하고 실행할 시간이 없다.
+        <b>검증할 수 없는 기능은 넣지 않는다</b>가 이 프로젝트의 규칙이다.</p></div>
+    <div class="card warn"><h4>3. 무료티어 모델이 깨진다</h4>
+      <p class="s13">현재는 “이벤트당 1콜 + 캐시”라 상한이 있다.
+        자유 심문은 <b>사용자 입력당 1콜</b>이며 자연어라 <b>캐시도 듣지 않는다.</b></p></div>
+  </div>
+
+  <h3>8.2 본행사에서 어떻게 얹는가 — 3단 파이프라인</h3>
+  <div class="lead"><b>경계를 옮기는 게 아니라, LLM을 경계의 양쪽 끝에 두 번 쓴다.</b></div>
+  <p class="note">입력 예 — 사용자 자연어 <q>너 어제 후원에 있었지?</q></p>
+
+  <div class="card info">
+    <h4>① 질의 정규화 <span class="badge b-blue" style="margin-left:6px">LLM · 표현 → 구조</span></h4>
+    <p class="s13">출력은 자연어가 아니라 <b>고정 스키마 슬롯</b>:
+      <code>{ target, category: suspect|weapon|room, value: &lt;27 라벨 중 하나&gt; | null }</code></p>
+    <ul class="s13">
+      <li>스키마 · 사전 밖 값은 즉시 폐기 → <q>무슨 말인지 모르겠소</q> 폴백</li>
+      <li>LLM이 여기서 낼 수 있는 최악은 <b>“질문을 잘못 알아듣는 것”</b>이지 게임 상태 변경이 아니다</li>
+    </ul>
+  </div>
+  <div class="arrowdown">▼</div>
+  <div class="card good">
+    <h4>② 판정 <span class="badge b-green" style="margin-left:6px">규칙엔진 · LLM 없음</span></h4>
+    <p class="s13">슬롯을 <code>hands</code> / <code>solution</code>에 대조 → <code>truth</code>.
+      정직/거짓 상태와 뇌물 자원도 규칙엔진이 결정.</p>
+    <p class="s13"><b>거짓을 말하기로 정해지면 거짓 답변의 내용까지 규칙엔진이 후보에서 고른다.</b>
+      LLM이 거짓 내용을 창작하면 그 거짓은 환각과 구분할 수 없고 §3의 C4·C5가 <b class="no">원리적으로 작동하지 않는다.</b></p>
+  </div>
+  <div class="arrowdown">▼</div>
+  <div class="card info">
+    <h4>③ 표현 <span class="badge b-blue" style="margin-left:6px">LLM · 현재 <code>narrate()</code> 확장</span></h4>
+    <p class="s13"><code>{ persona, tone, answer: 확정된 답변값, deceptive }</code>
+      — <code>deceptive</code>면 <b>“확신에 찬 태도” 연기 지시만</b> 추가</p>
+  </div>
+
+  <h4>검증 확장</h4>
+  <div class="scroll"><table>
+    <tr><th style="width:64px">#</th><th>검사</th><th style="width:150px">기준</th></tr>
+    <tr><td><b>C8</b></td><td>슬롯 스키마 준수</td><td>100%</td></tr>
+    <tr><td><b>C9</b></td><td>정직 지시 시 진실 일치</td><td>100%</td></tr>
+    <tr><td><b>C10</b></td><td><b>거짓 지시 시 규칙엔진이 지정한 값 외 등장</b></td><td>0건 <span class="badge b-red">blocking</span></td></tr>
+    <tr><td><b>C11</b></td><td>뇌물 자원 정합</td><td>100%</td></tr>
+  </table></div>
+
+  <div class="lead">
+    <b>얻는 것</b> — 자유 심문은 “규칙 하드코딩이 불가능 → LLM만 가능”한 영역이라
+    상류가 요구한 load-bearing 조건을 <b>표현 계층 바깥에서도</b> 충족한다.
+    동시에 <b>판정은 여전히 규칙엔진에만 있다.</b>
+    사전과제의 경계를 버리는 게 아니라, <b>그 경계를 지킨 채로 LLM의 책임 범위를 넓히는 것</b>이 본행사 스코프다.
+  </div>
+
+  <!-- ══════ 9·10 ══════ -->
+  <h2 id="s9">9. 외부 에셋 · 오픈소스 출처</h2>
+  <div class="scroll"><table>
+    <tr><th style="width:120px">분류</th><th>내역</th></tr>
+    <tr><td>서버</td><td><b>Colyseus 0.15</b>(MIT) · <b>colyseus.js</b>(MIT) · <b>@colyseus/schema</b>(MIT)</td></tr>
+    <tr><td>렌더</td><td><b>Phaser 3</b>(MIT) 2D(뷰1·뷰4) · <b>Three.js</b>(MIT) 2.5D(뷰2·뷰3)</td></tr>
+    <tr><td>빌드</td><td><b>Vite</b>(MIT) · <b>TypeScript</b>(Apache-2.0) · <b>tsx</b>(MIT) · <b>pnpm</b> 워크스페이스</td></tr>
+    <tr><td>AI</td><td><b>Google Gemini API</b>(<code>gemini-flash-lite-latest</code>) — NPC 대사 <b>1개 용도</b></td></tr>
+    <tr><td>그래픽</td><td>보드·토큰은 <b>코드 생성</b>(Phaser Graphics / Three 지오메트리), 아이콘은 <b>시스템 유니코드 이모지</b>.
+      뷰3용 <b>placeholder SVG 44종</b>은 <code>scripts/gen-placeholder-assets.mjs</code>가 <code>cards.ts</code>를 미러링해 생성(외부 다운로드 0).
+      폰트는 시스템 폰트만 — <b class="ok">외부 폰트·이미지·사운드 반입 0건</b></td></tr>
+    <tr><td>인프라</td><td>Oracle Cloud(Always Free) · Vercel · Caddy + Let's Encrypt</td></tr>
+  </table></div>
+
+  <h2 id="s10">10. 파일 맵</h2>
+  <div class="scroll"><table>
+    <tr><th style="width:160px">계층</th><th>경로</th></tr>
+    <tr><td>진실 · 에이전트</td><td><code>apps/server/src/rooms/clue-room.ts</code> · <code>schema/game-state.ts</code></td></tr>
+    <tr><td>표현(LLM)</td><td><code>apps/server/src/ai/narrator.ts</code></td></tr>
+    <tr><td>페르소나 · 라벨</td><td><code>packages/shared/src/cards.ts</code></td></tr>
+    <tr><td>4뷰 말풍선</td><td><code>apps/client/src/scenes/{game-scene,iso-view,pixel-scene}.ts</code> · 라우팅 <code>main.ts</code></td></tr>
+    <tr><td>검증 <span class="badge b-red">미구현</span></td>
+        <td><code>scripts/eval-narrator.mjs</code> → <code>docs/design/eval-narrator-report.md</code></td></tr>
+  </table></div>
+
+  <hr>
+  <h2 style="border:0;margin-bottom:6px">변경 이력</h2>
+  <div class="card">
+    <p class="s13"><span class="badge">2026-07-20</span><b>초판(66줄)</b> — 구조 · 프롬프트 · 에셋 출처.</p>
+    <p class="s13"><span class="badge b-green">2026-07-27</span><b>2판</b> — 실코드 · 라이브 실측 기반 전면 개정.
+      §0 핵심 원칙 재작성(load-bearing 용어 정정 + <b>초판 정정 노트 6건</b>) ·
+      §2 디렉팅 명세 신설(입출력 계약 · 금지 목록 · 페르소나 12종 · 폴백 트리 · 4뷰 계약) ·
+      §3 환각 검증을 기계 판정 규칙으로 명세 ·
+      §4 관측 가능성 요구사항 신설 ·
+      §7 도구 사용내역 실증화 + <b>비위임 결정권</b> ·
+      §8 본행사 계승 신설.</p>
+  </div>
+
 </div>
 </body>
 </html>
