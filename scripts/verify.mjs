@@ -90,9 +90,19 @@ const RUNNERS = {
     args: ["scripts/gate-docs-consistency.mjs"],
     jsonArgs: ["scripts/gate-docs-consistency.mjs", "--json"],
   },
+  screen: {
+    // ⚠️ **전체 모드 전용.** 서버·클라·Chrome을 실제로 띄우므로 커밋 게이트에 넣으면
+    //    커밋마다 1분과 포트 2개를 먹는다(gate.config.mjs ITEMS.screen.why 참조).
+    cmd: process.execPath,
+    args: ["scripts/gate-screen.mjs"],
+    jsonArgs: ["scripts/gate-screen.mjs", "--json"],
+    // 3 = 판정 불가(Chrome·서버·클라 기동 실패, 화면 도달 실패) → 실패가 아니라 SKIP.
+    //     하위 게이트가 사유를 인쇄한다. **통과로 세지 않는다.**
+    skipCodes: { 3: "화면을 재지 못했다 — 하위 게이트가 사유를 인쇄했다(통과 아님)" },
+  },
 };
 
-const ORDER = ["typecheck", "docs", "gpu", "sim", "narrator", "build", "bundle"];
+const ORDER = ["typecheck", "docs", "gpu", "sim", "narrator", "build", "bundle", "screen"];
 
 if (OPT.list) {
   console.log("항목            quick  근거");

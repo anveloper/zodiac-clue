@@ -60,6 +60,19 @@ export const ITEMS = {
     quick: true,
     why: "정적 스캔이라 0.05초. 문서/코드 갈라짐이 반복 발생한 저장소라 상시 감시가 싸다.",
   },
+  screen: {
+    id: "screen",
+    label: "화면 게이트 (겹침·세로스크롤·터치타깃)",
+    quick: false,
+    // 근거(실측 ≈18s): Colyseus 서버 + Vite + Chrome 기동에 대부분이 들고,
+    //       화면 10회(5종 × 뷰포트 2종) 왕복은 각 1.6초다. quick 전체가 ≈3초이므로
+    //       넣는 순간 커밋 게이트가 **6배 이상 무거워진다.**
+    //       그보다 큰 이유는 **포트를 두 개 열고 Chrome을 띄운다**는 것이다 —
+    //       커밋마다 물리면 동시에 dev를 켜 둔 작업자와 자원을 다툰다.
+    //       이 게이트가 잡는 사고(가림·밀림·작은 버튼)는 커밋 단위가 아니라
+    //       **화면 커밋이 쌓인 뒤 push·촬영 전에** 확인하면 충분하다.
+    why: "브라우저·서버·클라를 실제로 띄운다(실측 ≈18s, 포트 2개 + Chrome). quick(≈3s)에 넣으면 6배 무거워지고 남의 dev와 자원을 다툰다 — push·촬영·제출 전 전체 모드 전용.",
+  },
 };
 
 /**
@@ -199,3 +212,211 @@ export const DOC_CHECKS = [
     },
   },
 ];
+
+// ── 화면 게이트 (gate-screen.mjs) ───────────────────────────────────
+//
+// 왜 여기 있는가: 07-28 실기 스크린샷이 잡은 세 가지를 **자동 검증이 전부 놓쳤다.**
+//   ① 턴 배너가 상단 액션 바 6개 중 5개를 덮었다.
+//      → 그때 게이트가 물은 것은 "버튼이 DOM에 있고 뷰포트 안인가"였고 답은 **참**이었다.
+//        가려진 요소도 `getBoundingClientRect()`는 정상 크기를, `visibility`는 `visible`을
+//        그대로 보고한다. **가림은 요소의 속성이 아니라 요소 쌍의 관계**다.
+//   ② 문서가 세로로 스크롤돼 화면이 통째로 밀려 올라갔다.
+//      → 그때 잰 것은 `scrollWidth vs innerWidth`(**가로**)뿐이었다. 세로는 잰 적이 없다.
+//        게다가 전체 페이지 캡처는 밀린 화면을 **정상으로 렌더**한다(스크린샷도 못 잡는다).
+//   ③ 터치 타깃이 전반적으로 44px 미달이었다.
+//
+// 기대값을 **화면별로** 둔다. 예: 세로 스크롤은 게임 화면에서 금지지만
+// 랜딩·대기실에서는 정상이다(카드가 뷰포트보다 길 수 있다). 한 기준을 전 화면에
+// 밀어붙이면 곧 아무도 못 믿는 게이트가 된다.
+export const SCREEN = {
+  /** 손가락 타깃 하한(px). 근거: Apple HIG 44pt · index.html §터치 T1이 이미 쓰는 값. */
+  minTouchPx: 44,
+  /**
+   * 겹침 표본점. 가시 사각형의 중심 + 네 모서리(20%/80% 안쪽).
+   * FAIL 조건 = **중심이 막혔거나** 5점 중 3점 이상이 막혔을 때.
+   * 한 점만 막힌 것으로 실패시키면 이웃 요소의 그림자·둥근 모서리가 오탐을 만든다.
+   */
+  sampleInsetPct: 0.2,
+  blockedFailCount: 3,
+  /**
+   * 쌍 겹침을 "겹쳤다"고 볼 최소 교차 면적(px²)과 **최소 교차 변**(px).
+   *
+   * 면적만 보면 오탐이 난다 — 실측: 턴 배너 하단(y=72.6)과 손패 상단(y=72.0)이
+   * **0.6px 접선**으로 만나 폭 163px과 곱해져 98px²가 나왔다. 이것은 «덮음»이 아니라
+   * 서브픽셀 반올림이다. 가로·세로 **양쪽 모두** 이 변을 넘어야 겹침으로 센다.
+   * 4px = 글자 한 획도 가리지 못하는 폭이라, 진짜 가림(수십 px)은 그대로 걸린다.
+   */
+  minOverlapPx2: 16,
+  minOverlapEdgePx: 4,
+  /** 세로 스크롤 허용 오차(px). 서브픽셀 반올림. */
+  scrollTolPx: 1,
+  /** 화면 하나가 준비 상태에 도달할 때까지 기다리는 상한(ms). 넘으면 SKIP(판정 불가). */
+  readyTimeoutMs: 25_000,
+  /** 준비 후 레이아웃이 멎기를 기다리는 시간(ms). */
+  settleMs: 700,
+
+  /**
+   * 뷰포트. 폰에서는 **터치 에뮬레이션 + `pointer: coarse`** 를 켠다 —
+   * 이 저장소의 D-패드·44px 하한은 전부 `@media (pointer: coarse)` 안에 있어서
+   * 켜지 않으면 **실제로 심사자가 보는 화면과 다른 화면을 재게 된다.**
+   */
+  viewports: [
+    { id: "phone", label: "폰 390×844", width: 390, height: 844, dsf: 3, mobile: true, coarse: true },
+    { id: "desktop", label: "데스크톱 1440×900", width: 1440, height: 900, dsf: 1, mobile: false, coarse: false },
+  ],
+
+  /**
+   * 화면별 기대값.
+   *   url/steps/ready — 어떻게 그 화면에 도달하는가(파라미터 없는 진입을 기본으로 둔다).
+   *   vscroll        — "locked": 문서가 세로로 스크롤되면 FAIL / "allow": 스크롤이 정상
+   *   protect        — **무엇이 가려도 안 되는가.** 심사자가 눌러야 하는 것들.
+   *   pairs          — 서로 가리면 안 되는 **요소 쌍**(관계로만 드러나는 사고).
+   *   touchExempt    — 44px 하한에서 제외할 선택자. **사유 없이는 추가하지 마라.**
+   */
+  screens: [
+    {
+      id: "landing",
+      label: "랜딩(파라미터 없는 진입)",
+      url: "/",
+      steps: [],
+      ready: "!document.getElementById('landing').classList.contains('hidden') && !!document.getElementById('createBtn')",
+      // 랜딩은 카드가 길어질 수 있다. 세로 스크롤은 **정상**이다.
+      vscroll: "allow",
+      protect: [
+        { sel: "#createBtn", why: "심사자의 첫 행동. 이게 가려지면 45초가 통째로 죽는다" },
+        { sel: "#joinBtn", why: "초대 코드 참가 경로" },
+        { sel: "#codeInput", why: "코드 입력칸" },
+        { sel: "#refreshRooms", why: "공개방 새로고침" },
+        { sel: "#visSeg .seg-btn", min: 2, why: "공개/비공개 선택" },
+        { sel: ".ai-links a", min: 3, why: "제출물 문서로 가는 유일한 링크(심사자 동선)" },
+      ],
+      pairs: [
+        ["#createBtn", ".join-row", "«방 만들기»와 «초대 코드» 줄이 겹치면 둘 다 오조작"],
+        ["#landingMsg", "#roomList", "상태 문구가 공개방 목록을 덮으면 참여 경로가 사라진다"],
+      ],
+      touchExempt: [],
+    },
+    {
+      id: "lobby",
+      label: "대기실(방 만들기 직후)",
+      url: "/",
+      steps: [{ click: "#createBtn" }],
+      ready: "!document.getElementById('lobby').classList.contains('hidden')",
+      vscroll: "allow",
+      protect: [
+        { sel: "#startBtn", why: "방장이 잔치를 시작하는 단 하나의 버튼" },
+        { sel: "#copyBtn", why: "초대 링크 복사" },
+        { sel: "#inviteLink", why: "초대 링크(선택·복사 대상)" },
+        { sel: "#lobbyChars .char", min: 12, why: "캐릭터 12칸 — 하나라도 가려지면 못 고른다" },
+      ],
+      pairs: [
+        ["#lobbyPersona", "#startBtn", "직업 설명이 [잔치 시작]을 덮으면 시작을 못 한다"],
+        ["#lobbyChars", "#startBtn", "캐릭터 격자와 시작 버튼"],
+      ],
+      touchExempt: [],
+    },
+    {
+      id: "game",
+      label: "게임 뷰1(솔로 즉시 진입 · 안내 카드 없음)",
+      // ?solo=1 = 원클릭 솔로(create→start). demo=1 = 60초 안내 카드 생략.
+      url: "/?solo=1&demo=1",
+      steps: [],
+      ready:
+        "!document.getElementById('gameScreen').classList.contains('hidden')" +
+        " && !document.getElementById('turnInfo').classList.contains('hidden')",
+      // 게임 화면은 **문서 스크롤 자체가 없어야 한다**(index.html `body.no-scroll`).
+      // 밀려 올라가면 보드가 위로 사라지고 아래에 검은 띠가 남는다 — 실기에서 실제로 났다.
+      vscroll: "locked",
+      protect: [
+        {
+          sel: ".hud-ctrl button",
+          min: 6,
+          why:
+            "액션 바 6개. **07-28 실기에서 [제안] 말고 5개가 턴 배너에 가려졌다.** " +
+            "존재·크기·visibility는 그때도 전부 정상이었다 — 여기서는 실제 히트 테스트로 본다",
+        },
+        { sel: "#viewToggle", why: "뷰 전환 진입점(제출물 ③의 4뷰 시연 경로)" },
+        { sel: "#turnInfo", why: "지금 누구 턴인가 — 가려지면 판 진행을 못 읽는다" },
+        { sel: "#rpToggle", optional: true, why: "우측 패널 토글(폰에서만 뜬다)" },
+        { sel: ".hud-dpad .dp", min: 4, optional: true, why: "터치 이동 패드(coarse에서만 렌더)" },
+      ],
+      pairs: [
+        ["#turnInfo", ".hud-ctrl", "**07-28 사고 그 자체.** 턴 배너가 액션 바를 덮었다"],
+        ["#turnInfo", ".hud-hand", "배너가 손패를 덮으면 «내 3장»을 못 본다"],
+        [".hud-ctrl", ".hud-dpad", "액션 바와 D-패드가 겹치면 이동 중 오조작"],
+        [".hud-ctrl", ".hud-view", "액션 바와 뷰 전환 칩"],
+        [".hud-hand", ".hud-dpad", "손패와 D-패드"],
+        ["#rightPanel", ".hud-ctrl", "우측 컬럼이 액션 바를 덮으면 아무 행동도 못 한다"],
+      ],
+      touchExempt: [],
+    },
+    {
+      id: "goal-modal",
+      label: "게임 + 60초 안내 카드(모달)",
+      url: "/?solo=1",
+      steps: [],
+      ready:
+        "!document.getElementById('gameScreen').classList.contains('hidden')" +
+        " && !document.getElementById('goalCard').classList.contains('hidden')",
+      vscroll: "locked",
+      // 모달이 뜬 동안 **뒤가 가려지는 것은 정상**이다. 그래서 보호 대상은 모달 자신뿐이다.
+      protect: [
+        { sel: "#goalOk", why: "안내를 닫는 유일한 버튼. 가려지면 게임에 못 들어간다" },
+        { sel: "#goalCard .goal-lines div", min: 3, why: "규칙 3줄 — 45초 심사의 본문" },
+      ],
+      pairs: [["#goalOk", ".goal-lines", "확인 버튼이 본문을 덮으면 규칙을 못 읽는다"]],
+      touchExempt: [],
+    },
+    {
+      id: "accuse-modal",
+      label: "게임 + 고발 모달(select 3개)",
+      url: "/?solo=1&demo=1",
+      steps: [
+        { waitFor: "!document.getElementById('turnInfo').classList.contains('hidden')" },
+        { click: "#accuse" },
+      ],
+      ready: "!!document.querySelector('.overlay .modal select')",
+      vscroll: "locked",
+      protect: [
+        { sel: ".modal select", min: 3, why: "용의자·훔친 것·장소 — 고발의 전부" },
+        { sel: ".modal .actions button", min: 2, why: "[취소]/[고발한다]" },
+      ],
+      pairs: [[".modal .actions", ".modal-note", "버튼 줄이 안내 문구를 덮는가"]],
+      touchExempt: [],
+    },
+  ],
+
+  /**
+   * **측정하지 못하는 화면** — 조용히 빼지 않는다. 실행할 때마다 사유와 함께 인쇄한다.
+   * (은폐된 미측정이 회귀보다 위험하다 — roadmap §9.6의 취지)
+   */
+  unreachable: [
+    {
+      id: "result",
+      label: "결과 화면(승패 오버레이)",
+      why:
+        "정답 봉투는 동기화 상태에 없다(비밀 정보 규약) — 클라가 정답을 알 수 없어 " +
+        "«고발 성공»을 결정론적으로 만들 수 없다. NPC가 맞힐 때까지 실판을 돌리면 " +
+        "수십 초가 걸리고 결과도 시드마다 달라진다. 사람이 §사람 확인에서 본다.",
+    },
+    {
+      id: "views-2-3-4",
+      label: "뷰2·3·4(2.5D/3D 화면)",
+      why:
+        "헤드리스 `--disable-gpu`에서 WebGL 컨텍스트가 소프트웨어 경로로 떨어져 " +
+        "레이아웃이 실기와 달라질 수 있다. HUD 레이어는 뷰1과 같은 DOM이라 " +
+        "여기서 재는 값이 그대로 적용된다 — 다른 것은 캔버스뿐이다.",
+    },
+  ],
+
+  /** 기계가 **판정할 수 없는** 것. 실행할 때마다 인쇄한다. 지우지 마라. */
+  human: [
+    ["미(美)·균형", "여백·정렬·색의 조화는 기계가 못 잰다. 캡처 PNG를 열어 봐라."],
+    ["읽히는가", "글자 크기·대비·줄바꿈이 폰에서 읽히는지. 44px은 «누를 수 있다»일 뿐 «읽힌다»가 아니다."],
+    ["실기 1회", "헤드리스는 실제 폰이 아니다. 주소창 접힘·노치·홈 인디케이터는 실기에서만 나온다."],
+    ["의도된 겹침", "겹쳐도 되는 것(모달·오버레이)은 화면별 기대값에 적어 뒀다. 그 목록이 지금도 맞는지 사람이 판단하라."],
+    ["45초 동선", "가려지지 않았다는 것과 «심사자가 다음에 무엇을 눌러야 할지 안다»는 것은 다르다."],
+    ["CSS로 넓힌 히트 영역", "이 게이트는 요소의 상자만 잰다. `::after`로 넓힌 탭 영역은 못 본다 — 반대로 상자가 작으면 실패로 나온다."],
+    ["뷰2·3·4 · 결과 화면", "위 «측정 못 한 화면» 목록 참고. 이 게이트는 뷰1과 모달만 본다."],
+  ],
+};
