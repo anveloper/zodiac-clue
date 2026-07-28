@@ -1,4 +1,3 @@
-import Phaser from "phaser";
 import {
   PASSAGES,
   ROOMS,
@@ -26,9 +25,12 @@ import {
   listPublicRooms,
   type PublicRoom,
 } from "./network";
-import { GameScene } from "./scenes/game-scene";
-import { PixelScene } from "./scenes/pixel-scene";
-import { IsoView } from "./scenes/iso-view";
+// 렌더러는 **타입만** 정적으로 가져온다(§9.1 코드 스플리팅).
+// 값(클래스·Phaser 네임스페이스)은 전부 아래 `loadPhaserMod`/`loadIsoMod`의
+// 동적 `import()`로 들어오므로, 이 세 줄은 번들에 1바이트도 남기지 않는다.
+import type { GameScene } from "./scenes/game-scene";
+import type { PixelScene } from "./scenes/pixel-scene";
+import type { IsoView } from "./scenes/iso-view";
 import { cvdMode, resolveMotion } from "./scenes/view-motion";
 import type {
   FocusMode,
@@ -41,6 +43,32 @@ import type {
 
 /** 재접속 토큰 저장 키. sessionStorage = 탭 단위(새로고침엔 유지, 새 탭엔 없음). */
 const RECONNECT_KEY = "zc_reconnect";
+
+// ── 진입 파라미터 스냅샷 ─────────────────────────────
+// `wireRoom()`이 주소를 `/room/ID`로 정리하면서 **쿼리스트링을 통째로 버린다.**
+// 그래서 그 뒤에 `location.search`를 읽는 코드(`?demo=1` 등)는 항상 빈 값을 봤다.
+// → 모듈 로드 시점(= 어떤 replaceState보다 먼저)에 한 번만 읽어 여기 보관하고,
+//   이후 main.ts는 `location.search`를 다시 읽지 않는다.
+const ENTRY_QUERY = new URLSearchParams(location.search);
+const entryParam = (key: string): string | null => ENTRY_QUERY.get(key);
+
+/**
+ * 주소를 정리한 뒤에도 URL에 **남겨야 하는** 파라미터.
+ * `scenes/**`(view-motion)은 자기 시점에 `location.search`를 다시 읽으므로
+ * 스냅샷만으로는 닿지 않는다 → 주소에도 되붙여야 한다.
+ * 진입 1회용(`solo`·`room`)은 제외한다 — 남기면 새로고침이 재접속 대신
+ * **새 방 생성**으로 바뀌어 기존 동작이 깨진다.
+ */
+const STICKY_PARAMS = ["demo", "motion", "cvd"] as const;
+const stickySearch = (): string => {
+  const p = new URLSearchParams();
+  for (const k of STICKY_PARAMS) {
+    const v = ENTRY_QUERY.get(k);
+    if (v !== null) p.set(k, v);
+  }
+  const s = p.toString();
+  return s ? `?${s}` : "";
+};
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string): T =>
   document.getElementById(id) as T;
@@ -588,6 +616,70 @@ let game: Phaser.Game | null = null;
 let iso: IsoView | null = null;
 let phaserStarted = false;
 
+// ── 렌더러 청크 로더 (§9.1 코드 스플리팅) ─────────────────────────────
+// 진입 화면(랜딩·대기실)은 **두 엔진 중 어느 것도 필요 없다.** 그리고 판은 항상
+// 뷰1에서 시작하므로 **three는 첫 화면에 필요 없다.** 정적 import를 걷어내고
+// "그 뷰에 실제로 들어갈 때" 받아온다 → 크리티컬 JS에서 phaser·three가 빠진다.
+//
+// 규약: 로더는 **멱등**이다(같은 Promise를 돌려준다). 실패하면 캐시를 비워
+// 네트워크가 돌아온 뒤 재시도가 가능하게 남긴다.
+type PhaserNS = typeof import("phaser");
+type PhaserMod = {
+  P: PhaserNS;
+  GameScene: typeof import("./scenes/game-scene").GameScene;
+  PixelScene: typeof import("./scenes/pixel-scene").PixelScene;
+};
+type IsoMod = { IsoView: typeof import("./scenes/iso-view").IsoView };
+
+/** 이미 받아온 로더 집합 — `kind` 분기 없이 "이 단계가 준비됐는가"를 답한다. */
+const readyLoaders = new Set<() => Promise<unknown>>();
+
+let phaserMod: PhaserMod | null = null;
+let phaserReq: Promise<unknown> | null = null;
+/** 뷰1·뷰4(Phaser) 청크. 게임 화면 자체가 이 위에 서므로 `enterGame()`의 전제다. */
+const loadPhaserMod = (): Promise<unknown> => {
+  if (!phaserReq) {
+    phaserReq = Promise.all([
+      import("phaser"),
+      import("./scenes/game-scene"),
+      import("./scenes/pixel-scene"),
+    ])
+      .then(([p, g, x]) => {
+        // phaser는 `export = Phaser`(CJS) — 번들러 interop에 따라 default에 들어온다.
+        const d = (p as { default?: PhaserNS }).default;
+        phaserMod = {
+          P: d ?? (p as PhaserNS),
+          GameScene: g.GameScene,
+          PixelScene: x.PixelScene,
+        };
+        readyLoaders.add(loadPhaserMod);
+      })
+      .catch((e: unknown) => {
+        phaserReq = null;
+        throw e;
+      });
+  }
+  return phaserReq;
+};
+
+let isoMod: IsoMod | null = null;
+let isoReq: Promise<unknown> | null = null;
+/** 뷰2·뷰3(Three) 청크. 한 인스턴스가 두 뷰를 겸하므로 컨텍스트도 1개다. */
+const loadIsoMod = (): Promise<unknown> => {
+  if (!isoReq) {
+    isoReq = import("./scenes/iso-view")
+      .then((m) => {
+        isoMod = { IsoView: m.IsoView };
+        readyLoaders.add(loadIsoMod);
+      })
+      .catch((e: unknown) => {
+        isoReq = null;
+        throw e;
+      });
+  }
+  return isoReq;
+};
+
 // ── 뷰 진화 단계(순서형·확장형) ─────────────────────────────
 // 버튼을 누를 때마다 다음 단계로 순환. 새 단계는 배열에 push만 하면 UI에 자동 편입.
 // (이름이 아마존 S3와 헷갈려서 "뷰1/뷰2/뷰3"로 통일.)
@@ -596,13 +688,20 @@ type Stage = {
   label: string;
   kind: "phaser" | "three" | "pixel";
   assets: boolean;
+  /**
+   * §9.5 최소 방어 — **`load` 자리**. 이 단계를 그리는 데 필요한 청크를 받아온다.
+   * `ViewLifecycle` 완전판(mount/tick/dispose)이 들어올 때 이 자리가 그대로
+   * `() => Promise<ViewLifecycle>`로 넓어진다. 지금은 §9.1의 동적 import만 담는다.
+   * 뷰5는 여기 한 줄만 채우면 로딩·실패 처리가 자동으로 따라온다.
+   */
+  load: () => Promise<unknown>;
 };
 const STAGES: Stage[] = [
-  { id: "2d-emoji", label: "뷰1 · 2D", kind: "phaser", assets: false },
-  { id: "three-emoji", label: "뷰2 · 2.5D", kind: "three", assets: false },
-  { id: "three-asset", label: "뷰3 · 에셋", kind: "three", assets: true },
-  { id: "pixel", label: "뷰4 · 도트", kind: "pixel", assets: false },
-  // 미래: { id: "three-3d", label: "뷰5 · 3D", kind: "three", assets: true } 등 append
+  { id: "2d-emoji", label: "뷰1 · 2D", kind: "phaser", assets: false, load: loadPhaserMod },
+  { id: "three-emoji", label: "뷰2 · 2.5D", kind: "three", assets: false, load: loadIsoMod },
+  { id: "three-asset", label: "뷰3 · 에셋", kind: "three", assets: true, load: loadIsoMod },
+  { id: "pixel", label: "뷰4 · 도트", kind: "pixel", assets: false, load: loadPhaserMod },
+  // 미래: { id: "three-3d", ..., load: () => import("./scenes/three-3d") } 등 append
 ];
 let stageIndex = 0;
 /** 내 손패 카드값 집합 — 정답일 수 없으므로 제안·증거노트에서 자동 비활성화. */
@@ -756,7 +855,8 @@ const wireRoom = (r: Room): void => {
   const link = `${location.origin}/room/${r.roomId}`;
   ($("inviteLink") as HTMLInputElement).value = link;
   try {
-    history.replaceState({}, "", `/room/${r.roomId}`);
+    // 쿼리스트링을 버리지 않는다 — `?demo=1`·`?motion=`·`?cvd=` 는 진입 후에도 읽힌다.
+    history.replaceState({}, "", `/room/${r.roomId}${stickySearch()}`);
   } catch {
     /* history 사용 불가 시 무시 */
   }
@@ -874,7 +974,7 @@ const wireRoom = (r: Room): void => {
     renderLobby(state);
     updateTurnInfo(state);
     updateEndState(state);
-    if (state.phase === "playing" && !phaserStarted) enterGame();
+    if (state.phase === "playing" && !phaserStarted) void enterGame();
     // 연출 라우팅은 **뷰가 생긴 뒤에** — `enterGame()` 뒤에 오는 것이 조건이다.
     applyFx(state);
   });
@@ -997,6 +1097,59 @@ const showBanner = (text: string, ms = 2800): void => {
     el.classList.add("hidden");
     bannerTimer = undefined;
   }, ms);
+};
+
+/**
+ * 뷰 청크 로딩 화면 — **`interstitial`(60) 슬롯**을 통해 전면을 점유한다(§7.10).
+ * 버스 밖에서 새 전면 오버레이를 만들지 않는다 → 결과(100)·목표(90)·주사위(80)가
+ * 뜬 상태에서는 자동으로 밀리고, 로딩이 끝나면 조용히 자리를 비운다.
+ *
+ * 로딩 중 화면이 비지 않는 것이 이 함수의 존재 이유다. 스플리팅으로 생긴
+ * "받는 동안"은 사용자에게 **어느 뷰를 준비 중인지**로 보여야 한다.
+ */
+const showViewLoading = (label: string): void => {
+  const el = $("viewLoad");
+  $("vlTitle").textContent = label;
+  showOverlay({
+    id: "interstitial",
+    el,
+    // 대기열에서 늦게 꺼내질 때 이미 로딩이 끝났으면 버린다(뒤늦은 표시 방지).
+    valid: () => loadingStage !== null,
+  });
+};
+
+/** 지금 로딩 중인 단계(없으면 null) — `interstitial` 재검증용. */
+let loadingStage: Stage | null = null;
+
+/**
+ * 이 단계의 청크가 준비될 때까지 기다린다. 이미 있으면 **동기적으로** true.
+ * 실패하면 배너로 알리고 false — 호출부가 뷰1로 되돌린다(조용한 빈 화면 금지).
+ */
+const ensureStageLoaded = async (
+  st: Stage,
+  /** 실패해도 로딩 카드를 내리지 않는다 — 자동 재시도가 예정된 경우(부팅) */
+  keepOnFail = false,
+): Promise<boolean> => {
+  if (readyLoaders.has(st.load)) return true;
+  loadingStage = st;
+  showViewLoading(st.label);
+  try {
+    await st.load();
+    loadingStage = null;
+    closeOverlay("interstitial");
+    return true;
+  } catch (e) {
+    // 뒷문장은 ui-copy §10 확정 문안("잠시 뒤 다시 시도해 주세요.")을 그대로 쓰고,
+    // 앞문장만 §1.3 규칙(`~하지 못했어요` + 다음 행동)에 맞춰 붙였다.
+    // 개발 힌트는 콘솔로 분리한다(§10 서버 연결 실패 항목과 동일 원칙).
+    console.warn("[view] chunk load failed:", st.id, e);
+    showBanner(`${st.label} 화면을 불러오지 못했어요. 잠시 뒤 다시 시도해 주세요.`, 5000);
+    if (!keepOnFail) {
+      loadingStage = null;
+      closeOverlay("interstitial");
+    }
+    return false;
+  }
 };
 
 /**
@@ -1723,25 +1876,41 @@ const buildEvidence = (roomId: string): void => {
   }
 };
 
-const enterGame = (): void => {
+const enterGame = async (): Promise<void> => {
   phaserStarted = true;
+  // 로딩 화면·배너는 둘 다 `#gameScreen` 안에 있다 → **먼저 화면을 전환해야**
+  // 사용자가 그것들을 볼 수 있다. 보드는 아직 없지만 로딩 오버레이가 덮는다.
   show("gameScreen");
+  // 뷰1(Phaser) 청크. 랜딩에서 선로딩했으면 여기서 즉시 통과한다(로딩 화면 없음).
+  // 실패해도 로딩 카드를 내리지 않는다 — 아래 3초 재시도가 예정돼 있고,
+  // 그동안 보드 자리가 빈 채로 남는 것이 이 브랜치의 유일한 실패 모드다.
+  const mod = (await ensureStageLoaded(STAGES[0], true)) ? phaserMod : null;
+  if (!mod) {
+    // 조용히 검은 화면으로 두지 않는다: 사유를 알리고, 3초 뒤 다음 상태 틱에서
+    // 자동 재시도한다(네트워크가 돌아오면 스스로 복구된다). 쿨다운이 없으면
+    // 상태 틱마다 재요청해 폭주한다.
+    window.setTimeout(() => {
+      phaserStarted = false;
+    }, 3000);
+    return;
+  }
+  const P = mod.P;
 
-  game = new Phaser.Game({
-    type: Phaser.AUTO,
+  game = new P.Game({
+    type: P.AUTO,
     parent: "game",
     backgroundColor: "#1c1712",
     scale: {
-      mode: Phaser.Scale.RESIZE,
-      autoCenter: Phaser.Scale.NO_CENTER,
+      mode: P.Scale.RESIZE,
+      autoCenter: P.Scale.NO_CENTER,
     },
-    scene: [GameScene, PixelScene],
+    scene: [mod.GameScene, mod.PixelScene],
   });
   game.registry.set("room", room);
   if (room) buildEvidence(room.roomId);
   // Phaser 씬은 첫 `step`이 끝나야 `create()`가 돌아 있다(그 전엔 보드 사각형이 없어
   // `setPassages`가 조용히 실패한다). 부팅 직후 1회 전량 주입 지점.
-  game.events.once(Phaser.Core.Events.POST_STEP, () => syncActiveView(true));
+  game.events.once(P.Core.Events.POST_STEP, () => syncActiveView(true));
 
   // 뷰 진화 단계 전환(순서형). 서버·HUD·입력 규칙은 단계와 무관하게 동일.
   // 핵심: #game(Phaser)은 절대 display:none 하지 않는다. three는 위에 얹어
@@ -1749,12 +1918,21 @@ const enterGame = (): void => {
   const viewBtn = $("viewToggle") as HTMLButtonElement;
   const viewList = $("viewList");
   const closeViewMenu = (): void => viewList.classList.add("hidden");
-  const setStage = (i: number): void => {
-    stageIndex = ((i % STAGES.length) + STAGES.length) % STAGES.length;
+
+  /** 뷰 전환 요청 토큰 — 로딩 중에 다른 뷰를 고르면 먼저 것을 버린다. */
+  let stageReq = 0;
+
+  /**
+   * 청크가 준비된 뒤의 실제 전환. 여기서부터는 동기다(기존 동작 그대로).
+   */
+  const applyStage = (target: number): void => {
+    stageIndex = target;
     const st = STAGES[stageIndex];
     const three = st.kind === "three";
     const pixel = st.kind === "pixel";
-    if (three && !iso && room) iso = new IsoView(room, $("gameScreen"));
+    if (three && !iso && room && isoMod) {
+      iso = new isoMod.IsoView(room, $("gameScreen"));
+    }
     // PixelScene은 config 배열의 2번째라 자동 시작되지 않는다 — 첫 진입에서만 run.
     // (렌더러 `pixel-scene.ts` `setActive` 주석의 `TODO(main.ts)`가 이 한 줄이다.
     //  시작되지 않은 씬에는 계약 메서드가 존재하지 않으므로 씬 밖에서 해야 한다.)
@@ -1775,8 +1953,28 @@ const enterGame = (): void => {
     // 새 뷰가 현재 상태(조사한 방·통로·현재 턴·탈락·승리)를 그대로 이어받는다.
     syncActiveView(true);
     // 방금 `run`한 씬은 다음 step에야 `create()`가 끝난다 → 그 프레임에 한 번 더.
-    game?.events.once(Phaser.Core.Events.POST_STEP, () => syncActiveView(true));
+    game?.events.once(P.Core.Events.POST_STEP, () => syncActiveView(true));
   };
+
+  /**
+   * 뷰 전환 진입점. **청크를 받아온 뒤에만** 실제 전환한다(§9.1).
+   * - 로딩 중에는 `interstitial` 슬롯이 화면을 채운다(빈 화면 금지).
+   * - 청크를 못 받으면 **뷰1로 되돌린다.** 조용히 검은 화면이 되지 않게.
+   * - 로딩 중 다른 뷰를 고르면 토큰으로 앞선 요청을 버린다(마지막 선택이 이긴다).
+   */
+  const setStage = async (i: number): Promise<void> => {
+    const target = ((i % STAGES.length) + STAGES.length) % STAGES.length;
+    const token = ++stageReq;
+    const ok = await ensureStageLoaded(STAGES[target]);
+    if (stageReq !== token) return; // 그 사이 사용자가 다른 뷰를 골랐다
+    if (!ok) {
+      // 뷰1 청크마저 없으면 되돌릴 곳이 없다(그 경우는 `enterGame()`이 막는다).
+      if (target !== 0) void setStage(0);
+      return;
+    }
+    applyStage(target);
+  };
+
   // 위로 열리는 드롭다운으로 단계 직접 선택.
   viewList.innerHTML = "";
   STAGES.forEach((s, i) => {
@@ -1784,8 +1982,15 @@ const enterGame = (): void => {
     li.textContent = s.label;
     li.onclick = (e) => {
       e.stopPropagation();
-      setStage(i);
+      void setStage(i);
       closeViewMenu();
+    };
+    // 메뉴에 마우스를 올린 순간 = 전환 의사. 그때 청크를 미리 받아두면
+    // 실제 클릭에서 로딩 화면을 볼 일이 거의 없다(로드맵 §9.1 prefetch).
+    li.onpointerenter = () => {
+      void s.load().catch(() => {
+        /* 미리받기 실패는 조용히 — 실제 클릭에서 다시 시도하고 그때 안내한다 */
+      });
     };
     viewList.appendChild(li);
   });
@@ -1793,9 +1998,17 @@ const enterGame = (): void => {
     e.stopPropagation();
     viewList.classList.toggle("hidden");
   };
+  viewBtn.onpointerenter = () => {
+    for (const s of STAGES) {
+      void s.load().catch(() => {
+        /* 미리받기 실패는 조용히 */
+      });
+    }
+  };
   document.addEventListener("click", closeViewMenu);
   // 진화 서사는 항상 뷰1(2D)에서 시작 — 매 게임 진입 시 처음부터.
-  setStage(0);
+  // (여기 도달한 시점에 뷰1 청크는 이미 있다 → 로딩 화면 없이 즉시 전환)
+  await setStage(0);
 
   ($("suggest") as HTMLButtonElement).onclick = async () => {
     // 비활성 사유는 툴팁과 같은 문장으로 안내(§5.0). disabled를 쓰지 않으므로 도달한다.
@@ -1874,7 +2087,9 @@ const enterGame = (): void => {
     if (e.key === "Escape" && isOverlayShown("goal")) closeGoalCard();
   });
   // `?demo=1`은 촬영·시연용 스킵. 그 외 첫 진입에서 1회만.
-  const demo = new URLSearchParams(location.search).get("demo") === "1";
+  // ⚠ `location.search`를 여기서 읽으면 안 된다 — `wireRoom()`이 이미 주소를
+  //   정리한 뒤라 항상 빈 값이 된다. 진입 시점 스냅샷만 신뢰한다.
+  const demo = entryParam("demo") === "1";
   if (!demo && !goalSeen()) openGoalCard();
 
   // 턴 순서(원형) 오버레이 닫기 — 버튼 또는 바깥 클릭.
@@ -1965,7 +2180,7 @@ const setLandingMsg = (text: string): void => {
 /** 주소를 메인(/)으로 되돌린다 — 없는 방/실패 시. */
 const goMain = (): void => {
   try {
-    history.replaceState({}, "", "/");
+    history.replaceState({}, "", "/" + stickySearch());
   } catch {
     /* history 사용 불가 시 무시 */
   }
@@ -2045,14 +2260,20 @@ const startSolo = async (): Promise<void> => {
 };
 
 const init = async (): Promise<void> => {
-  const query = new URLSearchParams(location.search);
   // 초대 링크(/room/CODE, 구형 ?room=CODE)로 들어온 경우 코드 자동 채움
   const pathMatch = location.pathname.match(/\/room\/([^/]+)/);
-  const invited = pathMatch?.[1] ?? query.get("room");
+  const invited = pathMatch?.[1] ?? entryParam("room");
   if (invited) {
     ($("codeInput") as HTMLInputElement).value = invited;
     setLandingMsg("초대 링크로 들어왔어요. [참가] 후 대기실에서 캐릭터를 고르세요.");
   }
+
+  // 랜딩이 인터랙티브해진 **직후** 뷰1 청크를 선로딩한다(로드맵 §9.1).
+  // 크리티컬 경로에는 없으므로 첫 페인트를 막지 않고, 잔치가 시작될 때쯤엔
+  // 이미 도착해 있어 로딩 화면을 보지 않는다.
+  void loadPhaserMod().catch(() => {
+    /* 선로딩 실패는 조용히 — 실제 진입에서 다시 시도하고 그때 안내한다 */
+  });
 
   wireVisibilityToggle();
   ($("refreshRooms") as HTMLButtonElement).onclick = () =>
@@ -2107,7 +2328,7 @@ const init = async (): Promise<void> => {
   };
 
   // ?solo=1 → 랜딩·재접속 복원을 건너뛰고 바로 한 판. (파라미터 없는 진입은 기존 그대로)
-  if (query.get("solo") === "1") {
+  if (entryParam("solo") === "1") {
     await startSolo();
     return;
   }

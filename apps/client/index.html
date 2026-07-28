@@ -306,6 +306,35 @@
       .dice-overlay .dice-faces { font-size: 76px; line-height: 1.1; letter-spacing: 6px; }
       .dice-overlay .dice-label { font-size: 24px; color: #f0d9a8; margin-top: 12px; font-weight: 700; letter-spacing: 1px; }
       .dice-overlay.done .dice-label { color: #ffd479; }
+      /* 뷰 청크 로딩 화면 — 주사위(80)보다 아래, 배너(40)보다 위(§7.10 우선순위) */
+      .vl-overlay {
+        position: fixed; inset: 0; z-index: 28;
+        display: flex; align-items: center; justify-content: center;
+        background: rgba(13, 11, 8, 0.72); padding: 16px;
+      }
+      .vl-card {
+        min-width: 220px; max-width: 92vw; text-align: center;
+        background: #211c16; border: 2px solid #e0a35a; border-radius: 16px;
+        padding: 20px 30px; box-shadow: 0 16px 60px rgba(0, 0, 0, 0.7);
+      }
+      .vl-title { font-size: 18px; color: #f0d9a8; font-weight: 700; letter-spacing: 1px; }
+      .vl-msg { font-size: 13px; color: #a89778; margin-top: 8px; }
+      .vl-bar {
+        margin-top: 14px; height: 4px; border-radius: 2px;
+        background: #3a3126; overflow: hidden;
+      }
+      .vl-bar i {
+        display: block; width: 40%; height: 100%; border-radius: 2px;
+        background: #e0a35a; animation: vl-slide 1.1s ease-in-out infinite;
+      }
+      @keyframes vl-slide {
+        0% { transform: translateX(-110%); }
+        100% { transform: translateX(260%); }
+      }
+      /* 감속 프로파일(§1.3) — 무한 애니메이션은 접근성 기본기다 */
+      @media (prefers-reduced-motion: reduce) {
+        .vl-bar i { animation: none; width: 100%; }
+      }
       /* 첫 진입 목표 카드(온보딩) — 오버레이 버스가 표시/해제를 단독 소유한다 */
       .goal-overlay {
         position: fixed; inset: 0; z-index: 35;
@@ -709,6 +738,16 @@
       </div>
 
       <div id="diceOverlay" class="dice-overlay hidden"></div>
+
+      <!-- 뷰 청크 로딩 화면 — 오버레이 버스 `interstitial`(60) 슬롯이 단독 소유.
+           코드 스플리팅(§9.1)으로 생긴 "받는 동안" 화면이 비지 않게 한다. -->
+      <div id="viewLoad" class="vl-overlay hidden" role="status" aria-live="polite">
+        <div class="vl-card">
+          <div id="vlTitle" class="vl-title">뷰1 · 2D</div>
+          <div class="vl-msg">불러오는 중…</div>
+          <div class="vl-bar"><i></i></div>
+        </div>
+      </div>
 
       <!-- 첫 진입 목표 카드(§1.5 온보딩). 표시/해제는 오버레이 버스가 단독 소유. -->
       <div
