@@ -365,7 +365,7 @@
 <tr><td><span class="ok">✅ [신규]</span> <code>SPEAK_HOLD</code> ↔ <code>bubbleLifeMs</code> <b>정합</b> — <span class="note">07-28 완료 · 고정 상수 폐기, <code>speak()</code>가 실제 문장을 반환해 길이로 홀드를 건다. 서버·클라가 같은 shared 함수를 쓴다</span></td><td>0.3h <span class="note">추정</span></td></tr>
 
 <tr><td rowspan="4"><b>07-30</b><br><span class="note">목</span></td><td><span class="ok">✅</span> 재진입 규칙 <code>suggestedIn</code> + <b>제안 모달 손패 지목 허용</b> <span class="tag src">§7.5.2</span> — <span class="note">07-28 완료 · 방문 방 2.41 → <b>5.11/9</b></span></td><td>2h</td></tr>
-<tr><td><code>handoverToBot</code> — awayBot revealed 예외 + <b>NPC 재충원 루프를 startGame으로 1줄 이동</b> <span class="tag src">§8.1 · §8.5</span></td><td>1.5h</td></tr>
+<tr><td><span class="ok">✅</span> <code>handoverToBot</code> <span class="tag src">§8.1 · §8.5</span> — <span class="note">07-28 완료 · <code>revealed</code> 분리가 선행돼 <code>awayBot</code> 예외 없이 좌석 시야를 그대로 계승. NPC 재충원 <code>startGame</code> 이동(⑨) 포함</span></td><td>1.5h</td></tr>
 <tr><td><span class="ok">✅</span> 페이싱 재조정 + <b>CLAUDE.md·AGENTS.md·④ 규약 문구 같은 커밋</b> <span class="tag src">§7.5.4 · §1.4</span> — <span class="note">07-28 완료</span></td><td>0.5h</td></tr>
 <tr><td><span class="no">🔴 [신규]</span> <code>main.ts</code> <b>계약 배선</b> — <span class="note"><code>ViewContract</code> 16개 중 <b>9개가 구현만 되고 호출부가 없다</b>(<code>warp</code>·<code>lootWarp</code>·<code>focusRoom</code>·<code>pulseCell</code>·<code>setSurveyed</code>·<code>setPassages</code>·<code>setOutcome</code>·<code>identity</code>·귓속말). 4뷰 매트릭스 ❌ 9행이 "코드는 있는데 화면에 없음"</span></td><td>1.5h <span class="note">추정</span></td></tr>
 
