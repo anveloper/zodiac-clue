@@ -28,6 +28,14 @@
  *                  4뷰는 캔버스만 다르고 HUD는 같은 DOM 한 벌이라는 것이 **가설**이고,
  *                  이 검사가 그 가설을 실측으로 확인한다(어긋나면 그 자체가 결함).
  *                  캔버스 픽셀은 재지 않는다 — 헤드리스 WebGL은 실기 GPU가 아니다.
+ *   S5 글자 크기   손가락 뷰포트에서 실제로 그려진 `font-size` ≥ `SCREEN.minFontPx`.
+ *   S6 명암비      글자색 ↔ **합성된 실제 배경색**의 명암비 ≥ WCAG 2.1 AA(4.5 / 큰 글자 3.0).
+ *
+ *   ⚠️ S5·S6은 §사람 확인 «읽히는가»에서 **기계가 잴 수 있는 두 조각만** 떼어낸 것이다.
+ *      줄바꿈·서체·행간, 그리고 :hover/:active/:focus 상태의 색은 **여전히 사람 몫**이고
+ *      §사람 확인에 그대로 남아 있다. 이 둘이 통과했다고 «읽힌다»가 증명되지 않는다.
+ *      배경 이미지·그라디언트·캔버스 위의 글자는 뒤 색이 한 값이 아니라 **판정 불가**로
+ *      세어 인쇄한다 — 조용히 통과시키지 않는다.
  *
  * 측정 대상 화면
  *   랜딩 · 대기실 · 게임 뷰1 · **게임 뷰2·3·4(HUD만)** · 안내 카드 · 고발 모달
@@ -570,6 +578,115 @@ function pageProbe(cfg) {
   }
   small.sort((x, y) => x.side - y.side);
 
+  // ── S5·S6 글자 크기 · 대비 ──
+  // §사람 확인 «읽히는가»에서 **기계가 잴 수 있는 두 조각**만 떼어낸 것이다.
+  // 여기서도 판정은 하지 않는다 — 관측치(픽셀 크기·명암비)만 돌려준다.
+  const parseRgb = (s) => {
+    const m = String(s).match(/rgba?\(([^)]+)\)/i);
+    if (!m) return null;
+    const p = m[1].split(/[,/\s]+/).filter(Boolean).map(Number);
+    if (p.length < 3 || p.slice(0, 3).some((n) => Number.isNaN(n))) return null;
+    return { r: p[0], g: p[1], b: p[2], a: p.length > 3 && !Number.isNaN(p[3]) ? p[3] : 1 };
+  };
+  /** `fg`(반투명 가능)를 `bg`(불투명) 위에 얹은 결과 색. */
+  const over = (fg, bg) => ({
+    r: fg.r * fg.a + bg.r * (1 - fg.a),
+    g: fg.g * fg.a + bg.g * (1 - fg.a),
+    b: fg.b * fg.a + bg.b * (1 - fg.a),
+    a: 1,
+  });
+  const relLum = (c) => {
+    const f = (v) => {
+      const x = v / 255;
+      return x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4;
+    };
+    return 0.2126 * f(c.r) + 0.7152 * f(c.g) + 0.0722 * f(c.b);
+  };
+  const contrast = (a, b) => {
+    const l1 = relLum(a);
+    const l2 = relLum(b);
+    return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+  };
+  /**
+   * 글자 뒤의 **실제 색**. 조상을 거슬러 올라가며 배경색 층을 모아 아래에서 위로 합성한다.
+   * 배경 이미지/그라디언트를 만나면 «한 값이 아니다» → 판정 불가로 표시한다(넘겨짚지 않는다).
+   */
+  const bgBehind = (el) => {
+    const layers = [];
+    let img = null;
+    let opaque = false;
+    for (let n = el; n; n = n.parentElement) {
+      const cs = getComputedStyle(n);
+      if (!img && cs.backgroundImage && cs.backgroundImage !== "none") img = path(n);
+      const c = parseRgb(cs.backgroundColor);
+      if (c && c.a > 0) layers.push(c);
+      if (c && c.a >= 0.999) {
+        opaque = true;
+        break;
+      }
+    }
+    if (!opaque) return { color: null, img, reason: "bgAlpha" };
+    if (img) return { color: null, img, reason: "bgImage" };
+    let bg = layers[layers.length - 1];
+    for (let i = layers.length - 2; i >= 0; i--) bg = over(layers[i], bg);
+    return { color: bg, img: null, reason: null };
+  };
+
+  const textItems = [];
+  const textExcluded = { noLetters: 0, hidden: 0, exempt: 0, bgImage: 0, bgAlpha: 0 };
+  const HAS_LETTER = /[\p{L}\p{N}]/u;
+  const all = document.querySelectorAll("body *");
+  for (const el of Array.from(all)) {
+    // **직계 텍스트 노드만** 본다. 조상까지 세면 같은 문장을 여러 번 재게 된다.
+    let own = "";
+    for (const n of Array.from(el.childNodes))
+      if (n.nodeType === 3) own += n.nodeValue;
+    own = own.trim();
+    if (!own) continue;
+    // 이모지·기호·구두점만 있는 줄은 «글자»가 아니다 — 색이 글리프에 적용되지 않아
+    // 대비를 재는 것 자체가 무의미하다(🎲 · 🚪 같은 접두 기호).
+    if (!HAS_LETTER.test(own)) {
+      textExcluded.noLetters++;
+      continue;
+    }
+    if (cfg.textExempt.length && cfg.textExempt.some((s) => el.matches(s))) {
+      textExcluded.exempt++;
+      continue;
+    }
+    if (!shown(el)) {
+      textExcluded.hidden++;
+      continue;
+    }
+    const cs = getComputedStyle(el);
+    const px = parseFloat(cs.fontSize) || 0;
+    const weight = Number(cs.fontWeight) || (cs.fontWeight === "bold" ? 700 : 400);
+    const item = {
+      path: path(el),
+      text: own.replace(/\s+/g, " ").slice(0, 24),
+      px: round(px),
+      weight,
+      rect: rectOf(el),
+    };
+    // 대비: 글자색(`-webkit-text-fill-color`가 있으면 그쪽이 이긴다) 위에 배경을 깐다.
+    const fillRaw = cs.webkitTextFillColor && cs.webkitTextFillColor !== "currentcolor"
+      ? cs.webkitTextFillColor
+      : cs.color;
+    const fg = parseRgb(fillRaw);
+    const bg = bgBehind(el);
+    if (!fg || !bg.color) {
+      item.contrast = null;
+      item.why = !fg ? "글자색 파싱 불가" : bg.reason === "bgImage"
+        ? `배경 이미지/그라디언트(${bg.img}) — 뒤 색이 한 값이 아니다`
+        : "불투명 배경을 못 찾음(캔버스 위 글자 등)";
+      textExcluded[bg.reason === "bgImage" ? "bgImage" : "bgAlpha"]++;
+    } else {
+      item.contrast = Math.round(contrast(over(fg, bg.color), bg.color) * 100) / 100;
+      item.fg = fillRaw;
+      item.bg = `rgb(${Math.round(bg.color.r)}, ${Math.round(bg.color.g)}, ${Math.round(bg.color.b)})`;
+    }
+    textItems.push(item);
+  }
+
   return {
     url: location.href,
     vw: VW,
@@ -579,6 +696,7 @@ function pageProbe(cfg) {
     pairs,
     scroll,
     touch: { counted, excluded, small },
+    text: { items: textItems, excluded: textExcluded },
   };
 }
 
@@ -677,6 +795,50 @@ const judge = (screen, viewport, data) => {
       `${t.counted}개 검사 · 미달 ${t.small.length}개 (하한 ${SCREEN.minTouchPx}px)` +
         ` · 제외 숨김 ${ex.hidden} · 비활성 ${ex.disabled} · 문서 밖 ${ex.outsideDoc} · 면제 ${ex.exempt}`,
       { lines: t.small.map((s) => `✗ ${s.path} ${s.w}×${s.h} (최소변 ${s.side}px) "${s.text}"`) });
+  }
+
+  // ── S5 글자 크기 하한 ──
+  // «읽히는가»의 전부가 아니라 **하한 하나**다. 손가락 뷰포트에서만 잰다(S3와 같은 규약).
+  const tx = data.text ?? { items: [], excluded: {} };
+  if (!viewport.coarse) {
+    add("S5", "SKIP",
+      `글자 크기 하한은 \`pointer: coarse\`(폰)에서만 판정한다 — ${viewport.label}는 시거리·확대 전제가 다르다`,
+      {});
+  } else {
+    const tiny = tx.items.filter((i) => i.px < SCREEN.minFontPx - 0.01).sort((a, b) => a.px - b.px);
+    const ex = tx.excluded;
+    add("S5", tiny.length ? "FAIL" : "PASS",
+      `글자 ${tx.items.length}줄 검사 · 하한 ${SCREEN.minFontPx}px 미달 ${tiny.length}건` +
+        ` · 제외 글자없음(이모지·기호만) ${ex.noLetters ?? 0} · 숨김 ${ex.hidden ?? 0} · 면제 ${ex.exempt ?? 0}`,
+      { lines: tiny.map((i) => `✗ ${i.path} ${i.px}px "${i.text}"`) });
+  }
+
+  // ── S6 명암비(WCAG 2.1 AA) ──
+  // 뷰포트와 무관한 성질이지만 화면마다 나오는 글자가 다르므로 화면·뷰포트마다 잰다.
+  {
+    const isLarge = (i) =>
+      i.px >= SCREEN.largeFontPx || (i.weight >= 700 && i.px >= SCREEN.largeBoldFontPx);
+    const floorOf = (i) => (isLarge(i) ? SCREEN.minContrastLarge : SCREEN.minContrast);
+    const measured = tx.items.filter((i) => typeof i.contrast === "number");
+    const unmeasured = tx.items.filter((i) => typeof i.contrast !== "number");
+    const dim = measured
+      .filter((i) => i.contrast < floorOf(i) - 0.005)
+      .sort((a, b) => a.contrast - b.contrast);
+    const worst = measured.length ? Math.min(...measured.map((i) => i.contrast)) : null;
+    add("S6", dim.length ? "FAIL" : "PASS",
+      `글자 ${measured.length}줄 판정 · AA 미달 ${dim.length}건` +
+        `${worst === null ? "" : ` · 최저 ${worst}:1`}` +
+        ` · 판정 불가 ${unmeasured.length}건(배경 이미지·캔버스 위 — 사람 몫)`,
+      {
+        lines: [
+          ...dim.map(
+            (i) =>
+              `✗ ${i.path} ${i.contrast}:1 < ${floorOf(i)}:1 (${i.px}px w${i.weight}) ` +
+              `${i.fg} on ${i.bg} "${i.text}"`,
+          ),
+          ...unmeasured.map((i) => `· ${i.path} 판정 불가 — ${i.why} "${i.text}"`),
+        ],
+      });
   }
   return checks;
 };
@@ -892,6 +1054,7 @@ const probeCfg = (screen) => ({
   protect: screen.protect,
   pairs: screen.pairs,
   touchExempt: screen.touchExempt ?? [],
+  textExempt: [...SCREEN.textExempt, ...(screen.textExempt ?? [])],
   minTouchPx: SCREEN.minTouchPx,
   sampleInsetPct: SCREEN.sampleInsetPct,
   minOverlapPx2: SCREEN.minOverlapPx2,
@@ -1417,6 +1580,46 @@ const FAULTS = [
     js: `(() => {
       const e = document.getElementById('turnInfo');
       e.style.transform = 'translate(40px, 40px)';
+      return 'injected';
+    })()`,
+  },
+  {
+    id: "F6-작은글자",
+    expect: "S5",
+    signature: /#endTurn/,
+    why:
+      "[턴 종료] 라벨만 7px로 줄인다(상자 크기는 그대로 — S3는 건드리지 않는다). " +
+      "«칸은 44px인데 글자는 못 읽는» 상태가 실제로 가능하다는 것이 이 검사의 존재 이유다",
+    js: `(() => {
+      document.getElementById('endTurn').style.fontSize = '7px';
+      return 'injected';
+    })()`,
+  },
+  {
+    id: "F7-저대비",
+    expect: "S6",
+    signature: /#accuse/,
+    why:
+      "[고발] 글자색을 버튼 배경과 거의 같은 색으로 바꾼다(1.1:1) — " +
+      "§7.13이 고친 `#6b6355`(2.9:1) 회귀가 다시 일어났을 때의 모양",
+    js: `(() => {
+      document.getElementById('accuse').style.color = '#b46a35';
+      return 'injected';
+    })()`,
+  },
+  {
+    id: "F8-비활성면제",
+    expect: "S6",
+    signature: /#passage/,
+    shouldPass: true, // **오탐 방지 시험** — 문서화한 WCAG 예외가 실제로 도는지 본다
+    why:
+      "`aria-disabled=\"true\"`인 [통로] 글자를 배경색과 같게 만든다. " +
+      "WCAG 1.4.3은 비활성 컴포넌트를 명시적으로 예외로 두므로 **잡히면 안 된다** — " +
+      "이 예외가 실제로 도는지, 그리고 선택자가 아직 살아 있는지를 확인한다",
+    js: `(() => {
+      const b = document.getElementById('passage');
+      if (b.getAttribute('aria-disabled') !== 'true') return 'not-disabled';
+      b.style.color = getComputedStyle(b).backgroundColor;
       return 'injected';
     })()`,
   },

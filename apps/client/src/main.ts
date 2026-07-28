@@ -2496,6 +2496,16 @@ const goMain = (): void => {
 // ── 공개/비공개 선택 + 공개방 목록 ─────────────────────────────
 let createPublic = true;
 
+/**
+ * 참가 실패 안내(§8.4 확정본). 들어오는 경로는 셋(초대 코드 · 공개방 목록 · 재접속 실패 후
+ * 초대 코드 재시도)이지만 **문장은 하나다** — 경로가 늘었다고 같은 사유를 다른 문장으로
+ * 배우게 하지 않는다(§8.1 표 말미 규약). 원문 오류는 화면이 아니라 콘솔로 보낸다.
+ */
+const showJoinFailed = (e?: unknown): void => {
+  if (e !== undefined) console.warn("[room-join]", e);
+  setLandingMsg("없는 방이거나 이미 시작한 판이에요. 코드를 확인해 주세요.");
+};
+
 const wireVisibilityToggle = (): void => {
   const seg = $("visSeg");
   [...seg.children].forEach((btn) => {
@@ -2514,31 +2524,46 @@ const loadPublicRooms = async (): Promise<void> => {
   try {
     rooms = await listPublicRooms();
   } catch {
-    list.innerHTML = `<li class="room-empty">목록을 불러오지 못했어요.</li>`;
+    // 문안은 ui-copy §8.4 확정본. «다음에 뭘 하면 되는지»를 반드시 붙인다(§1.3).
+    list.innerHTML =
+      `<li class="room-empty">목록을 불러오지 못했어요. [↻ 새로고침]을 눌러보세요.</li>`;
     return;
   }
   if (rooms.length === 0) {
-    list.innerHTML = `<li class="room-empty">열린 공개방이 없어요. 방을 만들어보세요.</li>`;
+    list.innerHTML =
+      `<li class="room-empty">열린 공개방이 없어요. [방 만들기]로 첫 판을 열어보세요.</li>`;
     return;
   }
   list.innerHTML = "";
   for (const r of rooms) {
     const full = r.clients >= r.maxClients;
-    const host = r.metadata?.hostName || "대기 중";
+    const host = r.metadata?.hostName ?? "";
+    // 이름 자리에 **상태를 넣지 않는다.** 예전 폴백 `"대기 중"`이 그대로 `님의 방`에
+    // 이어 붙어 화면에 «대기 중님의 방»으로 나갔다(실측 — ui-copy §8.4).
+    // 이름이 있을 때만 `님`을 쓴다(R1: 변수 뒤에 조사를 붙이지 않고 받침 고정 접미어를 끼운다).
+    const title = host ? `<b>${host}</b> 님의 방` : "<b>방장 대기 중</b>";
     const li = document.createElement("li");
     li.className = "room-item";
     li.innerHTML =
-      `<span class="ri-body"><b>${host}</b>님의 방` +
+      `<span class="ri-body">${title}` +
       `<span class="ri-sub"> · ${r.clients}/${r.maxClients}인</span></span>`;
     const btn = document.createElement("button");
-    btn.textContent = full ? "만석" : "참여";
+    // §2 어휘 통일: 방 참가 동작은 **참가**다(`참여`는 쓰지 않는다).
+    // ⚠️ 이 버튼이 «참가»인지 «관전»인지는 **아직 화면에서 말할 수 없다.**
+    //    판이 끝난 방은 목록에 되돌아오지만(설계대로) 리매치 전까지 관전이고,
+    //    목록 응답(`getAvailableRooms`)에는 그것을 가릴 값이 없다 —
+    //    metadata = `{ hostName, count }`뿐이고 `state.phase`는 실려 오지 않는다.
+    //    클라가 «count > clients면 NPC가 찼으니 시작한 방»으로 추정하는 것은
+    //    서버가 말한 적 없는 것을 만들어내는 것이라 하지 않는다.
+    //    문안은 ui-copy §8.4에 `[선행]`으로 확정해 뒀다 — 서버가 `phase`를 실어 보내면 그때 붙인다.
+    btn.textContent = full ? "만석" : "참가";
     btn.disabled = full;
     btn.onclick = async () => {
-      setLandingMsg("참여하는 중…");
+      setLandingMsg("참가하는 중…");
       try {
         wireRoom(await joinRoomById(r.roomId));
       } catch (e) {
-        setLandingMsg("참여 실패: " + errMsg(e));
+        showJoinFailed(e);
         void loadPublicRooms();
       }
     };
@@ -2611,11 +2636,7 @@ const init = async (): Promise<void> => {
       wireRoom(await joinRoomById(code));
     } catch (e) {
       goMain();
-      setLandingMsg(
-        "없는 방이거나 참가할 수 없어요. 코드를 확인하거나 새 방을 만드세요. (" +
-          errMsg(e) +
-          ")",
-      );
+      showJoinFailed(e);
     }
   };
 
@@ -2662,9 +2683,7 @@ const init = async (): Promise<void> => {
         /* 방 자체가 사라졌다 → 아래 랜딩 문구 */
       }
       goMain();
-      setLandingMsg(
-        "없는 방이거나 참가할 수 없어요. 코드를 확인하거나 새 방을 만드세요.",
-      );
+      showJoinFailed();
       return;
     }
     setLandingMsg("");

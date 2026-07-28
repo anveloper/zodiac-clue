@@ -129,6 +129,17 @@
   .g-goal .cta .g-btn{padding:9px 20px}
   .g-goal .re{margin:12px 0 0;text-align:center;font-size:11px;color:#8f8574}
 
+  /* 공개방 목록 항목 재현 (§8.5) — 배지는 이모지가 아니라 CSS다 */
+  .g-room{display:flex;align-items:center;gap:10px;justify-content:space-between;
+    background:#1b1712;border:1px solid var(--edge);border-radius:8px;padding:9px 11px}
+  .g-room-b{font-size:13px;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+  .g-room-b b{color:var(--gold);font-weight:600}
+  .g-room-s{color:var(--dim);font-size:11.5px}
+  .g-badge{font-size:10.5px;font-weight:700;letter-spacing:.04em;border-radius:4px;
+    padding:1px 7px;border:1px solid transparent;white-space:nowrap}
+  .g-badge.wait{background:#1d2f22;color:#7ee29a;border-color:#2f5a3c}
+  .g-badge.done{background:#2c2519;color:#c8b995;border-color:#5a4c36}
+
   /* 손패 HUD 재현 */
   .g-hand{max-width:320px;flex:1 1 300px}
   .g-hand .l1{color:var(--gold);font-size:12px;font-weight:600;margin-bottom:7px}
@@ -504,10 +515,10 @@
     <tr><td>빈 상태</td><td class="q">아직 지운 후보가 없어요. 칩을 눌러 표시하세요.</td><td><span class="tag t-soon">선행</span></td></tr>
   </table></div>
 
-  <div class="box crit">
-    <b><span class="tag t-bug">갈라짐</span> 잠금 칩 툴팁이 코드와 갈라져 있다 (07-28 확인).</b>
-    <code>buildEvidence()</code>는 <code class="bad">공통 단서 (정답 아님)</code> / <code class="bad">내 패 (정답 아님)</code>을 쓴다.
-    <b class="good">문서 쪽이 옳다</b> — 코드를 위 확정본으로 고친다.
+  <div class="box good">
+    <b><span class="tag t-new">07-29 해소</span> 잠금 칩 툴팁이 확정본과 같다.</b>
+    07-28에는 <code>buildEvidence()</code>가 <code class="bad">공통 단서 (정답 아님)</code> / <code class="bad">내 패 (정답 아님)</code>을 썼다.
+    <b class="good">문서 쪽이 옳았고</b>, 코드가 위 확정본으로 왔다. 갈라졌던 이유는 기록으로 남긴다 —
     <ul style="margin-bottom:0">
       <li><code>내 패</code>는 §2 어휘표 위반이다. 확정 표기는 <b>내 손패</b>이고, <code>— 내 패</code>는 <b>셀렉트 옵션 접미 전용 축약형</b>(§6.1·§6.2)이다. 툴팁은 옵션 폭 제약이 없으니 축약할 이유가 없다.</li>
       <li><code>(자동 제외)</code>가 빠지면 <b>"왜 눌러도 반응이 없는지"</b>가 화면에서 사라진다. 잠금 칩은 판 전체에서 <b>클릭에 반응하지 않는 유일한 칩</b>이고, §1.3은 금지 상태에 이유를 붙이라고 정한다.</li>
@@ -1033,9 +1044,68 @@
     <tr><td>공개방 버튼</td><td class="q dim">참여 / 만석</td><td class="q good">참가 / 만석 <span class="note">§2 통일</span></td></tr>
     <tr><td><code>.hint-sm</code></td><td class="q dim">캐릭터는 대기실에서 고릅니다. 공개방은 목록에 노출됩니다.</td><td class="q good">캐릭터는 대기실에서 골라요. 공개방은 목록에 보여집니다.</td></tr>
     <tr><td>참가 실패</td><td class="q dim">없는 방이거나 참가할 수 없어요. 코드를 확인하거나 새 방을 만드세요. (원문 오류)</td><td class="q good">없는 방이거나 이미 시작한 판이에요. 코드를 확인해 주세요. <span class="note">원문 오류는 콘솔로</span></td></tr>
+    <tr><td>목록 항목 제목 <span class="tag t-bug">조사</span></td><td class="q dim">${방장}님의 방 · 이름이 없으면 <b>대기 중님의 방</b></td><td class="q good">${방장} 님의 방 <span class="note">R1 — 님 앞에 한 칸</span><br>이름 없음 → <b>방장 대기 중</b></td></tr>
+    <tr><td>공개방 참가 진행</td><td class="q dim">참여하는 중…</td><td class="q good">참가하는 중… <span class="note">초대 코드 참가와 글자 그대로 같은 문자열</span></td></tr>
+    <tr><td>공개방 참가 실패</td><td class="q dim">참여 실패: (원문)</td><td class="q good">위 «참가 실패» 행과 같은 문장 <span class="note">경로가 둘이라고 문장을 둘로 만들지 않는다</span></td></tr>
     <tr><td>초대 진입</td><td class="q">초대 링크로 들어왔어요. [참가] 후 대기실에서 캐릭터를 고르세요.</td><td><span class="tag t-keep">유지</span></td></tr>
   </table></div>
-  <p class="note"><code>.room-empty</code>·<code>.hint-sm</code>·<code>.divider</code>의 색 <code>#6b6355</code>(대비 2.9:1)는 <b>문안이 아니라 색 문제</b>다 — 로드맵 소관이나, 여기 문장들은 그 색이 고쳐진 뒤에야 읽힌다.</p>
+  <p class="note"><code>.room-empty</code>·<code>.hint-sm</code>·<code>.divider</code>의 색 <code>#6b6355</code>(대비 2.9:1)는 <b>문안이 아니라 색 문제</b>였다 — 07-28 <code>#8f8574</code>(4.6:1)로 교체 완료, 07-29부터 화면 게이트 <b>S6 명암비</b>가 되돌아가는 것을 막는다.</p>
+  <div class="box crit"><b>«대기 중님의 방»은 실제로 화면에 나갔다</b>(07-29 캡처 확인). 폴백 값 <code>"대기 중"</code>이
+    <b>이름 자리</b>에 들어간 뒤 <code>님의 방</code>이 그대로 이어 붙었다.
+    → <b>이름 자리에 상태를 넣지 않는다.</b> 이름이 없으면 문장 구조를 바꾼다(R2의 취지).
+    방장 이름은 <code>label(suspect)</code>이라 좌석이 하나라도 차면 항상 존재하고, 빈 값은
+    «좌석 예약만 잡히고 아무도 앉지 않은 순간»에만 나온다.</div>
+  <div class="box good"><b>07-29 적용 완료.</b> 위 표는 07-27에 확정됐지만 <b>코드에 붙지 않은 채</b> 남아 있었다 —
+    <code>index.html</code>·<code>main.ts</code>에 그대로 반영했다(<code>참여</code>→<code>참가</code> 포함).</div>
+
+  <h3>8.5 공개방 목록 항목 — 상태 배지 <span class="tag t-soon">선행 조건</span></h3>
+  <div class="box crit">
+    <b>판이 끝난 방은 목록에 되돌아온다</b>(<code>setListed(true)</code> — 설계대로다). 그런데 거기 들어가면
+    리매치 전까지 <b>관전</b>이다. 버튼이 <code>참가</code>라고만 적혀 있으면 «참가한다»고 읽고 들어가
+    관전 화면을 본다. <b>심사자가 두 명이면 실제로 밟는 동선이다.</b>
+  </div>
+  <div class="box warn">
+    <b>선행 — 서버가 상태를 실어 보내야 한다.</b> <code>getAvailableRooms</code> 응답의 <code>metadata</code>는
+    지금 <code>{ hostName, count }</code>뿐이다(생성 직후에만 <code>isPublic</code>이 붙었다가 첫
+    <code>syncMeta()</code>에서 사라진다). <code>state.phase</code>는 <b>실려 오지 않는다.</b><br>
+    → <code>clue-room.ts</code>의 <code>syncMeta()</code>가 <code>phase</code>를 함께 싣고
+    <code>startGame()</code>·종료 3곳에서 부르면 아래 문안을 그대로 붙일 수 있다.<br>
+    <b>클라가 추정하지 않는다.</b> <code>count &gt; clients</code>(NPC 충원 흔적) 같은 간접 신호로 상태를 만들면
+    <b>서버가 말한 적 없는 것을 화면이 단언</b>하게 된다 — §1.4 진실값 경계 위반이다.
+  </div>
+  <div class="scroll"><table>
+    <tr><th>방 상태 (<code>metadata.phase</code>)</th><th>배지</th><th>버튼</th><th>부가</th></tr>
+    <tr><td><code>lobby</code> — 아직 시작 전</td><td class="q good">대기 중</td><td class="q good">참가</td><td class="q">${인원}/${정원}인 <span class="note">현행 유지</span></td></tr>
+    <tr><td><code>ended</code> — 판이 끝나 목록 복귀</td><td class="q good">종료됨</td><td class="q good">관전</td><td class="q good">다시 하기를 기다리는 중</td></tr>
+    <tr><td>정원 초과</td><td>—</td><td class="q">만석 <span class="note">비활성</span></td><td>—</td></tr>
+  </table></div>
+  <p class="note"><b>«진행 중»은 목록에 원리적으로 나타나지 않는다</b> — 판이 도는 동안 방은 목록에서 빠진다. 그래서 상태는 2종이다.</p>
+  <div class="pv">
+    <div class="pv-h">미리보기 · 랜딩 <b>공개방 목록</b> — 배지는 «지금», 버튼은 «다음»을 말한다</div>
+    <div class="pv-b col">
+      <div class="g-room">
+        <span class="g-room-b"><b>호랑이 대감</b> 님의 방 <span class="g-badge wait">대기 중</span>
+          <span class="g-room-s">3/6인</span></span>
+        <span class="g-btn">참가</span>
+      </div>
+      <div class="g-room">
+        <span class="g-room-b"><b>토끼 낭자</b> 님의 방 <span class="g-badge done">종료됨</span>
+          <span class="g-room-s">6/6인 · 다시 하기를 기다리는 중</span></span>
+        <span class="g-btn ghost">관전</span>
+      </div>
+      <div class="g-room">
+        <span class="g-room-b"><b>생쥐 서생</b> 님의 방 <span class="g-badge wait">대기 중</span>
+          <span class="g-room-s">6/6인</span></span>
+        <span class="g-btn off">만석</span>
+      </div>
+      <p class="pv-cap">배지는 <b>텍스트 + CSS</b>다 — 이모지를 늘리지 않는다(§2 접두 기호가 확정 목록의 전부).</p>
+    </div>
+  </div>
+  <ul>
+    <li><code>관전</code>은 §2 «관전 상태» 표기와 같은 낱말이다 — 들어간 뒤 보게 되는 배너(§7.2 본문 ②)와 낱말이 이어진다.</li>
+    <li>버튼 라벨은 <b>들어가면 무엇이 되는지</b>를 말한다(상태의 되풀이가 아니다).</li>
+    <li>부가 문구는 변수 없는 <b>고정 문장</b>으로 둔다 — 변수 뒤 조사를 만들지 않는다(R2).</li>
+  </ul>
 
   <!-- ════════════ 9 ════════════ -->
   <h2 id="s9"><span class="n">9</span>멀티플레이 문안 <span class="tag t-soon">전부 선행 조건</span></h2>
@@ -1127,7 +1197,7 @@
     <tr><td>3</td><td>목표 카드 <span class="tag t-soon">선행</span></td><td class="q">client/index.html · client/src/main.ts</td><td class="q">신규 <code>#goalCard</code> · <code>enterGame()</code> 말미 · <code>.hud-ctrl</code> 끝 <code>[?]</code></td></tr>
     <tr><td>4.1</td><td>손패 라벨</td><td class="q">client/src/main.ts</td><td class="q">onMessage("hand") ≈212 · <code>#hand</code> 초기 텍스트</td></tr>
     <tr><td>4.2</td><td>공통 단서</td><td class="q">server/rooms/clue-room.ts · client/src/main.ts</td><td class="q">startGame() ≈546 · buildEvidence()</td></tr>
-    <tr><td>4.3</td><td>증거 노트 툴팁 <span class="tag t-bug">갈라짐</span></td><td class="q">client/src/main.ts</td><td class="q">buildEvidence() — 잠금 칩 <code>chip.title</code> ≈1856</td></tr>
+    <tr><td>4.3</td><td>증거 노트 툴팁 <span class="tag t-new">07-29 정합</span></td><td class="q">client/src/main.ts</td><td class="q">buildEvidence() — 잠금 칩 <code>chip.title</code></td></tr>
     <tr><td>4.4</td><td>AI 칩 · 대사 경로 배지</td><td class="q">client/src/main.ts</td><td class="q">renderAi() ≈216 · addLog()의 배지 분기 ≈170 <span class="note">(폴백 사유 한글화)</span></td></tr>
     <tr><td>5.0</td><td><code>disabled</code> → <code>aria-disabled</code></td><td class="q">client/src/main.ts · index.html</td><td class="q">updateTurnInfo() ≈436 · <code>button:disabled</code> 옆 <code>.is-off</code></td></tr>
     <tr><td>5.1–5.5</td><td>버튼 4종 + 턴 종료</td><td class="q">client/src/main.ts</td><td class="q">updateTurnInfo()에서 <code>title</code> 설정 · 각 onclick 첫 분기</td></tr>
@@ -1141,7 +1211,8 @@
     <tr><td>8.1</td><td>서버 로그 25항목 + 무승부 2줄</td><td class="q">server/rooms/clue-room.ts</td><td class="q">표의 줄 번호 · endInDraw() ≈1272</td></tr>
     <tr><td>8.2</td><td>폴백 대사 <span class="tag t-keep">코드 일치</span></td><td class="q">server/ai/narrator.ts</td><td class="q">fallbackLine() · fit()</td></tr>
     <tr><td>8.3</td><td>클라 로그 · 중복 제거</td><td class="q">client/src/main.ts</td><td class="q">wireRoom()의 onMessage 5개 · errMsg() · enterGame() 말미</td></tr>
-    <tr><td>8.4</td><td>랜딩</td><td class="q">client/index.html · main.ts</td><td class="q"><code>.hint-sm</code>·<code>.room-empty</code> · loadPublicRooms() ≈844 · init()의 joinBtn</td></tr>
+    <tr><td>8.4</td><td>랜딩 <span class="tag t-new">07-29 적용</span></td><td class="q">client/index.html · main.ts</td><td class="q"><code>.hint-sm</code>·<code>.room-empty</code> · loadPublicRooms() · init()의 joinBtn</td></tr>
+    <tr><td>8.5</td><td>공개방 상태 배지 <span class="tag t-soon">선행</span></td><td class="q">server/clue-room.ts · client/main.ts</td><td class="q"><code>syncMeta()</code>에 <code>phase</code> 추가(선행) → loadPublicRooms()의 <code>li</code> 조립</td></tr>
     <tr><td>9.1</td><td>대기실 피드백 <span class="tag t-soon">선행</span></td><td class="q">client/index.html · main.ts · clue-room.ts</td><td class="q">신규 <code>#lobbyMsg</code> · renderLobby() · onJoin / removePlayer / handleChooseCharacter</td></tr>
     <tr><td>9.2</td><td>닉네임 <span class="tag t-soon">선행</span></td><td class="q">packages/shared · clue-room.ts · index.html</td><td class="q"><code>Player.name</code> 분리 · 대기실 <code>.field</code> 추가</td></tr>
     <tr><td>9.3</td><td>대리 NPC 표기 <span class="tag t-soon">선행</span></td><td class="q">packages/shared · 3개 렌더러</td><td class="q"><code>displayName(p)</code> · renderLobby / renderTurnStrip / openTurnCircle</td></tr>
@@ -1165,10 +1236,16 @@
     <li>§8.2 표의 템플릿과 <code>fallbackLine()</code>이 <b>문자 그대로 같은가</b></li>
     <li>관전 배너 본문 ②(§7.2)와 서버 안내(§8.1 행 268)가 <b>문자 그대로 같은가</b> — 한쪽만 고치면 같은 사유가 두 문장이 된다</li>
     <li><b>상태는 있는데 문안이 없는 화면</b>이 없는가 — 좌석 없는 관전자가 07-28까지 그 상태였다(배너 조건이 <code>undefined</code>에 걸리지 않았다)</li>
+    <li><b>확정했는데 붙지 않은 문안</b>이 없는가 — §8.4가 07-27 확정 후 이틀간 코드에 없었다. 확정본은 «쓰기»가 아니라 «붙었는가»까지가 완료다</li>
+    <li><b>버튼 라벨이 «들어가면 무엇이 되는지»와 어긋나지 않는가</b> — 종료된 방의 <code>참가</code>가 실제로는 관전이었다(§8.5)</li>
   </ul>
 
   <footer>
     <b>변경 이력</b><br>
+    <b>2026-07-29 (2) — §8.4 적용 완료 + §8.5 신설.</b> §8.4 확정본 6행이 07-27 확정 이후 <b>코드에 붙지 않고</b> 있었다 →
+    <code>index.html</code>·<code>main.ts</code>에 적용(<code>참여</code>→<code>참가</code> 포함). 함께 «공개방 참가 진행·실패» 2행 추가.
+    <b>§8.5는 «종료된 방의 버튼이 실제로는 관전»을 화면에서 말하기 위한 문안</b>인데, 서버가 <code>metadata</code>에
+    <code>phase</code>를 싣지 않아 <b>클라가 상태를 알 수 없다</b> → 문안만 확정하고 <b>선행</b>으로 둔다(추정하지 않는다 — §1.4).<br>
     <b>2026-07-29 — §7.2 정정: 관전 행 추가.</b> <code>#spectateBar</code>를 «진행 중 탈락» 전용으로 규정했으나
     <b>좌석 없는 관전자도 같은 배너에 도달</b>한다(<code>40f0b6e</code>). 문안은 새로 짓지 않고
     <b>§8.1 행 268의 서버 안내와 글자 그대로 같은 문자열</b>을 재사용 — 같은 사유를 두 문장으로 배우게 하지 않는다.

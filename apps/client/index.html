@@ -31,8 +31,12 @@
         color: #f0e9dc;
       }
       .hidden { display: none !important; }
+      /* 강조색 #ad5e28 — 흰 글자 대비 4.76:1(AA 4.5 충족).
+         이전 값 #b4622b는 4.45:1로 **간발의 차이로 미달**이었고, 그 색을 쓰는 것이
+         [방 만들기]·[잔치 시작]·[고발] 같은 1차 버튼 전부였다. 화면 게이트 S6이 잡는다.
+         (§7.13이 `#6b6355`→`#8f8574`로 올린 것과 같은 기준·같은 이유.) */
       button {
-        background: #b4622b; color: #fff; border: 0; border-radius: 6px;
+        background: #ad5e28; color: #fff; border: 0; border-radius: 6px;
         padding: 8px 12px; font-size: 13px; cursor: pointer;
       }
       button:hover { background: #c9733a; }
@@ -91,7 +95,7 @@
         text-align: center;
       }
       .char .em { font-size: 20px; line-height: 1; }
-      .char:hover { border-color: #b4622b; }
+      .char:hover { border-color: #ad5e28; }
       .char.selected { border-color: #e0a35a; background: #2c2317; color: #f0d9a8; }
       .char.locked { opacity: 0.35; cursor: not-allowed; }
       .persona {
@@ -138,7 +142,7 @@
         flex: 1; background: #16130f; border: 1px solid #3a3126; color: #cbbfa8;
         border-radius: 8px; padding: 9px 0; font-size: 13px; cursor: pointer;
       }
-      .seg-btn:hover { background: #16130f; border-color: #b4622b; }
+      .seg-btn:hover { background: #16130f; border-color: #ad5e28; }
       .seg-btn.active { background: #2c2317; border-color: #e0a35a; color: #f0d9a8; }
       /* 공개방 목록 */
       /* `.field label`(0,1,1)이 `.rooms-label`(0,1,0)보다 세서 `display:block`이 이겼다 —
@@ -245,8 +249,9 @@
         padding: 1px 2px 3px; border-radius: 4px;
         transition: transform .15s;
       }
+      /* 초성 1글자 — 9px은 폰에서 «획이 뭉쳐» 읽히지 않았다(화면 게이트 S5 하한 10px). */
       .ti-chip .ti-ini {
-        font-size: 9px; font-style: normal; font-weight: 700; color: #cbbfa8;
+        font-size: 10px; font-style: normal; font-weight: 700; color: #cbbfa8;
       }
       .ti-chip.cur {
         transform: scale(1.2); opacity: 1;
@@ -255,7 +260,7 @@
       .ti-chip.cur .ti-ini { color: #f0d9a8; }
       .ti-chip.elim { opacity: 0.28; }
       .ti-arrow { color: #9a8a6a; font-size: 8px; }
-      .ti-arrow.ti-wrap { color: #b4622b; }
+      .ti-arrow.ti-wrap { color: #ad5e28; }
       /* 턴 배너 부제 — 즉시고발 창 카운트다운(ui-copy §9.5). 강조색. */
       .hud-turn .ti-sub {
         margin-top: 5px; font-size: 11px; color: #ffd479; font-weight: 600;
@@ -278,7 +283,7 @@
       .tc-ring { position: relative; width: 300px; height: 300px; margin: 6px auto; }
       .tc-center {
         position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
-        font-size: 40px; color: #b4622b; display: flex; flex-direction: column;
+        font-size: 40px; color: #ad5e28; display: flex; flex-direction: column;
         align-items: center; line-height: 1;
       }
       .tc-center span { font-size: 11px; color: #a89778; margin-top: 2px; }
@@ -473,7 +478,7 @@
       }
       .rp-hresizer::before {
         content: ""; width: 52px; height: 6px; border-radius: 3px;
-        background: #b4622b; box-shadow: 0 0 0 1px #e0a35a inset;
+        background: #ad5e28; box-shadow: 0 0 0 1px #e0a35a inset;
       }
       .rp-hresizer:hover { background: rgba(180, 98, 43, 0.32); }
       .rp-hresizer:hover::before { background: #e0a35a; }
@@ -485,7 +490,7 @@
       }
       .rp-wresizer::before {
         content: ""; width: 6px; height: 56px; border-radius: 3px;
-        background: #b4622b; box-shadow: 0 0 0 1px #e0a35a inset;
+        background: #ad5e28; box-shadow: 0 0 0 1px #e0a35a inset;
       }
       .rp-wresizer:hover { background: rgba(180, 98, 43, 0.32); }
       .rp-wresizer:hover::before { background: #e0a35a; }
@@ -573,7 +578,7 @@
         -webkit-tap-highlight-color: transparent;
       }
       .dp:hover { background: rgba(44, 37, 25, 0.94); }
-      .dp:active { background: #b4622b; color: #fff; border-color: #e0a35a; }
+      .dp:active { background: #ad5e28; color: #fff; border-color: #e0a35a; }
       .dp-u { grid-row: 1; grid-column: 2; }
       .dp-l { grid-row: 2; grid-column: 1; }
       .dp-r { grid-row: 2; grid-column: 3; }
@@ -593,7 +598,7 @@
       .evi-chip > .evi-name { overflow: hidden; text-overflow: ellipsis; }
       /* 12색(spec §4.2) — 용의자 칩 좌측 3px 스트라이프(inline box-shadow)의 여백. */
       .evi-chip.zc { padding-left: 10px; }
-      .evi-chip:hover { border-color: #b4622b; }
+      .evi-chip:hover { border-color: #ad5e28; }
       .evi-chip.cleared { opacity: 0.4; text-decoration: line-through; }
       .evi-chip.suspect { background: #3a2b1a; border-color: #e0a35a; color: #f0d9a8; }
       .evi-chip.own { cursor: default; opacity: 0.5; border-style: dashed; }
@@ -671,7 +676,7 @@
         font-size: 15px; line-height: 1; border-radius: 10px;
         background: rgba(13, 11, 8, 0.9); border: 1px solid #3a3126;
       }
-      #rpToggle:hover { background: rgba(13, 11, 8, 0.9); border-color: #b4622b; }
+      #rpToggle:hover { background: rgba(13, 11, 8, 0.9); border-color: #ad5e28; }
 
       /* 반응형: 좁은 화면에서 HUD 축소·모서리 정리 */
       @media (max-width: 680px) {
@@ -903,7 +908,7 @@
             <button type="button" class="seg-btn" data-pub="0">🔒 비공개</button>
           </div>
         </div>
-        <p class="hint-sm">캐릭터는 대기실에서 고릅니다. 공개방은 목록에 노출됩니다.</p>
+        <p class="hint-sm">캐릭터는 대기실에서 골라요. 공개방은 목록에 보여집니다.</p>
         <button id="createBtn" class="full">방 만들기</button>
         <div class="divider">— 또는 초대 코드로 —</div>
         <div class="join-row">
@@ -915,7 +920,7 @@
             공개방 <button type="button" id="refreshRooms" class="mini">↻ 새로고침</button>
           </label>
           <ul id="roomList" class="room-list">
-            <li class="room-empty">불러오는 중…</li>
+            <li class="room-empty">공개방을 찾는 중…</li>
           </ul>
         </div>
         <div id="landingMsg" class="msg"></div>
