@@ -6,10 +6,6 @@
       {
         "path": "submission/game-intro.html",
         "title": "제출물 ③ 게임 소개"
-      },
-      {
-        "path": "submission/submission-checklist.md",
-        "title": "제출물 체크리스트 (NHN NAN 2026 사전과제, 마감 2026-08-10)"
       }
     ]
   },
@@ -17,6 +13,14 @@
     "label": "📐 설계",
     "dir": "design",
     "items": [
+      {
+        "path": "design/20260727-view-contract-spec.html",
+        "title": "4뷰 표기 계약 명세"
+      },
+      {
+        "path": "design/20260727-ui-copy.html",
+        "title": "UI 문안(카피) 명세 — 호랑이 생신 잔치"
+      },
       {
         "path": "design/20260720-engine-and-workflow-plan.html",
         "title": "게임 엔진 & AI 개발 협업 플랜"
@@ -35,7 +39,7 @@
       },
       {
         "path": "design/20260720-ai-tech-doc.html",
-        "title": "제출물 ④ AI 기술 문서"
+        "title": "제출물 ④ AI 활용 기술 문서"
       }
     ]
   },
@@ -89,6 +93,10 @@
     "label": "✅ 플랜 · 완료",
     "dir": "plans/done",
     "items": [
+      {
+        "path": "plans/done/13-execution-plan-merge.md",
+        "title": "13 — 4개 일정표 병합 → 단일 실행 계획서"
+      },
       {
         "path": "plans/done/10-view-2.5d-toggle.md",
         "title": "plan: 2.5D 시점 토글 (Three.js)"
