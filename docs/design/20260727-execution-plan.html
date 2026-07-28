@@ -365,7 +365,7 @@
 <tr><td><span class="ok">✅</span> 원클릭 솔로 진입 <code>?solo=1</code> <span class="tag src">§1.6</span> — <span class="note">서버 변경 0건 · 버튼 형태는 미착수</span></td><td>0.5h</td></tr>
 <tr><td><span class="ok">✅</span> overlay-bus <b>최소안</b>(fxBanner 하단 + dice 충돌 가드) <span class="tag src">§7.10</span> — <span class="note">07-28 완료 · <code>#fxBanner</code> 이름으로 만들어 08-05 FX가 재사용</span></td><td>0.5h</td></tr>
 
-<tr><td rowspan="7"><b>07-29</b><br><span class="note">수</span></td><td><span class="ok">✅</span> 즉시고발권 — <b>타이머 프리미티브 인자화</b>(§8.2 재사용 전제) <span class="tag src">§7.5.1</span> — <span class="note">07-28 완료 · <code>armTimer(key,ms,onExpire)</code> + 봇 페이싱 타이머 3개 이관</span></td><td>0.5h</td></tr>
+<tr><td rowspan="8"><b>07-29</b><br><span class="note">수</span></td><td><span class="ok">✅</span> 즉시고발권 — <b>타이머 프리미티브 인자화</b>(§8.2 재사용 전제) <span class="tag src">§7.5.1</span> — <span class="note">07-28 완료 · <code>armTimer(key,ms,onExpire)</code> + 봇 페이싱 타이머 3개 이관</span></td><td>0.5h</td></tr>
 <tr><td><span class="ok">✅</span> <code>revealed</code> 분리 + 총 제안 상한 <b>60</b> <span class="tag src">§1.1 · §7.5 정정</span> — <span class="note">07-28 완료 · 시뮬 3,000판 실측 <b>2.3% → 22.3%</b></span></td><td>2h <span class="note">추정</span></td></tr>
 <tr><td><span class="ok">✅</span> 온보딩 — 목표 3줄 오버레이 · "이 3장은 정답이 아님" · 장소 고정행 · 동적 title <span class="tag src">§1.5</span> — <span class="note">07-28 완료 · 죽어 있던 비활성 사유 안내도 복구</span></td><td>1.5h <span class="note">추정</span></td></tr>
 <tr><td><span class="ok">✅ [승격]</span> <b>페이싱 재조정</b> <span class="tag src">§7.5.4</span> — <span class="note">07-28 완료. 1차 적용 후 목표 미달(4.4~5.7분)이었으나 <b>대사 길이 해소로 봇 1턴 7.6초 → 3.8초</b></span></td><td>0.5h</td></tr>
@@ -395,19 +395,30 @@
 <tr class="mile"><td><span class="ok">✅</span> <code>view-consts.ts</code> 이관 + <code>ZODIAC_COLOR</code> 12색 + <b>pixel→game 순환 의존 제거</b> <span class="tag src">§2.5 · §7.11 · spec§1·§3</span> —
 <span class="note"><b>07-28로 앞당겨 완료</b>(의존성이 전부 해소돼 있었고 렌더러 3종을 두 번 열지 않기 위해). 남은 것: <code>view-contract.ts</code> + <code>implements</code> 3곳 · <code>main.ts</code> 이관분 · HUD 12색</span></td><td>3.5h <span class="note">추정</span></td></tr>
 
-<tr><td rowspan="5"><b>08-02</b><br><span class="note">일</span></td><td><span class="ok">✅</span> <code>view-contract.ts</code> + <code>implements</code> 3곳 + <code>resolveMotion</code> reduced 프로파일 <span class="tag src">spec§2·§3 · §7.13</span> —
+<tr><td rowspan="7"><b>08-02</b><br><span class="note">일</span></td><td><span class="ok">✅</span> <code>view-contract.ts</code> + <code>implements</code> 3곳 + <code>resolveMotion</code> reduced 프로파일 <span class="tag src">spec§2·§3 · §7.13</span> —
 <span class="note"><b>07-28로 앞당겨 완료</b> · 계약 15메서드를 렌더러 3종이 전부 구현. 단 파일 위치는 <code>apps/client/src/scenes/view-contract.ts</code>
 (spec §2는 <code>packages/shared</code>를 지목 — 엔진 타입 참조가 0이라 이관 시 import 경로만 바뀐다)</span></td><td>3h <span class="note">추정</span></td></tr>
 <tr><td><span class="ok">✅</span> 코드 스플리팅 동적 import <span class="tag src">§9.1</span> —
 <span class="note"><b>07-28로 앞당겨 완료</b>(<code>63c46be</code>) · <b>2,172 kB 단일 청크 → 초기 로드 JS 115.66 kB / 8청크</b>(초기 합계 158 kB · gzip 49 kB).
 지연: phaser 1,478 · iso-view 551 kB. 로딩 중에는 <code>interstitial</code>(60) 슬롯이 화면을 채운다 · <code>STAGES</code>에 <code>load</code> 자리 예약(§7.2 ④ 최소 방어)</span></td><td>3h</td></tr>
-<tr><td>⬜ <code>setStage</code>에서 <code>game.loop.sleep()/wake()</code> + IsoView 말풍선 타이머 정리 <span class="tag src">§9.2</span> — <span class="note"><b>미착수</b>(스플리팅과 별개 축)</span></td><td>1h</td></tr>
+<tr><td><span class="ok">✅</span> <code>setStage</code>에서 <code>game.loop.sleep()/wake()</code> + IsoView 말풍선 타이머 정리 <span class="tag src">§9.2</span> —
+<span class="note"><b>07-28 완료.</b> 🔴 <b>07-28 저녁 코드 확인으로 정정</b> — 이 문서와 체크리스트가 <b>"유일한 미착수 P0 잔여분"으로 계속 적고 있었다.</b>
+<code>main.ts</code>가 <code>three</code>일 때만 재우고(뷰4는 뷰1 루프가 굴리므로 재우면 안 된다) 깨울 때 <code>scale.refresh()</code>.
+<code>IsoView.setActive(false)</code>가 <code>clearBubbles()</code>+<code>clearFx()</code>+<code>releaseHudInset()</code>. 실측 뷰1·4 = 60fps / 뷰2·3 = 0fps</span></td><td>1h</td></tr>
+<tr><td><span class="ok">✅ [신규]</span> <b>뷰4 폴링 트윈 재시작 결함</b> <span class="tag src">로드맵 §9.7</span> —
+<span class="note">07-28 완료(<code>2fb83ef</code>). 뷰4에서 <b class="no">말·장물이 얼어 있었다</b> — 폴링 렌더러가 재시작 조건을 "그리는 중인 좌표 ≠ 목표"로 써서
+60Hz로 <code>kill → add</code>를 반복했고, Phaser 트윈은 <b>두 번째 스텝부터 움직이므로</b> 어떤 트윈도 살아남지 못했다.
+<b>뷰1은 이벤트 구동이라 같은 비교로도 안전했다 — 그 구조 차이가 원인.</b> 조건을 "목표의 변화"로(<code>tx/ty</code>).
+계략 NPC 위치 미갱신(재대국 유령)은 별개 결함으로 함께 해소</span></td><td>1h <span class="note">추정</span></td></tr>
+<tr><td><span class="ok">✅ [신규]</span> <b><code>verify --quick</code>이 eval 리포트를 덮어쓰던 것</b> <span class="tag src">로드맵 §9.6 · 체크리스트 §3</span> —
+<span class="note">07-28 완료(<code>2fb83ef</code>). 빠른 모드는 전수 스윕을 <b>생략하면서 리포트는 덮어써</b> ④ §3.4의 최대 근거를 <code>112,752 → 0</code>으로 퇴화시키고 있었다 → <code>--no-report</code> 동반.
+<b class="no">커밋 전 게이트를 성실히 돌린 사람일수록 근거를 더 많이 지우던 구조</b></span></td><td>0.2h <span class="note">추정</span></td></tr>
 <tr><td><span class="ok">✅</span> §9.6 게이트 <b>1차 측정</b>(기준선 기록) — <span class="note">07-28 완료 · <code>scripts/gate.baseline.json</code>에 시뮬·번들 기준선(<code>--reason</code> 필수)</span></td><td>0.5h</td></tr>
 <tr><td><span class="ok">✅ [신규]</span> <b>통합 회귀 게이트 <code>pnpm verify</code></b> —
 <span class="note">07-28 완료(<code>4244e5c</code>) · 타입·문서정합·GPU·밸런스·환각검증·빌드·번들예산을 한 화면에 판정. <code>--quick</code>은 커밋 전 3.4초.
 <b>어떤 항목도 조용히 건너뛰지 않는다</b>(SKIP은 사유와 함께 출력)</span></td><td>1h <span class="note">추정</span></td></tr>
 
-<tr class="mile"><td rowspan="3"><b>08-03</b><br><span class="note">월</span></td><td>★ 제출 형태 확정 반영 — ⑤ 완성 or 삭제 <span class="tag src">§7.2</span></td><td>0.5h</td></tr>
+<tr class="mile"><td rowspan="5"><b>08-03</b><br><span class="note">월</span></td><td>★ 제출 형태 확정 반영 — ⑤ 완성 or 삭제 <span class="tag src">§7.2</span></td><td>0.5h</td></tr>
 <tr class="mile"><td><span class="ok">✅</span> 계측 — <code>narrate()</code> <code>{source,ms,model,reason?}</code> + <code>speak</code> 메타 동봉 + <code>GET /health</code> <span class="tag src">§1.3 · ④§4</span> — <span class="note"><b>07-28로 앞당겨 완료</b> · 폴백 사유 6종 구분</span></td><td>1.5h</td></tr>
 <tr class="mile"><td><span class="ok">✅</span> AI 카운터 칩 <b>기본 노출</b> + 로그 배지 <code>✨♻⚙</code> + 폴백 사유 표기 <span class="tag src">§7.7</span> — <span class="note">07-28 완료</span></td><td>1.5h</td></tr>
 <tr><td><span class="ok">✅ [신규]</span> <b>AI 패널을 판 시작과 동시에</b> <span class="tag src">§7.7 후속 · ④ §4</span> — <span class="note">07-28 완료(<code>55297c0</code>). 게이팅을 지웠어도 <b>첫 호출까지 27초</b>라 45초 심사자가 못 볼 수 있었다.
@@ -415,7 +426,7 @@
 <tr><td><span class="ok">✅ [신규]</span> <b>랜딩에 AI 경계 노출</b> <span class="tag src">④ §4.2</span> — <span class="note">07-28 완료(<code>c90c723</code>). 심사자 시선 검수에서 <b class="no">첫 45초의 AI 신호가 0</b>(랜딩 DOM에 <code>&lt;a&gt;</code> 0개 · "AI/LLM/Gemini" 0개).
 경계 고지 + <b>배포본에 실제로 있는 경로만</b> 링크</span></td><td>0.5h <span class="note">추정</span></td></tr>
 
-<tr><td rowspan="4"><b>08-04</b><br><span class="note">화</span></td><td><span class="ok">✅</span> <code>disposeObject()</code> + 공유 지오메트리 상수화 + <code>THREE.Cache</code> + <b>Sprite 지오메트리 예외</b> <span class="tag src">§9.3</span> —
+<tr><td rowspan="7"><b>08-04</b><br><span class="note">화</span></td><td><span class="ok">✅</span> <code>disposeObject()</code> + 공유 지오메트리 상수화 + <code>THREE.Cache</code> + <b>Sprite 지오메트리 예외</b> <span class="tag src">§9.3</span> —
 <span class="note"><b>07-28로 앞당겨 완료</b> · <code>scenes/three-res.ts</code>가 공유 지오메트리 7종을 소유 → three 런타임 geometry 생성 <b>0건</b></span></td><td>2h</td></tr>
 <tr><td><span class="part">⚠️</span> §9.6 회귀 게이트 — <span class="note"><b>정적분(<code>pnpm gate:gpu</code> G1~G4)은 07-28 통과.</b>
 10회 순회 ±5 런타임 측정은 브라우저 WebGL이 필요해 <b>CLI에서 항상 SKIP + 절차 안내</b>로 남는다 → 사람이 1회 수행(08-09 문서 정합성과 같은 슬롯)</span></td><td>0.5h</td></tr>
@@ -425,12 +436,23 @@
 <tr><td><span class="ok">✅ [신규 · 컷라인에서 되살림]</span> <b>터치 T1 D-패드</b> <span class="tag src">§7.12</span> — <span class="note">07-28 완료(<code>55297c0</code>).
 <b class="no">§5.1이 컷했던 판단을 뒤집었다</b> — 폰에서 말이 1칸도 안 움직여 <b>제출물 ①(“웹에서 즉시 플레이”) 요건의 절반이 성립하지 않았다.</b>
 탭-투-무브(T2)는 <b>클라가 벽·입구·한도를 판정</b>하게 되므로 폐기. 실측: 패드 프레임이 키보드와 <b>바이트 동일</b> · 390×844로 4뷰 전부 확인</span></td><td>2h</td></tr>
-<tr><td>우측 컬럼 탭 도크 <span class="tag src">§7.9</span> — 뒤처지면 <code>&lt;details&gt;</code> 최소안 0.5h</td><td>1.5h <span class="note">추정</span></td></tr>
+<tr><td><span class="ok">✅ [신규]</span> <b>폰 조작 3건 — 액션 바 가림 · 문서 스크롤 · 우측 컬럼</b> <span class="tag src">로드맵 §7.12 후속</span> —
+<span class="note">07-28 완료(<code>1e23362</code>). <b class="no">사용자 실기 iPhone 스크린샷이 잡았다</b>:
+① 상단 액션 바 6개가 턴 배너와 겹쳐 <code>[제안]</code> 외 5개가 가려짐 → <b>하단으로</b>
+② <code>overscroll-behavior</code>는 스크롤 <b>연쇄</b>만 막아 문서가 통째로 밀려 올라감 → 게임 화면만 <code>body.no-scroll</code>
+③ 우측 컬럼을 <b>컬럼 안에서</b> 스크롤 + 닫기 버튼을 모서리로 · 44px.
+<b>셋 다 헤드리스 390×844가 통과시킨 것</b>(로드맵 §9.7.1)</span></td><td>1h <span class="note">추정</span></td></tr>
+<tr><td><span class="ok">✅ [신규]</span> <b>폰 화면 시각 정리 — 조작부를 하나의 축으로</b> <span class="tag src">로드맵 §7.12 후속</span> —
+<span class="note">07-28 완료(<code>8dfa3e6</code>) · <b>기능 변경 0</b>(<code>style</code>). 하단 바를 <b>화면 폭 6등분 한 줄</b>로(2줄 덩어리는 D-패드와 어긋나 화면을 둘로 갈랐다) ·
+비활성은 <b>칸을 남기고 채도만</b> · D-패드는 바와 같은 배경을 얇게 · <b>뷰 선택은 조작이 아니라 관람 설정</b>이라 좌하단 칩으로(하단 좌우 대칭) ·
+손패는 턴 배너 아래 한 줄</span></td><td>0.5h <span class="note">추정</span></td></tr>
+<tr><td>우측 컬럼 탭 도크 <span class="tag src">§7.9</span> — 뒤처지면 <code>&lt;details&gt;</code> 최소안 0.5h.
+<span class="note">📌 <b>07-28 저녁에 컬럼 자체 스크롤이 들어가 조작 측면은 해소</b>됐다(<code>1e23362</code>) — 남은 것은 세그먼트 탭뿐이라 컷 비용이 더 싸졌다</span></td><td>1.5h <span class="note">추정</span></td></tr>
 
 <tr><td rowspan="2"><b>08-05</b><br><span class="note">수</span></td><td>overlay-bus 완전판(우선순위 큐 · 타이머 소유권 단일화) <span class="tag src">§7.10</span></td><td>1h</td></tr>
 <tr><td>FX 레이어 — <code>warp</code>·<code>lootWarp</code>·<code>focusRoom</code>·<code>pulseCell</code>·<code>#fxBanner</code> 4뷰 <span class="tag src">§2.2 · spec§2</span></td><td>3h <span class="note">추정</span></td></tr>
 
-<tr><td rowspan="3"><b>08-06</b><br><span class="note">목</span></td><td><span class="ok">✅</span> <code>suggestLog</code> + 제안 기록표 패널 <span class="tag src">§1.2</span> — <span class="note"><b>07-28로 앞당겨 완료</b> · 실시간·리플레이가 같은 배열 · 같은 사건의 로그 줄은 소급 제거</span></td><td>2h <span class="note">추정</span></td></tr>
+<tr><td rowspan="5"><b>08-06</b><br><span class="note">목</span></td><td><span class="ok">✅</span> <code>suggestLog</code> + 제안 기록표 패널 <span class="tag src">§1.2</span> — <span class="note"><b>07-28로 앞당겨 완료</b> · 실시간·리플레이가 같은 배열 · 같은 사건의 로그 줄은 소급 제거</span></td><td>2h <span class="note">추정</span></td></tr>
 <tr><td>로그 리플레이 <code>publicLog</code>/<code>privateLog</code> <span class="tag src">§8.3 b</span></td><td>1h</td></tr>
 <tr><td><span class="ok">✅</span> <code>scripts/eval-narrator.mjs</code> 작성 <span class="tag src">④§3</span> — <span class="note"><b>07-28로 앞당겨 완료</b> · 폴백 전수 112,752문장 C1~C6 위반 0건 · 기본 오프라인(쿼터 0)</span></td><td>1h <span class="note">추정</span></td></tr>
 <tr><td><span class="ok">✅ [신규]</span> <b>eval 리포트 파일을 실제로 생성</b> <span class="tag src">④§3·§10</span> — <span class="note">07-28 완료(<code>c90c723</code>).
@@ -449,7 +471,7 @@
 <tr class="mile"><td>🔒 <b>12:00 코드 동결</b> — 이후 촬영 소재 변경 금지</td><td>—</td></tr>
 <tr class="mile"><td>★ <b>본 테이크 촬영 → 편집 → 업로드</b> <span class="tag src">콘티§2·§4·§6</span></td><td>4h</td></tr>
 
-<tr class="mile"><td rowspan="4"><b>08-09</b><br><span class="note">일</span></td><td>③ 영상 링크 갱신 → 문서 정합성(<code>plans/active/12-view-evolution-stages</code>·<code>docs/index</code>·체크리스트) <span class="tag src">§2.4⚠</span></td><td>2h</td></tr>
+<tr class="mile"><td rowspan="5"><b>08-09</b><br><span class="note">일</span></td><td>③ 영상 링크 갱신 → 문서 정합성(<code>plans/active/12-view-evolution-stages</code>·<code>docs/index</code>·체크리스트) <span class="tag src">§2.4⚠</span></td><td>2h</td></tr>
 <tr class="mile"><td>11종 HTML → PDF 인쇄 + <b>눈으로 검증</b> <span class="tag src">§7.3</span></td><td>1.5h</td></tr>
 <tr class="mile"><td>★ <b>신청서 + 5종 링크 제출</b></td><td>1h</td></tr>
 <tr class="mile"><td>예비</td><td>3.5h</td></tr>
@@ -613,6 +635,9 @@
 <li><b class="no">SKIP을 통과로 읽지 말 것.</b> 게이트는 어떤 항목도 조용히 건너뛰지 않고 <b>사유와 함께</b> SKIP을 인쇄한다.
 특히 §9.6 런타임 게이트(뷰 10회 순회 ±5)는 브라우저 WebGL이 필요해 <b>항상 SKIP</b>이다 → 사람이 절차대로 1회 수행해야 체크가 닫힌다.</li>
 <li>기준선을 움직여야 하면 <code>--reason</code>을 적는다. <b>사유 없는 기준선 갱신은 거부된다</b> — 래칫이 그냥 풀리는 것을 막는 장치다.</li>
+<li>📌 <b class="no">07-28 저녁 정정 — <code>--quick</code>이 자기 근거를 지우고 있었다.</b> 빠른 모드는 폴백 전수 스윕을 <b>생략하면서</b>
+<code>docs/design/eval-narrator-report.md</code>는 그대로 덮어써 전수 수치를 <code>112,752 → 0</code>으로 퇴화시켰다. 이제 <code>--no-report</code>를 동반한다(<code>2fb83ef</code>).
+<b>커밋 전 게이트를 돌린 뒤 <code>git status</code>에 이 리포트가 올라오면 회귀</b>이므로 그대로 커밋하지 말 것. 리포트는 <code>pnpm verify</code>(전체)만 갱신한다.</li>
 <li>아래 표의 "끝났어야 하는 것"은 <b>이 게이트가 통과한 상태</b>를 뜻한다(빌드가 깨진 채로 끝낸 날은 미완이다).</li>
 </ul>
 <div class="scroll">
@@ -702,11 +727,18 @@
 <tr><td>§7.99 07-31 실측</td><td class="ok">07-31</td><td>+ §8.2·§8.3(a)(c) 삽입</td></tr>
 <tr><td>§7.99 08-01 안전 테이크</td><td class="ok"><b>08-01 (무조건)</b></td><td>조건부 → 무조건으로 격상</td></tr>
 <tr><td>§7.99 08-02~04 (계측·탭도크·기록표)</td><td class="part">08-03(계측) / 08-04(탭도크) / 08-06(기록표)</td><td>§9.1~9.3 삽입으로 재배치</td></tr>
-<tr><td>§7.99 08-05~07 (④·eval·T1)</td><td class="part">08-06~07 / <b>T1은 컷</b></td><td></td></tr>
+<tr><td>§7.99 08-05~07 (④·eval·T1)</td><td class="part">08-06~07 / <s>T1은 컷</s> → <b class="ok">T1은 07-28 완료</b></td>
+<td class="no"><b>🔴 07-28 저녁 정정</b> — §5.1이 컷을 취소했는데 <b>이 표만 "컷"으로 남아</b> 같은 문서 안에서 §2 08-04 · §5.1과 어긋나 있었다.
+T1 D-패드는 <b>제출물 ① 요건의 절반</b>이 걸린 항목이라 "점수"가 아니라 "자격" 쪽이다</td></tr>
 <tr><td>§7.99 08-08 (본테이크·뷰4·문서·PDF)</td><td class="part">08-08(촬영) / 08-09(문서·PDF)</td><td>과적재 해소</td></tr>
 <tr><td>§8.6 1~3</td><td class="ok">07-30~31 · 08-06(로그 리플레이)</td><td>최소선 채택</td></tr>
 <tr><td>§8.6 4~6 (§8.4·§8.5)</td><td class="no"><b>컷 → 본행사</b></td><td>재충원 1줄만 §8.1에 편입</td></tr>
-<tr><td>§9.1 · 9.2 · 9.3</td><td class="ok">08-02 / 08-02·08-04</td><td><span class="ok">✅ 9.1·9.3은 <b>07-28 완료</b></span> · ⬜ 9.2(<code>loop.sleep/wake</code>)만 미착수. §9.6 게이트는 <code>pnpm verify</code>로 상시화(기준선 <code>gate.baseline.json</code>)</td></tr>
+<tr><td>§9.1 · 9.2 · 9.3</td><td class="ok">08-02 / 08-02·08-04</td><td><span class="ok">✅ <b>9.1·9.2·9.3 전부 07-28 완료</b></span>
+(9.2는 07-28 저녁 코드 확인으로 정정 — 이 표가 미착수로 적고 있었다). §9.6 게이트는 <code>pnpm verify</code>로 상시화(기준선 <code>gate.baseline.json</code>)</td></tr>
+<tr><td>— <span class="note">(신규 · 3차 검수 이후 발견)</span></td><td class="ok">08-02(§9.7) / 08-04(§7.12 후속)</td>
+<td>✅ 로드맵 <b>§9.7</b>(뷰4 폴링 트윈, <code>2fb83ef</code>) · <b>§9.6 <code>--quick</code> 리포트 덮어쓰기</b>(<code>2fb83ef</code>) ·
+<b>§7.12 후속 2건</b>(폰 조작 <code>1e23362</code> · 시각 정리 <code>8dfa3e6</code>).
+4개 일정표 어디에도 없던 항목이다 — <b>실기 검수와 결함 추적에서 새로 나온 것</b>이라 §2의 가장 가까운 슬롯에 편입했다</td></tr>
 <tr><td>§9.4</td><td class="no"><b>컷</b></td><td>dt 클럭 최소분만 §9.2에 흡수</td></tr>
 <tr><td>§9.5</td><td class="no"><b>컷 → 본행사</b></td><td><code>STAGES</code>에 <code>load</code> 자리만 예약 — <span class="ok"><b>✅ 07-28 예약 완료</b></span></td></tr>
 </tbody>
@@ -729,6 +761,16 @@
 §5.1에서 T1을 <b>컷 취소</b>로 표기하고 그 컷 사유가 틀렸음을 명시 ·
 §5.2에 <b>탭-투-무브(T2)</b>와 <b>AI 패널 <code>0·0·0</code> 표기</b>를 폐기 항목으로 신설.
 §3에 <b>A′(한 판 완주 후 <code>/health</code> 재확인)</b> 추가.</li>
+<li><b>2026-07-28(3차)</b> <b>저녁 세 커밋 반영.</b>
+§2 08-02 슬롯에 <b>뷰4 폴링 트윈 결함</b>(로드맵 §9.7 · <code>2fb83ef</code>)과 <b><code>verify --quick</code>의 eval 리포트 덮어쓰기 해소</b>를 편입하고,
+<b class="no">§9.2를 미착수 → 완료로 정정</b>(코드에 이미 있었다 — 이 문서와 체크리스트가 “유일한 미착수 P0”로 적고 있던 것이 저녁 검수에서 드러났다).
+§2 08-04 슬롯에 <b>폰 조작 3건</b>(<code>1e23362</code>) · <b>폰 화면 시각 정리</b>(<code>8dfa3e6</code>) 편입,
+같은 슬롯의 탭 도크(§7.9)는 컬럼 자체 스크롤이 들어가 <b>조작 측면 해소</b>로 표기.
+§6 게이트 표에 <code>--quick</code>은 리포트를 쓰지 않는다는 항목 추가.
+<b class="no">§8 추적표의 “T1은 컷”을 정정</b> — §5.1은 07-28에 컷을 취소했는데 추적표만 옛 판단으로 남아 <b>문서가 자기 자신과 어긋나 있었다.</b>
+§8에 3차 검수 이후 새로 나온 항목 행 신설.
+<b>부수</b> — 위 §2 일정표의 날짜 셀 <code>rowspan</code>이 <b>5개 날짜에서 실제 행 수와 어긋나</b> 표가 밀려 보였다(<code>[신규]</code> 행을 더하면서 갱신되지 않은 누적분) → 전 날짜 재계산.
+<b>사람용 문서에서만 드러나는 결함</b>이라 <code>.md</code>만 보면 알 수 없다.</li>
 </ul>
 
 </div>

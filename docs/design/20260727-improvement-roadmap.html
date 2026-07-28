@@ -721,6 +721,50 @@
       <li>조작 안내가 키보드 전용(<code>휠</code> · <code>우클릭</code>)이라 터치에서는 <b class="no">거짓 안내</b>였다 →
         확정 문안에서 <b>존재하지 않는 조작 절만 덜어내는</b> 방식으로 처리했다(새 낱말 0 = ui-copy 재확정 불필요).</li>
     </ul>
+
+    <div class="lead" style="border-left:3px solid var(--red);padding-left:12px">
+      <b class="no">🔴 07-28 저녁 — 이동은 되는데 화면이 조작을 가리고 있었다</b> <span class="note">(<code>1e23362</code>)</span><br>
+      T1로 말은 움직였다. 그런데 사용자가 보낸 <b>실기 iPhone 스크린샷</b>에 3건이 찍혀 있었고,
+      <b>셋 다 우리 헤드리스 390×844 검증이 통과시킨 것</b>이다(왜 놓쳤는지는 §9.7.1).
+    </div>
+    <div class="scroll"><table>
+      <tr><th></th><th>증상</th><th>원인</th><th>조치</th></tr>
+      <tr><td class="no">🔴</td><td><b><code>[제안]</code> 말고 버튼이 전부 가려졌다</b></td>
+        <td>좌측 상단 액션 바 6개가 폭을 거의 다 먹어 <b>상단 중앙 턴 배너와 겹쳤다</b></td>
+        <td>액션 바를 <b>하단으로</b>(엄지가 닿는 자리) + 우측 D-패드 자리를 비움 · 손패는 턴 배너 아래 · 뷰 선택은 액션 바 위.
+          실측 390×844 <b>6개 전부 화면 안 · 겹침 0</b></td></tr>
+      <tr><td class="no">🔴</td><td><b>화면이 통째로 밀려 올라갔다</b><br><span class="note">보드가 위로 사라지고 아래에 빈 검은 띠</span></td>
+        <td><code>overscroll-behavior</code>는 스크롤 <b>연쇄</b>만 막는다 — 문서가 뷰포트보다 조금이라도 길면 페이지가 스크롤된다.
+          <b>T0의 그 한 줄이 이것까지 막아준다고 읽고 있던 것이 오류</b></td>
+        <td><b>게임 화면에서만</b> <code>body.no-scroll</code> — 랜딩·대기실은 카드가 화면보다 길 수 있어 <b>제외</b>.
+          실측 <code>scrollHeight === innerHeight</code> · <code>scrollTo(0,2000)</code> 후에도 <code>scrollY 0</code></td></tr>
+      <tr><td class="part">🟠</td><td><b>우측 컬럼 조작이 어려웠다</b></td>
+        <td>패널 4개가 세로로 쌓여 화면을 넘겼고, <b>그것이 위 문서 스크롤의 원인이기도 했다.</b>
+          닫기 버튼은 화면 한가운데 오른쪽에 떠 있어 무엇을 닫는지 안 읽힌다</td>
+        <td>컬럼 <b>안에서</b> 스크롤(<code>overscroll-behavior: contain</code>) · 닫기 버튼을 <b>컬럼 모서리</b>로(<code>.rp-on</code>) · 타깃 34×46 → <b>44×44</b></td></tr>
+    </table></div>
+    <ul>
+      <li>두 번째 항목이 T0의 성격을 다시 정정한다. T0는 <b>핀치 확대와 스크롤 연쇄</b>를 막았을 뿐 <b>문서 스크롤 자체</b>는 손대지 않았다 —
+        “T0로 화면은 안 깨진다”는 컷 사유가 틀렸던 이유가 여기서도 반복된다.</li>
+      <li>세 번째는 <b>§7.9(탭 도크)의 최소 대체분</b>이 실질적으로 착지한 것이다. 세그먼트 탭은 여전히 미착수.</li>
+    </ul>
+
+    <div class="lead" style="border-left:3px solid var(--gold);padding-left:12px">
+      <b class="ok">✅ 07-28 저녁 — “이 화면은 아름답지 못해”</b> <span class="note">(<code>8dfa3e6</code>)</span><br>
+      사용자 평. 기능은 됐지만 요소마다 크기·정렬·배경이 제각각이라 <b>조작부가 갈라져 보였다.</b> 정렬 축을 하나로 세웠다.
+      <b>기능 변경 0</b>(<code>style(client)</code>)이고, 판단 축이 “되는가”에서 <b>“읽히는가”</b>로 한 칸 옮겨간 지점이다.
+    </div>
+    <ul>
+      <li><b>하단 바를 화면 폭 6등분 한 줄로</b>(<code>grid-template-columns: repeat(6, 1fr)</code>). 2줄로 접히는 덩어리는 우측 D-패드와
+        크기·정렬이 어긋나 <b>화면을 둘로 갈랐다.</b> 한 줄이 되면 앱 하단 탭바처럼 읽혀 <b>처음 보는 사람도 “여기가 조작부”임을 안다.</b></li>
+      <li><b>비활성 버튼은 칸을 남기고 채도만</b> 뺀다(<code>.is-off</code>) — 배경을 지우면 6칸의 리듬이 끊긴다.
+        비활성은 “없는 것”이 아니라 <b>“지금은 못 쓰는 것”</b>이므로 자리가 남아야 옳다.</li>
+      <li><b>D-패드는 바와 같은 배경·라운딩을 얇게.</b> 완전히 지우면 화살표 4개가 흩어져 보이고, 두껍게 두면 바와 <b>두 덩어리</b>가 된다.</li>
+      <li><b>뷰 선택은 조작이 아니라 관람 설정</b>이다 → 게임 버튼과 같은 무게로 두지 않고 D-패드 반대쪽(좌하단) 칩으로. 하단이 좌우 대칭이 된다.</li>
+      <li>손패는 턴 배너 아래 <b>한 줄</b>, 폭은 <code>max-content</code>. 화면 폭을 다 먹으면 상단에 검은 띠가 두 개 생겨 <b>보드가 그만큼 사라진다.</b></li>
+      <li>하단 데크가 두꺼워진 만큼 <code>#fxBanner</code> 하단 배치(§7.10 최소안)를 178px → <b>240px</b>로 올렸다 —
+        겹치면 §7.10이 상단에서 피한 3중 점유를 하단에서 재발시킨다.</li>
+    </ul>
   </div>
 
   <div class="card info">
@@ -884,6 +928,11 @@
     <p class="no">→ 뷰2·3에서 <b>RAF 2개 / 라이브 WebGL 컨텍스트 2개 / 프레임당 강제 동기 레이아웃 2회.</b> 144Hz면 초당 288 콜백·288 리플로우.</p>
     <p><b>조치</b> — <code>three ? game.loop.sleep() : wake()</code>. <b><code>GameScene.update()</code>에 <code>isVisible()</code> 가드를 넣으면 안 된다</b> — 뷰4에서 GameScene은 invisible이지만 카메라를 돌려야 하고 PixelScene이 미러링한다. 정확한 축은 "three 뷰인가"다.
     인셋은 <code>ResizeObserver</code> 캐시로. <code>IsoView.setActive(false)</code>가 <b>말풍선 타이머를 정리하지 않는</b> 것도 함께.</p>
+    <p class="ok"><b>✅ 07-28 구현 완료</b> — <code>main.ts</code>가 <code>three ? game.loop.sleep() : (!running &amp;&amp; wake() + scale.refresh())</code>로 분기하고,
+    <code>IsoView.setActive(false)</code>가 <code>clearBubbles()</code>(타자기·홀드 타이머 전량) + <code>clearFx()</code> + <code>releaseHudInset()</code>을 수행한다.
+    실측 <b>뷰1·4 = 60fps / 뷰2·3 = 0fps.</b><br>
+    ⚠️ <b>뷰4는 재우면 안 된다</b> — <code>mirrorCamera()</code>가 invisible한 <code>GameScene</code>의 카메라를 매 프레임 베끼므로 뷰1 루프가 뷰4를 굴린다.<br>
+    📌 <b>체크리스트·실행계획이 이 항목을 “유일한 미착수 P0 잔여분”으로 계속 적고 있었다</b> — 07-28 저녁 검수에서 코드 확인으로 정정.</p>
     <p class="note">📌 <b>§7.8 정정</b> — null 가드가 아니라 <b>zero-rect</b> 문제다. <code>if (!el) return 0</code>은 이미 있고, <code>display:none</code>일 때 <code>getBoundingClientRect()</code>가 0을 반환하는 것이 원인(조치 문구는 그대로 유효).</p>
   </div>
 
@@ -941,6 +990,73 @@
     <p class="note">판정 기준은 <code>scripts/gate.config.mjs</code> 한 곳, 현재 값은 <code>scripts/gate.baseline.json</code>에 분리 기록한다.</p>
   </div>
 
+  <div class="card crit">
+    <h3 class="no">🔴 07-28 저녁 — 게이트가 자기 근거 파일을 지우고 있었다 <span class="note">(해소 · <code>2fb83ef</code>)</span></h3>
+    <p><code>eval-narrator.mjs</code>는 실행마다 <code>docs/design/eval-narrator-report.md</code>를 갱신한다(§7.7 후속에서 “근거 파일이 실제로 없다”를 고치며 넣은 동작).
+    그런데 <code>verify --quick</code>은 <b>폴백 전수 스윕을 생략</b>하면서 리포트는 그대로 덮어썼다 →
+    <b>커밋 전 게이트를 돌릴 때마다</b> ④ §3.4의 최대 정량 근거인 전수 수치가 <b class="no">112,752 → 0으로 퇴화</b>했다.</p>
+    <ul>
+      <li><b>조치</b> — 빠른 모드에 <code>--no-report</code>를 함께 넘긴다(<code>RUNNERS.narrator.quickArgs</code>). <b>리포트는 전체 모드만 갱신한다.</b></li>
+      <li><b>“빠른 모드”는 검사를 줄이라는 뜻이지 기록을 줄이라는 뜻이 아니었다.</b> 축약 모드가 산출물을 축약본으로 갈아치우면
+        게이트를 성실히 돌린 사람일수록 근거를 더 많이 지운다 — <b class="no">성실함이 벌점이 되는 구조</b>였다.</li>
+      <li>규약으로 승격 — <b>측정 도구는 기본값이 읽기 전용이어야 한다.</b> 산출물을 쓰는 모드는 명시적으로만(전체 모드 = 전수 측정 = 전수 기록).</li>
+      <li class="note">발견 경위: 다른 결함(§9.7)을 고치고 커밋하려다 <code>git status</code>에 리포트가 매번 함께 올라오는 것을 보고 잡았다.
+        <b>게이트 자신은 이것을 검출하지 못한다</b> — 문서·코드 상수 정합 게이트는 상수를 보지 리포트 본문을 보지 않는다.</li>
+    </ul>
+  </div>
+
+  <div class="card crit">
+    <h3><span class="p p0">P0</span> 9.7 뷰4에서 말이 얼어 있었다 — 폴링 렌더러가 매 프레임 트윈을 죽이고 있었다
+      <span class="ok">✅ 07-28 · <code>2fb83ef</code></span></h3>
+    <p class="no">심사자가 뷰4에서 조작하면 <b>“이동이 안 된다”로 읽는</b> 결함이다. §7.12에서 폰 조작을 막 열어 준 직후라 파급이 더 컸다.</p>
+    <ul>
+      <li><b>정상이던 것부터</b> — 루프·가시성 모두 참(<code>loopRunning true · pixelVisible true</code>), 서버 좌표도 정확히 들어왔다.
+        즉 <b>데이터도 루프도 범인이 아니었다.</b></li>
+      <li><b>원인</b> — Phaser 트윈은 <b>두 번째 스텝부터 움직인다</b>(새 트윈의 첫 <code>update</code>는 <code>delta = 0</code>으로 리셋).
+        뷰4는 <code>update()</code>마다 서버 상태를 다시 읽는 <b>폴링</b> 렌더러인데 재시작 조건이 <b><code>그리는 중인 좌표 ≠ 목표</code></b>였다.
+        도착 전까지 매 프레임 참이라 60Hz로 <code>kill → add</code>를 반복했고, <b>모든 트윈이 첫 스텝만 맞고 죽어</b> <code>elapsed</code>가 0에 못 박혔다.</li>
+      <li class="no"><b>뷰1은 <code>onStateChange</code> 이벤트 구동이라 같은 비교를 써도 안전했다.</b>
+        같은 한 줄이 <b>한쪽에서만</b> 깨진 것이고 <b>그 구조 차이가 곧 원인</b>이다 — 두 파일을 나란히 놓고 읽으면 그 줄은 똑같아 보인다.
+        <b>코드 리뷰로 잡을 수 없는 종류의 결함</b>이었다.</li>
+      <li><b class="ok">결정적 증거</b> — 폴링만 멈추자(<code>setVisible(false)</code>) 토큰이 <b>스스로 목표에 도착했다.</b>
+        렌더러를 끄면 낫는 버그는 렌더러가 범인이다.</li>
+      <li><b>조치</b> — 재시작 조건을 <b>“목표 좌표가 바뀌었는가”</b>로. 토큰·장물이 그리는 중인 좌표와 별도로 <b>목표 <code>tx/ty</code>를 보관</b>한다.
+        <code>warp()</code>는 순간이동 후 <code>tx/ty</code>도 함께 옮긴다(안 옮기면 다음 폴링이 “아직 안 갔다”고 오해해 방금 워프한 말을 트윈으로 도로 끈다).
+        <b>뷰2·3이 같은 폴링을 <code>target</code> + dt 보간으로 푸는 것과 같은 규약</b>이라 4뷰가 다시 한 규약 위에 선다.</li>
+      <li><b>같은 원인으로 장물도 얼어 있었다.</b> 계략 NPC는 <b>별개 결함</b> — 생성 후 위치를 한 번도 갱신하지 않아 재대국에서 유령이 남았다.
+        이쪽은 이동이 아니라 <b>재배치</b>이므로 트윈이 아닌 <b>스냅</b>(<code>setPosition</code>)으로 고쳤다. 셋 다 해소.</li>
+    </ul>
+    <p class="note">⚠️ <b>§2.5 <code>ViewContract</code>가 이것을 막지 못하는 이유</b> — 계약은 <i>무엇을 표시하는가</i>를 강제하고
+    <i>어떻게 갱신하는가</i>(이벤트 구동/폴링)는 자유로 뒀다(“계약은 정보만 강제하고 표현은 자유로 둔다”는 §2.5의 선택 그대로).
+    그 자유가 이번 결함이 산 자리다. <b>계약을 넓히는 것이 답은 아니고</b>, 대신 규약 한 줄을 코드 주석으로 못 박았다 —
+    <b>폴링 뷰의 트윈 재시작 조건은 언제나 “목표의 변화”여야 한다.</b></p>
+  </div>
+
+  <div class="card warn">
+    <h3><span class="p p1">회고</span> 9.7.1 왜 헤드리스 검증이 §7.12 · §9.7을 전부 통과시켰는가</h3>
+    <p>§4.4 절차는 <b>390×844로 재고 있었고 4뷰 전부에서 말을 움직여 확인</b>까지 했는데도 셋 다 놓쳤다. 원인은 도구가 아니라 <b>질문</b>이다.</p>
+    <div class="scroll"><table>
+      <tr><th>놓친 것</th><th>헤드리스가 실제로 물은 것</th><th>왜 통과했나</th></tr>
+      <tr><td>액션 바 가림</td><td>“6개 버튼이 DOM에 있고 뷰포트 안인가”</td>
+        <td><b>가림은 요소의 속성이 아니라 요소 <i>쌍</i>의 관계다.</b> 두 요소 각각의 <code>getBoundingClientRect()</code>는 둘 다 정상이고,
+          가려진 요소도 폭·높이·<code>visibility</code>를 그대로 보고한다. <b>아무도 둘을 비교하지 않았다</b></td></tr>
+      <tr><td>문서 스크롤</td><td><code>scrollWidth vs innerWidth</code>(가로) · <code>touch-action</code></td>
+        <td>세로를 재지 않았다. 게다가 <b>전체 페이지 캡처는 문서 전체를 렌더</b>하므로 “페이지가 밀려 올라간 화면”이 스크린샷에서는
+          <b>정상으로 보인다</b> — 증상 자체가 캡처에서 사라진다</td></tr>
+      <tr><td>뷰4 말 얼어붙음</td><td>“패드 프레임이 키보드와 바이트 동일한가” · “말이 움직였는가”</td>
+        <td><b>네트워크 계층에서 참이고 좌표도 갱신됐다.</b> 그리고 뷰를 전환하면 폴링이 멈춰 마지막 트윈이 살아나 말이 목표로 튄다 —
+          <b>검증 사이에 뷰를 오간 순간 화면이 스스로 정상으로 복구</b>된다</td></tr>
+    </table></div>
+    <ul>
+      <li><b>공통 형태</b> — 우리는 매번 <b>“고친 그것이 됐는가”</b>를 물었다. 실기 스크린샷은 아무것도 묻지 않고 <b>한 시점의 화면 전체</b>를 준다.</li>
+      <li>📌 §4.4가 이미 옳게 적어 둔 문장 — <b>“스크린샷은 근거이지 측정이 아니다.”</b> 이번에 드러난 것은 그 역도 참이라는 것이다:
+        <b>측정은 자기가 물은 것만 답한다.</b> 둘 다 있어야 하고, 우리에게 없던 쪽은 <b>“묻지 않은 눈”</b>이었다.</li>
+      <li class="note"><b>실행 가능한 최소 보강(제안 · 미착수)</b> — ① 폰 뷰에서 <code>.hud-*</code> <b>쌍별 사각형 교차 판정</b> 1회
+        ② <code>document.scrollingElement.scrollHeight === innerHeight</code> <b>세로 확인</b>
+        ③ 뷰 전환 없이 <b>같은 뷰에 머문 채</b> N초 뒤 토큰 좌표 재측정.</li>
+    </ul>
+  </div>
+
   <p class="sub" style="margin-top:32px">변경 이력 — 2026-07-27 최초 작성(심사축·플레이경험·4뷰디자인 3개 관점 실코드 검수 통합) ·
   2026-07-27(2차) §7 추가(라이브 실접속 · 시뮬레이션 1만 판 · 렌더 재검수, §6.3·§5 반증) ·
   2026-07-27(3차) §8 멀티플레이·재접속 + §9 런타임 건전성 추가, §7.8을 zero-rect 문제로 정정 ·
@@ -953,7 +1069,14 @@
   <b>§7.12 정정</b>(T1 D-패드 <b>컷 결정을 뒤집었다</b>, <code>55297c0</code> — 폰에서 말을 못 움직여 제출물 ① 요건 절반이 성립 안 함. T2는 클라 판정을 부르므로 폐기) ·
   <b>§7.7 완료·확장</b>(AI 패널 판 시작 동시 노출 · <code>0·0·0</code> 미표기 · <code>✨♻⚙</code> 범례 · 턴 HUD 겹침 해소 ·
   랜딩 AI 신호 0 해소와 <code>eval-narrator-report.md</code> 실제 생성, <code>c90c723</code>) ·
-  §1.3 구현 시 정정 2건 병기 · §7.1 남은 조치 전건 완료 표기.</p>
+  §1.3 구현 시 정정 2건 병기 · §7.1 남은 조치 전건 완료 표기 ·
+  <b>2026-07-28(6차) 저녁 세 커밋 반영</b> — <b>§9.7 신설</b>(뷰4 말·장물이 얼어 있던 원인은 폴링 렌더러가 60Hz로 트윈을 죽인 것,
+  <code>2fb83ef</code>. <b>뷰1은 이벤트 구동이라 같은 비교로도 안전했고 그 구조 차이가 원인</b>) ·
+  <b>§9.7.1 신설</b>(헤드리스 390×844가 셋 다 통과시킨 이유 — <b>측정은 자기가 물은 것만 답한다</b>) ·
+  <b>§9.6 추가</b>(<code>verify --quick</code>이 eval 리포트를 덮어써 전수 수치를 <code>112,752 → 0</code>으로 퇴화시키던 것 해소 —
+  <b>게이트가 자기 근거 파일을 지우고 있었다</b>) ·
+  <b>§7.12 후속 2건</b>(실기 iPhone 스크린샷이 잡은 액션 바 가림·문서 스크롤·우측 컬럼 <code>1e23362</code>, 조작부 시각 정리 <code>8dfa3e6</code>) ·
+  <b>§9.2 완료 표기</b>(<code>loop.sleep/wake</code>·말풍선 타이머 정리는 이미 코드에 있었다).</p>
 </div>
 </body>
 </html>
