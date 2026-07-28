@@ -31,6 +31,10 @@
       }
       button:hover { background: #c9733a; }
       button:disabled { background: #45403a; color: #8c8578; cursor: not-allowed; }
+      /* 비활성처럼 보이지만 클릭은 살아 있는 상태(aria-disabled). 클릭하면 사유를 안내한다.
+         `disabled` 속성은 title 툴팁도 click 이벤트도 죽이므로 액션 버튼엔 쓰지 않는다. */
+      button.is-off { background: #45403a; color: #8c8578; cursor: not-allowed; }
+      button.is-off:hover { background: #45403a; }
       input {
         background: #16130f; color: #f0e9dc; border: 1px solid #4a3d2b;
         border-radius: 6px; padding: 8px 10px; font-size: 13px;
@@ -277,9 +281,37 @@
       .dice-overlay .dice-faces { font-size: 76px; line-height: 1.1; letter-spacing: 6px; }
       .dice-overlay .dice-label { font-size: 24px; color: #f0d9a8; margin-top: 12px; font-weight: 700; letter-spacing: 1px; }
       .dice-overlay.done .dice-label { color: #ffd479; }
+      /* 첫 진입 목표 카드(온보딩) — 오버레이 버스가 표시/해제를 단독 소유한다 */
+      .goal-overlay {
+        position: fixed; inset: 0; z-index: 35;
+        display: flex; align-items: center; justify-content: center;
+        background: rgba(0, 0, 0, 0.62); padding: 16px;
+      }
+      .goal-card {
+        width: 380px; max-width: 92vw;
+        background: #211c16; border: 2px solid #e0a35a; border-radius: 16px;
+        padding: 22px 24px; box-shadow: 0 16px 60px rgba(0, 0, 0, 0.7);
+      }
+      .goal-title { font-size: 18px; color: #f0d9a8; font-weight: 700; text-align: center; }
+      .goal-lines { margin: 16px 0 20px; display: flex; flex-direction: column; gap: 10px; }
+      .goal-lines div { font-size: 13px; line-height: 1.55; color: #f0e9dc; }
+      .goal-actions { display: flex; justify-content: center; }
+      .goal-actions button { padding: 10px 22px; font-size: 14px; }
+      .goal-again { margin-top: 14px; font-size: 11px; color: #8f8574; text-align: center; }
+      /* 하단 중앙 배너 슬롯 — 전면을 막지 않는 알림(§7.10). 상단 중앙은 이미 혼잡하다. */
+      .hud-banner {
+        left: 50%; bottom: calc(52px + var(--sa-b, 0px)); transform: translateX(-50%);
+        z-index: 6; color: #f0d9a8; font-size: 12px; padding: 8px 16px;
+        max-width: 86vw; text-align: center; line-height: 1.45;
+        pointer-events: none;
+      }
       .hud-hand {
         left: calc(16px + var(--sa-l, 0px)); bottom: calc(16px + var(--sa-b, 0px));
         max-width: 300px;
+      }
+      #hand .hand-label { color: #f0d9a8; font-weight: 600; }
+      #hand .hand-cards {
+        margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px 14px; color: #cbbfa8;
       }
       .hud-view {
         left: calc(16px + var(--sa-l, 0px)); bottom: calc(72px + var(--sa-b, 0px));
@@ -456,6 +488,23 @@
       .modal .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
       .modal .ghost { background: #3a3126; }
       .modal .ghost:hover { background: #493d2d; }
+      /* 고발 모달 상단 위험 경고 — 모달을 열자마자 보이는 위치 */
+      .modal-warn {
+        background: #3a1f1f; border: 1px solid #d56b6b; color: #f0c9c9;
+        border-radius: 8px; padding: 8px 10px; font-size: 12px;
+        line-height: 1.45; margin-bottom: 14px;
+      }
+      .modal-note { font-size: 11px; color: #a89778; margin-top: 12px; line-height: 1.45; }
+      /* 제안 모달 장소 고정행 — 읽기 전용(사용자가 고르는 값이 아니다) */
+      .modal-fixed { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+      .modal-fixed label { width: 52px; font-size: 12px; color: #a89778; }
+      .modal-fixed .mf-val { flex: 1; font-size: 13px; color: #f0d9a8; }
+      .modal-fixed .mf-badge {
+        font-size: 10px; color: #cbbfa8; background: #3a3126;
+        border-radius: 8px; padding: 2px 6px; white-space: nowrap;
+      }
+      .modal .danger { background: #b4423b; }
+      .modal .danger:hover { background: #c9524a; }
     </style>
   </head>
   <body>
@@ -532,12 +581,14 @@
     <section id="gameScreen" class="hidden">
       <div id="game"></div>
 
+      <!-- 액션 버튼은 disabled 대신 aria-disabled + .is-off — 클릭하면 사유를 안내한다 -->
       <div class="hud hud-ctrl">
         <button id="suggest">제안</button>
         <button id="accuse">고발</button>
-        <button id="passage" title="비밀 통로로 이동" disabled>통로</button>
-        <button id="bonus" title="가까운 고정 NPC의 계략(엿보기)" disabled>계략</button>
+        <button id="passage" class="is-off" aria-disabled="true">통로</button>
+        <button id="bonus" class="is-off" aria-disabled="true">계략</button>
         <button id="endTurn">턴 종료</button>
+        <button id="helpBtn" title="게임 목표와 조작을 다시 봅니다.">?</button>
       </div>
 
       <div class="hud hud-view">
@@ -552,6 +603,31 @@
       </div>
 
       <div id="diceOverlay" class="dice-overlay hidden"></div>
+
+      <!-- 첫 진입 목표 카드(§1.5 온보딩). 표시/해제는 오버레이 버스가 단독 소유. -->
+      <div
+        id="goalCard"
+        class="goal-overlay hidden"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="goalTitle"
+      >
+        <div class="goal-card">
+          <div id="goalTitle" class="goal-title">🐯 60초 안내</div>
+          <div class="goal-lines">
+            <div>① 목표 — 도둑 1명 · 훔친 것 1개 · 장소 1곳을 맞히면 승리.</div>
+            <div>② 출발점 — 내 손패 3장은 정답이 아닙니다. 여기서부터 지워 나가세요.</div>
+            <div>③ 방법 — 방에 들어가 [제안]. 아무도 반증 못 한 조합이 정답 후보예요.</div>
+          </div>
+          <div class="goal-actions">
+            <button id="goalOk">알겠어요, 시작할게요</button>
+          </div>
+          <div class="goal-again">좌측 상단 [?]를 누르면 다시 볼 수 있어요.</div>
+        </div>
+      </div>
+
+      <!-- 하단 중앙 배너 슬롯 — 전면을 막지 않는 알림(버스가 타이머 소유) -->
+      <div id="fxBanner" class="hud hud-banner hidden"></div>
 
       <!-- 턴 순서(원형) — turnInfo 클릭 시 표시 -->
       <div id="turnCircle" class="tc-overlay hidden">
@@ -587,8 +663,11 @@
         </div>
       </div>
 
-      <div class="hud hud-hand">
-        <div id="hand"><b>내 단서 패</b>: (잔치 시작 후 표시)</div>
+      <div
+        class="hud hud-hand"
+        title="내 손패는 정답 봉투에 없어요. 후보에서 먼저 지우고 시작하세요."
+      >
+        <div id="hand">🃏 내 손패 — 잔치가 시작되면 3장이 배부돼요.</div>
       </div>
 
       <div class="hud hud-help">

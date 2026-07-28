@@ -71,15 +71,26 @@ const addLog = (text: string, opts: LogOpts = {}): void => {
 // ── 카드 선택 모달 ─────────────────────────────
 type Pick = { suspect: string; weapon: string; room?: string };
 
+/**
+ * 카드 접두 아이콘. 장소 9종은 EMOJI 맵에 없어 `emoji()`가 빈 문자열을 준다
+ * → 장소는 고정 문자 `📍`로 통일한다(ui-copy §2 표기 접두 기호).
+ */
+const ROOM_SET: ReadonlySet<string> = new Set<string>(ROOMS);
+const cardIcon = (v: string): string => (ROOM_SET.has(v) ? "📍" : emoji(v));
+
 const selectFrom = (
   values: readonly string[],
   disabled?: Set<string>,
+  /** 내 패 옵션 접미 — 제안/고발이 다르다(ui-copy §6.1·§6.2) */
+  mySuffix = " — 내 패",
 ): HTMLSelectElement => {
   const sel = document.createElement("select");
   for (const v of values) {
     const opt = document.createElement("option");
     opt.value = v;
-    opt.textContent = label(v) + (disabled?.has(v) ? " (내 패)" : "");
+    // 셀렉트 옵션 라벨: 이모지 + 라벨 (ui-copy §6 공통 규칙)
+    opt.textContent =
+      `${cardIcon(v)} ${label(v)}` + (disabled?.has(v) ? mySuffix : "");
     if (disabled?.has(v)) opt.disabled = true;
     sel.appendChild(opt);
   }
@@ -99,7 +110,22 @@ const participantSuspects = (): string[] => {
   return ZODIAC.filter((z) => set.has(z));
 };
 
-const openPicker = (title: string, needRoom: boolean): Promise<Pick | null> =>
+type PickerOpts = {
+  title: string;
+  /** 장소를 사용자가 고른다(고발). 제안은 현재 방으로 고정이라 false. */
+  needRoom: boolean;
+  /** 제안 — 현재 방 읽기전용 고정행. 값은 서버로 보내지 않는다(서버가 player.room 사용). */
+  fixedRoom?: string;
+  /** 상단 위험 경고(고발) */
+  warn?: string;
+  /** 하단 안내 줄 */
+  note?: string;
+  okLabel: string;
+  okDanger?: boolean;
+  mySuffix: string;
+};
+
+const openPicker = (opts: PickerOpts): Promise<Pick | null> =>
   new Promise((resolve) => {
     const overlay = document.createElement("div");
     overlay.className = "overlay";
@@ -107,12 +133,21 @@ const openPicker = (title: string, needRoom: boolean): Promise<Pick | null> =>
     modal.className = "modal";
 
     const h = document.createElement("h2");
-    h.textContent = title;
+    h.textContent = opts.title;
     modal.appendChild(h);
 
-    const suspectSel = selectFrom(participantSuspects(), myCards);
-    const weaponSel = selectFrom(WEAPONS, myCards);
-    const roomSel = needRoom ? selectFrom(ROOMS, myCards) : null;
+    if (opts.warn) {
+      const w = document.createElement("div");
+      w.className = "modal-warn";
+      w.textContent = opts.warn;
+      modal.appendChild(w);
+    }
+
+    const suspectSel = selectFrom(participantSuspects(), myCards, opts.mySuffix);
+    const weaponSel = selectFrom(WEAPONS, myCards, opts.mySuffix);
+    const roomSel = opts.needRoom
+      ? selectFrom(ROOMS, myCards, opts.mySuffix)
+      : null;
 
     const row = (labelText: string, sel: HTMLSelectElement): HTMLDivElement => {
       const r = document.createElement("div");
@@ -123,9 +158,34 @@ const openPicker = (title: string, needRoom: boolean): Promise<Pick | null> =>
       return r;
     };
 
+    // 장소 고정행 — 제안은 "어느 방에서 하는지"가 3요소 중 하나인데 화면에 없었다.
+    // 고르는 값이 아니라 현재 방이므로 읽기 전용 표시로 둔다.
+    if (opts.fixedRoom) {
+      const r = document.createElement("div");
+      r.className = "modal-fixed";
+      r.title = "제안 장소는 지금 서 있는 방으로 정해져요.";
+      const l = document.createElement("label");
+      l.textContent = "장소";
+      const v = document.createElement("span");
+      v.className = "mf-val";
+      v.textContent = `📍 ${label(opts.fixedRoom)}`;
+      const b = document.createElement("span");
+      b.className = "mf-badge";
+      b.textContent = "현재 방 · 고정";
+      r.append(l, v, b);
+      modal.appendChild(r);
+    }
+
     modal.appendChild(row("용의자", suspectSel));
     modal.appendChild(row("훔친 것", weaponSel));
     if (roomSel) modal.appendChild(row("장소", roomSel));
+
+    if (opts.note) {
+      const n = document.createElement("div");
+      n.className = "modal-note";
+      n.textContent = opts.note;
+      modal.appendChild(n);
+    }
 
     const actions = document.createElement("div");
     actions.className = "actions";
@@ -133,7 +193,8 @@ const openPicker = (title: string, needRoom: boolean): Promise<Pick | null> =>
     cancel.className = "ghost";
     cancel.textContent = "취소";
     const ok = document.createElement("button");
-    ok.textContent = "확인";
+    ok.textContent = opts.okLabel;
+    if (opts.okDanger) ok.className = "danger";
     actions.append(cancel, ok);
     modal.appendChild(actions);
 
@@ -152,6 +213,27 @@ const openPicker = (title: string, needRoom: boolean): Promise<Pick | null> =>
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
   });
+
+/**
+ * 손패 HUD — 1행이 라벨이자 규칙 설명이다(ui-copy §4.1).
+ * "이 3장은 정답이 아님"은 서버가 개별 전송한 손패를 **표시**할 뿐이고,
+ * 클라가 정답 여부를 계산하지 않는다(규칙: 손패는 정답 봉투에서 제외된 카드).
+ */
+const renderHand = (cards: Card[]): void => {
+  const host = $("hand");
+  host.innerHTML = "";
+  const line1 = document.createElement("div");
+  line1.className = "hand-label";
+  line1.textContent = "🃏 내 손패 · 이 3장은 정답이 아님";
+  const line2 = document.createElement("div");
+  line2.className = "hand-cards";
+  for (const c of cards) {
+    const chip = document.createElement("span");
+    chip.textContent = `${cardIcon(c.value)} ${label(c.value)}`;
+    line2.appendChild(chip);
+  }
+  host.append(line1, line2);
+};
 
 // ── 상태 ─────────────────────────────
 let room: Room | null = null;
@@ -211,8 +293,7 @@ const wireRoom = (r: Room): void => {
   );
   r.onMessage("hand", (m: { cards: Card[] }) => {
     myCards = new Set(m.cards.map((c) => c.value));
-    $("hand").innerHTML =
-      "<b>내 단서 패</b>: " + m.cards.map((c) => label(c.value)).join(", ");
+    renderHand(m.cards);
     // 내 패를 증거노트에 '제외' 잠금으로 반영
     if (room) buildEvidence(room.roomId);
   });
@@ -285,10 +366,124 @@ const wireRoom = (r: Room): void => {
   show("lobby");
 };
 
+// ── 오버레이 버스 (최소안 · 로드맵 §7.10) ─────────────────────────────
+// 전면(풀스크린) 오버레이의 표시·해제·타이머를 **이 큐 하나만** 소유한다.
+// 이전에는 주사위(#diceOverlay)와 결과(#endOverlay)가 서로의 존재를 모른 채
+// 각자 setInterval/setTimeout을 들고 같은 자리를 덮었다.
+// 최소안 범위 = 주사위 충돌 가드 + 하단 배너 슬롯. 연출 큐·인터스티셜은 08-05.
+/** 전면 오버레이 우선순위 — 값이 클수록 우선. §7.10이 지정한 값은 그대로 사용. */
+const OVERLAY_PRIORITY = {
+  end: 100, // 결과 화면 — 판이 끝나면 그 위에 아무것도 두지 않는다(§7.10)
+  goal: 90, // 온보딩 목표 카드(§1.5) — §7.10에 값이 없어 여기서 확정. 주사위보다 앞선다
+  dice: 80, // 주사위(§7.10)
+  interstitial: 60, // 뷰 전환 인터스티셜(§7.10) — 완전판 08-05 예약, 현재 미사용
+  banner: 40, // 하단 배너 슬롯(§7.10 `fxBanner`) — 전면을 막지 않아 큐 밖에서 처리
+} as const;
+type OverlayId = keyof typeof OVERLAY_PRIORITY;
+
+/** 표시 중인 오버레이가 버스에서 빌려 쓰는 타이머 핸들. 타이머는 버스가 회수한다. */
+type OverlayHandle = {
+  after: (ms: number, fn: () => void) => void;
+  close: () => void;
+};
+type OverlayReq = {
+  id: OverlayId;
+  el: HTMLElement;
+  /** 표시 직후 실행. 타이머는 반드시 핸들을 통해서만 건다. */
+  run?: (h: OverlayHandle) => void;
+  /** 대기열에서 꺼낼 때 재검증 — false면 조용히 버린다(뒤늦은 주사위 방지). */
+  valid?: () => boolean;
+  /** 더 높은 우선순위에 밀렸을 때 대기열로 돌아갈지 */
+  requeue?: boolean;
+};
+
+let activeOverlay: OverlayReq | null = null;
+let overlayTimers: number[] = [];
+const pendingOverlays: OverlayReq[] = [];
+
+const hideOverlay = (): void => {
+  if (!activeOverlay) return;
+  overlayTimers.forEach((t) => window.clearTimeout(t));
+  overlayTimers = [];
+  activeOverlay.el.classList.add("hidden");
+  activeOverlay = null;
+};
+
+const runOverlay = (req: OverlayReq): void => {
+  activeOverlay = req;
+  req.el.classList.remove("hidden");
+  req.run?.({
+    after: (ms, fn) => {
+      overlayTimers.push(window.setTimeout(fn, ms));
+    },
+    close: () => closeOverlay(req.id),
+  });
+};
+
+/** 대기열에서 가장 우선순위 높은 것을 꺼내 표시. 유효하지 않으면 버린다. */
+const flushOverlay = (): void => {
+  while (!activeOverlay && pendingOverlays.length > 0) {
+    pendingOverlays.sort(
+      (a, b) => OVERLAY_PRIORITY[b.id] - OVERLAY_PRIORITY[a.id],
+    );
+    const next = pendingOverlays.shift();
+    if (!next) return;
+    if (next.valid && !next.valid()) continue;
+    runOverlay(next);
+  }
+};
+
+const closeOverlay = (id: OverlayId): void => {
+  const i = pendingOverlays.findIndex((p) => p.id === id);
+  if (i >= 0) pendingOverlays.splice(i, 1);
+  if (activeOverlay?.id === id) {
+    hideOverlay();
+    flushOverlay();
+  }
+};
+
+const isOverlayShown = (id: OverlayId): boolean => activeOverlay?.id === id;
+
+/**
+ * 전면 오버레이 요청. 동시 표시는 없다.
+ * - 표시 중인 것보다 우선순위가 낮거나 같으면 **대기열**로 (주사위 충돌 가드).
+ * - 높으면 표시 중인 것을 내리고(타이머 회수) 그 자리를 차지한다.
+ */
+const showOverlay = (req: OverlayReq): void => {
+  const i = pendingOverlays.findIndex((p) => p.id === req.id);
+  if (i >= 0) pendingOverlays.splice(i, 1);
+  if (activeOverlay) {
+    if (activeOverlay.id !== req.id) {
+      if (OVERLAY_PRIORITY[req.id] <= OVERLAY_PRIORITY[activeOverlay.id]) {
+        pendingOverlays.push(req);
+        return;
+      }
+      const preempted = activeOverlay;
+      hideOverlay();
+      if (preempted.requeue) pendingOverlays.push(preempted);
+    } else {
+      hideOverlay(); // 같은 오버레이 재요청 → 타이머 회수 후 처음부터
+    }
+  }
+  runOverlay(req);
+};
+
+/** 하단 중앙 배너 — 전면을 막지 않는 알림. 타이머는 버스가 소유(단일 슬롯). */
+let bannerTimer: number | undefined;
+const showBanner = (text: string, ms = 2800): void => {
+  const el = $("fxBanner");
+  el.textContent = text;
+  el.classList.remove("hidden");
+  if (bannerTimer) window.clearTimeout(bannerTimer);
+  bannerTimer = window.setTimeout(() => {
+    el.classList.add("hidden");
+    bannerTimer = undefined;
+  }, ms);
+};
+
 // 게임 중 현재 턴 배너 (내 턴이면 주사위 굴림 + 남은 이동 표시)
 const DICE_FACES = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
 let lastTurn = "";
-let diceTimer: number | undefined;
 
 const myTurnText = (steps: number): string =>
   `🎲 <b>내 턴</b> · 남은 이동 ${steps}칸 · 방에서 [제안]`;
@@ -300,37 +495,70 @@ const splitDice = (steps: number): [number, number] => {
 };
 
 // 내 차례 시작 시 화면 중앙에 주사위를 차분히 굴린다.
+// 타이머 소유권은 전부 오버레이 버스에 있다(h.after) — 여기서 직접 걸지 않는다.
 const showDiceRoll = (): void => {
   const ov = $("diceOverlay");
-  ov.classList.remove("hidden");
-  ov.classList.remove("done");
-  if (diceTimer) window.clearInterval(diceTimer);
-  let t = 0;
-  const render = (faces: string, label: string): void => {
+  const turnAtRequest = lastTurn;
+  const render = (faces: string, text: string): void => {
     ov.innerHTML =
       `<div class="dice-card"><div class="dice-faces">${faces}</div>` +
-      `<div class="dice-label">${label}</div></div>`;
+      `<div class="dice-label">${text}</div></div>`;
   };
-  // 굴리는 단계: 느린 간격으로 6프레임(~0.9s)
-  diceTimer = window.setInterval(() => {
-    t += 1;
-    const a = DICE_FACES[Math.floor(Math.random() * 6)];
-    const b = DICE_FACES[Math.floor(Math.random() * 6)];
-    render(`${a} ${b}`, "주사위");
-    if (t >= 6) {
-      window.clearInterval(diceTimer);
-      diceTimer = undefined;
-      const steps = (room?.state as { stepsLeft?: number })?.stepsLeft ?? 0;
-      const [d1, d2] = splitDice(steps);
-      render(
-        `${DICE_FACES[d1 - 1]} ${DICE_FACES[d2 - 1]}`,
-        `이동 ${steps}칸`,
-      );
-      ov.classList.add("done"); // 강조(살짝 커짐)
-      // 결과를 충분히 보여주고 서서히 사라짐
-      window.setTimeout(() => ov.classList.add("hidden"), 1900);
-    }
-  }, 150);
+  showOverlay({
+    id: "dice",
+    el: ov,
+    requeue: true, // 목표 카드·결과에 밀리면 그 뒤에 다시 굴린다
+    // 대기 중 턴이 넘어갔거나 판이 끝났으면 굴리지 않는다(뒤늦은 주사위 방지)
+    valid: () =>
+      room?.state.phase === "playing" && room?.state.currentTurn === turnAtRequest,
+    run: (h) => {
+      ov.classList.remove("done");
+      let t = 0;
+      // 굴리는 단계: 느린 간격으로 6프레임(~0.9s)
+      const tick = (): void => {
+        t += 1;
+        const a = DICE_FACES[Math.floor(Math.random() * 6)];
+        const b = DICE_FACES[Math.floor(Math.random() * 6)];
+        render(`${a} ${b}`, "주사위");
+        if (t < 6) {
+          h.after(150, tick);
+          return;
+        }
+        const steps = (room?.state as { stepsLeft?: number })?.stepsLeft ?? 0;
+        const [d1, d2] = splitDice(steps);
+        render(`${DICE_FACES[d1 - 1]} ${DICE_FACES[d2 - 1]}`, `이동 ${steps}칸`);
+        ov.classList.add("done"); // 강조(살짝 커짐)
+        h.after(1900, h.close); // 결과를 충분히 보여주고 해제
+      };
+      h.after(150, tick);
+    },
+  });
+};
+
+// ── 온보딩 목표 카드 (로드맵 §1.5 · 문안 ui-copy §3) ─────────────────
+// 저장 위치는 localStorage — sessionStorage면 새 탭·재방문마다 다시 뜨고,
+// 방(roomId)별 키면 판마다 다시 뜬다. "한 번 본 사람에게 다시 띄우지 않는다"는
+// 브라우저 단위 사실이므로 도메인 전역 키 1개로 둔다(ui-copy §3 선행조건 표기와 동일).
+const GOAL_SEEN_KEY = "zc_seen_goal";
+const goalSeen = (): boolean => {
+  try {
+    return localStorage.getItem(GOAL_SEEN_KEY) === "1";
+  } catch {
+    return false; // localStorage 불가 → 매번 표시(닫기는 항상 가능)
+  }
+};
+const markGoalSeen = (): void => {
+  try {
+    localStorage.setItem(GOAL_SEEN_KEY, "1");
+  } catch {
+    /* localStorage 불가 시 무시 */
+  }
+};
+/** 목표 카드 열기 — 전면이므로 반드시 버스를 통한다(주사위와 동시 표시 금지). */
+const openGoalCard = (): void => showOverlay({ id: "goal", el: $("goalCard") });
+const closeGoalCard = (): void => {
+  markGoalSeen();
+  closeOverlay("goal"); // 대기 중이던 주사위가 여기서 이어서 굴러간다
 };
 
 // 세션 정리 후 메인으로 (탈락/종료 시 나가기)
@@ -361,9 +589,10 @@ const updateEndState = (state: Room["state"]): void => {
     $("endTitle").textContent = w ? `🎉 ${w.name} 승리!` : "게임 종료";
     $("endSub").textContent =
       "사건이 종결되었습니다. 정답은 기록(우측)을 확인하세요.";
-    overlay.classList.remove("hidden");
+    // 결과도 전면 오버레이 → 버스가 소유. 주사위·목표 카드를 밀어내고 그 자리를 차지한다.
+    if (!isOverlayShown("end")) showOverlay({ id: "end", el: overlay });
   } else {
-    overlay.classList.add("hidden");
+    closeOverlay("end");
   }
 };
 
@@ -433,54 +662,162 @@ const openTurnCircle = (): void => {
   $("turnCircle").classList.remove("hidden");
 };
 
+// ── 액션 버튼 상태·문안 (ui-copy §5) ─────────────────────────────
+// `disabled` 속성은 title 툴팁도 click 이벤트도 죽인다 → 비활성 사유 안내(addLog)가
+// 영원히 실행되지 않는 죽은 코드였다. 그래서 aria-disabled + .is-off로 표현하고
+// 클릭 핸들러는 살려 둔 채 첫 줄에서 같은 문장을 안내한다(툴팁 = 클릭 피드백).
+type ActionId = "suggest" | "accuse" | "passage" | "bonus" | "endTurn";
+/** 현재 비활성 사유 — null이면 활성. 툴팁과 클릭 피드백이 이 문자열 하나를 공용. */
+const offReasons: Record<ActionId, string | null> = {
+  suggest: null,
+  accuse: null,
+  passage: null,
+  bonus: null,
+  endTurn: null,
+};
+const NOT_MY_TURN = "지금은 내 차례가 아니에요. 차례가 오면 켜집니다.";
+const NOT_STARTED = "잔치가 시작되면 고발할 수 있어요."; // §5.3·§5.4가 §5.2를 재사용
+const ELIMINATED = "이미 고발에 실패했어요. 남은 역할은 반증입니다.";
+
+const setAction = (
+  id: ActionId,
+  reason: string | null,
+  activeTitle: string,
+): void => {
+  const el = $(id) as HTMLButtonElement;
+  offReasons[id] = reason;
+  el.disabled = false; // disabled면 사유를 안내할 기회 자체가 없다
+  el.classList.toggle("is-off", reason !== null);
+  el.setAttribute("aria-disabled", reason !== null ? "true" : "false");
+  el.title = reason ?? activeTitle;
+};
+
+/** 클릭 첫 줄 가드 — 비활성이면 같은 문장을 하단 배너로 안내하고 true를 반환. */
+const blockedBy = (id: ActionId): boolean => {
+  const reason = offReasons[id];
+  if (!reason) return false;
+  showBanner(reason);
+  return true;
+};
+
+type MePlayer = {
+  suspect: string;
+  name: string;
+  room?: string;
+  x: number;
+  y: number;
+  eliminated?: boolean;
+};
+
+/**
+ * 액션 4종 + 턴 종료의 활성/비활성과 문안을 갱신.
+ * 여기서 계산하는 것은 **조작 가능성**뿐이다 — 판정(진실값)은 전부 서버가 다시 검사한다.
+ */
+const updateActionButtons = (state: Room["state"]): void => {
+  const players = state.players as Map<string, MePlayer>;
+  const me = room ? players.get(room.sessionId) : undefined;
+  const mine = room !== null && state.currentTurn === room.sessionId;
+  const idle = state.phase !== "playing";
+  const elim = !!me?.eliminated;
+
+  // 제안 (§5.1) — 판정 순서를 지킬 것(탈락 + 내 턴 아님이 겹칠 때 탈락이 먼저)
+  setAction(
+    "suggest",
+    idle
+      ? "잔치가 시작되면 제안할 수 있어요."
+      : elim
+        ? "탈락한 뒤에는 제안할 수 없어요. 반증만 이어집니다."
+        : !mine
+          ? NOT_MY_TURN
+          : !me?.room
+            ? "방 안에서만 제안할 수 있어요. 입구(🚪)로 들어가세요."
+            : null,
+    "이 방에서 용의자와 훔친 것을 지목해요. 장소는 현재 방으로 고정.",
+  );
+
+  // 고발 (§5.2)
+  setAction(
+    "accuse",
+    idle ? NOT_STARTED : elim ? ELIMINATED : !mine ? NOT_MY_TURN : null,
+    "정답 3장을 지목해요. 틀리면 즉시 탈락합니다.",
+  );
+
+  // 비밀 통로 (§5.3) — 1순위 문안은 §5.2 재사용
+  const dest = me?.room ? passageOf(me.room) : undefined;
+  setAction(
+    "passage",
+    idle
+      ? NOT_STARTED
+      : elim
+        ? ELIMINATED
+        : !mine
+          ? NOT_MY_TURN
+          : !me?.room
+            ? "비밀 통로는 방 안에서만 쓸 수 있어요."
+            : !dest
+              ? "이 방에는 비밀 통로가 없어요. (통로는 3쌍)"
+              : null,
+    me?.room && dest
+      ? `비밀 통로 — ${label(me.room)} → ${label(dest)}. 주사위 없이 즉시.`
+      : "",
+  );
+
+  // 계략 (§5.4) — 인접 여부와 사용 여부를 **분리**해야 3·4번 문안이 구분된다
+  // (합쳐서 검사하면 이미 쓴 NPC 옆에서 "근처에 없어요"가 뜬다)
+  let nearAny = false;
+  let nearUnused = false;
+  if (me) {
+    (
+      state.helpers as Map<string, { x: number; y: number; used: boolean }>
+    ).forEach((h) => {
+      if (Math.max(Math.abs(h.x - me.x), Math.abs(h.y - me.y)) <= 1) {
+        nearAny = true;
+        if (!h.used) nearUnused = true;
+      }
+    });
+  }
+  setAction(
+    "bonus",
+    idle
+      ? NOT_STARTED
+      : elim
+        ? ELIMINATED
+        : !mine
+          ? NOT_MY_TURN
+          : nearAny && !nearUnused
+            ? "이 NPC의 계략은 이미 썼어요. 다른 NPC를 찾아보세요."
+            : !nearUnused
+              ? "계략을 줄 이가 근처에 없어요. 보드 가장자리의 NPC 곁으로."
+              : null,
+    "계략 — 상대 카드 엿보기 + 이동 보너스. NPC마다 1회.",
+  );
+
+  // 턴 종료 (§5.5) — 비활성 문안은 위와 같은 문장을 재사용(사유를 두 벌 만들지 않는다)
+  setAction(
+    "endTurn",
+    idle ? NOT_STARTED : elim ? ELIMINATED : !mine ? NOT_MY_TURN : null,
+    "이번 차례를 마치고 다음 사람에게 넘겨요.",
+  );
+};
+
+/** 탭 제목 원본 — 내 턴 표시(§1.5 동적 title)에서 되돌릴 기준. */
+const BASE_TITLE = document.title;
+
 const updateTurnInfo = (state: Room["state"]): void => {
   const el = $("turnInfo");
+  updateActionButtons(state); // phase와 무관하게 항상 최신 사유를 유지
   if (state.phase !== "playing") {
     el.classList.add("hidden");
+    document.title = BASE_TITLE;
     lastTurn = "";
     return;
   }
   el.classList.remove("hidden");
-  const players = state.players as Map<
-    string,
-    {
-      suspect: string;
-      name: string;
-      room?: string;
-      x: number;
-      y: number;
-      eliminated?: boolean;
-    }
-  >;
+  const players = state.players as Map<string, MePlayer>;
   const cur = players.get(state.currentTurn);
   const mine = room !== null && state.currentTurn === room.sessionId;
-  const me = room ? players.get(room.sessionId) : undefined;
-  // 내 턴 + 탈락(관전) 아닐 때만 행동 가능. 아니면 모든 액션 버튼 비활성화.
-  const canAct = mine && !me?.eliminated;
-  // 제안: 행동 가능 + 방 안일 때만
-  ($("suggest") as HTMLButtonElement).disabled = !(canAct && !!me?.room);
-  // 고발·턴 종료: 행동 가능할 때만
-  ($("accuse") as HTMLButtonElement).disabled = !canAct;
-  ($("endTurn") as HTMLButtonElement).disabled = !canAct;
-  // 비밀 통로 버튼: 행동 가능 + 현재 방에 통로가 있을 때만 활성
-  ($("passage") as HTMLButtonElement).disabled = !(
-    canAct && !!me?.room && !!passageOf(me.room)
-  );
-  // 계략 버튼: 행동 가능 + 인접(체비셰프≤1)에 미사용 고정 NPC가 있을 때만 활성
-  let nearHelper = false;
-  if (canAct && me) {
-    (
-      state.helpers as Map<string, { x: number; y: number; used: boolean }>
-    ).forEach((h) => {
-      if (
-        !h.used &&
-        Math.max(Math.abs(h.x - me.x), Math.abs(h.y - me.y)) <= 1
-      ) {
-        nearHelper = true;
-      }
-    });
-  }
-  ($("bonus") as HTMLButtonElement).disabled = !nearHelper;
+  // 탭이 뒤에 있어도 내 차례가 온 것을 알 수 있게 제목에 드러낸다.
+  document.title = mine ? `🎲 내 턴 — ${BASE_TITLE}` : BASE_TITLE;
   const turnChanged = state.currentTurn !== lastTurn;
   lastTurn = state.currentTurn;
   el.classList.toggle("mine", mine);
@@ -618,8 +955,9 @@ const buildEvidence = (roomId: string): void => {
     chips.className = "evi-chips";
     for (const v of values) {
       const chip = document.createElement("div");
+      // 장소는 EMOJI 맵에 없어 아이콘 칸이 비었다 → cardIcon()이 📍로 채운다(§2)
       chip.innerHTML =
-        `<span>${emoji(v)}</span>` + `<span>${label(v)}</span>`;
+        `<span>${cardIcon(v)}</span>` + `<span>${label(v)}</span>`;
       // 내 패 또는 공통 단서 → 정답 아님, 자동 제외·잠금
       const own = myCards.has(v) || commonSet.has(v);
       if (own) {
@@ -716,24 +1054,22 @@ const enterGame = (): void => {
   setStage(0);
 
   ($("suggest") as HTMLButtonElement).onclick = async () => {
-    // 방 안에서만 제안 가능 — 밖이면 안내(제안이 거부돼 턴이 안 넘어가는 혼동 방지)
+    // 비활성 사유는 툴팁과 같은 문장으로 안내(§5.0). disabled를 쓰지 않으므로 도달한다.
+    if (blockedBy("suggest")) return;
     const me = room
-      ? (room.state.players as Map<string, { room: string; id: string }>).get(
-          room.sessionId,
-        )
+      ? (room.state.players as Map<string, { room: string }>).get(room.sessionId)
       : undefined;
-    if (room && room.state.currentTurn !== room.sessionId) {
-      addLog("지금은 내 턴이 아니에요.", { kind: "info" });
-      return;
-    }
-    if (!me?.room) {
-      addLog("방 안에서만 제안할 수 있어요. 방으로 이동하세요.", {
-        kind: "info",
-      });
-      return;
-    }
-    const pick = await openPicker("제안 — 누가, 무엇으로?", false);
+    if (!me?.room) return; // 사유 안내는 위 가드가 담당
+    const pick = await openPicker({
+      title: "제안 — 이 방에서 누가, 무엇을?",
+      needRoom: false,
+      fixedRoom: me.room,
+      note: "지목한 인물과 물건이 이 방으로 소환돼요.",
+      okLabel: "이 조합으로 제안",
+      mySuffix: " — 내 패",
+    });
     if (pick) {
+      // 장소는 서버가 player.room에서 가져간다 — 고정행은 표시일 뿐 값을 바꾸지 않는다.
       room?.send("suggest", {
         suspect: pick.suspect,
         weapon: pick.weapon,
@@ -742,7 +1078,16 @@ const enterGame = (): void => {
     }
   };
   ($("accuse") as HTMLButtonElement).onclick = async () => {
-    const pick = await openPicker("고발 — 진범을 지목하라", true);
+    if (blockedBy("accuse")) return;
+    const pick = await openPicker({
+      title: "고발 — 진범을 지목하라",
+      needRoom: true,
+      warn: "⚠ 틀리면 즉시 탈락합니다. 그 뒤로는 반증만 할 수 있어요.",
+      note: "이 3장이 정답 봉투와 모두 같아야 승리해요.",
+      okLabel: "고발한다",
+      okDanger: true,
+      mySuffix: " — 내 패 (정답 아님)",
+    });
     if (pick && pick.room) {
       room?.send("accuse", {
         suspect: pick.suspect,
@@ -751,14 +1096,35 @@ const enterGame = (): void => {
       });
     }
   };
-  ($("endTurn") as HTMLButtonElement).onclick = () => room?.send("endTurn", {});
-  ($("passage") as HTMLButtonElement).onclick = () =>
+  ($("endTurn") as HTMLButtonElement).onclick = () => {
+    if (blockedBy("endTurn")) return;
+    room?.send("endTurn", {});
+  };
+  ($("passage") as HTMLButtonElement).onclick = () => {
+    if (blockedBy("passage")) return;
     room?.send("passage", {});
-  ($("bonus") as HTMLButtonElement).onclick = () => room?.send("useBonus", {});
+  };
+  ($("bonus") as HTMLButtonElement).onclick = () => {
+    if (blockedBy("bonus")) return;
+    room?.send("useBonus", {});
+  };
   ($("endHome") as HTMLButtonElement).onclick = exitToMain;
   ($("specHome") as HTMLButtonElement).onclick = exitToMain;
   ($("endRematch") as HTMLButtonElement).onclick = () =>
     room?.send("rematch", {});
+
+  // 온보딩 목표 카드 — 첫 진입 1회 + [?]로 재열람 (§1.5 · ui-copy §3)
+  ($("goalOk") as HTMLButtonElement).onclick = closeGoalCard;
+  ($("helpBtn") as HTMLButtonElement).onclick = openGoalCard;
+  $("goalCard").onclick = (e) => {
+    if (e.target === $("goalCard")) closeGoalCard(); // 바깥 클릭도 "봤다"로 간주
+  };
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && isOverlayShown("goal")) closeGoalCard();
+  });
+  // `?demo=1`은 촬영·시연용 스킵. 그 외 첫 진입에서 1회만.
+  const demo = new URLSearchParams(location.search).get("demo") === "1";
+  if (!demo && !goalSeen()) openGoalCard();
 
   // 턴 순서(원형) 오버레이 닫기 — 버튼 또는 바깥 클릭.
   const closeTurnCircle = (): void => $("turnCircle").classList.add("hidden");
