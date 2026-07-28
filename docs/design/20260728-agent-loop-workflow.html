@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>에이전트 루프 워크플로 — zodiac-clue</title>
+<style>
+  :root { --bg:#16130f; --card:#211c16; --edge:#3a3126; --ink:#f0e9dc; --dim:#a89778; --gold:#f0d9a8; --accent:#b4622b;
+          --red:#e0736b; --green:#7ee29a; --amber:#e0c25a; --blue:#7ec8e0; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink);
+    font-family: system-ui,-apple-system,"Apple SD Gothic Neo",sans-serif; line-height:1.6; }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { color:var(--gold); font-size:26px; margin:0 0 4px; }
+  .sub { color:var(--dim); font-size:13px; margin:0 0 24px; }
+  h2 { color:var(--gold); font-size:19px; margin:36px 0 12px; border-bottom:1px solid var(--edge); padding-bottom:6px; }
+  h3 { font-size:15px; margin:0 0 8px; }
+  p, li { font-size:14px; }
+  code { background:#2c2519; border:1px solid var(--edge); border-radius:4px; padding:1px 5px; font-size:12.5px; }
+  table { width:100%; border-collapse:collapse; margin:12px 0; font-size:13px; }
+  th, td { border:1px solid var(--edge); padding:8px 10px; text-align:left; vertical-align:top; }
+  th { background:#2c2519; color:var(--gold); }
+  .card { background:var(--card); border:1px solid var(--edge); border-radius:10px; padding:16px 20px; margin:14px 0; }
+  .lead { background:#2b2013; border:1px solid #7c6238; border-radius:8px; padding:12px 16px; font-size:13.5px; }
+  .note { font-size:12.5px; color:var(--dim); }
+  .scroll { overflow-x:auto; }
+  ul { padding-left:20px; margin:8px 0; }
+  .ok { color:var(--green); } .no { color:var(--red); } .part { color:var(--amber); } .bl { color:var(--blue); }
+
+  /* 흐름도 */
+  .flow { margin:16px 0; }
+  .fl { display:flex; gap:10px; align-items:flex-start; margin:0 0 8px; }
+  .fl .n { flex:none; width:26px; height:26px; border-radius:50%; background:#2c2519; border:1px solid var(--edge);
+           color:var(--gold); font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+  .fl .b { flex:1; background:var(--card); border:1px solid var(--edge); border-left:3px solid var(--accent);
+           border-radius:8px; padding:10px 14px; font-size:13.5px; }
+  .fl .b b { color:var(--gold); }
+  .fan { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:10px; margin:8px 0 0; }
+  .fan div { background:#2a2318; border:1px solid var(--edge); border-radius:8px; padding:10px 12px; font-size:13px; }
+  .fan b { display:block; color:var(--gold); font-size:12px; margin-bottom:3px; }
+
+  /* 사례 */
+  .case { border-left:3px solid var(--red); }
+  .case .a { color:var(--dim); text-decoration:line-through; }
+  .case .b2 { color:var(--green); }
+  .rule { border-left:3px solid var(--gold); }
+  .gate { border-left:3px solid var(--green); }
+  ol { padding-left:20px; }
+
+  * { scrollbar-width: thin; scrollbar-color: #4a3d2b #16130f; }
+  ::-webkit-scrollbar { width:9px; height:9px; }
+  ::-webkit-scrollbar-track { background:#16130f; }
+  ::-webkit-scrollbar-thumb { background:#4a3d2b; border-radius:5px; border:2px solid #16130f; }
+
+  @media print {
+    @page { size: A4; margin: 14mm 12mm; }
+    :root { --bg:#fff; --card:#faf7f0; --edge:#c7bba4; --ink:#1a1712; --dim:#4f4738; --gold:#5b430f; --accent:#8a4718;
+            --red:#9d2b22; --green:#1d6b34; --amber:#84600d; --blue:#12546e; }
+    html { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    body { background:#fff !important; color:var(--ink) !important; line-height:1.5; }
+    .wrap { max-width:none !important; padding:0 0 8mm !important; }
+    code, th { background:#f1ece0 !important; color:#2c2519 !important; border-color:var(--edge) !important; }
+    th { color:var(--gold) !important; }
+    .lead { background:#fdf6e4 !important; border-color:#b08b3e !important; }
+    .card, .fl .b, .fan div { background:var(--card) !important; }
+    a { color:#0b4a8f !important; text-decoration:underline; }
+    a[href^="http"]::after { content:" (" attr(href) ")"; font-size:10px; color:#4f4738; word-break:break-all; }
+    .scroll { overflow:visible !important; }
+    table { min-width:0 !important; } th, td { word-break:break-word; }
+    h1,h2,h3 { break-after:avoid; page-break-after:avoid; }
+    .card, table, tr, .lead, .fl { break-inside:avoid; page-break-inside:avoid; }
+    ::-webkit-scrollbar { display:none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🔁 에이전트 루프 워크플로</h1>
+  <p class="sub">다관점 병렬 검수·생산 · 2026-07-28 · <span class="note">압축본: <code>20260728-agent-loop-workflow.md</code></span></p>
+
+  <div class="lead">
+    <b>단일 세션은 자기가 방금 내린 결론에 갇힌다.</b> 관점을 갈아끼우지 않으면 같은 사각지대가 반복된다 —
+    이 문서는 2026-07-27에 6라운드(에이전트 18개)를 돌리며 실제로 확인한 것을 규약으로 굳힌 것이다.
+  </div>
+
+  <h2>0. 왜 필요한가 — 실제로 뒤집힌 것들</h2>
+  <div class="card case">
+    <h3>1차 검수의 결론을 2차가 뒤집은 사례</h3>
+    <table><tr><th>1차 결론</th><th>2차가 발견한 것</th></tr>
+      <tr><td class="a">"⑤ 팀원 문서는 개인 참여니 생략"</td>
+          <td class="b2">회의록에 <b>3인 팀</b> 명시 — 팀으로 신청하고 ⑤를 빼면 <b>심사 제외</b></td></tr>
+      <tr><td class="a">"계략과 정보대칭성을 같이 넣으면 밸런스 반전"</td>
+          <td class="b2">시뮬레이션 실측 — <b>계략은 레버가 아니다</b>(+1.8%p, 노이즈 수준)</td></tr>
+      <tr><td class="a">3라운드까지 전부 <b>1인 플레이</b> 기준</td>
+          <td class="b2">멀티에서 <b>이탈 1건이 판을 사고사</b>시킨다(유령 카드 → 봇 연쇄 오답)</td></tr>
+    </table>
+  </div>
+
+  <h2>1. 구조</h2>
+  <div class="flow">
+    <div class="fl"><div class="n">1</div><div class="b"><b>라운드 시작</b> — <code>brief.md</code>(에이전트용) + <code>ledger.md</code>(내부용) 읽기</div></div>
+    <div class="fl"><div class="n">2</div><div class="b"><b>서브에이전트 3개 병렬</b> — 서로 다른 렌즈
+      <div class="fan">
+        <div><b>(a) 공모 심사 축</b>AI 활용 · 완성도 · 제출물 5종</div>
+        <div><b>(b) 플레이 경험</b>재미 · 밸런스 · 온보딩</div>
+        <div><b>(c) 4뷰 디자인</b>뷰1~4 전부 대응하는 연출</div>
+      </div></div></div>
+    <div class="fl"><div class="n">3</div><div class="b"><b>결과 통합</b> — 중복·이미 반영된 것 제거, 채택/반려 판정</div></div>
+    <div class="fl"><div class="n">4</div><div class="b"><b>반영 → 검증 → 커밋</b></div></div>
+    <div class="fl"><div class="n">5</div><div class="b"><b>상태 갱신</b> — brief "현재 상태" 갱신 · ledger 라운드 행 추가 · Discord 요약</div></div>
+  </div>
+  <p class="note"><code>brief.md</code>는 에이전트에게 <b>인라인으로 그대로</b> 전달되는 컨텍스트,
+  <code>ledger.md</code>는 <b>오케스트레이터 전용</b>(에이전트에게 주지 않는다).
+  둘 다 저장소가 아닌 <b>세션 스크래치패드</b>에 둔다 — 진행 상태는 산출물이 아니다.</p>
+
+  <h2>2. 핵심 규칙</h2>
+
+  <div class="card rule">
+    <h3>2.1 에이전트에게 루프의 존재를 알리지 않는다</h3>
+    <p>매 라운드를 <b>"지금 이 시점의 프로젝트를 개선해달라"는 새 의뢰</b>로만 제시한다.
+    "N번째 라운드"라고 알리면 에이전트가 <b>이전 회차를 존중하려 들어 반증을 주저한다.</b></p>
+    <p class="note">2차가 1차 결론 2건을 뒤집을 수 있었던 것은, 그것이 "이전 결론"이 아니라 <b>그냥 현재 문서</b>로 제시됐기 때문이다.</p>
+  </div>
+
+  <div class="card rule">
+    <h3>2.2 중복 방지는 경고가 아니라 <b>상태 갱신</b>으로</h3>
+    <p>에이전트가 이전 라운드를 모르므로 같은 것을 다시 제안할 수 있다. 이를 막는 방법은
+    채택된 개선을 brief의 <b>"현재 상태 / 이미 확정된 것"에 녹여두는 것</b>이다 →
+    다음 라운드 에이전트는 <b>자연히 그다음 것</b>을 제안한다.</p>
+    <p class="note">brief에 명시: <code>중복 제안 금지. 이 위에서 더 나아간 것 / 빠진 것 / 틀린 것을 지적하라.</code></p>
+  </div>
+
+  <div class="card rule">
+    <h3>2.3 진단이 포화되면 <b>생산</b>으로 렌즈를 돌린다</h3>
+    <p>07-27에는 3라운드에 진단 28건이 쌓였고 구현은 0이었다. 그 시점에 렌즈를
+    <b>"파일을 고치지 말고 초안 텍스트를 반환하라"</b>로 바꿔 영상 콘티·UI 카피·4뷰 명세를 한 라운드에 생산했다.</p>
+    <p class="note"><b>진단 → 초안 생산 → 구현</b>으로 단계를 옮기는 판단은 오케스트레이터가 한다.</p>
+  </div>
+
+  <div class="card case">
+    <h3>2.4 에이전트의 주장도 검증한다</h3>
+    <p>에이전트는 근거를 대지만 <b>틀린다.</b></p>
+    <ul>
+      <li>4뷰 매트릭스 집계를 <code>6/10/6/6</code>(합 28)으로 썼는데 표는 <b>25행</b> → 다른 에이전트가 재검산해 <code>3/10/9/3</code> 정정</li>
+      <li>"라이브 LLM 미동작"의 원인을 <b>"키 미설정 또는 쿼터 소진"으로 추정</b> → 실제로는 <b>요청 파라미터 400</b></li>
+    </ul>
+    <p><b>수치·인과는 실측으로 확인</b>하고, 확인 못 한 것은 문서에 <b>"추정"으로 표기</b>한다.</p>
+  </div>
+
+  <div class="card rule">
+    <h3>2.5 사람만 결정할 수 있는 것은 에스컬레이션한다</h3>
+    <p>제출 형태(개인/팀) · 과금 · 촬영 · 배포 승인. 에이전트가 이를 임의 확정하면
+    <b>"판단 비용 제거"처럼 보이지만 실은 되돌릴 수 없는 리스크</b>다. 미결로 남기고 <b>기한·담당</b>을 적는다.</p>
+  </div>
+
+  <h2>3. 개발 라운드 <span class="note">(2026-07-28~)</span></h2>
+  <div class="lead" style="border-left:3px solid var(--red);padding-left:12px">
+    문서에서 코드로 넘어가면 병렬 에이전트가 <b>같은 파일을 동시에 고칠 위험</b>이 생긴다.
+  </div>
+
+  <h3 style="margin-top:16px">3.1 파일 스코프 분할</h3>
+  <div class="scroll"><table>
+    <tr><th>슬롯</th><th>담당 영역</th><th>주요 파일</th></tr>
+    <tr><td><b>A</b></td><td>서버 규칙 · 에이전트 계층</td><td><code>apps/server/src/**</code></td></tr>
+    <tr><td><b>B</b></td><td>클라 HUD · DOM · 온보딩</td><td><code>apps/client/index.html</code> · <code>apps/client/src/main.ts</code></td></tr>
+    <tr><td><b>C</b></td><td>렌더러 3종 · 공용 상수</td><td><code>apps/client/src/scenes/**</code> · <code>packages/shared/**</code></td></tr>
+  </table></div>
+  <p>한 라운드에서 <b>두 에이전트가 같은 파일을 만지지 않는다.</b> 겹치면 그 항목은 다음 라운드로 미룬다.<br>
+  문서 갱신(<code>.md</code>/<code>.html</code> 짝)은 <b>오케스트레이터가 통합 시점에</b> 한다 — 에이전트마다 같은 문서를 고치면 충돌한다.</p>
+
+  <h3 style="margin-top:20px">3.2 작업 큐</h3>
+  <p><code>20260727-execution-plan.md</code>의 날짜별 순서가 큐다. <b>의존성 위반 금지</b> —
+  계획서가 명시한 선행 조건(<code>ZODIAC_COLOR</code> → 뷰4 실루엣, <code>hudInset</code> 가드 → 패널 추가,
+  타이머 프리미티브 인자화 → 턴 클럭)을 건너뛰면 <b>같은 파일을 두 번 연다.</b></p>
+
+  <div class="card gate">
+    <h3 class="ok">3.3 검증 게이트 — 통과 못 하면 커밋하지 않는다</h3>
+    <ol>
+      <li><code>pnpm -r typecheck</code></li>
+      <li><code>pnpm --filter @zodiac-clue/client build</code></li>
+      <li>규칙을 바꿨으면 <b>동작 확인</b>(솔로 1판 실행 또는 시뮬)</li>
+      <li>초록이면 <b>기능별 커밋</b> → 푸시(배포 트리거)</li>
+    </ol>
+    <p class="note"><b>진실값(정답·판정·결정) 변경은 규칙 엔진에서만.</b> LLM은 표현 전용 — 이 경계는 라운드와 무관하게 불변이다.</p>
+  </div>
+
+  <div class="card rule">
+    <h3>3.4 되돌릴 수 있게 둔다</h3>
+    <p>라운드마다 커밋을 남긴다. 한 라운드가 잘못되면 <b>그 커밋만</b> 되돌린다.</p>
+    <p class="no"><b>여러 라운드를 모아 한 번에 커밋하지 않는다</b> — 07-27에 8시간치를 미커밋으로 쌓았다가
+    <b>노출 위험을 마지막에 발견</b>했다(운 좋게 커밋 전이라 막았다).</p>
+  </div>
+
+  <h2>4. 실행 이력</h2>
+  <div class="scroll"><table>
+    <tr><th>일자</th><th>라운드</th><th>성격</th><th>결과</th></tr>
+    <tr><td>07-27</td><td>6 (에이전트 18)</td><td>진단 → 초안 생산</td><td>신규 문서 6종 · ④ 2판 개정 · 배포 · LLM 장애 해결</td></tr>
+    <tr><td>07-28</td><td>(진행)</td><td class="ok"><b>기획 · 디자인 · 개발</b></td><td>—</td></tr>
+  </table></div>
+
+  <p class="sub" style="margin-top:32px">변경 이력 — 2026-07-28 최초 작성(07-27 6라운드 경험 규약화 + 개발 라운드 규칙 §3 신설).</p>
+</div>
+</body>
+</html>

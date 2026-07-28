@@ -14,6 +14,10 @@
     "dir": "design",
     "items": [
       {
+        "path": "design/20260728-agent-loop-workflow.html",
+        "title": "에이전트 루프 워크플로"
+      },
+      {
         "path": "design/20260727-view-contract-spec.html",
         "title": "4뷰 표기 계약 명세"
       },
