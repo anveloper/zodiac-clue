@@ -26,7 +26,7 @@
  */
 
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync} from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -1207,5 +1207,51 @@ if (!OPT.live)
     "쿼터: 이번 실행의 Gemini 호출 0건. 실호출은 `--live`(+`--max-calls`)로 사람이 결정한다.",
   );
 log(line());
+
+// ── 리포트 파일 산출 ────────────────────────────────────────────────
+// ④ §3·§10이 "이 스크립트가 리포트를 생성한다"고 명시하는데 실제로는 아무 파일도
+// 남기지 않았다. 가장 강한 정량 주장(전수 스윕)의 **근거 파일이 리포에 없으면**
+// 확인하러 온 사람이 못 찾고, 그 순간 나머지 참인 주장까지 함께 의심받는다.
+// `--no-report`로 끌 수 있다(CI에서 워킹트리를 더럽히지 않으려면).
+if (!has("--no-report")) {
+  const md = [
+    "# eval-narrator 리포트 (자동 생성)",
+    "",
+    "> 이 파일은 `node scripts/eval-narrator.mjs`가 매 실행마다 덮어쓴다. **직접 편집하지 마라.**",
+    `> 생성 ${report.generatedAt} · 모드 **${report.mode}** · seed ${report.seed} · 명세 ④ §3`,
+    "",
+    `## 결과: ${exitCode === 0 ? "PASS" : "FAIL"}`,
+    "",
+    OPT.live
+      ? "실호출 모드. Gemini 쿼터를 소모했다."
+      : "오프라인 모드 — **Gemini 호출 0건**. 실호출이 필요한 규칙(C2raw·C7)은 미판정으로 남는다.",
+    "",
+    "## 스위트",
+    "",
+    "| 스위트 | 표본 | 통과 | 실패 |",
+    "|---|---|---|---|",
+    ...suites.map(
+      ([, name, t]) =>
+        `| ${name} | ${t.total} | ${t.total - (t.failed?.length ?? 0)} | ${t.failed?.length ?? 0} |`,
+    ),
+    "",
+    "## 판정 불가로 남긴 것",
+    "",
+    ...LIMITS.map((l) => `- **${l.id} [${l.rule}]** ${l.what} — 사유: ${l.why}`),
+    "",
+    "## 기계 판독용",
+    "",
+    "```json",
+    JSON.stringify(report, null, 2),
+    "```",
+    "",
+  ].join("\n");
+  try {
+    writeFileSync("docs/design/eval-narrator-report.md", md);
+    log("리포트: docs/design/eval-narrator-report.md 갱신됨");
+  } catch (e) {
+    log(`리포트 저장 실패: ${String(e)}`);
+  }
+}
 
 process.exit(exitCode);

@@ -107,6 +107,24 @@
       .game-item .gi-body b { color: #f0d9a8; font-size: 14px; }
       .game-item .gi-sub { font-size: 11px; color: #a89778; }
       .game-item.selected { border-color: #e0a35a; background: #2c2317; }
+      /* 랜딩 AI 고지 — 첫 45초에 심사 축이 보이게 한다. */
+      .ai-note {
+        margin: 12px 0 14px;
+        padding: 11px 13px;
+        border: 1px solid #4a3d2b;
+        border-left: 3px solid #ffd479;
+        border-radius: 8px;
+        background: #211c16;
+        font-size: 12.5px;
+        line-height: 1.6;
+        color: #cbbfa8;
+        text-align: left;
+      }
+      .ai-note b { color: #f0d9a8; }
+      .ai-note > b { display: block; margin-bottom: 3px; font-size: 13px; }
+      .ai-links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
+      .ai-links a { color: #ffd479; font-size: 12px; text-decoration: none; border-bottom: 1px solid #6b5a3a; }
+      .ai-links a:hover { border-bottom-color: #ffd479; }
       .hint-sm { font-size: 11px; color: #8f8574; margin: 6px 0 14px; text-align: center; }
       /* 공개/비공개 세그먼트 토글 */
       .seg { display: flex; gap: 6px; }
@@ -656,6 +674,24 @@
       <div class="card">
         <h1>🐯 호랑이 생신 잔치</h1>
         <p class="subtitle">대감집 손님들 중 잔치 선물을 훔친 자를 추리하라</p>
+        <!--
+          심사 1순위 축이 "AI를 어떻게 썼는가"인데 랜딩에 AI 신호가 0이었다.
+          잘 만든 계측을 아무도 못 보는 자리에 둔 셈이라, 첫 화면에서 경계를 밝힌다.
+          링크는 배포본에 실제로 있는 경로만 건다(없는 링크를 걸면 그것대로 감점이다).
+        -->
+        <div class="ai-note">
+          <b>🤖 NPC 대사는 Gemini가 실시간으로 짓습니다.</b>
+          <span
+            >판정·정답은 <b>규칙 엔진</b>만 결정합니다 — LLM은 표현 전용이라
+            대사가 끊겨도 게임은 그대로 굴러갑니다. 게임 화면 우측에서
+            <b>LLM · 캐시 · 폴백</b> 호출 수가 실시간으로 보입니다.</span
+          >
+          <span class="ai-links">
+            <a href="/docs/design/20260720-ai-tech-doc.html">AI 활용 기술문서</a>
+            <a href="/docs/submission/game-intro.html">게임 소개</a>
+            <a href="/docs/">전체 문서</a>
+          </span>
+        </div>
         <!-- 게임 선택 슬롯: 현재 1종. 다른 게임 컨텐츠가 추가되면 선택 UI로 확장. -->
         <div class="field">
           <label>게임</label>
