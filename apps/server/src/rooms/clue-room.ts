@@ -1553,9 +1553,27 @@ export class ClueRoom extends Room<GameState> {
     );
   }
 
+  /**
+   * 이 좌석이 **지금도 봇인가** — 봇 턴의 모든 비동기 이어받기가 이 관문을 지난다.
+   *
+   * 대리 NPC(§8.1)가 쥔 턴은 `TURN_TIMER` 하나로 묶여 있어 `restoreSeat`이 취소하면
+   * 대부분 회수된다. 그런데 `botSuggestPhase → speak() → afterBotSpeak`의 **`await` 구간**
+   * (LLM 왕복 ≤4s)만은 타이머가 아니라 프라미스라 취소 대상이 없다. 그 사이에 사람이
+   * 돌아오면(재접속 창 120초 내내 열려 있다) 좌석은 사람인데 봇 결정이 그대로 이어져
+   * ①돌아온 사람의 턴을 2.6초 뒤 빼앗고 ②최악에는 그 사람 이름으로 고발해 **탈락**시킨다.
+   * (실측 재현 5/5 — 대리 좌석의 제안 브로드캐스트 직후 재접속.)
+   *
+   * 좌석 소유권은 진실값이므로 판정을 클라에 맡길 수 없다 — 서버가 매 이어받기마다 다시 본다.
+   */
+  private stillBot(id: string): boolean {
+    if (this.state.phase !== "playing") return false;
+    if (this.state.currentTurn !== id) return false;
+    return this.state.players.get(id)?.isBot === true;
+  }
+
   // ── NPC 턴 2박자: 제안/추리 → 확신 시 고발 ──
   private botSuggestPhase(id: string, roomName: string): void {
-    if (this.state.phase !== "playing" || this.state.currentTurn !== id) return;
+    if (!this.stillBot(id)) return;
     const bot = this.state.players.get(id);
     const k = this.botKnowledge.get(id);
     if (!bot || !k) {
@@ -1606,7 +1624,10 @@ export class ClueRoom extends Room<GameState> {
     result: { by: string | null; card: Card | null },
     line: string,
   ): void {
-    if (this.state.phase !== "playing" || this.state.currentTurn !== id) return;
+    // `speak()`의 await 구간에 사람이 돌아왔으면 여기서 끝낸다 — 이 좌석은 더 이상 봇이 아니다.
+    // (턴은 `restoreSeat`이 이미 사람 클럭으로 다시 걸어 뒀다. 여기서 `advanceTurn`을
+    //  부르면 돌아온 사람의 턴을 그대로 빼앗는 것이라 **아무것도 하지 않는 것**이 옳다.)
+    if (!this.stillBot(id)) return;
     const bot = this.state.players.get(id);
     if (!bot) return;
     const eff = (set: Set<string>): string[] => {
@@ -1616,7 +1637,9 @@ export class ClueRoom extends Room<GameState> {
     };
 
     this.armTimer(TURN_TIMER, this.speakHold(line), () => {
-      if (this.state.phase !== "playing" || this.state.currentTurn !== id) return;
+      // 홀드 중에 돌아왔을 수도 있다(`restoreSeat`이 TURN_TIMER를 취소하지만
+      // 취소 직전에 만료가 큐에 들어간 경우가 남는다) → 만료 시점에 한 번 더 본다.
+      if (!this.stillBot(id)) return;
 
       if (result.card) {
         // 반증받은 카드는 정답 아님 → 후보에서 제거
@@ -1721,6 +1744,11 @@ export class ClueRoom extends Room<GameState> {
 
     const { text, ai } = await this.narrateWithMeta(enriched, id);
     if (!this.state.players.has(id)) return "";
+    // 대사가 오는 사이에 사람이 좌석을 되찾았다면(§8.1 대리 해제) 말풍선을 띄우지 않는다 —
+    // 돌아온 사람의 아바타가 봇 대사를 읊는 것으로 보인다. 이미 끝난 판의 마지막
+    // 대사(고발 선언)는 좌석 상태와 무관하게 그대로 내보낸다.
+    if (this.state.phase === "playing" && !this.state.players.get(id)?.isBot)
+      return "";
     this.broadcast("say", { id, from: input.name, text, ai });
     return text;
   }

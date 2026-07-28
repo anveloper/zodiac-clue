@@ -1518,11 +1518,21 @@ const updateEndState = (state: Room["state"]): void => {
     string,
     { name: string; eliminated: boolean }
   >;
-  const meElim = room ? players.get(room.sessionId)?.eliminated : false;
-  $("spectateBar").classList.toggle(
-    "hidden",
-    !(state.phase === "playing" && !!meElim),
-  );
+  const mySeat = room ? players.get(room.sessionId) : undefined;
+  const meElim = mySeat?.eliminated ?? false;
+  // 좌석이 아예 없는 **관전자**(진행 중 입장 · 재접속 실패 후 코드 재참가). 예전에는
+  // `players.get(...)?.eliminated`가 `undefined`라 이 배너가 한 번도 뜨지 않았고,
+  // 관전자는 손패도 턴도 없는 화면을 아무 설명 없이 보고 있었다(= 판을 잃은 것처럼 보인다).
+  // 서버가 입장 순간 보내는 안내(§8.1 행 268)는 로그 한 줄이라 곧 밀려 올라간다.
+  const meSpectator = room !== null && mySeat === undefined;
+  const showSpec = state.phase === "playing" && (meElim || meSpectator);
+  $("spectateBar").classList.toggle("hidden", !showSpec);
+  if (showSpec) {
+    // 둘 다 **확정 문안 그대로**다 — 탈락은 §7.2, 관전은 §8.1 행 268(서버 안내와 같은 문장).
+    $("specText").textContent = meElim
+      ? "❌ 고발 실패 · 관전 중 — 내 손패로 반증은 계속돼요."
+      : "이미 진행 중인 판이에요. 관전으로 들어갑니다.";
+  }
 
   const overlay = $("endOverlay");
   if (state.phase !== "ended") {
