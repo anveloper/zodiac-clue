@@ -85,6 +85,54 @@
     .backdrop { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:25; }
     .backdrop.show { display:block; }
   }
+
+/* ══════════ PDF 인쇄 — 이 페이지는 '뷰어'다 ══════════
+   body{display:flex;overflow:hidden} + iframe 구조라 그대로 인쇄하면 백지 한 장이 나온다.
+   레이아웃을 풀고 iframe/사이드바를 감춘 뒤, 개별 문서를 열라는 안내만 남긴다. */
+@media print {
+  @page { size:A4; margin:14mm; }
+  :root { --bg:#fff; --panel:#fff; --card:#faf7f0; --edge:#c7bba4; --ink:#1a1712; --dim:#4f4738;
+          --gold:#5b430f; --accent:#8a4718; }
+  html { height:auto !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  body { display:block !important; overflow:visible !important; height:auto !important;
+    background:#fff !important; color:var(--ink) !important; line-height:1.55; }
+  /* 인쇄해도 의미 없는 셸 */
+  .sidebar, .backdrop, .topbar, iframe.docframe { display:none !important; }
+  .main { display:block !important; }
+  .scroll { display:block !important; flex:none !important; overflow:visible !important; height:auto !important; }
+  .wrap { max-width:none !important; padding:0 !important; }
+  /* 안내문 — 대시보드를 인쇄한 사람이 무엇을 해야 하는지 */
+  body::before {
+    content:"🐯 zodiac-clue 문서 대시보드\A 이 페이지는 문서를 골라 보는 뷰어입니다. 인쇄해도 내용이 담기지 않습니다.\A PDF로 저장하려면 왼쪽 트리에서 문서를 연 뒤 상단 [원문 ↗]으로 그 문서를 새 탭에 띄우고, 거기서 인쇄하세요.\A (각 문서는 인쇄 전용 라이트 팔레트를 갖고 있습니다.)\A 라이브: https://zodiac-clue.vercel.app  ·  소스: https://github.com/anveloper/zodiac-clue";
+    display:block; white-space:pre-wrap; font-size:13px; line-height:1.9; color:#1a1712;
+    background:#fdf6e4; border:1px solid #b08b3e; border-left:4px solid #8a6a1e;
+    border-radius:10px; padding:18px 22px; margin:0 0 16px;
+  }
+  /* .md 문서를 연 상태로 인쇄하는 경우 그 본문은 살려서 라이트로 */
+  .md h1, .md h2 { color:var(--gold) !important; }
+  .md h2 { border-bottom-color:var(--edge) !important; }
+  .md h1, .md h2, .md h3 { break-after:avoid; page-break-after:avoid; }
+  .md p, .md li, .md td { color:var(--ink) !important; }
+  .md strong { color:#5b430f !important; }
+  .md code { background:#f1ece0 !important; color:#2c2519 !important; border:1px solid var(--edge) !important; }
+  .md pre { background:#f7f4ec !important; border:1px solid var(--edge) !important;
+    white-space:pre-wrap !important; word-break:break-word; }
+  .md pre code { background:none !important; border:0 !important; color:#1a1712 !important; }
+  .md blockquote { background:#fdf6e4 !important; border-left-color:var(--accent) !important; color:var(--dim) !important; }
+  .md table { display:table !important; width:100% !important; overflow:visible !important; }
+  .md th { background:#efe8d8 !important; color:var(--gold) !important; }
+  .md th, .md td { border-color:var(--edge) !important; word-break:break-word; }
+  .md hr { border-top-color:var(--edge) !important; }
+  .md .chk-done { color:#1d6b3a !important; } .md .chk-part { color:#8a5b0a !important; }
+  .md .chk-todo { color:var(--dim) !important; }
+  .home-card { background:var(--card) !important; border-color:var(--edge) !important; }
+  .home-card h1 { color:var(--gold) !important; } .home-card p { color:var(--dim) !important; }
+  a { color:#0b4a8f !important; text-decoration:underline; }
+  a[href^="http"]::after { content:" (" attr(href) ")"; font-size:10px; color:#4f4738; word-break:break-all; }
+  .md pre, .md table, .md tr, .md li, .home-card { break-inside:avoid; page-break-inside:avoid; }
+  * { scrollbar-width:none !important; }
+  ::-webkit-scrollbar { display:none !important; }
+}
 </style>
 </head>
 <body>

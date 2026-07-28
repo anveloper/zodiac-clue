@@ -26,6 +26,44 @@
   .lo { color:#7fb069; } .mi { color:#e0c05a; } .hi { color:#e08a5a; }
   .card { background:var(--card); border:1px solid var(--edge); border-radius:10px; padding:14px 18px; margin:12px 0; }
   b.g { color:var(--gold); }
+
+/* ══════════ PDF 인쇄(브라우저 인쇄 → PDF 저장) ══════════ */
+@media print {
+  @page { size: A4; margin: 14mm; }
+  :root { --bg:#fff; --panel:#fff; --card:#faf7f0; --edge:#c7bba4; --ink:#1a1712; --dim:#4f4738;
+          --gold:#5b430f; --accent:#8a4718;
+          --red:#a1281e; --green:#1d6b3a; --amber:#8a5b0a; --blue:#14506b; --violet:#523a7a; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; background:#fff !important; }
+  body { background:#fff !important; color:var(--ink) !important; line-height:1.5; }
+  .wrap { max-width:none !important; padding:0 0 8mm !important; }
+  h1 { color:var(--gold) !important; }
+  h2 { color:var(--gold) !important; border-bottom-color:var(--edge) !important; margin-top:22px; }
+  h3, h4 { color:var(--ink) !important; }
+  h1, h2, h3, h4 { break-after:avoid; page-break-after:avoid; }
+  p, li, td, dd, dt, summary { color:var(--ink) !important; }
+  .sub, .note, .dim, .legend span, .src, .foot { color:var(--dim) !important; }
+  code, kbd, .pill, .chip { background:#f1ece0 !important; color:#2c2519 !important; border:1px solid var(--edge) !important; }
+  pre { background:#f7f4ec !important; color:#1a1712 !important; border:1px solid var(--edge) !important;
+        white-space:pre-wrap !important; word-break:break-word; }
+  pre code { background:none !important; border:0 !important; color:#1a1712 !important; }
+  .card { background:var(--card) !important; border-color:var(--edge) !important; }
+  .lead { background:#fdf6e4 !important; border-color:#b08b3e !important; color:#1a1712 !important; }
+  table { min-width:0 !important; width:100% !important; }
+  th, td { border-color:var(--edge) !important; word-break:break-word; }
+  th { background:#efe8d8 !important; color:var(--gold) !important; position:static !important; }
+  a { color:#0b4a8f !important; text-decoration:underline; }
+  a[href^="http"]::after { content:" (" attr(href) ")"; font-size:10px; color:#4f4738; word-break:break-all; }
+  a[href^="#"]::after { content:""; }
+  .scroll { overflow:visible !important; }
+  .card, .box, pre, table, tr, li, .lead, .stat { break-inside:avoid; page-break-inside:avoid; }
+  * { scrollbar-width:none !important; }
+  ::-webkit-scrollbar { display:none !important; }
+
+  /* 이 문서 고유 */
+  b.g { color:var(--gold) !important; }
+  .lo { color:#1d6b3a !important; } .mi { color:#8a5b0a !important; } .hi { color:#a14b1e !important; }
+  tbody tr:nth-child(even) td { background:#f6f2e8 !important; }
+}
 </style>
 </head>
 <body>
