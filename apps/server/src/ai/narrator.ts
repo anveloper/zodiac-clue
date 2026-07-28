@@ -2,6 +2,8 @@
 // LLM은 주어진 '결정된 정보'만 사용해 한 문장 대사를 생성. 진실값을 만들거나 남의 패를
 // 아는 척하지 않는다. 키(GEMINI_API_KEY)가 없거나 실패하면 규칙기반 폴백 대사로 대체.
 
+import { josa } from "../util/josa";
+
 export type NarrationInput = {
   /** 캐릭터 표시명 (예: "생쥐 서생") */
   name: string;
@@ -43,8 +45,8 @@ export const fallbackLine = (i: NarrationInput): string => {
   if (i.action === "accuse") {
     return deco(
       rand([
-        `이건 필시 ${i.suspect}의 소행! ${i.room}에서 ${i.weapon}을 훔쳤어`,
-        `도둑은 ${i.suspect}! ${i.room}의 ${i.weapon}이 증거다`,
+        `이건 필시 ${i.suspect}의 소행! ${i.room}에서 훔친 것은 「${i.weapon}」`,
+        `도둑은 ${i.suspect}! 증거는 ${i.room}의 「${i.weapon}」`,
         `더 볼 것도 없다. ${i.suspect}, ${i.weapon}, ${i.room}`,
       ]),
     );
@@ -61,9 +63,13 @@ export const fallbackLine = (i: NarrationInput): string => {
     );
   }
   const base = rand([
-    `흠… ${i.room}에서 ${i.suspect}가 ${i.weapon}을? 수상쩍구먼`,
+    `흠… ${i.room}에서 ${i.suspect} — 「${i.weapon}」${josa(
+      i.weapon,
+      "이라니",
+      "라니",
+    )}, 수상쩍구먼`,
     `내 짐작엔 ${i.suspect}, ${i.weapon}, ${i.room}`,
-    `${i.room} 쪽을 살피니 ${i.weapon}이 사라졌던걸`,
+    `${i.room} 쪽을 살피니 「${i.weapon}」, 그게 사라졌던걸`,
     `${i.suspect}, 자네 ${i.room}엔 왜 갔는가`,
   ]);
   return deco(i.disproved ? `${base} …아니라니 하나 지웠군` : base);

@@ -148,12 +148,14 @@ export class ClueRoom extends Room<GameState> {
     const player = this.state.players.get(client.sessionId);
     if (!player || player.eliminated) return;
     if (this.state.currentTurn !== client.sessionId) {
-      client.send("log", { text: "당신의 턴이 아닙니다." });
+      client.send("log", { text: "지금은 내 차례가 아니에요." });
       return;
     }
     const dest = player.room ? passageOf(player.room) : undefined;
     if (!dest) {
-      client.send("log", { text: "이 방엔 비밀 통로가 없습니다." });
+      client.send("log", {
+        text: "이 방에는 비밀 통로가 없어요. (통로는 3쌍)",
+      });
       return;
     }
     const c = this.freeCellIn(dest, player.id);
@@ -162,7 +164,7 @@ export class ClueRoom extends Room<GameState> {
     player.room = dest;
     this.state.stepsLeft = 0; // 통로로 방 도착 = 이동 소진(방 진입 턴엔 이탈 불가). 턴은 유지.
     this.broadcast("log", {
-      text: `🚪 ${player.name} 님이 비밀 통로로 ${label(dest)}에 이동! (제안 또는 턴 종료)`,
+      text: `🚪 비밀 통로 — ${player.name} → ${label(dest)} · 제안 또는 턴 종료`,
       kind: "move",
     });
   }
@@ -173,7 +175,7 @@ export class ClueRoom extends Room<GameState> {
     const player = this.state.players.get(client.sessionId);
     if (!player || player.eliminated) return;
     if (this.state.currentTurn !== client.sessionId) {
-      client.send("log", { text: "당신의 턴이 아닙니다." });
+      client.send("log", { text: "지금은 내 차례가 아니에요." });
       return;
     }
     let helper: HelperToken | undefined;
@@ -186,7 +188,9 @@ export class ClueRoom extends Room<GameState> {
       }
     });
     if (!helper) {
-      client.send("log", { text: "가까이에 계략을 줄 이가 없습니다." });
+      client.send("log", {
+        text: "계략을 줄 이가 근처에 없어요. 보드 가장자리의 NPC 곁으로.",
+      });
       return;
     }
     helper.used = true;
@@ -211,9 +215,9 @@ export class ClueRoom extends Room<GameState> {
     const seen = pool.slice(0, n);
     client.send("peek", { from: label(helper.value), cards: seen });
     this.broadcast("log", {
-      text: `🃏 ${player.name} 님이 ${label(
+      text: `🃏 계략 — ${player.name} · ${label(
         helper.value,
-      )}의 계략(엿보기 ${n}·이동 +${refund}) 사용`,
+      )}에게서 엿보기 ${n} · 이동 +${refund}`,
       kind: "info",
     });
     // 계략 NPC의 귓속말: 당사자에게만 전문, 타인에겐 "(귓속말)"만 보인다.
@@ -265,7 +269,7 @@ export class ClueRoom extends Room<GameState> {
 
   onJoin(client: Client, options: JoinOptions = {}): void {
     if (this.state.phase !== "lobby") {
-      client.send("log", { text: "이미 진행 중인 게임입니다 (관전)." });
+      client.send("log", { text: "이미 진행 중인 판이에요. 관전으로 들어갑니다." });
     }
     const used = new Set(
       [...this.state.players.values()].map((p) => p.suspect),
@@ -292,7 +296,7 @@ export class ClueRoom extends Room<GameState> {
     if (!this.state.host) {
       this.state.host = client.sessionId;
     }
-    this.broadcast("log", { text: `${player.name} 입장.` });
+    this.broadcast("log", { text: `🎎 입장 — ${player.name} 님` });
     this.syncMeta();
   }
 
@@ -303,13 +307,13 @@ export class ClueRoom extends Room<GameState> {
     // 게임 중 비자발적 이탈만 재접속을 기다린다(대기실에선 즉시 제거).
     if (!consented && this.state.phase === "playing") {
       this.broadcast("log", {
-        text: `${player?.name ?? "누군가"} 연결 끊김 — 재접속 대기…`,
+        text: `📡 연결 끊김 — ${player?.name ?? "누군가"} 님 · 재접속 대기`,
       });
       try {
         await this.allowReconnection(client, 60);
         const back = this.state.players.get(client.sessionId);
         if (back) back.connected = true;
-        this.broadcast("log", { text: `${back?.name ?? "플레이어"} 재접속!` });
+        this.broadcast("log", { text: `🙋 재접속 — ${back?.name ?? "플레이어"} 님` });
         return;
       } catch {
         // 시간 초과 → 아래에서 제거
@@ -320,7 +324,7 @@ export class ClueRoom extends Room<GameState> {
 
   private removePlayer(sessionId: string): void {
     const player = this.state.players.get(sessionId);
-    if (player) this.broadcast("log", { text: `${player.name} 퇴장.` });
+    if (player) this.broadcast("log", { text: `🚪 퇴장 — ${player.name} 님` });
     this.state.players.delete(sessionId);
     this.hands.delete(sessionId);
     this.botKnowledge.delete(sessionId);
@@ -380,7 +384,7 @@ export class ClueRoom extends Room<GameState> {
       player.room = nextRoom;
       if (nextRoom) {
         this.broadcast("log", {
-          text: `${player.name} 님이 ${label(nextRoom)}에 들어갔습니다.`,
+          text: `🚪 진입 — ${player.name} → ${label(nextRoom)}`,
           kind: "move",
         });
       }
@@ -403,7 +407,7 @@ export class ClueRoom extends Room<GameState> {
       (p) => p.id !== player.id && p.suspect === value,
     );
     if (takenByOther) {
-      client.send("log", { text: `${label(value)}는 이미 선택되었습니다.` });
+      client.send("log", { text: `이미 선택된 캐릭터예요 — ${label(value)}` });
       return;
     }
     player.suspect = value;
@@ -414,7 +418,7 @@ export class ClueRoom extends Room<GameState> {
   private handleStart(client: Client): void {
     if (this.state.phase !== "lobby") return;
     if (this.state.host !== client.sessionId) {
-      client.send("log", { text: "방장만 잔치를 시작할 수 있습니다." });
+      client.send("log", { text: "방장만 잔치를 시작할 수 있어요." });
       return;
     }
 
@@ -431,7 +435,7 @@ export class ClueRoom extends Room<GameState> {
     if (this.state.phase !== "ended") return;
     const p = this.state.players.get(client.sessionId);
     this.broadcast("log", {
-      text: `🔄 ${p?.name ?? "누군가"} 님이 다시 하기 — 새 판을 시작합니다.`,
+      text: `🔄 다시 하기 — ${p?.name ?? "누군가"} 님 · 새 판을 시작합니다`,
       kind: "info",
     });
     this.startGame();
@@ -544,7 +548,7 @@ export class ClueRoom extends Room<GameState> {
       }
       if (this.state.commonCards.length > 0) {
         this.broadcast("log", {
-          text: `📢 공통 단서 공개(정답 아님): ${([...this.state.commonCards] as string[])
+          text: `📢 공통 단서 — 모두 공개 · 정답 아님: ${([...this.state.commonCards] as string[])
             .map((v) => label(v))
             .join(", ")}`,
           kind: "info",
@@ -582,8 +586,9 @@ export class ClueRoom extends Room<GameState> {
     ).length;
     const first = this.state.players.get(ids[0]);
     this.broadcast("log", {
-      text: `게임 시작! 정답 봉투 봉인. NPC ${botCount}명 합류. ${first?.name} 님의 턴.`,
+      text: `🎊 잔치 시작 — 정답 봉투 봉인 · NPC ${botCount}명 합류`,
     });
+    this.broadcast("log", { text: `⏳ ${first?.name} 님의 턴` });
     this.scheduleBotIfNeeded();
   }
 
@@ -678,7 +683,7 @@ export class ClueRoom extends Room<GameState> {
     // 카테고리별 명확 표기
     this.broadcast("log", {
       text:
-        `🔍 [제안] ${suggester?.name} — 도둑: ${label(suggestion.suspect)}` +
+        `🔍 제안 — ${suggester?.name} · 용의자: ${label(suggestion.suspect)}` +
         ` · 훔친 것: ${label(suggestion.weapon)} · 장소: ${label(suggestion.room)}`,
       kind: "suggest",
       sid,
@@ -694,9 +699,9 @@ export class ClueRoom extends Room<GameState> {
       target.y = c.y;
       target.room = suggestion.room;
       this.broadcast("log", {
-        text: `${label(suggestion.suspect)}가 ${label(
+        text: `🔔 소환 — ${label(suggestion.suspect)} → ${label(
           suggestion.room,
-        )}(으)로 불려왔습니다.`,
+        )}`,
         kind: "move",
       });
     }
@@ -721,7 +726,7 @@ export class ClueRoom extends Room<GameState> {
         // 드러난 카드는 정답 아님 → NPC 공유 지식에 반영(추리 가속)
         this.revealed.add(match.value);
         this.broadcast("log", {
-          text: `🛡 ${other?.name} 님이 반증했습니다.`,
+          text: `🛡 반증 — ${other?.name} 님`,
           kind: "disprove",
           sid,
           disproved: true,
@@ -742,11 +747,13 @@ export class ClueRoom extends Room<GameState> {
     if (this.state.phase !== "playing") return;
     const player = this.state.players.get(client.sessionId);
     if (!player || this.state.currentTurn !== player.id) {
-      client.send("log", { text: "당신의 턴이 아닙니다." });
+      client.send("log", { text: "지금은 내 차례가 아니에요." });
       return;
     }
     if (!player.room) {
-      client.send("log", { text: "방 안에서만 제안할 수 있습니다." });
+      client.send("log", {
+        text: "방 안에서만 제안할 수 있어요. 입구(🚪)로 들어가세요.",
+      });
       return;
     }
     const suggestion: Suggestion = {
@@ -781,15 +788,19 @@ export class ClueRoom extends Room<GameState> {
       this.state.phase = "ended";
       this.state.winner = playerId;
       this.broadcast("log", {
-        text: `🎉 ${player.name} 사건 해결! 정답: ${label(
-          this.solution.suspect,
-        )} · ${label(this.solution.weapon)} · ${label(this.solution.room)}`,
+        text: `🎉 사건 해결 — ${player.name} 님`,
+        kind: "win",
+      });
+      this.broadcast("log", {
+        text: `📜 정답 봉투 — ${label(this.solution.suspect)} · ${label(
+          this.solution.weapon,
+        )} · 📍 ${label(this.solution.room)}`,
         kind: "win",
       });
     } else {
       player.eliminated = true;
       this.broadcast("log", {
-        text: `❌ [고발 실패] ${player.name} 탈락(반증만 가능).`,
+        text: `❌ 고발 실패 — ${player.name} 님 탈락 · 반증만 가능`,
         kind: "accuse",
       });
       this.advanceTurn();
@@ -800,7 +811,7 @@ export class ClueRoom extends Room<GameState> {
     if (this.state.phase !== "playing" || !this.solution) return;
     const player = this.state.players.get(client.sessionId);
     if (!player || this.state.currentTurn !== player.id) {
-      client.send("log", { text: "당신의 턴이 아닙니다." });
+      client.send("log", { text: "지금은 내 차례가 아니에요." });
       return;
     }
     this.doAccusation(player.id, msg);
@@ -835,7 +846,7 @@ export class ClueRoom extends Room<GameState> {
     if (bot.room !== region.name) {
       bot.room = region.name;
       this.broadcast("log", {
-        text: `${bot.name} 님이 ${label(region.name)}에 들어갔습니다.`,
+        text: `🚪 진입 — ${bot.name} → ${label(region.name)}`,
         kind: "move",
       });
     }
@@ -1000,7 +1011,7 @@ export class ClueRoom extends Room<GameState> {
       this.state.winner = order[0];
       const w = this.state.players.get(order[0]);
       this.broadcast("log", {
-        text: `🎉 ${w?.name} 최후 생존 — 승리!`,
+        text: `🎉 최후 생존 — ${w?.name} 님 승리!`,
         kind: "win",
       });
       return;
@@ -1011,7 +1022,7 @@ export class ClueRoom extends Room<GameState> {
     this.state.stepsLeft = this.rollSteps();
     this.turnStartedAt = this.clock.currentTime;
     const np = this.state.players.get(next);
-    this.broadcast("log", { text: `${np?.name} 님의 턴입니다.` });
+    this.broadcast("log", { text: `⏳ ${np?.name} 님의 턴` });
     this.scheduleBotIfNeeded();
   }
 
