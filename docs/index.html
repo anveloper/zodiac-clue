@@ -76,6 +76,20 @@
   .home-card h1 { color:var(--gold); margin:0 0 6px; font-size:24px; }
   .home-card p { font-size:14px; color:var(--dim); }
   .live { display:inline-block; margin-top:8px; }
+  .home-card h2 { color:var(--gold); font-size:13px; letter-spacing:.08em; text-transform:uppercase;
+    margin:26px 0 10px; border:0; padding:0; }
+  .feat { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:10px; }
+  .feat a { display:block; text-decoration:none; background:#1a1611; border:1px solid var(--edge);
+    border-left:3px solid var(--accent); border-radius:9px; padding:12px 14px; }
+  .feat a:hover { background:#221c15; border-color:#6b5838; border-left-color:#e0a35a; }
+  .feat .k { color:var(--gold); font-size:13.5px; font-weight:700; display:block; }
+  .feat .d { color:var(--dim); font-size:12px; display:block; margin-top:3px; line-height:1.5; }
+  .groups { display:flex; flex-wrap:wrap; gap:7px; }
+  .groups a { text-decoration:none; background:#2c2519; border:1px solid var(--edge); border-radius:20px;
+    padding:4px 12px; font-size:12.5px; color:#cbbfa8; }
+  .groups a:hover { color:var(--gold); border-color:#6b5838; }
+  .groups b { color:var(--gold); font-weight:700; }
+  .home-note { margin-top:22px; padding-top:14px; border-top:1px solid var(--edge); font-size:12.5px; }
 
   @media (max-width:760px) {
     .sidebar { position:fixed; left:0; top:0; bottom:0; z-index:30; transform:translateX(-100%);
@@ -127,6 +141,10 @@
   .md .chk-todo { color:var(--dim) !important; }
   .home-card { background:var(--card) !important; border-color:var(--edge) !important; }
   .home-card h1 { color:var(--gold) !important; } .home-card p { color:var(--dim) !important; }
+  .home-card h2 { color:var(--gold) !important; }
+  .feat a, .groups a { background:#f4f0e6 !important; border-color:var(--edge) !important; }
+  .feat .k, .groups b { color:#5b430f !important; } .feat .d { color:var(--dim) !important; }
+  .feat a, .groups a { break-inside:avoid; page-break-inside:avoid; }
   a { color:#0b4a8f !important; text-decoration:underline; }
   a[href^="http"]::after { content:" (" attr(href) ")"; font-size:10px; color:#4f4738; word-break:break-all; }
   .md pre, .md table, .md tr, .md li, .home-card { break-inside:avoid; page-break-inside:avoid; }
@@ -222,15 +240,56 @@
     document.querySelectorAll("nav#tree a.doc").forEach(a=>a.classList.toggle("active",a.dataset.path===path));
   }
 
+  // 추천 진입점. **경로는 manifest에 있을 때만 카드가 렌더된다** —
+  // manifest는 scripts/docs-private.mjs의 비공개 규칙으로 이미 걸러져 있으므로,
+  // 여기에 내부 문서 경로를 적어도 공개 사이트에서는 카드 자체가 사라진다(죽은 링크 0).
+  // 즉 이 목록은 "링크 후보"이지 "공개 선언"이 아니다.
+  const FEATURED=[
+    {path:"submission/game-intro.html",              k:"게임 소개",        d:"목표 · 조작 · 종료 조건 · 실행 방법. 처음이라면 여기부터."},
+    {path:"design/20260720-ai-tech-doc.html",        k:"AI 활용 기술 문서", d:"결정론 진실 계층 / LLM 표현 계층 분리 · 환각 검증 · 관측 가능성."},
+    {path:"design/20260727-ui-copy.html",            k:"UI 문안 명세",      d:"화면에 나오는 한국어 문장 전부의 단일 출처. 조사 회피 6규칙."},
+    {path:"design/20260727-view-contract-spec.html", k:"뷰 계약",           d:"렌더러 4종이 공유하는 ViewContract — 표현 계층은 뷰를 모른다."},
+    {path:"design/20260720-engine-and-workflow-plan.html", k:"엔진 · 워크플로", d:"재사용 엔진과 교체 가능한 게임 콘텐츠를 나눈 배경."},
+  ];
+
   function showHome(){
     setActive(null); $("crumb").textContent="문서 대시보드"; $("rawLink").style.display="none";
-    const total=flat().length;
+    const paths=new Set(flat().map(x=>x.path));
+    const total=paths.size;
+    const feat=FEATURED.filter(f=>paths.has(f.path))
+      .map(f=>`<a href="#${f.path}"><span class="k">${f.k}</span><span class="d">${f.d}</span></a>`).join("");
+    const groups=manifest.map(g=>`<a href="#" data-g="${g.dir}">${g.label} <b>${g.items.length}</b></a>`).join("");
     $("content").innerHTML=`<div class="home-card">
       <h1>🐯 zodiac-clue 문서</h1>
-      <p>호랑이 생신 잔치 · 웹 멀티 추리 게임. 왼쪽 트리에서 설계·플랜·개발일지를 골라 보세요. (총 ${total}개)</p>
-      <p class="live">🎮 라이브: <a href="https://zodiac-clue.vercel.app" target="_blank">zodiac-clue.vercel.app</a></p>
-      <p><b>문서 규칙</b>: <code>plans/</code>=AI용 압축 .md · 그 외=사람용 .md+.html(수기 디자인). 이 뷰어는 .md를 같은 톤으로 렌더, .html은 원본 표시.</p>
+      <p>호랑이 생신 잔치 · 십이지 손님 중 도둑을 찾는 웹 멀티 추리 게임. 빈자리는 AI NPC가 채웁니다.</p>
+      <p class="live">🎮 라이브: <a href="https://zodiac-clue.vercel.app" target="_blank">zodiac-clue.vercel.app</a>
+        &nbsp;·&nbsp; <a href="https://github.com/anveloper/zodiac-clue" target="_blank">GitHub</a></p>
+
+      <h2>먼저 볼 것</h2>
+      <div class="feat">${feat}</div>
+
+      <h2>전체 ${total}개</h2>
+      <div class="groups">${groups}</div>
+
+      <div class="home-note">
+        <p><b>문서 규칙</b> — <code>plans/</code>는 AI용 압축 <code>.md</code>, 그 밖의 문서는 사람용 <code>.md</code> + 수기 디자인 <code>.html</code> 2중이다.
+        기계 변환(md→html)은 쓰지 않는다. 이 뷰어는 <code>.md</code>를 같은 톤으로 렌더하고 <code>.html</code>은 원본 그대로 띄운다.</p>
+        <p>설계 문서와 개발일지·완료 플랜을 함께 남긴 이유는 결과물뿐 아니라 <b>AI 에이전트 워크플로로 개발한 과정</b>이 이 프로젝트의 산출물이기 때문이다.
+        진행 중 작업 목록과 상류 리서치 등 일부 내부 문서는 배포본에서 제외된다.</p>
+      </div>
     </div>`;
+    // 그룹 칩 → 좌측 트리의 해당 그룹으로 스크롤 + 펼치기
+    $("content").querySelectorAll(".groups a").forEach(a=>{
+      a.onclick=(e)=>{
+        e.preventDefault();
+        const i=manifest.findIndex(g=>g.dir===a.dataset.g);
+        const d=document.querySelectorAll("nav#tree details")[i];
+        if(!d) return;
+        d.open=true;
+        if(window.innerWidth<=760) openSidebar();
+        d.scrollIntoView({block:"nearest"});
+      };
+    });
     $("scroll").scrollTop=0;
   }
 

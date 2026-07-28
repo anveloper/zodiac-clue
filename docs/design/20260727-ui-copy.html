@@ -133,6 +133,23 @@
   .g-chip{background:#16130f;border:1px solid var(--edge);border-radius:6px;padding:4px 9px;font-size:12px}
   .g-hand .l3{margin-top:8px;font-size:11px;color:var(--dim);border-top:1px solid #2c251c;padding-top:7px}
 
+  /* AI 계측 패널 재현 (#aiPanel) */
+  .g-ai{width:270px;flex:0 0 270px}
+  .g-ai .sum{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:11px;color:var(--gold);
+    letter-spacing:.4px;padding-bottom:8px;border-bottom:1px solid #2c251c}
+  .g-ai .sum::before{content:"▾";color:var(--dim)}
+  .g-aichip{margin-left:auto;white-space:nowrap;font-size:11px;color:#cbbfa8;background:#16130f;
+    border:1px solid var(--edge);border-radius:8px;padding:2px 7px}
+  .g-aichip b{color:var(--ink);font-weight:700}
+  .g-aichip.warn{border-color:#d5b45b;color:var(--gold)}
+  .g-airows{padding-top:8px;font-size:11px;color:var(--dim)}
+  .g-airow{display:flex;justify-content:space-between;gap:8px;padding:1px 0}
+  .g-airow b{color:#cbbfa8;font-weight:600}
+  .g-ainote{margin-top:6px;color:#d5b45b;font-size:11px}
+  .g-badge{display:inline-block;margin-left:6px;padding:0 5px;border-radius:8px;font-size:10px;
+    color:#16130f;font-weight:600;background:#a878d5}
+  .g-badge.llm{background:#6be08a} .g-badge.cache{background:#5b9bd5} .g-badge.fb{background:#d5b45b}
+
   /* 로그 줄 재현 */
   .g-log{width:100%;max-width:360px;flex:1 1 320px}
   .g-log .ln{padding:4px 8px;border-bottom:1px solid #2c251c;border-left:3px solid transparent;
@@ -235,7 +252,7 @@
 <div class="wrap">
 
   <h1>UI 문안(카피) 명세</h1>
-  <p class="sub">호랑이 생신 잔치 — 화면에 출력되는 한국어 문장 전부의 단일 출처 · 2026-07-27</p>
+  <p class="sub">호랑이 생신 잔치 — 화면에 출력되는 한국어 문장 전부의 단일 출처 · 2026-07-27 <span class="tag t-new">개정 07-28</span></p>
   <p class="src">실측 근거 <code>apps/client/index.html</code> · <code>apps/client/src/main.ts</code> · <code>apps/server/src/rooms/clue-room.ts</code> · <code>apps/server/src/ai/narrator.ts</code><br>
   진단과 우선순위는 <b>기획 개선 로드맵</b> 소관이며 여기서 중복하지 않는다. 이 문서가 확정하는 것은 <b>붙여넣을 문장</b>뿐이다.</p>
 
@@ -342,7 +359,13 @@
     <li>UI 문안은 정답·타인 손패를 <b>암시하지 않는다</b>. <code>정답 후보</code>는 규칙엔진이 계산한 공개 결과라 허용, <code>정답인 듯해요</code> 같은 추측형은 금지.</li>
     <li>나만 보는 정보에는 <b>반드시 <code>(나만 봄)</code></b> — 반증 카드, 계략 엿보기, 증거 노트.</li>
     <li>NPC 대사 본문은 LLM 출력이므로 이 문서가 확정하지 않는다. 확정 대상은 <b>폴백 템플릿(§8.2)과 접두 기호</b>뿐.</li>
+    <li>대사 경로 표시(<code>✨</code>/<code>♻</code>/<code>⚙</code>)는 진실값이 아니라 <b>운영 메타데이터</b>다(④ §4). 게임 상태를 말하지 않으므로 <code>(나만 봄)</code> 대상도 아니고, 숨기지도 않는다 → 문안 <a href="#s4">§4.4</a>.</li>
   </ul>
+  <div class="box warn">
+    ⚠️ <b>폴백 템플릿에 대한 이 문서의 확정 권한은 "길이 예산 안에서"다.</b>
+    예산은 제출물 ④ §2.3이 정하고 코드 상수 <code>LINE_BUDGET_SUGGEST</code>(25) · <code>LINE_MAX</code>(40)가 강제한다 — <b>예산이 문안보다 상위</b>다.<br>
+    <span class="note">07-27 확정본이 이 예산을 어겨 07-28에 템플릿을 교체했다. 경위는 <a href="#s8">§8.2 정정 노트</a>.</span>
+  </div>
 
   <h3>1.5 길이 제약</h3>
   <div class="scroll"><table>
@@ -355,7 +378,11 @@
     <tr><td>결과 부제</td><td><b>44자</b></td><td><code>.end-sub</code> 1~2행</td></tr>
     <tr><td>목표 카드 1줄</td><td><b>32자</b></td><td>380px 카드 안에서 2행 금지</td></tr>
     <tr><td>랜딩 <code>.msg</code></td><td><b>40자</b></td><td><code>min-height:16px</code> 1행</td></tr>
+    <tr><td><b>NPC 대사 — 제안</b></td><td><b>25자</b></td><td>코드 <code>LINE_BUDGET_SUGGEST</code>. 봇 1턴 = <code>npcDelay</code>+<code>BOT_ACT_GAP</code>+<code>bubbleLifeMs(len)</code> ≤ 4s 역산(④ §2.3)</td></tr>
+    <tr><td><b>NPC 대사 — 고발·계략</b></td><td><b>40자</b></td><td>코드 <code>LINE_MAX</code>. 홀드 타이머가 없어 클라이맥스 대사의 캐릭터색을 남긴다</td></tr>
+    <tr><td>AI 로그 배지</td><td><b>8자</b></td><td><code>.log-badge</code> 1칸 — 폴백 사유 한글 표기(§4.4)가 이 상한에 맞춰져 있다</td></tr>
   </table></div>
+  <p class="note">아래 두 행은 <b>이 문서가 지어낸 상한이 아니라 코드 상수를 그대로 옮긴 것</b>이다. 값이 갈라지면 <code>scripts/gate-docs-consistency.mjs</code>가 잡는다.</p>
 
   <!-- ════════════ 2 ════════════ -->
   <h2 id="s2"><span class="n">2</span>어휘 통일표 — 1개념 = 1표기</h2>
@@ -374,19 +401,24 @@
     <tr><td>관전 상태</td><td><b>관전</b></td><td class="dim">구경 · 스펙테이터</td></tr>
     <tr><td>AI 플레이어</td><td><b>NPC</b></td><td class="dim">봇 · AI 플레이어 <span class="note">(UI 한정 — 문서·코드는 봇 허용)</span></td></tr>
     <tr><td>대리 NPC <span class="tag t-soon">선행</span></td><td><b>대리 NPC</b></td><td class="dim">임시 봇 · AFK 봇</td></tr>
+    <tr><td>승자 없는 종료 <span class="tag t-new">신규</span></td><td><b>무승부</b></td><td class="dim">비김 · 드로우 · 유찰</td></tr>
+    <tr><td>대사 생성 경로 3종 <span class="tag t-new">신규</span></td><td><b>LLM · 캐시 · 폴백</b></td><td class="dim">AI · fallback · hit · 규칙 대사</td></tr>
+    <tr><td>폴백 사유 <span class="tag t-new">신규</span></td><td><b>한글 표기 6종</b> <span class="note">(§4.4)</span></td><td class="dim">영문 토큰(<code>timeout</code>·<code>http</code>…) 화면 노출</td></tr>
   </table></div>
 
   <h4>표기 접두 기호 (고정)</h4>
   <dl class="kv">
     <dt>🎲 주사위</dt><dd>턴 시작 이동 굴림</dd>
     <dt>🔍 제안</dt><dd>🛡 반증 · ❗ 미반증(정답 후보)</dd>
-    <dt>❌ 실패·탈락</dt><dd>🎉 승리 · 🏅 최후 생존</dd>
+    <dt>❌ 실패·탈락</dt><dd>🎉 승리 · 🏅 최후 생존 · 🏳 무승부</dd>
     <dt>🚪 방 진입·통로</dt><dd>🔔 소환</dd>
     <dt>🃏 계략·손패</dt><dd>📢 공통 단서</dd>
     <dt>💬 캐릭터 대사</dt><dd>⏳ 턴·시간 · ⌛ 시간 초과</dd>
     <dt>🤖 NPC</dt><dd>💤 대리 중 · 📡 연결 · 🙋 복귀</dd>
     <dt>📍 장소</dt><dd>👑 방장 · 🎎 입장</dd>
+    <dt>✨ LLM 대사</dt><dd>♻ 캐시 대사 · ⚙ 폴백 대사 <span class="note">(§4.4)</span></dd>
   </dl>
+  <p class="note">접두 기호는 <b>이형 선택자(VS16 <code>U+FE0F</code>) 없이</b> 쓴다. 저장소 전체가 그렇고(<code>🛡</code> = <code>U+1F6E1</code> 단독), 한 곳만 붙이면 폭이 달라져 로그 좌측 정렬이 어긋난다.</p>
   <div class="box warn">
     ⚠️ <code>EMOJI</code> 맵에 <b>장소 9종이 없다</b> → <code>emoji(room)</code>이 빈 문자열을 반환해 증거 노트 <code>장소</code> 그룹 칩의 아이콘 칸이 전부 비어 있다.
     장소 접두는 <b>고정 문자 <code>📍</code></b>로 통일한다. 카드 데이터에 이모지를 추가하지 않는다 — 정지(부엌)·사랑채·별당에 자연스럽게 대응하는 이모지가 없다.
@@ -463,6 +495,90 @@
     <tr><td>그룹 라벨</td><td class="q">용의자 / 훔친 것 / 장소</td><td><span class="tag t-keep">유지</span> §2 일치</td></tr>
     <tr><td>빈 상태</td><td class="q">아직 지운 후보가 없어요. 칩을 눌러 표시하세요.</td><td><span class="tag t-soon">선행</span></td></tr>
   </table></div>
+
+  <div class="box crit">
+    <b>🔴 잠금 칩 툴팁이 코드와 갈라져 있다 (07-28 확인).</b>
+    <code>buildEvidence()</code>는 <code class="bad">공통 단서 (정답 아님)</code> / <code class="bad">내 패 (정답 아님)</code>을 쓴다.
+    <b class="good">문서 쪽이 옳다</b> — 코드를 위 확정본으로 고친다.
+    <ul style="margin-bottom:0">
+      <li><code>내 패</code>는 §2 어휘표 위반이다. 확정 표기는 <b>내 손패</b>이고, <code>— 내 패</code>는 <b>셀렉트 옵션 접미 전용 축약형</b>(§6.1·§6.2)이다. 툴팁은 옵션 폭 제약이 없으니 축약할 이유가 없다.</li>
+      <li><code>(자동 제외)</code>가 빠지면 <b>"왜 눌러도 반응이 없는지"</b>가 화면에서 사라진다. 잠금 칩은 판 전체에서 <b>클릭에 반응하지 않는 유일한 칩</b>이고, §1.3은 금지 상태에 이유를 붙이라고 정한다.</li>
+      <li>길이는 각각 <b>20자 · 26자</b>로 툴팁 40자 상한(§1.5) 안이다 — 줄일 이유도 없었다.</li>
+    </ul>
+  </div>
+
+  <!-- ════════════ 4.4 ════════════ -->
+  <h3>4.4 AI 카운터 칩 · 대사 경로 배지 <code>#aiPanel</code> · <code>.log-badge</code></h3>
+  <div class="box info">
+    근거는 제출물 ④ §4(관측 가능성) 요구사항 3·5다. <b>칩 본문과 경고 배지는 ④가 지정한 문자열</b>이며 이 문서는 그것을 인용한다.
+    여기서 새로 확정하는 것은 <b>① 폴백 사유 6종의 한글 표기 ② 상세 패널 행 라벨</b>뿐이다.<br>
+    <span class="note">이 패널이 존재하는 이유: 폴백은 캐릭터색을 유지하도록 설계돼 <b>LLM 출력과 육안으로 구분되지 않는다.</b> 07-27 라이브에서 대사 5/5가 폴백이었는데 화면에 아무 신호도 없었다.</span>
+  </div>
+
+  <div class="pv">
+    <div class="pv-h">미리보기 · <b>#aiPanel</b> 우측 컬럼 최상단 — 정상 / 전건 폴백</div>
+    <div class="pv-b">
+      <div class="g-hud g-ai">
+        <div class="sum">🤖 AI 대사 <span class="g-aichip">✨LLM <b>12</b> · ♻캐시 <b>3</b> · ⚙폴백 <b>0</b></span></div>
+        <div class="g-airows">
+          <div class="g-airow"><span>평균</span><b>1.2s</b></div>
+          <div class="g-airow"><span>모델</span><b>gemini-flash-lite-latest</b></div>
+        </div>
+      </div>
+      <div class="g-hud g-ai">
+        <div class="sum">🤖 AI 대사 <span class="g-aichip warn">✨LLM <b>0</b> · ♻캐시 <b>0</b> · ⚙폴백 <b>7</b></span></div>
+        <div class="g-airows">
+          <div class="g-airow"><span>평균</span><b>—</b></div>
+          <div class="g-airow"><span>모델</span><b>—</b></div>
+          <div class="g-airow"><span>⚙ 응답 지연</span><b>5</b></div>
+          <div class="g-airow"><span>⚙ 응답 오류</span><b>2</b></div>
+          <div class="g-ainote">AI 대사 일시 폴백</div>
+        </div>
+      </div>
+      <div class="g-hud g-log" style="flex:1 1 300px">
+        <div class="ln l-info">💬 닭 훈장: 쯧쯧, 서재의 뱀 무녀, 「술동이」<span class="g-badge llm">✨ 1.2s</span></div>
+        <div class="ln l-info">💬 생쥐 서생: 허, 안방에서 토끼 낭자, 젓가락<span class="g-badge cache">♻ 0.0s</span></div>
+        <div class="ln l-info">💬 양 목동: 저, 저기… 서재의 뱀 무녀<span class="g-badge fb">⚙ 응답 지연</span></div>
+        <p class="note" style="margin:8px 0 0">배지 툴팁(진단용 원값) — <code>llm · 1183ms · gemini-flash-lite-latest</code></p>
+      </div>
+    </div>
+    <p class="pv-cap" style="padding:0 18px 16px">
+      <b>세 경로를 항상 함께 보여준다.</b> 폴백이 전부여도 숫자를 가리거나 줄이지 않고, 테두리 색과 <code>AI 대사 일시 폴백</code> 한 줄로 상태를 말로 밝힌다.
+    </p>
+  </div>
+
+  <div class="scroll"><table>
+    <tr><th>요소</th><th>문안</th></tr>
+    <tr><td>패널 제목</td><td class="q">🤖 AI 대사 <span class="tag t-keep">유지</span></td></tr>
+    <tr><td>칩 본문</td><td class="q">✨LLM 12 · ♻캐시 3 · ⚙폴백 0 <span class="note">(④ §4 지정본)</span></td></tr>
+    <tr><td>칩 툴팁</td><td class="q">칩 본문과 <b>같은 문자열</b></td></tr>
+    <tr><td>상세 · 평균 지연</td><td class="q">라벨 <code>평균</code> · 값 <code>1.2s</code> <span class="note">(계측 전이면 <code>—</code>)</span></td></tr>
+    <tr><td>상세 · 모델</td><td class="q">라벨 <code>모델</code> · 값 <code>gemini-flash-lite-latest</code></td></tr>
+    <tr><td>상세 · 사유별 건수</td><td class="q">라벨 <code>⚙ 응답 지연</code> · 값 <code>3</code></td></tr>
+    <tr><td>전건 폴백 경고</td><td class="q">AI 대사 일시 폴백 <span class="note">(④ §4 요구사항 5 지정본)</span></td></tr>
+    <tr><td>로그 배지 · LLM/캐시</td><td class="q">✨ 1.2s / ♻ 0.0s</td></tr>
+    <tr><td>로그 배지 · 폴백</td><td class="q">⚙ 응답 지연 <span class="note">(사유 한글 표기 — 아래 표)</span></td></tr>
+    <tr><td>로그 배지 툴팁</td><td class="q">llm · 1183ms · gemini-flash-lite-latest <span class="note">— 진단용 원값이라 <b>영문 토큰을 허용하는 유일한 자리</b></span></td></tr>
+  </table></div>
+
+  <h4>폴백 사유 6종 — 한글 표기 확정</h4>
+  <p class="note">코드는 현재 영문 토큰을 배지에 그대로 찍는다(<code class="bad">⚙ timeout</code>). 화면에 영문이 나오는 곳은 이 배지뿐이며, 심사자가 가장 먼저 보는 우측 컬럼이다.</p>
+  <div class="scroll"><table>
+    <tr><th>코드 토큰</th><th>확정 표기</th><th>실제로 있었던 일</th></tr>
+    <tr><td class="q dim">timeout</td><td class="q good">응답 지연</td><td>4000ms 초과(<code>AbortError</code>)</td></tr>
+    <tr><td class="q dim">http</td><td class="q good">응답 오류</td><td>2xx 아님(429·5xx) 또는 왕복 실패</td></tr>
+    <tr><td class="q dim">empty</td><td class="q good">빈 응답</td><td><code>candidates</code> 텍스트 없음</td></tr>
+    <tr><td class="q dim">toolong</td><td class="q good">길이 초과</td><td>정규화로도 예산에 못 맞춰 폐기</td></tr>
+    <tr><td class="q dim">nokey</td><td class="q good">키 없음</td><td><code>GEMINI_API_KEY</code> 미설정</td></tr>
+    <tr><td class="q dim">disabled</td><td class="q good">LLM 꺼짐</td><td><code>AI_NARRATE=off</code></td></tr>
+  </table></div>
+  <ul>
+    <li>전부 <b>5자 이내 체언 종결</b> — 배지 8자(§1.5)와 로그 48자 상한을 동시에 만족한다. 조사 없음(R1).</li>
+    <li><code>timeout</code>을 <span class="bad">시간 초과</span>로 옮기지 않는다 — 그 문안은 §9.5의 <b>턴 만료</b>(<code>⌛ 시간 초과</code>)가 이미 쓴다. 서로 다른 사건에 같은 말을 주면 로그에서 구분되지 않는다.</li>
+    <li><code>실패</code>를 단독으로 쓰지 않는 것은 §1.3 규칙이다. 다만 이 배지는 <b>관측 표시</b>라 "다음 행동"을 붙이지 않는다 — 사용자가 할 수 있는 일이 없고 게임은 정상 진행된다. 사용자 대상 문장은 <code>AI 대사 일시 폴백</code> 하나로 끝낸다.</li>
+    <li>칩의 <code>LLM</code>은 캐릭터가 아니라 <b>문장이 온 경로</b>의 이름이므로, "UI에서 AI 플레이어는 NPC로 부른다"는 §2 규칙과 충돌하지 않는다.</li>
+    <li>칩은 <b>첫 계측이 도착하기 전에는 표시하지 않는다</b>(코드 <code>aiSeen</code>). <code>0 · 0 · 0</code>을 먼저 띄우면 "대사가 없었다"는 없는 사실을 주장하게 된다 — <b>문안 없음이 확정본</b>이다.</li>
+  </ul>
 
   <!-- ════════════ 5 ════════════ -->
   <h2 id="s5"><span class="n">5</span>액션 버튼 4종 — 상태별 문안</h2>
@@ -631,14 +747,14 @@
     <h3 style="color:var(--red)">7.0 선행 조건 — 지금은 5종을 쓸 수가 없다</h3>
     <ul style="margin-bottom:0">
       <li>현재 <code>updateEndState()</code>는 승자 이름만 보고 <b>한 문장</b>을 쓴다 — <code class="bad">사건이 종결되었습니다. 정답은 기록(우측)을 확인하세요.</code> 클라이맥스에서 사용자를 로그로 보낸다.</li>
-      <li>5종 분기에는 <code>winner === 나</code> / <code>나의 eliminated</code> / <b>승리 사유</b>(고발 성공 vs 최후 생존)가 필요하다.</li>
-      <li><b>정답 봉투 문자열이 클라이언트에 없다.</b> 고발 성공 시에만 로그로 브로드캐스트되고, <b>최후 생존 종료에서는 정답이 어디에도 공개되지 않는다.</b> <code>state.solutionText</code> 또는 <code>broadcast("solution")</code>이 전제.</li>
+      <li>6종 분기에는 <code>winner === 나</code> / <code>나의 eliminated</code> / <b>승리 사유</b>(고발 성공 vs 최후 생존) / <code>winner === ""</code>(무승부)가 필요하다.</li>
+      <li><b>정답 봉투 문자열이 클라이언트에 없다.</b> 07-28 기준 로그로 나가는 경로는 <b>고발 성공</b>과 <b>무승부</b>(<code>endInDraw()</code>) 둘뿐이고, <b>최후 생존 종료에서는 정답이 어디에도 공개되지 않는다.</b> <code>state.solutionText</code> 또는 <code>broadcast("solution")</code>이 전제.</li>
       <li>정답 표기(공용) — <code>정답 봉투 — ${emoji}${용의자} · ${emoji}${훔친 것} · 📍 ${장소}</code> · R2/R4로 조사 없음.</li>
     </ul>
   </div>
 
   <div class="pv">
-    <div class="pv-h">미리보기 · <b>.end-card</b> — 5종</div>
+    <div class="pv-h">미리보기 · <b>.end-card</b> — 6종</div>
     <div class="pv-b">
       <div class="g-end">
         <div class="t">🎉 사건 해결!</div>
@@ -660,6 +776,11 @@
         <div class="s">내 지목 — 🐰 토끼 낭자 · 🥢 젓가락 · 📍 안방<br>정답 봉투 — <b>🐍 뱀 무녀 · 🍶 술동이 · 📍 서재</b></div>
         <div class="acts"><button class="g-btn">다시 하기</button><button class="g-btn ghost">메인으로</button></div>
       </div>
+      <div class="g-end" style="border-color:#7c6238">
+        <div class="t" style="color:#cbbfa8">🏳 무승부</div>
+        <div class="s">제안 75회에 이르도록 아무도 해결하지 못했어요.<br>정답 봉투 — <b>🐍 뱀 무녀 · 🍶 술동이 · 📍 서재</b></div>
+        <div class="acts"><button class="g-btn">다시 하기</button><button class="g-btn ghost">메인으로</button></div>
+      </div>
     </div>
     <p class="pv-cap" style="padding:0 18px 16px">
       4번의 <b>내 지목 / 정답 봉투 대조</b>는 패배 화면의 유일한 정보 가치다. 생략하지 말 것.
@@ -673,8 +794,20 @@
     <tr><td>3</td><td>내가 최후 생존</td><td class="q">🏅 최후의 1인</td><td class="q">모두 오답으로 탈락했어요. 정답 봉투 — …</td></tr>
     <tr><td>3′</td><td>남이 최후 생존</td><td class="q">🏅 판 종료</td><td class="q">🐭 생쥐 서생 님만 남았어요. 정답 봉투 — …</td></tr>
     <tr><td>4</td><td>내가 오답 탈락 후 종료</td><td class="q">❌ 고발 실패</td><td class="q">내 지목 — … / 정답 봉투 — …</td></tr>
+    <tr><td>5 <span class="tag t-new">신규</span></td><td>무승부 <span class="note">(제안 상한 도달 · <code>winner === ""</code>)</span></td><td class="q">🏳 무승부</td><td class="q">제안 75회에 이르도록 아무도 해결하지 못했어요. 정답 봉투 — …</td></tr>
   </table></div>
-  <p class="note">부제 44자 상한을 넘는 2·3·4는 <b>2행 허용</b>. 3행이 되면 앞 문장을 잘라내고 정답 봉투만 남긴다. 버튼은 5종 모두 <code>[다시 하기]</code> <code>[메인으로]</code>이며, 리매치 합의 도입 시 §9.4로 대체한다.</p>
+  <p class="note">부제 44자 상한을 넘는 2·3·4·5는 <b>2행 허용</b>. 3행이 되면 앞 문장을 잘라내고 정답 봉투만 남긴다. 버튼은 6종 모두 <code>[다시 하기]</code> <code>[메인으로]</code>이며, 리매치 합의 도입 시 §9.4로 대체한다.</p>
+
+  <div class="box good">
+    <h3 style="margin-top:0">5(무승부) 확정 근거</h3>
+    <ul style="margin-bottom:0">
+      <li>판정식은 <code>phase === "ended" &amp;&amp; winner === ""</code> — 서버 <code>endInDraw()</code>가 만드는 유일한 상태다(<code>SUGGEST_CAP</code> 75회 도달). <b>실측 발생률 0.0%지만 코드에 살아 있는 분기</b>라 문안 없이 두지 않는다. 지금은 승자 칸이 빈 채 <code class="bad">게임 종료</code>가 뜬다.</li>
+      <li>제목에 <b>느낌표를 붙이지 않는다</b> — 허용된 느낌표 3종(승리·최후 생존·미반증)에 무승부는 없다. 제목 5자(상한 16자).</li>
+      <li>부제 1문장은 <b>왜 끝났는지</b>를 말한다. <code>75</code>는 서버 상수를 넣어 만들며 <code>회에</code>는 받침 무관(R5)이라 조사 문제가 없다.</li>
+      <li><b>내가 이미 탈락한 상태에서 무승부로 끝나면 4번이 우선한다.</b> 나에게 일어난 일이 판 전체 결과보다 구체적이고, 4번만이 <code>내 지목 / 정답 봉투</code> 대조를 보여준다. 이때 <code class="bad">· 무승부로 종료</code>를 덧붙이지 않는다 — 3행이 된다.</li>
+      <li>승자가 없으므로 <b>승리 연출(<code>setOutcome</code>)은 호출하지 않는다</b> — 현재 코드가 이미 그렇다. <b>문안 없음이 확정</b>이다.</li>
+    </ul>
+  </div>
 
   <h3>7.2 관전 배너 <code>#spectateBar</code></h3>
   <div class="pv">
@@ -749,6 +882,8 @@
     <tr><td>784</td><td class="q dim">🎉 ${이름} 사건 해결! 정답: … · … · …</td><td class="q good">🎉 사건 해결 — ${이름} 님<br>📜 정답 봉투 — … · … · 📍 …</td><td>결과 오버레이(§7)와 <b>같은 문자열 재사용</b></td></tr>
     <tr><td>792</td><td class="q dim">❌ [고발 실패] ${이름} 탈락(반증만 가능).</td><td class="q good">❌ 고발 실패 — ${이름} 님 탈락 · 반증만 가능</td><td>대괄호 제거</td></tr>
     <tr><td>1003</td><td class="q dim">🎉 ${이름} 최후 생존 — 승리!</td><td class="q good">🎉 최후 생존 — ${이름} 님 승리!</td><td>어순만</td></tr>
+    <tr><td><code>endInDraw()</code><br><span class="tag t-new">확정</span></td><td class="q">🏳 무승부 — 제안 75회 도달 · 판을 종료합니다</td><td><span class="tag t-keep">그대로 유지</span> <span class="note">07-28 임시 문구를 검토 후 확정</span></td><td>접두 1개(§2 <code>🏳</code>) · 26자 · 조사 없음(<code>회</code> 고정 접미) · 승자 줄과 같은 <code>kind:"win"</code></td></tr>
+    <tr><td><code>endInDraw()</code><br><span class="tag t-new">확정</span></td><td class="q">📜 정답 봉투 — … · … · 📍 …</td><td><span class="tag t-keep">유지</span></td><td>784와 같은 2줄 구성(결과 + 정답 봉투) · 오버레이 §7.1 5번과 같은 문자열</td></tr>
     <tr><td>1014</td><td class="q dim">${이름} 님의 턴입니다.</td><td class="q good">⏳ ${이름} 님의 턴</td><td>접두 통일</td></tr>
     <tr><td>547</td><td class="q dim">📢 공통 단서 공개(정답 아님): …</td><td class="q good">📢 공통 단서 — 모두 공개 · 정답 아님: …</td><td>§4.2</td></tr>
     <tr><td>295</td><td class="q dim">${이름} 입장.</td><td class="q good">🎎 입장 — ${이름} 님</td><td>§9.1에서 재사용</td></tr>
@@ -769,18 +904,69 @@
   </div>
 
   <h3>8.2 <code>narrator.ts</code> 폴백 템플릿 <span class="note">— 사극체(R6 예외)지만, 피할 수 있는 곳은 피한다</span></h3>
+  <div class="box good">
+    <b>확정본 = 코드 <code>fallbackLine()</code> 현행</b>(2026-07-28 교체). 아래 표가 단일 소스이며, 문안을 바꾸려면 <b>이 표를 먼저</b> 고친다.
+    <span class="note">문서가 코드를 뒤따라가기 시작하면 §1.4의 확정 권한이 사실상 무효가 된다 — 이 절이 갱신되지 않은 채 두 번째로 갈라지면 §1.4 문장을 지우는 편이 정직하다.</span>
+  </div>
   <div class="scroll"><table>
-    <tr><th>현재</th><th>교체안</th></tr>
-    <tr><td class="q dim">${장소} 쪽을 살피니 ${물건}<span class="bad">이</span> 사라졌던걸</td><td class="q good">${장소} 쪽을 살피니 「${물건}」, 그게 사라졌던걸</td></tr>
-    <tr><td class="q dim">이건 필시 ${용의자}의 소행! ${장소}에서 ${물건}<span class="bad">을</span> 훔쳤어</td><td class="q good">이건 필시 ${용의자}의 소행! ${장소}에서 훔친 것은 「${물건}」</td></tr>
-    <tr><td class="q dim">도둑은 ${용의자}! ${장소}의 ${물건}<span class="bad">이</span> 증거다</td><td class="q good">도둑은 ${용의자}! 증거는 ${장소}의 「${물건}」</td></tr>
-    <tr><td class="q dim">흠… ${장소}에서 ${용의자}<span class="bad">가</span> ${물건}<span class="bad">을</span>? 수상쩍구먼</td><td class="q good">흠… ${장소}에서 ${용의자} — 「${물건}」이라니, 수상쩍구먼</td></tr>
-    <tr><td class="q">더 볼 것도 없다. ${용의자}, ${물건}, ${장소}</td><td><span class="tag t-keep">유지</span> <span class="note">조사 없음</span></td></tr>
-    <tr><td class="q">${용의자}, 자네 ${장소}엔 왜 갔는가</td><td><span class="tag t-keep">유지</span> <span class="note"><code>에는</code>은 받침 무관</span></td></tr>
-    <tr><td class="q">내 짐작엔 ${용의자}, ${물건}, ${장소}</td><td><span class="tag t-keep">유지</span></td></tr>
-    <tr><td class="q">계략 4종 — <span class="dim">쉿… ${힌트}, 이건 자네만 알게 등</span></td><td><span class="tag t-keep">유지</span> <span class="note">전부 조사 없음</span></td></tr>
+    <tr><th>액션</th><th>예산</th><th>템플릿 <span class="note">(랜덤 1택)</span></th></tr>
+    <tr><td><b>제안</b></td><td><b>25자</b></td><td class="q good">${장소}의 ${용의자}, 「${물건}」<br>${용의자}, ${장소}의 「${물건}」<br>${장소}에서 ${용의자}, ${물건}<br>${용의자}, 자네 ${장소}엔 왜 갔는가</td></tr>
+    <tr><td><b>제안<br>(반증당함)</b></td><td><b>25자</b></td><td class="q good">${용의자}, 「${물건}」… 아니군<br>${장소}의 「${물건}」<b>${josa}</b> 아니라니<br>${용의자}도 ${물건}도 아니군</td></tr>
+    <tr><td><b>고발</b></td><td><b>40자</b></td><td class="q good">도둑은 ${용의자}! ${장소}의 「${물건}」<br>${용의자}, 「${물건}」, ${장소} — 끝일세<br>더 볼 것 없다. ${용의자}, ${물건}, ${장소}</td></tr>
+    <tr><td><b>계략<br>(귓속말)</b></td><td><b>40자</b></td><td class="q good">쉿… ${힌트}, 자네만 알게<br>가까이 오게. ${힌트} — 못 들은 걸로<br>은밀히 이르네. ${힌트}<br>${힌트}… 내 입에서 난 말은 아닐세</td></tr>
   </table></div>
-  <p class="note"><code>${물건}이라니</code>는 R1 위반처럼 보이나 <code>이라니</code>는 받침 없는 말 뒤에도 허용되는 이형이라 오문이 아니다. 다만 「」 안에 넣어 경계를 분명히 한다.</p>
+
+  <div class="pv">
+    <div class="pv-h">추임새 부착 규칙 · <b>fit()</b> — 예산 안에서 <b>들어가는 만큼</b> 붙인다</div>
+    <div class="pv-b col">
+      <div class="ba">
+        <div class="side a">
+          <h6>버리는 방식 (쓰지 않는다)</h6>
+          <div class="voice" style="border:0;background:transparent;padding:0">
+            <div class="sam">서재의 뱀 무녀, 「술동이」</div>
+          </div>
+          <p class="note" style="margin:8px 0 0">추임새가 예산을 넘으면 통째로 버린다 → <b>12인이 전부 같은 말투가 된다.</b> 폴백에서 인물을 식별하는 표식은 추임새뿐이다.</p>
+        </div>
+        <div class="side b">
+          <h6>현행 — 순서대로 시도</h6>
+          <div class="voice" style="border:0;background:transparent;padding:0">
+            <div class="sam">쯧쯧, 서재의 뱀 무녀, 「술동이」</div>
+          </div>
+          <p class="note" style="margin:8px 0 0">
+            <code>intro+본문+outro</code> → <code>본문+outro</code> → <code>intro+본문</code> → <code>본문</code><br>
+            <b>outro를 먼저 살린다</b> — 인물 고유 문구라 색이 더 진하다. 마지막 폴백에서도 <code>LINE_MAX</code>(40)는 지킨다.
+          </p>
+        </div>
+      </div>
+      <p class="pv-cap" style="margin:6px 0 0">따라서 <b>본문 템플릿은 짧게 쓸수록 캐릭터색이 더 붙는다.</b> 새 템플릿을 추가할 때 이 방향을 뒤집지 말 것.</p>
+    </div>
+  </div>
+
+  <h4>조사 처리</h4>
+  <ul>
+    <li>회피가 원칙이다 — <code>의</code>·<code>에서</code>·<code>엔</code>·<code>도</code>는 받침 무관(R5), 목적격은 낫표 「」로 대체(R4), 나열은 쉼표.</li>
+    <li>단 한 곳 <code>${장소}의 「${물건}」${josa(물건,"이","가")} 아니라니</code>만 <b>종성 헬퍼를 쓴다</b> — NPC 대사는 R6 예외이고, 여기서 조사를 빼면 문장이 성립하지 않는다.</li>
+    <li><code>${물건}이라니</code>류(받침 없는 말 뒤에도 허용되는 이형)는 현행 템플릿에서 사라졌다.</li>
+  </ul>
+
+  <div class="box crit">
+    <h3 style="margin-top:0;color:var(--red)">정정 노트 (2026-07-28) — 왜 07-27 확정본을 버렸나</h3>
+    <ol style="margin:0;padding-left:20px">
+      <li>07-27 확정본(<code class="dim">${장소} 쪽을 살피니 「${물건}」, 그게 사라졌던걸</code> · <code class="dim">이건 필시 ${용의자}의 소행! ${장소}에서 훔친 것은 「${물건}」</code> 등)은 <b>조사 오류는 고쳤지만 길이를 보지 않았다.</b> 실측 폴백 제안 대사 <b>평균 47.1자(최대 71)</b> — ④ §2.3 길이 규약을 <b class="bad">71~79% 위반</b>(로드맵 §7.5 2차 실측).</li>
+      <li>길이는 미관 문제가 아니라 <b>페이싱</b>이다. <code>bubbleLifeMs = len×TYPE_MS(55) + BUBBLE_HOLD_MS</code>가 대사 길이에 비례하므로 47자 대사는 봇 1턴을 그대로 늘려 <b>판 길이를 지배</b>했다.</li>
+      <li>그래서 <b>규약 쪽을 살리고 문안을 교체</b>했다. 코드가 예산을 상수로 강제하고(<code>LINE_BUDGET_SUGGEST</code> 25 · <code>LINE_MAX</code> 40) 이 문서가 그 예산 안의 문안을 확정한다 — §1.4의 확정 권한은 그대로다.</li>
+      <li>반증당한 뒤 템플릿에서 <b>3요소를 다시 읊지 않는 것</b>은 길이 레버다. 제안 내용은 이미 로그 한 줄에 다 있고, 여기서 필요한 것은 "지웠다"는 반응이다(8~10자 절약).</li>
+    </ol>
+  </div>
+
+  <div class="scroll"><table>
+    <tr><th>교체 후 실측 <span class="note">— <code>scripts/eval-narrator.mjs</code> 폴백 <b>전수 112,752문장</b></span></th><th>예산</th><th>평균</th><th>최대</th><th>위반</th><th>추임새 부착률</th></tr>
+    <tr><td>제안</td><td>25</td><td>21.6</td><td>25</td><td class="good"><b>0</b></td><td>84.5%</td></tr>
+    <tr><td>제안(반증)</td><td>25</td><td>21.0</td><td>25</td><td class="good"><b>0</b></td><td>94.1%</td></tr>
+    <tr><td>고발</td><td>40</td><td>37.1</td><td>40</td><td class="good"><b>0</b></td><td>100%</td></tr>
+    <tr><td>계략</td><td>40</td><td>36.5</td><td>40</td><td class="good"><b>0</b></td><td>99.6%</td></tr>
+  </table></div>
+  <p class="note">부착률이 84.5~100%라는 것이 이 교체의 성립 조건이었다 — <b>짧아졌는데 캐릭터색은 오히려 더 자주 붙는다.</b></p>
 
   <h3>8.3 <code>main.ts</code> 클라이언트 로그 — <span class="bad">중복 4건</span></h3>
   <div class="scroll"><table>
@@ -898,17 +1084,18 @@
     <tr><td>3</td><td>목표 카드 <span class="tag t-soon">선행</span></td><td class="q">client/index.html · client/src/main.ts</td><td class="q">신규 <code>#goalCard</code> · <code>enterGame()</code> 말미 · <code>.hud-ctrl</code> 끝 <code>[?]</code></td></tr>
     <tr><td>4.1</td><td>손패 라벨</td><td class="q">client/src/main.ts</td><td class="q">onMessage("hand") ≈212 · <code>#hand</code> 초기 텍스트</td></tr>
     <tr><td>4.2</td><td>공통 단서</td><td class="q">server/rooms/clue-room.ts · client/src/main.ts</td><td class="q">startGame() ≈546 · buildEvidence()</td></tr>
-    <tr><td>4.3</td><td>증거 노트 툴팁</td><td class="q">client/src/main.ts</td><td class="q">buildEvidence() ≈597</td></tr>
+    <tr><td>4.3</td><td>증거 노트 툴팁 <span class="bad">🔴 갈라짐</span></td><td class="q">client/src/main.ts</td><td class="q">buildEvidence() — 잠금 칩 <code>chip.title</code> ≈1856</td></tr>
+    <tr><td>4.4</td><td>AI 칩 · 대사 경로 배지</td><td class="q">client/src/main.ts</td><td class="q">renderAi() ≈216 · addLog()의 배지 분기 ≈170 <span class="note">(폴백 사유 한글화)</span></td></tr>
     <tr><td>5.0</td><td><code>disabled</code> → <code>aria-disabled</code></td><td class="q">client/src/main.ts · index.html</td><td class="q">updateTurnInfo() ≈436 · <code>button:disabled</code> 옆 <code>.is-off</code></td></tr>
     <tr><td>5.1–5.5</td><td>버튼 4종 + 턴 종료</td><td class="q">client/src/main.ts</td><td class="q">updateTurnInfo()에서 <code>title</code> 설정 · 각 onclick 첫 분기</td></tr>
     <tr><td>5.0</td><td>클릭 피드백 출력처 <span class="tag t-soon">선행</span></td><td class="q">client/index.html · main.ts</td><td class="q"><code>.hud-turn</code> 안 <code>.ti-sub</code> 추가</td></tr>
     <tr><td>6.1</td><td>제안 모달 장소 고정행</td><td class="q">client/src/main.ts</td><td class="q">openPicker() ≈102 — 읽기전용 행 분기</td></tr>
     <tr><td>6.2</td><td>고발 모달 경고</td><td class="q">client/src/main.ts</td><td class="q">openPicker() · <code>#accuse</code> onclick</td></tr>
     <tr><td>7.0</td><td>정답 봉투 전달 <span class="tag t-soon">선행</span></td><td class="q">server/rooms/clue-room.ts</td><td class="q">doAccusation() ≈768 · advanceTurn() 최후 생존 분기 ≈998</td></tr>
-    <tr><td>7.1</td><td>결과 5종</td><td class="q">client/src/main.ts</td><td class="q">updateEndState() ≈347</td></tr>
+    <tr><td>7.1</td><td>결과 6종 <span class="note">(무승부 포함)</span></td><td class="q">client/src/main.ts</td><td class="q">updateEndState() ≈1377</td></tr>
     <tr><td>7.2</td><td>관전 배너 + 나가기 확인 <span class="tag t-soon">선행</span></td><td class="q">client/index.html · main.ts</td><td class="q"><code>#spectateBar</code> · <code>#specHome</code> onclick <span class="note">(현재 exitToMain 직결)</span></td></tr>
-    <tr><td>8.1</td><td>서버 로그 25항목</td><td class="q">server/rooms/clue-room.ts</td><td class="q">표의 줄 번호</td></tr>
-    <tr><td>8.2</td><td>폴백 대사</td><td class="q">server/ai/narrator.ts</td><td class="q">fallbackLine()</td></tr>
+    <tr><td>8.1</td><td>서버 로그 25항목 + 무승부 2줄</td><td class="q">server/rooms/clue-room.ts</td><td class="q">표의 줄 번호 · endInDraw() ≈1272</td></tr>
+    <tr><td>8.2</td><td>폴백 대사 <span class="tag t-keep">코드 일치</span></td><td class="q">server/ai/narrator.ts</td><td class="q">fallbackLine() · fit()</td></tr>
     <tr><td>8.3</td><td>클라 로그 · 중복 제거</td><td class="q">client/src/main.ts</td><td class="q">wireRoom()의 onMessage 5개 · errMsg() · enterGame() 말미</td></tr>
     <tr><td>8.4</td><td>랜딩</td><td class="q">client/index.html · main.ts</td><td class="q"><code>.hint-sm</code>·<code>.room-empty</code> · loadPublicRooms() ≈844 · init()의 joinBtn</td></tr>
     <tr><td>9.1</td><td>대기실 피드백 <span class="tag t-soon">선행</span></td><td class="q">client/index.html · main.ts · clue-room.ts</td><td class="q">신규 <code>#lobbyMsg</code> · renderLobby() · onJoin / removePlayer / handleChooseCharacter</td></tr>
@@ -928,11 +1115,18 @@
     <li>로그에 <b>같은 사건이 두 줄</b>로 뜨지 않는가 (§8.3 중복 4건)</li>
     <li>§2 어휘표 밖의 동의어(<code>장물</code>·<code>단서 패</code>·<code>참여</code>·<code>게임 시작</code>)가 남아 있지 않은가</li>
     <li>버튼 라벨 8자 · 툴팁 40자 상한을 넘긴 문장이 없는가</li>
-    <li>결과 화면 5종이 <b>정답 봉투를 화면에서</b> 보여주는가 (로그로 보내지 않는가)</li>
+    <li>결과 화면 <b>6종</b>이 <b>정답 봉투를 화면에서</b> 보여주는가 (로그로 보내지 않는가)</li>
+    <li>NPC 대사가 <b>예산(제안 25 · 고발/계략 40)</b> 안에 있는가 — <code>node scripts/eval-narrator.mjs</code> (폴백 전수, 위반 0이어야 함)</li>
+    <li>화면에 <b>영문 토큰</b>이 노출되지 않는가 (<code>timeout</code>·<code>http</code>·<code>empty</code>·<code>toolong</code>·<code>nokey</code>·<code>disabled</code> → §4.4 한글 표기. 예외는 배지 툴팁 1곳)</li>
+    <li>§8.2 표의 템플릿과 <code>fallbackLine()</code>이 <b>문자 그대로 같은가</b></li>
   </ul>
 
   <footer>
     <b>변경 이력</b><br>
+    2026-07-28 개정 — ① <b>§8.2 폴백 템플릿을 현행 코드 기준으로 전면 갱신</b> + 07-27 확정본을 버린 이유(길이 규약 71~79% 위반)를 정정 노트로 기록.
+    ② 미확정 4건 확정 — 무승부 종료 로그(§8.1) · 결과 오버레이 무승부(§7.1 5번) · AI 카운터 칩과 대사 경로 배지(<b>§4.4 신설</b>) · 폴백 사유 6종 한글 표기(§4.4).
+    ③ §2에 어휘 3항목과 접두 기호 4종(<code>🏳</code>·<code>✨</code>·<code>♻</code>·<code>⚙</code>) 추가, §1.5에 대사 길이 예산 3행 추가.
+    ④ §4.3 잠금 칩 툴팁이 코드와 갈라진 사실을 기록(<b>문서가 옳다</b> — 코드 수정 대상).<br>
     2026-07-27 최초 작성 — 실코드 실측 기준으로 톤 규칙 · 조사 회피 6규칙 · 어휘 통일표 확정, 버튼 4종 상태별 문안 · 모달 2종 · 결과 5종 · 서버 로그 25항목 교체표 · 멀티 문안 확정.<br>
     <span class="note">AI 전용 압축본: <code>docs/design/20260727-ui-copy.md</code></span>
   </footer>
