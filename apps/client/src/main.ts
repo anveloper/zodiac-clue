@@ -880,11 +880,30 @@ const loadPublicRooms = async (): Promise<void> => {
   }
 };
 
+/**
+ * `?solo=1` — 원클릭 솔로 진입.
+ * 랜딩에서 고민 없이 한 판이 시작되도록 **기존 경로를 클라가 자동 호출**할 뿐이다.
+ * 서버 변경 0: `create`(비공개) → `start` 메시지 2개. NPC 충원·정답 봉투·카드 분배는
+ * 전부 서버 `handleStart`(규칙 엔진)가 수행한다 — 클라는 판정에 관여하지 않는다.
+ * 문구는 확정 문안이 없어 기존 랜딩 문구("비공개방 만드는 중…")를 재사용.
+ */
+const startSolo = async (): Promise<void> => {
+  setLandingMsg("비공개방 만드는 중…");
+  try {
+    const r = await createRoom(false);
+    wireRoom(r); // 대기실 배선 + 재접속 토큰 저장 + /room/ID로 주소 정리
+    r.send("start", {}); // 방장 = 나 → 빈자리 NPC 충원 후 즉시 시작
+  } catch (e) {
+    goMain();
+    setLandingMsg("방 생성 실패: " + errMsg(e));
+  }
+};
+
 const init = async (): Promise<void> => {
+  const query = new URLSearchParams(location.search);
   // 초대 링크(/room/CODE, 구형 ?room=CODE)로 들어온 경우 코드 자동 채움
   const pathMatch = location.pathname.match(/\/room\/([^/]+)/);
-  const invited =
-    pathMatch?.[1] ?? new URLSearchParams(location.search).get("room");
+  const invited = pathMatch?.[1] ?? query.get("room");
   if (invited) {
     ($("codeInput") as HTMLInputElement).value = invited;
     setLandingMsg("초대 링크로 들어왔어요. [참가] 후 대기실에서 캐릭터를 고르세요.");
@@ -941,6 +960,12 @@ const init = async (): Promise<void> => {
       ($("inviteLink") as HTMLInputElement).select();
     }
   };
+
+  // ?solo=1 → 랜딩·재접속 복원을 건너뛰고 바로 한 판. (파라미터 없는 진입은 기존 그대로)
+  if (query.get("solo") === "1") {
+    await startSolo();
+    return;
+  }
 
   // 새로고침 세션 복원 (탭 기준). 유효 토큰이면 방으로 바로 재입장.
   const token = sessionStorage.getItem(RECONNECT_KEY);

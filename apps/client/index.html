@@ -2,10 +2,22 @@
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
     <title>호랑이 생신 잔치 — zodiac-clue</title>
     <style>
       * { box-sizing: border-box; }
+      /* 노치/홈 인디케이터 여백 — env() 미지원 브라우저에선 var 폴백 0px가 쓰인다. */
+      :root {
+        --sa-t: env(safe-area-inset-top, 0px);
+        --sa-r: env(safe-area-inset-right, 0px);
+        --sa-b: env(safe-area-inset-bottom, 0px);
+        --sa-l: env(safe-area-inset-left, 0px);
+      }
+      /* 터치 T0: 당겨서 새로고침·스크롤 체이닝으로 판이 날아가는 것을 막는다. */
+      html, body { overscroll-behavior: none; }
       body {
         margin: 0;
         font-family: system-ui, -apple-system, "Apple SD Gothic Neo", sans-serif;
@@ -25,8 +37,32 @@
       }
       h1 { color: #f0d9a8; }
 
+      /* ── 키보드 포커스 가시성(전역) ── */
+      :focus-visible {
+        outline: 2px solid #ffd479;
+        outline-offset: 2px;
+        border-radius: 6px;
+      }
+      button:focus-visible,
+      input:focus-visible,
+      select:focus-visible,
+      summary:focus-visible,
+      a:focus-visible,
+      [tabindex]:focus-visible {
+        outline: 2px solid #ffd479;
+        outline-offset: 2px;
+      }
+      /* .hud summary는 outline:none으로 포커스를 지우므로 되살린다. */
+      .hud summary:focus-visible { outline: 2px solid #ffd479; outline-offset: 2px; }
+
       /* ── 랜딩 / 로비 공통 카드 ── */
-      .center { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px; }
+      /* 모바일 주소창이 접혔다 펴져도 잘리지 않도록 dvh(폴백 vh) + 노치 여백 */
+      .center {
+        min-height: 100vh; min-height: 100dvh;
+        display: flex; align-items: center; justify-content: center;
+        padding: calc(16px + var(--sa-t, 0px)) calc(16px + var(--sa-r, 0px))
+                 calc(16px + var(--sa-b, 0px)) calc(16px + var(--sa-l, 0px));
+      }
       .card {
         width: 380px; background: #211c16; border: 1px solid #3a3126;
         border-radius: 12px; padding: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.4);
@@ -67,7 +103,7 @@
       .game-item .gi-body b { color: #f0d9a8; font-size: 14px; }
       .game-item .gi-sub { font-size: 11px; color: #a89778; }
       .game-item.selected { border-color: #e0a35a; background: #2c2317; }
-      .hint-sm { font-size: 11px; color: #6b6355; margin: 6px 0 14px; text-align: center; }
+      .hint-sm { font-size: 11px; color: #8f8574; margin: 6px 0 14px; text-align: center; }
       /* 공개/비공개 세그먼트 토글 */
       .seg { display: flex; gap: 6px; }
       .seg-btn {
@@ -92,8 +128,8 @@
       .room-item .ri-body b { color: #f0d9a8; }
       .room-item .ri-sub { color: #a89778; font-size: 11px; }
       .room-item button { padding: 5px 12px; font-size: 12px; }
-      .room-empty { padding: 12px; text-align: center; color: #6b6355; font-size: 12px; }
-      .divider { text-align: center; color: #6b6355; font-size: 11px; margin: 16px 0; }
+      .room-empty { padding: 12px; text-align: center; color: #8f8574; font-size: 12px; }
+      .divider { text-align: center; color: #8f8574; font-size: 11px; margin: 16px 0; }
       .join-row { display: flex; gap: 8px; }
       .join-row input { flex: 1; }
       .msg { font-size: 12px; color: #e0a35a; margin-top: 12px; min-height: 16px; }
@@ -109,8 +145,20 @@
       .host-hint { font-size: 12px; color: #a89778; margin-top: 10px; text-align: center; }
 
       /* ── 게임 화면 (풀스크린 + 플로팅 HUD) ── */
+      /* #gameScreen 자체엔 touch-action을 걸지 않는다 — 안쪽 HUD 패널 스크롤이 죽는다. */
       #gameScreen { position: fixed; inset: 0; }
-      #game { position: absolute; inset: 0; width: 100vw; height: 100vh; line-height: 0; }
+      #game {
+        position: absolute; inset: 0; width: 100vw; line-height: 0;
+        height: 100vh; height: 100dvh;
+        /* 보드 위 드래그·핀치를 브라우저 스크롤/줌보다 먼저 캔버스가 받는다 */
+        touch-action: none;
+      }
+      /* Phaser·three 캔버스 모두(뷰1~4 공통) */
+      #gameScreen canvas { touch-action: none; }
+      /* HUD 내부 스크롤은 세로만 허용 + 페이지로 전파 금지 */
+      .rp-body, .room-list, #log, #evidence {
+        overscroll-behavior: contain; touch-action: pan-y;
+      }
       .hud {
         position: fixed; z-index: 5;
         background: rgba(13, 11, 8, 0.82); border: 1px solid #3a3126;
@@ -127,9 +175,12 @@
       .hud summary::before { content: "▾ "; color: #a89778; }
       .hud details:not([open]) summary::before { content: "▸ "; }
       .hud details[open] summary { margin-bottom: 8px; }
-      .hud-ctrl { left: 16px; top: 16px; display: flex; gap: 8px; padding: 8px; }
+      .hud-ctrl {
+        left: calc(16px + var(--sa-l, 0px)); top: calc(16px + var(--sa-t, 0px));
+        display: flex; gap: 8px; padding: 8px;
+      }
       .hud-turn {
-        left: 50%; top: 14px; transform: translateX(-50%);
+        left: 50%; top: calc(14px + var(--sa-t, 0px)); transform: translateX(-50%);
         color: #cbbfa8; font-size: 13px; padding: 7px 16px; white-space: nowrap;
       }
       .hud-turn.mine .ti-status {
@@ -191,7 +242,7 @@
       }
       .tc-close:hover { background: #493d2d; }
       .hud-spectate {
-        left: 50%; top: 56px; transform: translateX(-50%);
+        left: 50%; top: calc(56px + var(--sa-t, 0px)); transform: translateX(-50%);
         display: flex; gap: 10px; align-items: center; color: #e0736b; font-weight: 600;
       }
       .hud-spectate button { padding: 4px 10px; }
@@ -226,8 +277,14 @@
       .dice-overlay .dice-faces { font-size: 76px; line-height: 1.1; letter-spacing: 6px; }
       .dice-overlay .dice-label { font-size: 24px; color: #f0d9a8; margin-top: 12px; font-weight: 700; letter-spacing: 1px; }
       .dice-overlay.done .dice-label { color: #ffd479; }
-      .hud-hand { left: 16px; bottom: 16px; max-width: 300px; }
-      .hud-view { left: 16px; bottom: 72px; padding: 6px 8px; position: fixed; }
+      .hud-hand {
+        left: calc(16px + var(--sa-l, 0px)); bottom: calc(16px + var(--sa-b, 0px));
+        max-width: 300px;
+      }
+      .hud-view {
+        left: calc(16px + var(--sa-l, 0px)); bottom: calc(72px + var(--sa-b, 0px));
+        padding: 6px 8px; position: fixed;
+      }
       .hud-view #viewToggle { min-width: 110px; }
       /* 위로 열리는 뷰 선택 드롭다운 */
       .view-list {
@@ -248,7 +305,10 @@
       #hand { min-height: 18px; }
       /* ── 우측 컬럼 (바닥부터 재구현) ── */
       .rp-col {
-        position: fixed; top: 16px; right: 16px; bottom: 16px;
+        position: fixed;
+        top: calc(16px + var(--sa-t, 0px));
+        right: calc(16px + var(--sa-r, 0px));
+        bottom: calc(16px + var(--sa-b, 0px));
         width: 260px; z-index: 5;
         display: flex; flex-direction: column; gap: 8px;
         pointer-events: none;
@@ -322,7 +382,7 @@
         font-weight: 400; color: #cbbfa8;
       }
       .hud-help {
-        left: 50%; bottom: 12px; transform: translateX(-50%);
+        left: 50%; bottom: calc(12px + var(--sa-b, 0px)); transform: translateX(-50%);
         color: #cbbfa8; font-size: 11px; padding: 6px 14px; white-space: nowrap;
       }
       kbd {
@@ -351,11 +411,24 @@
       /* 반응형: 좁은 화면에서 HUD 축소·모서리 정리 */
       @media (max-width: 680px) {
         .hud { font-size: 11px; padding: 8px 10px; }
-        .hud-ctrl { left: 8px; top: 8px; gap: 6px; padding: 6px; }
+        .hud-ctrl {
+          left: calc(8px + var(--sa-l, 0px)); top: calc(8px + var(--sa-t, 0px));
+          gap: 6px; padding: 6px;
+        }
         .hud-ctrl button { padding: 6px 8px; }
-        .hud-hand { left: 8px; bottom: 8px; max-width: 46vw; }
-        .hud-evi { right: 8px; top: 8px; width: 46vw; max-height: 40vh; }
-        .hud-log { right: 8px; bottom: 8px; width: 46vw; }
+        .hud-hand {
+          left: calc(8px + var(--sa-l, 0px)); bottom: calc(8px + var(--sa-b, 0px));
+          max-width: 46vw;
+        }
+        .hud-view {
+          left: calc(8px + var(--sa-l, 0px)); bottom: calc(64px + var(--sa-b, 0px));
+        }
+        .rp-col {
+          top: calc(8px + var(--sa-t, 0px)); right: calc(8px + var(--sa-r, 0px));
+          bottom: calc(8px + var(--sa-b, 0px));
+        }
+        .hud-evi { right: calc(8px + var(--sa-r, 0px)); top: calc(8px + var(--sa-t, 0px)); width: 46vw; max-height: 40vh; }
+        .hud-log { right: calc(8px + var(--sa-r, 0px)); bottom: calc(8px + var(--sa-b, 0px)); width: 46vw; }
         #log { height: 84px; }
         .hud-help { display: none; }
       }
