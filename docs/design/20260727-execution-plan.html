@@ -359,18 +359,18 @@
 <tr><td rowspan="5"><b>07-29</b><br><span class="note">수</span></td><td><span class="ok">✅</span> 즉시고발권 — <b>타이머 프리미티브 인자화</b>(§8.2 재사용 전제) <span class="tag src">§7.5.1</span> — <span class="note">07-28 완료 · <code>armTimer(key,ms,onExpire)</code> + 봇 페이싱 타이머 3개 이관</span></td><td>0.5h</td></tr>
 <tr><td><span class="ok">✅</span> <code>revealed</code> 분리 + 총 제안 상한 <b>60</b> <span class="tag src">§1.1 · §7.5 정정</span> — <span class="note">07-28 완료 · 시뮬 3,000판 실측 <b>2.3% → 22.3%</b></span></td><td>2h <span class="note">추정</span></td></tr>
 <tr><td><span class="ok">✅</span> 온보딩 — 목표 3줄 오버레이 · "이 3장은 정답이 아님" · 장소 고정행 · 동적 title <span class="tag src">§1.5</span> — <span class="note">07-28 완료 · 죽어 있던 비활성 사유 안내도 복구</span></td><td>1.5h <span class="note">추정</span></td></tr>
-<tr><td><span class="part">⚠️ [승격]</span> <b>페이싱 재조정</b> <span class="tag src">§7.5.4</span> — <span class="note">07-28 적용 완료했으나 <b>목표(2분) 미달</b>. 실측 4.4~5.7분 — 정합 비용이 이득을 상쇄했다</span></td><td>0.5h</td></tr>
-<tr><td><span class="no">🔴 [신규]</span> <b>대사 길이를 디렉팅 규약 안으로</b> — <span class="note">폴백 대사 평균 <b>47자</b>로 프롬프트가 명시한 12~40자 초과(④ §2 위반). <b>판 길이의 실질 지배 요인.</b> <code>BUBBLE_HOLD_MS 2600</code>·<code>TYPE_MS 55</code> 재검토 동반</span></td><td>0.5h <span class="note">추정</span></td></tr>
-<tr><td><span class="no">🔴 [신규]</span> <b>제안 상한 재산정</b> — <span class="note">재진입 규칙으로 p95 51→65 → 상한 60이 <b>16.1%의 판에서 작동</b>(무승부 0%). "60"의 근거였던 p95 51~53이 무효</span></td><td>0.3h <span class="note">추정</span></td></tr>
+<tr><td><span class="ok">✅ [승격]</span> <b>페이싱 재조정</b> <span class="tag src">§7.5.4</span> — <span class="note">07-28 완료. 1차 적용 후 목표 미달(4.4~5.7분)이었으나 <b>대사 길이 해소로 봇 1턴 7.6초 → 3.8초</b></span></td><td>0.5h</td></tr>
+<tr><td><span class="ok">✅ [신규]</span> <b>대사 길이를 디렉팅 규약 안으로</b> — <span class="note">07-28 완료 · 제안 47.1→<b>21.3자</b> · <code>BUBBLE_HOLD_MS</code> 2600→1200 · <b>봇 1턴 3.8초</b>(실측 80표본). <code>TYPE_MS</code>는 "AI 활용의 유일한 가시적 증거"라 불변</span></td><td>0.5h <span class="note">추정</span></td></tr>
+<tr><td><span class="ok">✅ [신규]</span> <b>제안 상한 재산정</b> — <span class="note">07-28 완료 · <b>60 → 75</b>(도달률 17.0% → 0.1%). 자연 분포 p99.5=74·최대 76 — 80 이상은 자연 최대를 넘어 백스톱 구실을 못 한다</span></td><td>0.3h <span class="note">추정</span></td></tr>
 <tr><td><span class="ok">✅ [신규]</span> <code>SPEAK_HOLD</code> ↔ <code>bubbleLifeMs</code> <b>정합</b> — <span class="note">07-28 완료 · 고정 상수 폐기, <code>speak()</code>가 실제 문장을 반환해 길이로 홀드를 건다. 서버·클라가 같은 shared 함수를 쓴다</span></td><td>0.3h <span class="note">추정</span></td></tr>
 
 <tr><td rowspan="4"><b>07-30</b><br><span class="note">목</span></td><td><span class="ok">✅</span> 재진입 규칙 <code>suggestedIn</code> + <b>제안 모달 손패 지목 허용</b> <span class="tag src">§7.5.2</span> — <span class="note">07-28 완료 · 방문 방 2.41 → <b>5.11/9</b></span></td><td>2h</td></tr>
 <tr><td><span class="ok">✅</span> <code>handoverToBot</code> <span class="tag src">§8.1 · §8.5</span> — <span class="note">07-28 완료 · <code>revealed</code> 분리가 선행돼 <code>awayBot</code> 예외 없이 좌석 시야를 그대로 계승. NPC 재충원 <code>startGame</code> 이동(⑨) 포함</span></td><td>1.5h</td></tr>
 <tr><td><span class="ok">✅</span> 페이싱 재조정 + <b>CLAUDE.md·AGENTS.md·④ 규약 문구 같은 커밋</b> <span class="tag src">§7.5.4 · §1.4</span> — <span class="note">07-28 완료</span></td><td>0.5h</td></tr>
-<tr><td><span class="no">🔴 [신규]</span> <code>main.ts</code> <b>계약 배선</b> — <span class="note"><code>ViewContract</code> 16개 중 <b>9개가 구현만 되고 호출부가 없다</b>(<code>warp</code>·<code>lootWarp</code>·<code>focusRoom</code>·<code>pulseCell</code>·<code>setSurveyed</code>·<code>setPassages</code>·<code>setOutcome</code>·<code>identity</code>·귓속말). 4뷰 매트릭스 ❌ 9행이 "코드는 있는데 화면에 없음"</span></td><td>1.5h <span class="note">추정</span></td></tr>
+<tr><td><span class="ok">✅ [신규]</span> <code>main.ts</code> <b>계약 배선</b> — <span class="note">07-28 완료 · 연출 9종 전부 호출부 연결 + <code>activeView()</code> 축약(렌더러 타입 분기 5곳 제거). <b>오탐 방지가 핵심</b>이었다 — 서버가 봇 턴에도 좌표를 텔레포트해 단순 거리 판정은 모든 봇 이동을 소환으로 표시한다</span></td><td>1.5h <span class="note">추정</span></td></tr>
 
-<tr><td rowspan="3"><b>07-31</b><br><span class="note">금</span></td><td>턴 클럭 <code>armTurnClock</code> + 다인 페이싱 <code>/(2×humans)</code> <span class="tag src">§8.2</span></td><td>2h</td></tr>
-<tr><td>재접속 <code>sendHand</code> + <b><code>lock()</code>→<code>setPrivate(true)</code></b> + 관전 좌석 제외 3곳 <span class="tag src">§8.3 a·c</span></td><td>1h</td></tr>
+<tr><td rowspan="3"><b>07-31</b><br><span class="note">금</span></td><td><span class="ok">✅</span> 턴 클럭 <code>armTurnClock</code> + 다인 페이싱 <code>/(2×humans)</code> <span class="tag src">§8.2</span> — <span class="note">07-28 완료 · 기존 <code>armTimer</code> 재사용 · 접속 45초/끊김 8초 · <b>사람 1명이면 끈다</b> · 재접속 창 120초 + 20초 선행 핸드오버</span></td><td>2h</td></tr>
+<tr><td><span class="ok">✅</span> 재접속 <code>sendHand</code> + <b><code>lock()</code>→<code>setPrivate(true)</code></b> + 관전 좌석 제외 <span class="tag src">§8.3 a·c</span> — <span class="note">07-28 완료 · 관전은 좌석을 만들지 않고 서버 전용 집합으로 처리해 3곳에서 <b>구조적으로</b> 빠진다</span></td><td>1h</td></tr>
 <tr><td>솔로 10판 실측 → 공통단서 장수 확정 <span class="tag src">§7.99</span></td><td>1h <span class="note">추정</span></td></tr>
 
 <tr class="mile"><td rowspan="2"><b>08-01</b><br><span class="note">토</span></td><td>★ <b>안전 테이크 촬영 → 편집 → 업로드 → ②·③ 갱신</b> <span class="tag src">콘티§3·§4</span></td><td>3.5h</td></tr>
@@ -401,7 +401,7 @@
 <tr><td>④ 문서 승격 3개 절 — 디렉팅 명세 · 환각 검증 · 도구 사용내역 + load-bearing 용어 정정 <span class="tag src">§4 · §7.16</span></td><td>2.5h <span class="note">추정</span></td></tr>
 <tr><td>③에 "왜 이 게임인가" 6줄 + "자막은 후처리" 1줄 <span class="tag src">§7.16 · 콘티§0</span></td><td>0.5h</td></tr>
 
-<tr class="mile"><td rowspan="4"><b>08-08</b><br><span class="note">토</span></td><td>오전 · 뷰4 도트 축소판(3×3 문장 배지 + 장물 스탬프) <span class="tag src">§2.3 축소판</span></td><td>1.5h</td></tr>
+<tr class="mile"><td rowspan="4"><b>08-08</b><br><span class="note">토</span></td><td><span class="ok">✅</span> 뷰4 도트 축소판(3×3 문장 배지 + 장물 스탬프) <span class="tag src">§2.3 축소판</span> — <span class="note"><b>07-28로 앞당겨 완료</b> · 66쌍 전수 검사(해밍 ≥3 · 2행 이상 상이) + <code>?cvd=1</code> 4뷰 확장</span></td><td>1.5h</td></tr>
 <tr class="mile"><td>오전 · 뷰 인터스티셜 + 연표 드롭다운(<code>commit</code> 해시) <span class="tag src">§2.1</span></td><td>1.5h</td></tr>
 <tr class="mile"><td>🔒 <b>12:00 코드 동결</b> — 이후 촬영 소재 변경 금지</td><td>—</td></tr>
 <tr class="mile"><td>★ <b>본 테이크 촬영 → 편집 → 업로드</b> <span class="tag src">콘티§2·§4·§6</span></td><td>4h</td></tr>
