@@ -344,17 +344,17 @@
 <table>
 <thead><tr><th style="width:76px">날짜</th><th>항목 (출처)</th><th style="width:78px">공수</th></tr></thead>
 <tbody>
-<tr><td rowspan="6"><b>07-27</b><br><span class="note">월</span></td><td><span class="no">🔴</span> 문서 노출 차단 <code>EXCLUDE</code> + vercel 화이트리스트 <span class="tag src">§7.4</span> — <b>푸시 전 필수</b></td><td>0.5h <span class="note">추정</span></td></tr>
-<tr><td>조사 헬퍼 15줄 <span class="tag src">§7.14</span></td><td>0.5h</td></tr>
-<tr><td>대비 <code>#8f8574</code> + <code>:focus-visible</code> <span class="tag src">§7.13</span></td><td>0.3h</td></tr>
-<tr><td>PLACEHOLDER 배지 제거 후 44개 재생성 <span class="tag src">§2.4</span></td><td>0.2h</td></tr>
-<tr><td>터치 T0 — dvh · touch-action · overscroll <span class="tag src">§7.12</span></td><td>0.5h</td></tr>
-<tr><td><code>iso-view.ts</code> P0 3건(탈락 disc/ring/name · 장물 보간 · helper 감광) + <b>hudInset zero-rect 가드 + ResizeObserver 인셋 캐시</b> <span class="tag src">spec§6-1 · §7.8 · §9.2</span></td><td>2h</td></tr>
+<tr><td rowspan="6"><b>07-27</b><br><span class="note">월</span></td><td><span class="ok">✅</span> 문서 노출 차단 <code>EXCLUDE</code> + vercel 화이트리스트 <span class="tag src">§7.4</span></td><td>0.5h <span class="note">추정</span></td></tr>
+<tr><td><span class="ok">✅</span> 조사 헬퍼 15줄 <span class="tag src">§7.14</span> — <span class="note">07-28 완료. 명세의 조사 회피 규칙에 따라 헬퍼가 아니라 <b>어순 교체</b> 26곳으로 해결</span></td><td>0.5h</td></tr>
+<tr><td><span class="ok">✅</span> 대비 <code>#8f8574</code> + <code>:focus-visible</code> <span class="tag src">§7.13</span> — <span class="note">07-28 완료</span></td><td>0.3h</td></tr>
+<tr><td><span class="ok">✅</span> PLACEHOLDER 배지 제거 후 44개 재생성 <span class="tag src">§2.4</span> — <span class="note">07-28 완료</span></td><td>0.2h</td></tr>
+<tr><td><span class="ok">✅</span> 터치 T0 — dvh · touch-action · overscroll <span class="tag src">§7.12</span> — <span class="note">07-28 완료</span></td><td>0.5h</td></tr>
+<tr><td><span class="ok">✅</span> <code>iso-view.ts</code> P0 3건(탈락 disc/ring/name · 장물 보간 · helper 감광) + <b>hudInset zero-rect 가드 + ResizeObserver 인셋 캐시</b> <span class="tag src">spec§6-1 · §7.8 · §9.2</span> — <span class="note">07-28 완료. dt 클럭(§9.4 최소분)도 함께</span></td><td>2h</td></tr>
 
-<tr><td rowspan="4"><b>07-28</b><br><span class="note">화</span></td><td><span class="no">🔴</span> <code>@media print</code> 11파일 + 헤드리스 PDF <b>실검증</b> <span class="tag src">§7.3</span></td><td>2h <span class="note">추정</span></td></tr>
-<tr><td>⑤ 팀원 롤 기술서 <b>초안</b> <span class="tag src">§7.2</span></td><td>0.5h</td></tr>
-<tr><td>원클릭 솔로 진입 <code>?solo=1</code> <span class="tag src">§1.6</span></td><td>0.5h</td></tr>
-<tr><td>overlay-bus <b>최소안</b>(fxBanner 하단 + dice 충돌 가드) <span class="tag src">§7.10</span></td><td>0.5h</td></tr>
+<tr><td rowspan="4"><b>07-28</b><br><span class="note">화</span></td><td><span class="ok">✅</span> <code>@media print</code> 11파일(실제 15) <span class="tag src">§7.3</span> — <span class="note">인쇄 팔레트 적용 완료 · 눈 검증은 08-09</span></td><td>2h <span class="note">추정</span></td></tr>
+<tr><td><span class="ok">✅</span> ⑤ 팀원 롤 기술서 <b>초안</b> <span class="tag src">§7.2</span></td><td>0.5h</td></tr>
+<tr><td><span class="ok">✅</span> 원클릭 솔로 진입 <code>?solo=1</code> <span class="tag src">§1.6</span> — <span class="note">서버 변경 0건 · 버튼 형태는 미착수</span></td><td>0.5h</td></tr>
+<tr><td><span class="part">⬜</span> overlay-bus <b>최소안</b>(fxBanner 하단 + dice 충돌 가드) <span class="tag src">§7.10</span> — <span class="note"><code>main.ts</code>+<code>scenes/**</code> 동시 수정이라 슬롯 충돌 → 다음 라운드</span></td><td>0.5h</td></tr>
 
 <tr><td rowspan="3"><b>07-29</b><br><span class="note">수</span></td><td>즉시고발권 — <b>타이머 프리미티브 인자화</b>(§8.2 재사용 전제) <span class="tag src">§7.5.1</span></td><td>0.5h</td></tr>
 <tr><td><code>revealed</code> 분리 + 총 제안 상한 <b>60</b> <span class="tag src">§1.1 · §7.5 정정</span></td><td>2h <span class="note">추정</span></td></tr>

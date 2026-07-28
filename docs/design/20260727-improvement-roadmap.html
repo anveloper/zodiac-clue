@@ -461,11 +461,17 @@
   </div>
 
   <div class="card crit">
-    <h3><span class="p p0">P0 0.5h</span> 7.8 <code>rightInset()</code> null 가드 부재 — 패널을 숨기면 카메라가 붕괴한다</h3>
+    <h3><span class="p p0">P0 0.5h</span> 7.8 <code>rightInset()</code> zero-rect — 패널을 숨기면 카메라가 붕괴한다 <span class="ok">✅ 07-28 완료</span></h3>
     <p>inset 계산이 <code>window.innerWidth - rect.left</code>인데 패널이 <code>display:none</code>이거나 하단 시트가 되면 <code>rect.left===0</code> →
     <b>inset = 화면 전체 폭</b> → 카메라가 절반만큼 어긋나 내 캐릭터가 화면 밖으로 밀려난다.</p>
-    <p><b>조치</b> — <code>offsetParent === null || rect.width === 0</code> 가드 + <code>hudInset(): {right, bottom}</code>로 승격. <b>§1.2·§1.3 착수 전 선행 조건.</b></p>
+    <p><b>조치</b> — zero-rect · 화면 밖 · 비표시를 인셋 0으로 취급 + <code>hudInset(): {right, bottom}</code>로 승격. <b>§1.2·§1.3 착수 전 선행 조건.</b></p>
+    <p class="no"><b>📌 조치 문구 정정(07-28 구현 시점)</b> — 원래 적었던 <code>el.offsetParent === null</code> 가드는 <b>이 DOM에서 틀렸다.</b>
+    우측 컬럼 <code>.rp-col</code>이 <code>position: fixed</code>이고 <b>fixed 요소의 <code>offsetParent</code>는 항상 <code>null</code></b>이라, 이 가드를 넣으면 인셋이 <b>영구 0</b>이 된다.
+    §9.2의 zero-rect 판정(<code>rect.width/height === 0</code>) + 화면 밖 · <code>display/visibility/opacity</code> 비표시 판정으로 대체했다.</p>
+    <p class="ok"><b>✅ 구현</b> — <code>apps/client/src/scenes/hud-inset.ts</code>(뷰1·2·3 공용 · 화면 절반 클램프) + ResizeObserver 캐시(§9.2 동시 해소) + refcount <code>disconnect()</code>. 뷰4는 <code>mirrorCamera</code> 상속으로 코드 변경 0.</p>
     <p class="note">부수 — 반응형 블록이 <code>.hud-evi</code>/<code>.hud-log</code>를 타깃하는데 <b>DOM에 그 클래스가 없다</b> → <b>현재 우측 패널 반응형 CSS는 100% 죽은 코드</b>. 375px 폰에서 260px 컬럼이 화면의 69%를 덮는다.</p>
+    <p class="note"><b>📌 07-28 실측 확인(헤드리스 390×844)</b> — 터치 T0 적용 후에도 <code>.rp-col</code>이 화면 폭의 약 2/3를 덮어 보드·턴 배너를 가린다.
+    T0(뷰포트·터치·오버스크롤) 범위 밖의 <b>레이아웃 결함으로 분리</b> — 우측 컬럼 반응형 재작성이 필요하다(§7.9 탭 도크와 같은 파일).</p>
   </div>
 
   <div class="card warn">

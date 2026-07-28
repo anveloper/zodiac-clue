@@ -255,8 +255,11 @@
 
 ## 7.8 🟠 `rightInset()` null 가드 부재 — 패널을 숨기면 카메라가 붕괴한다 (P0 · 0.5h)
 `game-scene.ts`/`iso-view.ts`의 inset 계산이 `window.innerWidth - rect.left`인데, 패널이 `display:none`이거나 하단 시트가 되면 `rect.left===0` → **inset = 화면 전체 폭** → 카메라가 절반만큼 어긋나 내 캐릭터가 화면 밖으로 밀려난다.
-- 조치: `if (!el || el.offsetParent === null || rect.width === 0) return {right:0, bottom:0}` + `hudInset(): {right, bottom}`로 승격. **§1.2·§1.3 착수 전 선행 조건.**
+- 조치: zero-rect·화면 밖·비표시를 인셋 0으로 취급 + `hudInset(): {right, bottom}`로 승격. **§1.2·§1.3 착수 전 선행 조건.**
+- 📌 **조치 문구 정정(07-28 구현 시점)**: 원래 적었던 `el.offsetParent === null` 가드는 **이 DOM에서 틀렸다.** 우측 컬럼 `.rp-col`이 `position: fixed`이고 **fixed 요소의 `offsetParent`는 항상 `null`**이라, 이 가드를 넣으면 인셋이 영구 0이 된다. §9.2의 zero-rect 진단(`rect.width/height === 0`) + 화면 밖·`display/visibility/opacity` 비표시 판정으로 대체했다.
+- ✅ **07-28 구현 완료** — `apps/client/src/scenes/hud-inset.ts`(뷰1·2·3 공용, 화면 절반 클램프) + ResizeObserver 캐시(§9.2 동시 해소) + refcount `disconnect()`. 뷰4는 `mirrorCamera` 상속으로 코드 변경 0.
 - 부수: 반응형 블록이 `.hud-evi`/`.hud-log`를 타깃하는데 **DOM에 그 클래스가 없다**(우측 컬럼이 `.rp-col/.rp-panel`로 재구현됨) → **현재 우측 패널 반응형 CSS는 100% 죽은 코드**. 375px 폰에서 260px 컬럼이 화면의 69%를 덮는다.
+  - 📌 **07-28 실측 확인**(헤드리스 390×844): 터치 T0 적용 후에도 `.rp-col`이 화면 폭의 약 2/3를 덮어 보드·턴 배너를 가린다. T0(뷰포트·터치·오버스크롤) 범위 밖의 **레이아웃 결함으로 분리** — 우측 컬럼 반응형 재작성이 필요하다(§7.9 탭 도크와 같은 파일).
 
 ## 7.9 🟠 우측 컬럼 260px에 패널 4개는 물리적으로 안 들어간다
 제안 기록표는 6열 × 40px + 라벨 60px = **300px 폭**이 필요하다.
