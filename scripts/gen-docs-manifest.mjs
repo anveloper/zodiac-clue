@@ -2,6 +2,7 @@
 // 규칙: design 폴더는 .html(수기 디자인)만, plans/logs는 .md만.
 import { readdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
+import { isPrivateDocPath } from "./docs-private.mjs";
 
 const GROUPS = [
   { dir: "submission", label: "📤 제출물", ext: "pair" },
@@ -50,11 +51,13 @@ for (const g of GROUPS) {
     g.ext === "pair"
       ? pickPairFiles(all)
       : all.filter((f) => f.endsWith(g.ext)).sort().reverse(); // 최신 날짜 위로
-  const items = files.map((f) => {
-    const path = `${g.dir}/${f}`;
-    const ext = f.endsWith(".html") ? ".html" : ".md";
-    return { path, title: titleOf(join(base, f), ext) || f };
-  });
+  const items = files
+    .map((f) => `${g.dir}/${f}`)
+    .filter((path) => !isPrivateDocPath(path)) // 내부 문서는 트리에서 제외
+    .map((path) => {
+      const ext = path.endsWith(".html") ? ".html" : ".md";
+      return { path, title: titleOf(join("docs", path), ext) || path };
+    });
   if (items.length) out.push({ label: g.label, dir: g.dir, items });
 }
 

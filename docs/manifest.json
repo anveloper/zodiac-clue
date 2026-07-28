@@ -62,41 +62,9 @@
     ]
   },
   {
-    "label": "🗂 플랜 · 진행",
-    "dir": "plans/active",
-    "items": [
-      {
-        "path": "plans/active/12-view-evolution-stages.md",
-        "title": "plan: 뷰 진화 단계 선택기 (개발 진화를 기능으로)"
-      },
-      {
-        "path": "plans/active/11-asset-concept-pipeline.md",
-        "title": "plan: 에셋 파이프라인 + 12지신 컨셉 + 이미지 프롬프트"
-      },
-      {
-        "path": "plans/active/09-helper-npcs.md",
-        "title": "plan: 고정 NPC(계략) + 보너스 능력"
-      }
-    ]
-  },
-  {
-    "label": "⏸ 플랜 · 보류",
-    "dir": "plans/hold",
-    "items": [
-      {
-        "path": "plans/hold/02-engine-content-separation.md",
-        "title": "plan: 게임 엔진 / 콘텐츠 분리"
-      }
-    ]
-  },
-  {
     "label": "✅ 플랜 · 완료",
     "dir": "plans/done",
     "items": [
-      {
-        "path": "plans/done/13-execution-plan-merge.md",
-        "title": "13 — 4개 일정표 병합 → 단일 실행 계획서"
-      },
       {
         "path": "plans/done/10-view-2.5d-toggle.md",
         "title": "plan: 2.5D 시점 토글 (Three.js)"
