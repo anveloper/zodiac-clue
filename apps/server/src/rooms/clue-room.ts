@@ -17,8 +17,11 @@ import {
   roomAt,
   roomCenter,
   voice,
+  type AiStats,
   type Card,
+  type SayAi,
   type Solution,
+  type SuggestEntry,
   type Suggestion,
 } from "@zodiac-clue/shared";
 import {
@@ -33,6 +36,7 @@ import {
   narrate,
   type NarrationInput,
 } from "../ai/narrator";
+import { AiCounter, logAi, recordAi } from "../ai/telemetry";
 
 type JoinOptions = { character?: string };
 type CreateOptions = { isPublic?: boolean };
@@ -189,6 +193,23 @@ export class ClueRoom extends Room<GameState> {
    * 다음 판(`startGame`)에서 빈 자리·순수 NPC 자리로 좌석을 받는다.
    */
   private spectators = new Set<string>();
+  /**
+   * 이번 판의 AI 경로 집계(④ §4) — 칩이 그리는 `AiStats`의 원본.
+   * **운영 메타데이터이며 게임 상태가 아니다** → `GameState` 스키마에 넣지 않고
+   * `broadcast("aiStats")`로 내보낸다. 스키마에 넣으면 ① 진실값과 같은 채널에
+   * 섞여 "AI가 판정에 관여한다"는 오독을 만들고 ② 리매치마다 스키마 diff가 튀며
+   * ③ 관전자·재접속자에게도 자동 동기화돼 전송 시점을 통제할 수 없다.
+   */
+  private ai = new AiCounter();
+  /** 직전에 방송한 집계 — 값이 바뀔 때만 브로드캐스트하기 위한 비교본. */
+  private aiSent = "";
+  /**
+   * 제안 기록(로드맵 §1.2 + §8.3 b) — **자료구조 한 벌**로
+   * ①실시간 브로드캐스트(`suggestLog`) ②재접속·관전 리플레이(`suggestLogAll`)를 모두 덮는다.
+   * 담기는 값은 전부 공개 정보다(누가·무엇을 제안했고 **누가** 반증했는가).
+   * 반증 **카드 값**은 여기 들어오지 않는다 — 제안자에게만 가는 `disprove`가 유일한 경로다.
+   */
+  private suggestLog: SuggestEntry[] = [];
   /** 방이 파기됐는지 — 파기 후 도착한 비동기 콜백이 타이머를 되살리지 못하게 한다. */
   private disposed = false;
   /** 키별 취소 가능한 타이머(§7.5.1 즉시고발 창 · §8.2 턴 클럭 공용 프리미티브). */
@@ -421,20 +442,15 @@ export class ClueRoom extends Room<GameState> {
       intro: v?.intro,
       outro: v?.outro,
     };
-    let text: string | null = null;
-    try {
-      text = await narrate(input);
-    } catch {
-      text = null;
-    }
-    if (!text) text = fallbackLine(input);
+    const { text, ai } = await this.narrateWithMeta(input, client.sessionId);
     if (this.state.phase !== "playing") return;
     // 당사자: 전문 (헬퍼 토큰 위 말풍선)
-    client.send("say", { id: value, from: label(value), text });
-    // 타인: 귓속말 표시만
+    client.send("say", { id: value, from: label(value), text, ai });
+    // 타인: 귓속말 표시만. **계측 메타는 동일**하다 — 같은 1건의 발화이고,
+    // `except`로 한 사람당 정확히 한 통만 가므로 칩이 중복으로 세지 않는다.
     this.broadcast(
       "say",
-      { id: value, from: label(value), text: "(귓속말)" },
+      { id: value, from: label(value), text: "(귓속말)", ai },
       { except: client },
     );
   }
@@ -449,6 +465,9 @@ export class ClueRoom extends Room<GameState> {
       client.send("log", {
         text: "이미 진행 중인 판이에요. 관전으로 들어갑니다.",
       });
+      // 관전자도 공개 정보(제안 기록·AI 집계)는 처음부터 본다 — 손패·정답은 어느 경로로도 가지 않는다.
+      this.sendSuggestLog(client);
+      client.send("aiStats", this.ai.snapshot());
       return;
     }
     this.seatPlayer(client, options.character);
@@ -621,6 +640,10 @@ export class ClueRoom extends Room<GameState> {
     }
     if (!this.state.host) this.state.host = p.id;
     this.sendHand(p.id);
+    // §8.3 (b) — 추리 기록은 `#log` DOM에만 있어 새로고침 한 번에 통째로 사라졌다.
+    // 실시간 브로드캐스트와 **같은 배열**을 그대로 되돌려준다.
+    this.sendSuggestLog(client);
+    client.send("aiStats", this.ai.snapshot()); // 칩도 이번 판 값으로 복구
     this.broadcast("log", { text: `🙋 재접속 — ${p.name} 님` });
     // 8초(끊김) 클럭으로 돌던 턴을 사람 기준(45초)으로 다시 건다.
     if (this.state.currentTurn === p.id) this.armTurnClock();
@@ -863,6 +886,11 @@ export class ClueRoom extends Room<GameState> {
     this.suggestedIn.clear(); // 재진입 잠금은 판마다 새로 센다(§7.5.2)
     this.suggestedTurnBy = "";
     this.suggestCount = 0; // 총 제안 상한(SUGGEST_CAP)은 판마다 새로 센다
+    this.suggestLog = []; // 제안 기록·리플레이도 판 단위(§1.2 · §8.3 b)
+    // AI 계측도 판 단위로 센다 — 칩이 말하는 "이번 판 LLM n건"의 n이 이것이다.
+    this.ai.reset();
+    this.aiSent = "";
+    this.pushAiStats(); // 새 판 시작 = 0으로 초기화된 칩을 즉시 내려준다
     this.cancelAllTimers();
     const humanCount = ids.filter(
       (id) => !this.state.players.get(id)?.isBot,
@@ -1071,34 +1099,87 @@ export class ClueRoom extends Room<GameState> {
 
     const order = [...this.state.turnOrder] as string[];
     const start = order.indexOf(suggesterId);
+    let byId: string | null = null;
+    let card: Card | null = null;
     for (let i = 1; i < order.length; i++) {
       const otherId = order[(start + i) % order.length];
       const match = (this.hands.get(otherId) ?? []).find((c) =>
         cardMatches(c, suggestion),
       );
       if (match) {
-        const other = this.state.players.get(otherId);
-        // 반증 카드는 **제안자에게만** 보인다(§1.1). 반증자는 자기 손패라 이미 알고 있고,
-        // 나머지 좌석은 "누가 반증했는가"라는 공개 정보만 얻는다.
-        this.markSeen(suggesterId, match.value);
-        this.broadcast("log", {
-          text: `🛡 반증 — ${other?.name} 님`,
-          kind: "disprove",
-          sid,
-          disproved: true,
-        });
-        this.enforceSuggestCap();
-        return { by: other?.name ?? otherId, card: match };
+        byId = otherId;
+        card = match;
+        break;
       }
     }
-    this.broadcast("log", {
-      text: "❗ 아무도 반증하지 못함 — 정답 후보!",
-      kind: "disprove",
-      sid,
-      disproved: false,
-    });
+
+    if (byId && card) {
+      const other = this.state.players.get(byId);
+      // 반증 카드는 **제안자에게만** 보인다(§1.1). 반증자는 자기 손패라 이미 알고 있고,
+      // 나머지 좌석은 "누가 반증했는가"라는 공개 정보만 얻는다.
+      this.markSeen(suggesterId, card.value);
+      this.broadcast("log", {
+        text: `🛡 반증 — ${other?.name} 님`,
+        kind: "disprove",
+        sid,
+        disproved: true,
+      });
+    } else {
+      this.broadcast("log", {
+        text: "❗ 아무도 반증하지 못함 — 정답 후보!",
+        kind: "disprove",
+        sid,
+        disproved: false,
+      });
+    }
+
+    // 제안 기록 1건 — 로그 두 줄(제안·반증)과 **같은 사건**을 하나의 행으로 남긴다.
+    // ⚠️ `card`(반증 카드 값)는 절대 넣지 않는다. 이 배열은 리플레이로 전원에게
+    //    통째로 전송되므로, 여기 한 번 새면 판 전체의 손패가 새는 것과 같다.
+    this.recordSuggestEntry(suggesterId, suggestion, byId);
+
     this.enforceSuggestCap();
-    return { by: null, card: null };
+    return {
+      by: byId ? (this.state.players.get(byId)?.name ?? byId) : null,
+      card,
+    };
+  }
+
+  /**
+   * 제안 기록표(§1.2)와 재접속 리플레이(§8.3 b)가 공유하는 **단일 자료구조**에 1건 추가.
+   * 실시간 브로드캐스트도 여기서 함께 나간다 — 두 경로가 갈라지면 재접속한 사람이
+   * 실시간으로 보던 것과 다른 표를 보게 된다.
+   */
+  private recordSuggestEntry(
+    suggesterId: string,
+    suggestion: Suggestion,
+    disprovedById: string | null,
+  ): void {
+    const by = this.state.players.get(suggesterId);
+    const dis = disprovedById
+      ? this.state.players.get(disprovedById)
+      : undefined;
+    const entry: SuggestEntry = {
+      seq: this.suggestCount, // 판 시작 시 0 → 이 제안에서 이미 +1 됐다(1부터 증가)
+      byId: suggesterId,
+      byName: by?.name ?? suggesterId,
+      suspect: label(suggestion.suspect),
+      weapon: label(suggestion.weapon),
+      room: label(suggestion.room),
+      disprovedById: disprovedById,
+      disprovedByName: dis?.name ?? (disprovedById ? disprovedById : null),
+    };
+    this.suggestLog.push(entry);
+    this.broadcast("suggestLog", entry);
+  }
+
+  /**
+   * 제안 기록 전체를 개별 전송한다(재접속·관전 입장 → §8.3 b 리플레이).
+   * 공개 정보만 담긴 배열이라 관전자에게 보내도 비밀이 새지 않는다.
+   */
+  private sendSuggestLog(client: Client): void {
+    if (this.suggestLog.length === 0) return;
+    client.send("suggestLogAll", this.suggestLog);
   }
 
   /**
@@ -1150,6 +1231,7 @@ export class ClueRoom extends Room<GameState> {
     this.state.phase = "ended";
     this.state.winner = "";
     this.cancelAllTimers();
+    this.logAiSummary();
     this.broadcast("log", {
       // 🚧 문안 미확정 — `20260727-ui-copy.md`에 상한 도달/무승부 문장이 없다(보고 항목).
       text: `🏳 무승부 — 제안 ${SUGGEST_CAP}회 도달 · 판을 종료합니다`,
@@ -1247,6 +1329,7 @@ export class ClueRoom extends Room<GameState> {
       this.state.phase = "ended";
       this.state.winner = playerId;
       this.cancelAllTimers();
+      this.logAiSummary();
       this.broadcast("log", {
         text: `🎉 사건 해결 — ${player.name} 님`,
         kind: "win",
@@ -1461,16 +1544,52 @@ export class ClueRoom extends Room<GameState> {
         }
       : input;
 
-    let text: string | null = null;
-    try {
-      text = await narrate(enriched);
-    } catch {
-      text = null;
-    }
-    if (!text) text = fallbackLine(enriched);
+    const { text, ai } = await this.narrateWithMeta(enriched, id);
     if (!this.state.players.has(id)) return "";
-    this.broadcast("say", { id, from: input.name, text });
+    this.broadcast("say", { id, from: input.name, text, ai });
     return text;
+  }
+
+  /**
+   * `narrate()` 호출 + 계측 1건 확정 — **문장이 나가는 모든 경로가 여기 하나를 지난다.**
+   * 폴백 대체·경로 기록·서버 로그·집계 브로드캐스트를 한곳에 모아, 호출부가 늘어도
+   * "계측을 빼먹은 경로"가 생기지 않게 한다(07-27 장애의 재발 조건이 그것이다).
+   */
+  private async narrateWithMeta(
+    input: NarrationInput,
+    seat: string,
+  ): Promise<{ text: string; ai: SayAi }> {
+    const r = await narrate(input); // narrate는 throw하지 않는다(사유가 사라지므로)
+    const ai: SayAi = {
+      source: r.source,
+      ms: r.ms,
+      model: r.model,
+      ...(r.reason ? { reason: r.reason } : {}),
+    };
+    const text = r.text ?? fallbackLine(input);
+    this.ai.record(ai);
+    recordAi(ai); // 프로세스 누적(`GET /health`)
+    logAi(
+      { seat, name: input.name, action: input.action, textLen: text.length },
+      ai,
+    );
+    this.pushAiStats();
+    return { text, ai };
+  }
+
+  /** 이번 판 누적 집계 — **값이 바뀔 때만** 브로드캐스트(칩 전용, 게임 상태 아님). */
+  private pushAiStats(): void {
+    const stats: AiStats = this.ai.snapshot();
+    const key = JSON.stringify(stats);
+    if (key === this.aiSent) return;
+    this.aiSent = key;
+    this.broadcast("aiStats", stats);
+  }
+
+  /** 판 종료 집계 한 줄(④ §4) — 경로별 건수·평균 지연·폴백 사유 분포. */
+  private logAiSummary(): void {
+    if (this.ai.total === 0) return;
+    console.log(`[ai] game summary ${this.ai.summaryLine()}`);
   }
 
   /**
@@ -1591,6 +1710,7 @@ export class ClueRoom extends Room<GameState> {
       this.state.phase = "ended";
       this.state.winner = order[0];
       this.cancelAllTimers();
+      this.logAiSummary();
       const w = this.state.players.get(order[0]);
       this.broadcast("log", {
         text: `🎉 최후 생존 — ${w?.name} 님 승리!`,

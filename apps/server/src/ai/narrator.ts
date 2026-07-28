@@ -2,7 +2,9 @@
 // LLM은 주어진 '결정된 정보'만 사용해 한 문장 대사를 생성. 진실값을 만들거나 남의 패를
 // 아는 척하지 않는다. 키(GEMINI_API_KEY)가 없거나 실패하면 규칙기반 폴백 대사로 대체.
 
+import type { AiFallbackReason, SayAi } from "@zodiac-clue/shared";
 import { josa } from "../util/josa";
+import { recordQuotaError } from "./telemetry";
 
 export type NarrationInput = {
   /** 캐릭터 표시명 (예: "생쥐 서생") */
@@ -157,8 +159,18 @@ export const normalizeLine = (raw: string): string | null => {
 };
 
 /**
- * LLM(Gemini) 대사 생성. 키가 없거나 오류/타임아웃이면 null 반환(→ 호출부에서 폴백).
+ * `narrate()` 반환 — **문장 + 그 문장이 온 경로**(④ §4-1).
+ * `text === null`이면 반드시 `source === "fallback"`이고 `reason`이 채워진다.
+ * 호출부는 `fallbackLine()`으로 문장을 채우되 **메타는 이 값을 그대로 방송한다.**
+ */
+export type NarrationResult = SayAi & { text: string | null };
+
+/**
+ * LLM(Gemini) 대사 생성. 키가 없거나 오류/타임아웃이면 `text: null`(→ 호출부에서 폴백).
  * 무료티어 안전: 이벤트당 1콜, 짧은 출력, 타임아웃.
+ *
+ * **절대 throw하지 않는다** — 모든 실패는 `reason`이 붙은 폴백 결과로 환원된다.
+ * 예외로 새면 호출부의 `catch`가 사유를 삼켜 07-27 장애가 그대로 재현된다.
  */
 // 동일 상황 대사 캐시 (무료티어 호출 절약). 단순 LRU-ish, 상한 200.
 const CACHE_MAX = 200;
@@ -190,15 +202,43 @@ const cacheSet = (k: string, v: string): void => {
   }
 };
 
-export const narrate = async (i: NarrationInput): Promise<string | null> => {
+/** 현재 설정된 모델명(키 값이 아니다 — `/health`가 그대로 노출해도 안전). */
+export const currentModel = (): string =>
+  process.env.GEMINI_MODEL ?? "gemini-flash-lite-latest";
+
+/** 키 **보유 여부**만 — 값은 어디에도 반환하지 않는다. */
+export const hasApiKey = (): boolean => !!process.env.GEMINI_API_KEY;
+
+/** `AI_NARRATE=off`로 LLM 경로를 끈다(폴백 대사 회귀 확인용). */
+const isDisabled = (): boolean =>
+  (process.env.AI_NARRATE ?? "").toLowerCase() === "off";
+
+const fb = (reason: AiFallbackReason, ms = 0): NarrationResult => ({
+  text: null,
+  source: "fallback",
+  ms,
+  model: "", // 폴백은 모델을 쓰지 않았다 → 빈 문자열(계약)
+  reason,
+});
+
+export const narrate = async (i: NarrationInput): Promise<NarrationResult> => {
+  const started = Date.now();
   const key = process.env.GEMINI_API_KEY;
-  if (!key) return null;
-  const model = process.env.GEMINI_MODEL ?? "gemini-flash-lite-latest";
+  if (isDisabled()) return fb("disabled");
+  if (!key) return fb("nokey");
+  const model = currentModel();
 
   // 캐시 히트 시 API 호출 없이 재사용
   const ck = cacheKey(i);
   const cached = cacheGet(ck);
-  if (cached !== undefined) return cached;
+  if (cached !== undefined) {
+    return {
+      text: cached,
+      source: "cache",
+      ms: Date.now() - started, // 0~1ms. 왕복이 사라졌다는 사실 자체가 계측값이다.
+      model,
+    };
+  }
 
   const act =
     i.action === "accuse"
@@ -242,7 +282,8 @@ export const narrate = async (i: NarrationInput): Promise<string | null> => {
       // "LLM이 조용히 폴백되는" 상태를 오래 못 알아챘다. 본문 앞부분까지 남긴다.
       const detail = await res.text().catch(() => "");
       console.warn(`[narrate] HTTP ${res.status} ${detail.slice(0, 200)}`);
-      return null;
+      if (res.status === 429) recordQuotaError(); // 쿼터 소진은 별도로 센다(④ §4-4)
+      return fb("http", Date.now() - started);
     }
     const data = (await res.json()) as {
       candidates?: { content?: { parts?: { text?: string }[] } }[];
@@ -250,19 +291,22 @@ export const narrate = async (i: NarrationInput): Promise<string | null> => {
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
     if (!text) {
       console.warn("[narrate] empty text");
-      return null;
+      return fb("empty", Date.now() - started);
     }
     // 안전: 한 줄만, 따옴표 제거, 길이 규약 강제(초과분은 문장 경계 절단 또는 폐기).
     const line = normalizeLine(text);
     if (!line) {
       console.warn(`[narrate] over-length dropped (${text.length}) → fallback`);
-      return null;
+      return fb("toolong", Date.now() - started);
     }
     cacheSet(ck, line);
-    return line;
+    return { text: line, source: "llm", ms: Date.now() - started, model };
   } catch (e) {
-    console.warn(`[narrate] err ${e instanceof Error ? e.name : String(e)}`);
-    return null;
+    const name = e instanceof Error ? e.name : String(e);
+    console.warn(`[narrate] err ${name}`);
+    // AbortError = 4000ms 초과. 그 외 네트워크 오류도 왕복 실패이므로 같은 칸에 넣되
+    // 사유는 구분한다(타임아웃과 DNS 실패는 대응이 다르다).
+    return fb(name === "AbortError" ? "timeout" : "http", Date.now() - started);
   } finally {
     clearTimeout(timer);
   }
