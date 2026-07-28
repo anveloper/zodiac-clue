@@ -24,6 +24,8 @@
     "gate:gpu": "node scripts/gate-gpu-baseline.mjs",
     "gate:docs": "node scripts/gate-docs-consistency.mjs",
     "gate:screen": "node scripts/gate-screen.mjs",
+    "gate:screen:full": "node scripts/gate-screen.mjs --full",
+    "gate:screen:result": "node scripts/gate-screen.mjs --only=result",
     "gate:screen:json": "node scripts/gate-screen.mjs --json",
     "gate:screen:selftest": "node scripts/gate-screen.mjs --self-test",
     "eval:narrator": "node scripts/eval-narrator.mjs",

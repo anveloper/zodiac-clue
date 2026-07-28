@@ -817,7 +817,32 @@
     </ul>
   </div>
 
-  <h3>7.2 관전 배너 <code>#spectateBar</code></h3>
+  <h3>7.2 관전 배너 <code>#spectateBar</code> — 도달 상태 <b>2종</b></h3>
+
+  <div class="box crit">
+    <h3 style="margin-top:0;color:var(--red)">정정 (2026-07-29) — 이 절은 «진행 중 탈락» 전용으로만 규정하고 있었다</h3>
+    <p style="margin:0 0 8px">실제로는 <b>좌석 없는 관전자</b>(진행 중 입장 · 재접속 창을 넘겨 초대 코드로 재참가)도 <b>같은 배너</b>에 도달한다.
+    그런데 표시 판정이 <code>players.get(나)?.eliminated</code> 하나였고 관전자에게는 그 값이 <code>undefined</code>라
+    <b class="bad">배너가 한 번도 뜨지 않았다.</b> 손패도 턴도 없는 화면을 아무 설명 없이 보게 되어 <b>“판을 잃었다”로 읽힌다</b>
+    (커밋 <code>40f0b6e</code> — 판정을 <code>탈락 || 좌석 없음</code>으로 넓혔다).</p>
+    <p style="margin:0"><b>문안은 새로 짓지 않았다</b> — <a href="#s8">§8.1 행 268</a>의 서버 안내와 <b>글자 그대로 같은 문자열</b>을 재사용한다.
+    §8.1 표 말미의 규약(«같은 사유를 두 문장으로 배우게 하지 않는다»)을 <b>서버 로그 ↔ HUD 배너</b>로 확장한 것이다.</p>
+  </div>
+
+  <div class="scroll"><table>
+    <tr><th>요소</th><th>현재 <span class="tag t-now">있음</span></th><th>교체안 / 확정</th></tr>
+    <tr><td>본문 ① <b>진행 중 탈락</b></td><td class="dim">아래 미리보기 <b>왼쪽</b></td>
+        <td class="good">아래 미리보기 <b>오른쪽</b> — <b>변경 없음</b>(07-27 확정본 그대로) <span class="lim">28자</span></td></tr>
+    <tr><td>본문 ② <b>좌석 없는 관전</b> <span class="tag t-new">있음</span></td><td class="dim">(표시 자체가 없었다)</td>
+        <td class="q good">이미 진행 중인 판이에요. 관전으로 들어갑니다. <span class="note">— §8.1 행 268과 <b>같은 문자열</b></span></td></tr>
+    <tr><td>버튼</td><td class="q dim">[메인으로]</td><td class="q good">[나가기] <span class="note">(같은 위치, <b>확인 절차를 거친다</b>)</span></td></tr>
+  </table></div>
+  <ul>
+    <li><b>DOM은 배너 하나 · 문장만 갈아 끼운다</b>(<code>#specText</code>). 상태가 둘이라고 배너를 둘로 늘리면 문안 소스가 갈라진다 — 소스는 위 표 하나다.</li>
+    <li>②는 서버가 입장 순간 보내는 <b>로그 1줄과 같은 문장</b>이다. 로그는 곧 위로 밀려 올라가므로 배너가 그 문장을 <b>상시로 붙들어 둔다</b> — 중복이 아니라 <b>지속</b>이다.</li>
+    <li>아래 [나가기] 확인 문안 2종은 <b>좌석이 있는 사람(①)</b> 기준이다. ②는 좌석도 손패도 없어(<code>state.players</code>에 아예 없다) 나가도 판이 오염되지 않으므로 <b>그 사유가 성립하지 않는다.</b></li>
+  </ul>
+
   <div class="pv">
     <div class="pv-h">미리보기 · 진행 중 탈락 — 현재 / 교체안 / 나가기 확인</div>
     <div class="pv-b col">
@@ -832,6 +857,16 @@
       </div>
       <p class="pv-cap" style="margin:4px 0 8px">
         현재는 <b>탈락자에게 제공되는 유일한 버튼이 판을 가장 확실하게 망가뜨린다.</b> 라벨을 바꾸는 것만으로는 부족하고, 확인 절차가 필요하다.
+      </p>
+      <div style="display:flex;flex-wrap:wrap;gap:14px;justify-content:center">
+        <div class="g-hud g-spec" style="border-color:#3f5f45">
+          이미 진행 중인 판이에요. 관전으로 들어갑니다.
+          <button class="g-btn ghost" style="padding:4px 10px">나가기</button>
+        </div>
+      </div>
+      <p class="pv-cap" style="margin:4px 0 8px">
+        <b>② 좌석 없는 관전자</b>(2026-07-29 추가) — 같은 배너, 문장만 교체(<code>#specText</code>).
+        07-28까지 이 상태에는 <b class="bad">아무 표시도 없었다.</b>
       </p>
       <div style="display:flex;flex-wrap:wrap;gap:14px;justify-content:center">
         <div class="g-confirm">
@@ -904,7 +939,7 @@
     <tr><td>189</td><td class="q dim">가까이에 계략을 줄 이가 없습니다.</td><td class="q good">계략을 줄 이가 근처에 없어요. 보드 가장자리의 NPC 곁으로.</td><td>§5.4와 동일</td></tr>
     <tr><td>749</td><td class="q dim">방 안에서만 제안할 수 있습니다.</td><td class="q good">방 안에서만 제안할 수 있어요. 입구(🚪)로 들어가세요.</td><td>§5.1과 동일</td></tr>
     <tr><td>417</td><td class="q dim">방장만 잔치를 시작할 수 있습니다.</td><td class="q good">방장만 잔치를 시작할 수 있어요.</td><td>사용자 대상 = 해요체</td></tr>
-    <tr><td>268</td><td class="q dim">이미 진행 중인 게임입니다 (관전).</td><td class="q good">이미 진행 중인 판이에요. 관전으로 들어갑니다. <span class="tag t-soon">선행</span></td><td>관전 좌석 미구현 = <b>도달 불가 죽은 코드</b></td></tr>
+    <tr><td>268</td><td class="q dim">이미 진행 중인 게임입니다 (관전).</td><td class="q good">이미 진행 중인 판이에요. 관전으로 들어갑니다. <span class="tag t-new">적용됨</span></td><td><s class="dim">관전 좌석 미구현 = 도달 불가 죽은 코드</s> → <b>07-28 관전 좌석 구현으로 도달 가능</b>(<code>lock()</code> → <code>setPrivate/setListed</code>). <b>07-29부터 §7.2 관전 배너가 이 문자열을 그대로 재사용</b> — 고치려면 두 곳이 같이 움직인다</td></tr>
   </table></div>
   <div class="box info">
     <code>client.send("log")</code>로 가는 <b>개인 안내(151·156·176·189·417·745·749·803)는 §5의 버튼 문안과 글자 그대로 같아야 한다.</b>
@@ -1101,7 +1136,8 @@
     <tr><td>6.2</td><td>고발 모달 경고</td><td class="q">client/src/main.ts</td><td class="q">openPicker() · <code>#accuse</code> onclick</td></tr>
     <tr><td>7.0</td><td>정답 봉투 전달 <span class="tag t-soon">선행</span></td><td class="q">server/rooms/clue-room.ts</td><td class="q">doAccusation() ≈768 · advanceTurn() 최후 생존 분기 ≈998</td></tr>
     <tr><td>7.1</td><td>결과 6종 <span class="note">(무승부 포함)</span></td><td class="q">client/src/main.ts</td><td class="q">updateEndState() ≈1377</td></tr>
-    <tr><td>7.2</td><td>관전 배너 + 나가기 확인 <span class="tag t-soon">선행</span></td><td class="q">client/index.html · main.ts</td><td class="q"><code>#spectateBar</code> · <code>#specHome</code> onclick <span class="note">(현재 exitToMain 직결)</span></td></tr>
+    <tr><td>7.2</td><td>관전 배너 본문 2종 <span class="tag t-new">있음</span></td><td class="q">client/index.html · main.ts</td><td class="q"><code>#spectateBar</code> 안 <code>#specText</code> · updateEndState() <span class="note">(표시 판정 = 탈락 || 좌석 없음)</span></td></tr>
+    <tr><td>7.2</td><td>나가기 확인 <span class="tag t-soon">선행</span></td><td class="q">client/index.html · main.ts</td><td class="q"><code>#specHome</code> onclick <span class="note">(현재 exitToMain 직결)</span></td></tr>
     <tr><td>8.1</td><td>서버 로그 25항목 + 무승부 2줄</td><td class="q">server/rooms/clue-room.ts</td><td class="q">표의 줄 번호 · endInDraw() ≈1272</td></tr>
     <tr><td>8.2</td><td>폴백 대사 <span class="tag t-keep">코드 일치</span></td><td class="q">server/ai/narrator.ts</td><td class="q">fallbackLine() · fit()</td></tr>
     <tr><td>8.3</td><td>클라 로그 · 중복 제거</td><td class="q">client/src/main.ts</td><td class="q">wireRoom()의 onMessage 5개 · errMsg() · enterGame() 말미</td></tr>
@@ -1127,10 +1163,16 @@
     <li>NPC 대사가 <b>예산(제안 25 · 고발/계략 40)</b> 안에 있는가 — <code>node scripts/eval-narrator.mjs</code> (폴백 전수, 위반 0이어야 함)</li>
     <li>화면에 <b>영문 토큰</b>이 노출되지 않는가 (<code>timeout</code>·<code>http</code>·<code>empty</code>·<code>toolong</code>·<code>nokey</code>·<code>disabled</code> → §4.4 한글 표기. 예외는 배지 툴팁 1곳)</li>
     <li>§8.2 표의 템플릿과 <code>fallbackLine()</code>이 <b>문자 그대로 같은가</b></li>
+    <li>관전 배너 본문 ②(§7.2)와 서버 안내(§8.1 행 268)가 <b>문자 그대로 같은가</b> — 한쪽만 고치면 같은 사유가 두 문장이 된다</li>
+    <li><b>상태는 있는데 문안이 없는 화면</b>이 없는가 — 좌석 없는 관전자가 07-28까지 그 상태였다(배너 조건이 <code>undefined</code>에 걸리지 않았다)</li>
   </ul>
 
   <footer>
     <b>변경 이력</b><br>
+    <b>2026-07-29 — §7.2 정정: 관전 행 추가.</b> <code>#spectateBar</code>를 «진행 중 탈락» 전용으로 규정했으나
+    <b>좌석 없는 관전자도 같은 배너에 도달</b>한다(<code>40f0b6e</code>). 문안은 새로 짓지 않고
+    <b>§8.1 행 268의 서버 안내와 글자 그대로 같은 문자열</b>을 재사용 — 같은 사유를 두 문장으로 배우게 하지 않는다.
+    함께 §8.1 행 268의 «도달 불가 죽은 코드» 표기 정정(07-28 관전 좌석 구현으로 도달 가능) · §10에 <code>#specText</code> 적용 위치 분리 · §11에 정합 체크 2건 추가.<br>
     2026-07-28 개정 — ① <b>§8.2 폴백 템플릿을 현행 코드 기준으로 전면 갱신</b> + 07-27 확정본을 버린 이유(길이 규약 71~79% 위반)를 정정 노트로 기록.
     ② 미확정 4건 확정 — 무승부 종료 로그(§8.1) · 결과 오버레이 무승부(§7.1 5번) · AI 카운터 칩과 대사 경로 배지(<b>§4.4 신설</b>) · 폴백 사유 6종 한글 표기(§4.4).
     ③ §2에 어휘 3항목과 접두 기호 4종(<code>🏳</code>·<code>✨</code>·<code>♻</code>·<code>⚙</code>) 추가, §1.5에 대사 길이 예산 3행 추가.
