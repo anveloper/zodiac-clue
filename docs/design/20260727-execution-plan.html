@@ -356,7 +356,7 @@
 <tr><td><span class="ok">✅</span> 원클릭 솔로 진입 <code>?solo=1</code> <span class="tag src">§1.6</span> — <span class="note">서버 변경 0건 · 버튼 형태는 미착수</span></td><td>0.5h</td></tr>
 <tr><td><span class="ok">✅</span> overlay-bus <b>최소안</b>(fxBanner 하단 + dice 충돌 가드) <span class="tag src">§7.10</span> — <span class="note">07-28 완료 · <code>#fxBanner</code> 이름으로 만들어 08-05 FX가 재사용</span></td><td>0.5h</td></tr>
 
-<tr><td rowspan="5"><b>07-29</b><br><span class="note">수</span></td><td><span class="ok">✅</span> 즉시고발권 — <b>타이머 프리미티브 인자화</b>(§8.2 재사용 전제) <span class="tag src">§7.5.1</span> — <span class="note">07-28 완료 · <code>armTimer(key,ms,onExpire)</code> + 봇 페이싱 타이머 3개 이관</span></td><td>0.5h</td></tr>
+<tr><td rowspan="7"><b>07-29</b><br><span class="note">수</span></td><td><span class="ok">✅</span> 즉시고발권 — <b>타이머 프리미티브 인자화</b>(§8.2 재사용 전제) <span class="tag src">§7.5.1</span> — <span class="note">07-28 완료 · <code>armTimer(key,ms,onExpire)</code> + 봇 페이싱 타이머 3개 이관</span></td><td>0.5h</td></tr>
 <tr><td><span class="ok">✅</span> <code>revealed</code> 분리 + 총 제안 상한 <b>60</b> <span class="tag src">§1.1 · §7.5 정정</span> — <span class="note">07-28 완료 · 시뮬 3,000판 실측 <b>2.3% → 22.3%</b></span></td><td>2h <span class="note">추정</span></td></tr>
 <tr><td><span class="ok">✅</span> 온보딩 — 목표 3줄 오버레이 · "이 3장은 정답이 아님" · 장소 고정행 · 동적 title <span class="tag src">§1.5</span> — <span class="note">07-28 완료 · 죽어 있던 비활성 사유 안내도 복구</span></td><td>1.5h <span class="note">추정</span></td></tr>
 <tr><td><span class="ok">✅ [승격]</span> <b>페이싱 재조정</b> <span class="tag src">§7.5.4</span> — <span class="note">07-28 완료. 1차 적용 후 목표 미달(4.4~5.7분)이었으나 <b>대사 길이 해소로 봇 1턴 7.6초 → 3.8초</b></span></td><td>0.5h</td></tr>
@@ -364,10 +364,16 @@
 <tr><td><span class="ok">✅ [신규]</span> <b>제안 상한 재산정</b> — <span class="note">07-28 완료 · <b>60 → 75</b>(도달률 17.0% → 0.1%). 자연 분포 p99.5=74·최대 76 — 80 이상은 자연 최대를 넘어 백스톱 구실을 못 한다</span></td><td>0.3h <span class="note">추정</span></td></tr>
 <tr><td><span class="ok">✅ [신규]</span> <code>SPEAK_HOLD</code> ↔ <code>bubbleLifeMs</code> <b>정합</b> — <span class="note">07-28 완료 · 고정 상수 폐기, <code>speak()</code>가 실제 문장을 반환해 길이로 홀드를 건다. 서버·클라가 같은 shared 함수를 쓴다</span></td><td>0.3h <span class="note">추정</span></td></tr>
 
-<tr><td rowspan="4"><b>07-30</b><br><span class="note">목</span></td><td><span class="ok">✅</span> 재진입 규칙 <code>suggestedIn</code> + <b>제안 모달 손패 지목 허용</b> <span class="tag src">§7.5.2</span> — <span class="note">07-28 완료 · 방문 방 2.41 → <b>5.11/9</b></span></td><td>2h</td></tr>
+<tr><td rowspan="6"><b>07-30</b><br><span class="note">목</span></td><td><span class="ok">✅</span> 재진입 규칙 <code>suggestedIn</code> + <b>제안 모달 손패 지목 허용</b> <span class="tag src">§7.5.2</span> — <span class="note">07-28 완료 · 방문 방 2.41 → <b>5.11/9</b></span></td><td>2h</td></tr>
 <tr><td><span class="ok">✅</span> <code>handoverToBot</code> <span class="tag src">§8.1 · §8.5</span> — <span class="note">07-28 완료 · <code>revealed</code> 분리가 선행돼 <code>awayBot</code> 예외 없이 좌석 시야를 그대로 계승. NPC 재충원 <code>startGame</code> 이동(⑨) 포함</span></td><td>1.5h</td></tr>
 <tr><td><span class="ok">✅</span> 페이싱 재조정 + <b>CLAUDE.md·AGENTS.md·④ 규약 문구 같은 커밋</b> <span class="tag src">§7.5.4 · §1.4</span> — <span class="note">07-28 완료</span></td><td>0.5h</td></tr>
 <tr><td><span class="ok">✅ [신규]</span> <code>main.ts</code> <b>계약 배선</b> — <span class="note">07-28 완료 · 연출 9종 전부 호출부 연결 + <code>activeView()</code> 축약(렌더러 타입 분기 5곳 제거). <b>오탐 방지가 핵심</b>이었다 — 서버가 봇 턴에도 좌표를 텔레포트해 단순 거리 판정은 모든 봇 이동을 소환으로 표시한다</span></td><td>1.5h <span class="note">추정</span></td></tr>
+<tr><td><span class="ok">✅ [신규·컷라인 위로 승격]</span> <b>봇의 확률적 오답 고발</b> <span class="tag src">§7.5.3</span> —
+<span class="note">07-28 완료(<code>1f55b28</code>) · <code>BOT_NERVE</code> + <code>rules/bot-accuse.ts</code>, <code>p = nerve × (1/combos)</code>. 시드 해시라 결정론 유지.
+시뮬 5,000판 <b>봇 탈락 판 0.2% → 7.0%</b> · 사람 승률 22.7% → <b>21.6%</b>. ④ §1.2 (b)의 자기 기재 결함이 해소됐다</span></td><td>1.5h</td></tr>
+<tr><td><span class="ok">✅ [신규]</span> <b>방 공개 상태 복귀</b> <span class="tag src">§8.3 c 보완</span> —
+<span class="note">07-28 완료(<code>1f55b28</code>) · 판 종료 3경로에서 <code>setListed(true)</code> + 숨김을 <code>handleStart</code> → <code>startGame</code>으로 이동.
+안 옮기면 <b>리매치 판이 진행 중인데 공개 목록에 뜬 채로 돈다</b></span></td><td>0.3h <span class="note">추정</span></td></tr>
 
 <tr><td rowspan="3"><b>07-31</b><br><span class="note">금</span></td><td><span class="ok">✅</span> 턴 클럭 <code>armTurnClock</code> + 다인 페이싱 <code>/(2×humans)</code> <span class="tag src">§8.2</span> — <span class="note">07-28 완료 · 기존 <code>armTimer</code> 재사용 · 접속 45초/끊김 8초 · <b>사람 1명이면 끈다</b> · 재접속 창 120초 + 20초 선행 핸드오버</span></td><td>2h</td></tr>
 <tr><td><span class="ok">✅</span> 재접속 <code>sendHand</code> + <b><code>lock()</code>→<code>setPrivate(true)</code></b> + 관전 좌석 제외 <span class="tag src">§8.3 a·c</span> — <span class="note">07-28 완료 · 관전은 좌석을 만들지 않고 서버 전용 집합으로 처리해 3곳에서 <b>구조적으로</b> 빠진다</span></td><td>1h</td></tr>
@@ -377,17 +383,29 @@
 <tr class="mile"><td><span class="ok">✅</span> <code>view-consts.ts</code> 이관 + <code>ZODIAC_COLOR</code> 12색 + <b>pixel→game 순환 의존 제거</b> <span class="tag src">§2.5 · §7.11 · spec§1·§3</span> —
 <span class="note"><b>07-28로 앞당겨 완료</b>(의존성이 전부 해소돼 있었고 렌더러 3종을 두 번 열지 않기 위해). 남은 것: <code>view-contract.ts</code> + <code>implements</code> 3곳 · <code>main.ts</code> 이관분 · HUD 12색</span></td><td>3.5h <span class="note">추정</span></td></tr>
 
-<tr><td rowspan="4"><b>08-02</b><br><span class="note">일</span></td><td><code>view-contract.ts</code> + <code>implements</code> 3곳 + <code>resolveMotion</code> reduced 프로파일 <span class="tag src">spec§2·§3 · §7.13</span></td><td>3h <span class="note">추정</span></td></tr>
-<tr><td>코드 스플리팅 동적 import — 2,130 → 약 120 kB <span class="tag src">§9.1</span></td><td>3h</td></tr>
-<tr><td><code>setStage</code>에서 <code>game.loop.sleep()/wake()</code> + IsoView 말풍선 타이머 정리 <span class="tag src">§9.2</span></td><td>1h</td></tr>
-<tr><td>§9.6 게이트 <b>1차 측정</b>(기준선 기록)</td><td>0.5h</td></tr>
+<tr><td rowspan="5"><b>08-02</b><br><span class="note">일</span></td><td><span class="ok">✅</span> <code>view-contract.ts</code> + <code>implements</code> 3곳 + <code>resolveMotion</code> reduced 프로파일 <span class="tag src">spec§2·§3 · §7.13</span> —
+<span class="note"><b>07-28로 앞당겨 완료</b> · 계약 15메서드를 렌더러 3종이 전부 구현. 단 파일 위치는 <code>apps/client/src/scenes/view-contract.ts</code>
+(spec §2는 <code>packages/shared</code>를 지목 — 엔진 타입 참조가 0이라 이관 시 import 경로만 바뀐다)</span></td><td>3h <span class="note">추정</span></td></tr>
+<tr><td><span class="ok">✅</span> 코드 스플리팅 동적 import <span class="tag src">§9.1</span> —
+<span class="note"><b>07-28로 앞당겨 완료</b>(<code>63c46be</code>) · <b>2,172 kB 단일 청크 → 초기 로드 JS 115.66 kB / 8청크</b>(초기 합계 158 kB · gzip 49 kB).
+지연: phaser 1,478 · iso-view 551 kB. 로딩 중에는 <code>interstitial</code>(60) 슬롯이 화면을 채운다 · <code>STAGES</code>에 <code>load</code> 자리 예약(§7.2 ④ 최소 방어)</span></td><td>3h</td></tr>
+<tr><td>⬜ <code>setStage</code>에서 <code>game.loop.sleep()/wake()</code> + IsoView 말풍선 타이머 정리 <span class="tag src">§9.2</span> — <span class="note"><b>미착수</b>(스플리팅과 별개 축)</span></td><td>1h</td></tr>
+<tr><td><span class="ok">✅</span> §9.6 게이트 <b>1차 측정</b>(기준선 기록) — <span class="note">07-28 완료 · <code>scripts/gate.baseline.json</code>에 시뮬·번들 기준선(<code>--reason</code> 필수)</span></td><td>0.5h</td></tr>
+<tr><td><span class="ok">✅ [신규]</span> <b>통합 회귀 게이트 <code>pnpm verify</code></b> —
+<span class="note">07-28 완료(<code>4244e5c</code>) · 타입·문서정합·GPU·밸런스·환각검증·빌드·번들예산을 한 화면에 판정. <code>--quick</code>은 커밋 전 3.4초.
+<b>어떤 항목도 조용히 건너뛰지 않는다</b>(SKIP은 사유와 함께 출력)</span></td><td>1h <span class="note">추정</span></td></tr>
 
 <tr class="mile"><td rowspan="3"><b>08-03</b><br><span class="note">월</span></td><td>★ 제출 형태 확정 반영 — ⑤ 완성 or 삭제 <span class="tag src">§7.2</span></td><td>0.5h</td></tr>
 <tr class="mile"><td><span class="ok">✅</span> 계측 — <code>narrate()</code> <code>{source,ms,model,reason?}</code> + <code>speak</code> 메타 동봉 + <code>GET /health</code> <span class="tag src">§1.3 · ④§4</span> — <span class="note"><b>07-28로 앞당겨 완료</b> · 폴백 사유 6종 구분</span></td><td>1.5h</td></tr>
 <tr class="mile"><td><span class="ok">✅</span> AI 카운터 칩 <b>기본 노출</b> + 로그 배지 <code>✨♻⚙</code> + 폴백 사유 표기 <span class="tag src">§7.7</span> — <span class="note">07-28 완료 · 측정이 없으면 패널 자체를 띄우지 않는다</span></td><td>1.5h</td></tr>
 
-<tr><td rowspan="3"><b>08-04</b><br><span class="note">화</span></td><td><code>disposeObject()</code> + 공유 지오메트리 상수화 + <code>THREE.Cache</code> + <b>Sprite 지오메트리 예외</b> <span class="tag src">§9.3</span></td><td>2h</td></tr>
-<tr><td>§9.6 회귀 게이트 <b>통과 확인</b>(10회 순회 ±5)</td><td>0.5h</td></tr>
+<tr><td rowspan="4"><b>08-04</b><br><span class="note">화</span></td><td><span class="ok">✅</span> <code>disposeObject()</code> + 공유 지오메트리 상수화 + <code>THREE.Cache</code> + <b>Sprite 지오메트리 예외</b> <span class="tag src">§9.3</span> —
+<span class="note"><b>07-28로 앞당겨 완료</b> · <code>scenes/three-res.ts</code>가 공유 지오메트리 7종을 소유 → three 런타임 geometry 생성 <b>0건</b></span></td><td>2h</td></tr>
+<tr><td><span class="part">⚠️</span> §9.6 회귀 게이트 — <span class="note"><b>정적분(<code>pnpm gate:gpu</code> G1~G4)은 07-28 통과.</b>
+10회 순회 ±5 런타임 측정은 브라우저 WebGL이 필요해 <b>CLI에서 항상 SKIP + 절차 안내</b>로 남는다 → 사람이 1회 수행(08-09 문서 정합성과 같은 슬롯)</span></td><td>0.5h</td></tr>
+<tr><td><span class="ok">✅ [신규]</span> <b>비밀 통로 표기 재설계</b> —
+<span class="note">07-28 완료(<code>41c7a52</code>) · 기본 알파 0.09 / 커서 34px 안이면 0.75(160ms 페이드). 상수 4종은 <code>view-consts.ts</code>.
+뷰1·4는 임계를 <b>줌으로 나누고</b>, 뷰2·3은 42° 피치라 <b>양 끝점을 화면에 투영</b>해 잰다</span></td><td>0.5h <span class="note">추정</span></td></tr>
 <tr><td>우측 컬럼 탭 도크 <span class="tag src">§7.9</span> — 뒤처지면 <code>&lt;details&gt;</code> 최소안 0.5h</td><td>1.5h <span class="note">추정</span></td></tr>
 
 <tr><td rowspan="2"><b>08-05</b><br><span class="note">수</span></td><td>overlay-bus 완전판(우선순위 큐 · 타이머 소유권 단일화) <span class="tag src">§7.10</span></td><td>1h</td></tr>
@@ -505,7 +523,7 @@
 <table class="cut">
 <thead><tr><th>항목</th><th style="width:80px">출처</th><th>컷 이유</th></tr></thead>
 <tbody>
-<tr><td><code>ViewLifecycle</code> 생명주기 축 · <code>STAGES.load</code></td><td><span class="tag src">§9.5</span> 3h</td><td>회수되는 가치가 "뷰5 추가 PR의 diff 크기"인데 <b>사전과제에 뷰5는 없다</b>. 단 §9.1 동적 import를 넣을 때 <code>STAGES</code>에 <code>load</code> <b>자리만 비워둘 것</b></td></tr>
+<tr><td><code>ViewLifecycle</code> 생명주기 축 · <code>STAGES.load</code></td><td><span class="tag src">§9.5</span> 3h</td><td>회수되는 가치가 "뷰5 추가 PR의 diff 크기"인데 <b>사전과제에 뷰5는 없다</b>. 단 §9.1 동적 import를 넣을 때 <code>STAGES</code>에 <code>load</code> <b>자리만 비워둘 것</b> → <span class="ok"><b>✅ 07-28 이행됨</b></span>: <code>STAGES</code> 각 항목에 <code>load: () =&gt; Promise&lt;unknown&gt;</code>을 두고 <code>setStage</code>가 그것으로 청크를 받는다. <code>ViewContract</code>에도 <code>dispose()</code>·<code>contextCost</code> 자리를 선점해 뒀다</td></tr>
 <tr><td>적응 해상도 · <code>antialias:false</code> · InstancedMesh · 컨텍스트 로스 핸들러</td><td><span class="tag src">§9.4</span> 2h</td><td><code>loop(t)</code> dt 클럭 <b>최소분만</b> §9.2 작업에 흡수(spec의 <code>k=1−exp(−dt/τ)</code>가 요구). 나머지는 저사양 최적화라 45초에 드러나지 않음</td></tr>
 <tr><td>대기실 로그 · 닉네임 · <code>.pending</code> · 시작 카운트다운</td><td><span class="tag src">§8.4</span> 2h</td><td>다인 대기실 UX. 심사자는 대부분 솔로 링크로 들어온다. 닉네임은 <b>XSS 이스케이프 부채</b>까지 동반.<br><span class="note">부수 — <code>20260727-ui-copy.md</code> §8의 대기실·닉네임 문안이 함께 미적용으로 남는다 → <b>ui-copy의 🚧 표기를 유지</b>(적용 완료로 오독 방지)</span></td></tr>
 <tr><td>리매치 합의 · 선공 셔플 · 시리즈 스코어보드</td><td><span class="tag src">§8.5</span> 2.5h</td><td>"2판째를 할 이유"는 심사 시나리오에 없다. 단 <b>NPC 재충원 루프 이동 1줄만</b> §8.1 커밋에 포함(3인 판 붕괴 방지)</td></tr>
@@ -529,7 +547,7 @@
 <tr><td>회색조 단독 CVD 대응</td><td><span class="tag src">spec§4.1</span></td><td>1차원 축에 12점을 넣는 <b>수학적 한계</b>. 흑백 인쇄 계획이 없고 2형/1형은 청–황축이 살아 있다</td></tr>
 <tr><td>뷰2·3 렌더러 인스턴스 분리</td><td><span class="tag src">§9.5⚠</span></td><td>WebGL 컨텍스트가 늘어난다. <code>contextCost:1</code>을 두 stage가 공유한다고 계약에 명문화</td></tr>
 <tr><td class="dim">원테이크 55초 영상</td><td><span class="tag cut">§3</span> → §7.6</td><td>물리적으로 불가(§3 자신이 "봇 5명 = 33.5초"라고 계산). 컷 편집판이 유일한 실행안</td></tr>
-<tr><td class="dim">총 제안 상한 40</td><td><span class="tag cut">§1.1</span> → §7.5</td><td>분리 후 p95 = 53~60. 정상 게임의 25%를 강제 종료시킨다 → <b>60</b></td></tr>
+<tr><td class="dim">총 제안 상한 40</td><td><span class="tag cut">§1.1</span> → §7.5</td><td>분리 후 p95 = 53~60. 정상 게임의 25%를 강제 종료시킨다 → 60 → <b>07-28 재산정으로 최종 75</b>(재진입 규칙 투입 후 p95 65 · 자연 p99.5 73 · 최대 76. 60은 판의 17%에서 작동해 백스톱이 아니라 밸런스 손잡이가 됐다)</td></tr>
 <tr><td class="dim">"⑤ 해당 없음" 확정</td><td><span class="tag cut">§6.3</span> → §7.2</td><td>상류 회의록에 3인 팀 명시. <b>AI가 임의로 내릴 수 없는 결정</b></td></tr>
 <tr><td class="dim"><code>?ai=1</code> 게이팅</td><td><span class="tag cut">§1.3</span> → §7.7</td><td>심사자는 파라미터 없는 URL로 들어온다</td></tr>
 </tbody>
@@ -539,6 +557,23 @@
 <!-- ================================================================= -->
 <h2 id="s6"><span class="n">6</span>일일 체크포인트 · 폴백 규칙</h2>
 <div class="lead"><b>판정 시각: 매일 작업 종료 시.</b> "끝났어야 하는 것"이 미완이면 <b>다음 날로 미루지 말고 그 자리에서 버린다.</b></div>
+
+<h3>판정 전에 반드시 돌리는 명령 <span class="note">07-28 신설 · 로드맵 §9.6</span></h3>
+<div class="scroll">
+<table>
+<thead><tr><th style="width:180px">시점</th><th style="width:190px">명령</th><th>내용</th></tr></thead>
+<tbody>
+<tr><td><b>커밋 전(매번)</b></td><td><code>pnpm verify:quick</code></td><td>3.4초 — 타입 · 문서·코드 상수 정합 · GPU 정적 계측 · 규칙 밸런스 회귀 · LLM 환각 검증(36케이스)</td></tr>
+<tr><td><b>작업 종료 시 / 푸시·촬영 전</b></td><td><code>pnpm verify</code></td><td>위 5종 + 빌드 + 번들 예산(기준선 +3% 래칫), 환각 검증은 전수 스윕</td></tr>
+</tbody>
+</table>
+</div>
+<ul class="tight">
+<li><b class="no">SKIP을 통과로 읽지 말 것.</b> 게이트는 어떤 항목도 조용히 건너뛰지 않고 <b>사유와 함께</b> SKIP을 인쇄한다.
+특히 §9.6 런타임 게이트(뷰 10회 순회 ±5)는 브라우저 WebGL이 필요해 <b>항상 SKIP</b>이다 → 사람이 절차대로 1회 수행해야 체크가 닫힌다.</li>
+<li>기준선을 움직여야 하면 <code>--reason</code>을 적는다. <b>사유 없는 기준선 갱신은 거부된다</b> — 래칫이 그냥 풀리는 것을 막는 장치다.</li>
+<li>아래 표의 "끝났어야 하는 것"은 <b>이 게이트가 통과한 상태</b>를 뜻한다(빌드가 깨진 채로 끝낸 날은 미완이다).</li>
+</ul>
 <div class="scroll">
 <table class="cp">
 <thead><tr><th>날짜</th><th style="width:38%">끝났어야 하는 것</th><th>뒤처졌을 때 버리는 것</th></tr></thead>
@@ -598,7 +633,7 @@
 <tr><td>①</td><td><b>이 실행 계획서 자신이 §7.4의 공개 배포 대상이다.</b> <code>EXCLUDE</code>에 <code>improvement-roadmap</code>만 있고 <code>execution-plan</code>은 없다</td><td>문서를 만드는 순간 §7.4가 지적한 결함이 <b>그대로 재발</b> — 심사자가 "컷라인"·"영영 안 할 것"을 읽는다. 본 문서 머리말에 조치 명기</td></tr>
 <tr><td>②</td><td><b><code>suggestLog</code>(§1.2)와 <code>publicLog</code>(§8.3b)가 같은 데이터다.</b> 두 문서가 서로를 참조하지 않는다</td><td>자료구조가 두 벌이 된다. <b>재접속 시 제안 기록표만 비는 버그</b></td></tr>
 <tr><td>③</td><td><b><code>view-consts</code> 이관이 §9.1 코드 스플리팅의 숨은 선행 조건</b>이다. 그 사실은 §9.1의 괄호 한 줄에만 있다</td><td>스플리팅을 먼저 시도하면 pixel 청크가 phaser를 통째로 끌고 와 <b>−94% 효과가 나오지 않는다</b></td></tr>
-<tr><td>④</td><td><b>spec §2의 <code>ViewContract</code>(표기)와 §9.5의 <code>ViewLifecycle</code>(생명주기)이 같은 파일·같은 <code>main.ts</code> 8곳을 건드린다.</b> 두 문서 어느 쪽도 상대를 언급하지 않는다</td><td>계약 파일과 <code>main.ts</code> 분기를 두 번 고친다. §9.5를 컷하더라도 <b><code>STAGES</code>에 <code>load</code> 자리를 비워두는 것</b>이 최소 방어</td></tr>
+<tr><td>④</td><td><b>spec §2의 <code>ViewContract</code>(표기)와 §9.5의 <code>ViewLifecycle</code>(생명주기)이 같은 파일·같은 <code>main.ts</code> 8곳을 건드린다.</b> 두 문서 어느 쪽도 상대를 언급하지 않는다</td><td>계약 파일과 <code>main.ts</code> 분기를 두 번 고친다. §9.5를 컷하더라도 <b><code>STAGES</code>에 <code>load</code> 자리를 비워두는 것</b>이 최소 방어 → <span class="ok"><b>✅ 07-28 이행</b></span>: <code>STAGES.load</code> 슬롯 + <code>ViewContract</code>의 <code>dispose()</code>·<code>contextCost</code> 선점</td></tr>
 <tr><td>⑤</td><td><b>eval 36 실콜(④§3.1)이 §7.1의 무료 쿼터 소진 리스크와 정면 충돌</b>한다. "1회만 실행"으로 완화했다고 쓰여 있으나 심사 기간 중 실행하면 심사자 몫을 먹는다</td><td><b>유료 키 전환이 eval 실행의 선행 조건</b>이다. 무료 키로 08-07에 실행하면 그날 심사자가 보는 화면이 전부 폴백일 수 있다</td></tr>
 <tr><td>⑥</td><td><b>영상 업로드 → ③ 링크 갱신 → ③ PDF 인쇄</b> 순서가 어느 문서에도 없다. §5·§7.99는 "본 테이크"와 "PDF"를 08-08 같은 칸에 넣었다</td><td>링크 갱신 전에 인쇄한 ③ PDF는 <b>폐기하고 다시 인쇄</b>. 본 계획은 08-08(촬영) / 08-09(갱신→인쇄)로 분리</td></tr>
 <tr><td>⑦</td><td><b>§7.5.1의 "제안 후 30초 자동 종료"와 §8.2의 <code>armTurnClock</code>이 같은 프리미티브</b>다. §8.2는 "인자화해 공유"라 적었지만 §7.99의 07-29 항목에는 그 메모가 없다</td><td>07-29에 전용 타이머를 짜면 07-31에 다시 뜯는다. <b>처음부터 인자화</b></td></tr>
@@ -630,9 +665,9 @@
 <tr><td>§7.99 08-08 (본테이크·뷰4·문서·PDF)</td><td class="part">08-08(촬영) / 08-09(문서·PDF)</td><td>과적재 해소</td></tr>
 <tr><td>§8.6 1~3</td><td class="ok">07-30~31 · 08-06(로그 리플레이)</td><td>최소선 채택</td></tr>
 <tr><td>§8.6 4~6 (§8.4·§8.5)</td><td class="no"><b>컷 → 본행사</b></td><td>재충원 1줄만 §8.1에 편입</td></tr>
-<tr><td>§9.1 · 9.2 · 9.3</td><td class="ok">08-02 / 08-02·08-04</td><td>§9.6 게이트 08-02(기준선)·08-04(통과)</td></tr>
+<tr><td>§9.1 · 9.2 · 9.3</td><td class="ok">08-02 / 08-02·08-04</td><td><span class="ok">✅ 9.1·9.3은 <b>07-28 완료</b></span> · ⬜ 9.2(<code>loop.sleep/wake</code>)만 미착수. §9.6 게이트는 <code>pnpm verify</code>로 상시화(기준선 <code>gate.baseline.json</code>)</td></tr>
 <tr><td>§9.4</td><td class="no"><b>컷</b></td><td>dt 클럭 최소분만 §9.2에 흡수</td></tr>
-<tr><td>§9.5</td><td class="no"><b>컷 → 본행사</b></td><td><code>STAGES</code>에 <code>load</code> 자리만 예약</td></tr>
+<tr><td>§9.5</td><td class="no"><b>컷 → 본행사</b></td><td><code>STAGES</code>에 <code>load</code> 자리만 예약 — <span class="ok"><b>✅ 07-28 예약 완료</b></span></td></tr>
 </tbody>
 </table>
 </div>
@@ -640,6 +675,11 @@
 <h2><span class="n">—</span>변경 이력</h2>
 <ul class="tight">
 <li><b>2026-07-27</b> 최초 작성. 로드맵 §5·§7.99·§8.6·§9 <b>4개 일정표 병합</b>, 선행 의존성 전수 수집, <b>모순 6건 · 누락 의존성 12건</b> 지적.</li>
+<li><b>2026-07-28</b> <b>구현 완료 반영.</b> §2에 07-28 착지분 편입 — 봇 도박 고발(§7.5.3, 컷라인 위로 승격) · 방 공개 상태 복귀 ·
+코드 스플리팅(§9.1) · <code>view-contract</code> <code>implements</code> · <code>dispose()</code>(§9.3) · 비밀 통로 표기 ·
+<b>통합 회귀 게이트 <code>pnpm verify</code> 신설</b>. §6 머리에 커밋 전/종료 시 게이트 명령을 명시.
+§5.1·§7.2 ③④의 최소 방어 항목(<code>STAGES.load</code>)을 이행 완료로 표기.
+미착수로 남은 것은 <b>§9.2(<code>loop.sleep/wake</code>)와 §9.6 런타임 순회</b>뿐.</li>
 </ul>
 
 </div>

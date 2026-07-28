@@ -153,7 +153,7 @@
   <div class="toc">
     <a href="#s0">0. 이중 계층</a><a href="#s03">0.3 초판 정정 6건</a><a href="#s1">1. 계층 구조</a>
     <a href="#s2">2. 디렉팅 명세</a><a href="#s24">2.4 페르소나 12종</a><a href="#s3">3. 환각 검증</a>
-    <a href="#s4">4. 관측 가능성</a><a href="#s5">5. Gemini 운용</a><a href="#s6">6. 템포</a>
+    <a href="#s35">3.5 회귀 게이트</a><a href="#s4">4. 관측 가능성</a><a href="#s5">5. Gemini 운용</a><a href="#s6">6. 템포</a>
     <a href="#s7">7. AI 도구 사용내역</a><a href="#s72">7.2 비위임 결정권</a><a href="#s8">8. 본행사 계승</a>
     <a href="#s9">9. 에셋 출처</a><a href="#s10">10. 파일 맵</a>
   </div>
@@ -285,7 +285,7 @@
         <div class="old"><span class="badge b-red">초판</span><q>봇은 틀린 고발을 하지 않음</q> — <b>장점으로 서술</b></div>
         <div class="why"><code>eff()</code>가 빼는 값은 전부 비정답 → 정답은 항상 후보에 남는다 → 고발 정확도 100%,
           <b>봇 탈락 판 0.0%</b>. 탈락 리스크를 사람만 진다.</div>
-        <div class="new"><b>2판</b> — <b>밸런스 결함으로 재분류</b> (§1.2 결함 b).</div>
+        <div class="new"><b>2판</b> — <b>밸런스 결함으로 재분류</b> (§1.2 결함 b).<br><b>2026-07-28 해소</b> — 페르소나 배짱 + 시드 해시 RNG의 도박 고발로 <b>봇 탈락 판 0.0% → 7.0%</b>.</div>
       </div>
     </div>
     <div class="fix">
@@ -301,7 +301,7 @@
   <!-- ══════ 1 ══════ -->
   <h2 id="s1">1. 계층 구조 (실측 파일 맵)</h2>
 
-  <h3>1.1 진실 계층 — 규칙엔진 <span class="pill">clue-room.ts · 1030줄</span></h3>
+  <h3>1.1 진실 계층 — 규칙엔진 <span class="pill">clue-room.ts · 1823줄</span></h3>
   <p>전부 결정론 함수. <b>LLM 호출 0.</b></p>
   <div class="scroll"><table>
     <tr><th style="width:130px">요소</th><th>내용</th></tr>
@@ -317,25 +317,42 @@
   <h3>1.2 에이전트 계층 — NPC 추리</h3>
   <p>각 봇은 후보집합 3개를 들고 자기 손패와 자기 제안의 반증 결과를 소거한다.
      턴은 2박자: 이동 → <code>BOT_ACT_GAP</code> 1300ms → 제안 → <code>SPEAK_HOLD</code> 2400ms → 판단.</p>
-  <p><b>알려진 결함 2건 — 현재 코드 그대로다. 은폐하지 않는다.</b></p>
+  <p><b>알려진 결함 2건 — <span class="badge b-green">둘 다 2026-07-28 해소</span></b> 진단 원문을 지우지 않고 이력으로 남긴다.</p>
 
-  <div class="card crit">
-    <h4><span class="badge b-red">결함 a</span>봇 간 정보 공유 <span class="pill">공정성</span></h4>
-    <p class="s13"><code>private revealed</code>는 <b>룸 전역</b>이며 반증으로 드러난 카드가 <b>모든 봇</b>의 소거에 쓰인다.
-       사람은 자기에게 보인 카드만 안다.</p>
-    <p class="s13"><b>조치</b> — 봇별 <code>seen</code>으로 분리. 수렴은 <b>공개 정보만 쓰는 추론</b>(“패스한 사람은 그 3장을 안 가짐”)으로 대체.
-       사람도 로그로 도달 가능하므로 비대칭이 아니다. 근거: <code>20260727-improvement-roadmap.md</code> §1.1 · §7.5</p>
+  <div class="card good">
+    <h4><span class="badge b-green">결함 a · 해소</span>봇 간 정보 공유 <span class="pill">공정성</span></h4>
+    <p class="s13 dim"><del><code>private revealed</code>는 <b>룸 전역</b>이며 반증으로 드러난 카드가 <b>모든 봇</b>의 소거에 쓰인다.
+       사람은 자기에게 보인 카드만 안다.</del> <span class="badge b-green">2026-07-28 해소</span></p>
+    <p class="s13"><b>조치(구현 완료)</b> — 룸 전역 필드를 삭제하고 좌석별 <code>seenNotSolution</code>으로 분리했다.
+       수렴은 <b>공개 정보만 쓰는 추론</b>(“패스한 사람은 그 3장을 안 가짐”)으로 대체 — 사람도 로그로 도달 가능하므로 비대칭이 아니다.
+       시뮬 3,000판에서 사람 승률 <b>2.3% → 15.4%</b>(이 항목 단독 기여). 근거: <code>20260727-improvement-roadmap.md</code> §1.1 · §7.5</p>
   </div>
-  <div class="card crit">
-    <h4><span class="badge b-red">결함 b</span>봇은 수학적으로 오답 고발이 불가능하다 <span class="pill">밸런스</span></h4>
-    <p class="s13">소거에서 빼는 값이 전부 비정답이라 정답은 항상 후보에 남는다.
-      <b>봇 탈락 판 0.0%</b>, 탈락 리스크는 사람만 진다.</p>
-    <p class="s13"><b>조치</b> <span class="badge b-amber">요구사항</span> — <code>BOT_NERVE[suspect]</code> 페르소나 상수 +
-       <b>시드 RNG</b>로 후보가 좁혀졌을 때 확률적 도박 고발. 시드 고정이므로 <b>결정론·재현성 유지</b>(§0.2-2 위배 없음).
-       호랑이 대감은 성급히 고발하고 양 목동은 안 한다 → <b>페르소나가 대사뿐 아니라 의사결정에도 반영된다.</b></p>
+  <div class="card good">
+    <h4><span class="badge b-green">결함 b · 해소</span>봇은 수학적으로 오답 고발이 불가능하다 <span class="pill">밸런스</span></h4>
+    <p class="s13 dim"><del>소거에서 빼는 값이 전부 비정답이라 정답은 항상 후보에 남는다.
+      <b>봇 탈락 판 0.0%</b>, 탈락 리스크는 사람만 진다.</del> <span class="badge b-green">2026-07-28 해소</span></p>
+    <p class="s13"><b>조치(구현 완료)</b> — <code>BOT_NERVE[suspect]</code> 페르소나 상수(<code>packages/shared/src/cards.ts</code>) +
+       <b>시드 RNG</b>로 후보 조합이 <b>6 이하</b>로 좁혀졌을 때 확률적 도박 고발(<code>apps/server/src/rules/bot-accuse.ts</code>).</p>
+    <ul class="s13">
+      <li><b>확률 <code>p = nerve × (1 / combos)</code></b> — <code>1/combos</code>는 무작위로 골랐을 때의 <b>실제 적중률</b>(봇의 확신도)이고
+        <code>nerve</code>는 그것을 행동으로 옮기는 <b>페르소나 계수</b>다. <b>임의 마법상수가 0개</b>이며 두 항 모두 근거가 있는 값이다.</li>
+      <li><b>결정론·재현성 유지</b>(§0.2-2 위배 없음) — <code>Math.random()</code>은 <b>판 시드 발행 1회</b>뿐이고, 이후는
+        <code>(seed, 좌석, 제안순번, 용도)</code>를 <b>FNV-1a로 해시한 순수 함수</b>다.
+        <b>스트림이 아니라 해시</b>를 쓴 이유는 서버가 타이머·LLM 왕복·재접속으로 호출 순서가 흔들려 스트림 RNG로는 같은 시드로도 재생되지 않기 때문이다.
+        시드는 로그에 남고 <code>ZODIAC_SEED</code>로 되먹이면 같은 판이 재생된다.</li>
+      <li><b>실측</b>(시뮬 5,000판 · 시드 20260728) — 봇 탈락 판 <b>0.2% → 7.0%</b> · 사람 승률 22.7% → <b>21.6%</b>(−1.1%p, 공정 몫 16.7%는 여전히 상회) · 도박 고발 적중률 23.7%.</li>
+    </ul>
+    <p class="s13"><b>페르소나가 의사결정에 반영됐다는 기계 측정</b> — 봇 출전 100판당 도박 고발</p>
+    <div class="scroll"><table>
+      <tr><th>캐릭터</th><th>호랑이</th><th>게코</th><th>토끼</th><th>잔나비</th><th>말</th><th>황소</th><th>돼지</th><th>개</th><th>생쥐</th><th>뱀</th><th>닭</th><th>양</th></tr>
+      <tr><td><code>nerve</code></td><td>0.90</td><td>0.80</td><td>0.55</td><td>0.75</td><td>0.65</td><td>0.45</td><td>0.40</td><td>0.25</td><td>0.30</td><td>0.20</td><td>0.15</td><td>0.05</td></tr>
+      <tr><td>100판당</td><td><b>4.3</b></td><td>4.2</td><td>3.5</td><td>3.5</td><td>2.7</td><td>2.4</td><td>2.1</td><td>1.2</td><td>1.2</td><td>1.1</td><td>0.9</td><td><b>0.3</b></td></tr>
+    </table></div>
+    <p class="note"><code>nerve</code> 순서를 따르며(동률 2쌍) <b>최상/최하 14배</b>다 — “호랑이 대감은 성급히 고발하고 양 목동은 안 한다”가
+       문서 주장이 아니라 <b>재현 가능한 측정값</b>이 됐다(§2.4 표의 <code>nerve</code> 열).</p>
   </div>
 
-  <h3>1.3 표현 계층 — LLM <span class="pill">ai/narrator.ts · 175줄</span></h3>
+  <h3>1.3 표현 계층 — LLM <span class="pill">ai/narrator.ts · 313줄</span></h3>
   <p><code>narrate()</code> 하나가 전부. 실패하면 <code>null</code>을 돌려주고 호출부가 <code>fallbackLine()</code>으로 대체한다.
      <b>호출 지점 4곳, 액션 3종.</b></p>
 
@@ -427,20 +444,25 @@
       <th style="width:104px">캐릭터</th><th style="width:94px">직업 뜻풀이</th><th>성격</th>
       <th style="width:142px">말투 <span class="badge b-blue" style="margin:0">→LLM</span></th>
       <th style="width:186px">추임새 <span class="badge b-amber" style="margin:0">→폴백</span></th>
+      <th style="width:64px"><code>nerve</code> <span class="badge b-green" style="margin:0">→규칙</span></th>
     </tr>
-    <tr><td><b>생쥐 서생</b><br><code>rat</code></td><td>글공부하는 선비</td><td>약삭빠르고 잔꾀 많은 책상물림</td><td>잔꾀 섞어 이문 따지듯</td><td><code>허, </code> ⋯ <code> 셈속이 그러하렷다.</code></td></tr>
-    <tr><td><b>황소 역사</b><br><code>ox</code></td><td>힘이 아주 센 장사</td><td>우직하고 뚝심 있다. 말수 적음</td><td>말수 적고 직설적으로</td><td><span class="dim">(없음)</span> ⋯ <code> 에두를 것 없네.</code></td></tr>
-    <tr><td><b>호랑이 대감</b><br><code>tiger</code></td><td>높은 벼슬아치</td><td>위엄 넘치고 오만한 주최자</td><td>위엄 있게 호령하듯</td><td><code>어험— </code> ⋯ <code> 감히 누구 앞이라고!</code></td></tr>
-    <tr><td><b>토끼 낭자</b><br><code>rabbit</code></td><td>젊은 여인</td><td>영민하고 새침. 눈치가 밝다</td><td>새침하고 빠르게 쏘아붙이듯</td><td><code>어머, </code> ⋯ <code> 눈치 못 챌 줄 알고?</code></td></tr>
-    <tr><td><b>게코 도령</b><br><code>gecko</code></td><td>양반집 도련님</td><td>자존심 세고 허풍이 심하다</td><td>허풍 섞어 과장되게</td><td><code>핫핫, </code> ⋯ <code> 내 눈은 못 속이지!</code></td></tr>
-    <tr><td><b>뱀 무녀</b><br><code>snake</code></td><td>굿을 하는 무당</td><td>음산하고 속을 알 수 없다</td><td>음산하게 에둘러</td><td><code>스으…, </code> ⋯ <code>… 두고 보면 알겠지.</code></td></tr>
-    <tr><td><b>말 장수</b><br><code>horse</code></td><td>장사꾼</td><td>발 넓고 수다스러운 장돌뱅이</td><td>수다스럽게 소문 옮기듯</td><td><code>그거 아나, </code> ⋯ <code> 소문이 파다하더군!</code></td></tr>
-    <tr><td><b>양 목동</b><br><code>sheep</code></td><td>가축 치는 아이</td><td>순박하고 겁 많다</td><td>조심스럽고 겁먹은 듯</td><td><code>저, 저기… </code> ⋯ <code>… 아니면 말고요.</code></td></tr>
-    <tr><td><b>잔나비 광대</b><br><code>monkey</code></td><td>연희 놀이꾼</td><td>익살맞고 촐랑댄다</td><td>익살맞게 농치듯</td><td><code>낄낄, </code> ⋯ <code> 이거 아주 볼만하구먼!</code></td></tr>
-    <tr><td><b>닭 훈장</b><br><code>rooster</code></td><td>서당의 글 선생</td><td>깐깐하고 원칙주의</td><td>훈계조로 꾸짖듯</td><td><code>쯧쯧, </code> ⋯ <code> 마땅히 그러하렷다.</code></td></tr>
-    <tr><td><b>삽살 포교</b><br><code>dog</code></td><td>포도청 관리</td><td>충직하고 우직</td><td>딱딱한 공무 말투로</td><td><code>고하오— </code> ⋯ <code> 지체 없이 밝히겠소.</code></td></tr>
-    <tr><td><b>돼지 객주</b><br><code>pig</code></td><td>숙식·중개 상인</td><td>넉살 좋고 셈에 밝다</td><td>넉살 좋게 흥정하듯</td><td><code>어이구, </code> ⋯ <code> 밑질 거래는 아니지 않소?</code></td></tr>
+    <tr><td><b>생쥐 서생</b><br><code>rat</code></td><td>글공부하는 선비</td><td>약삭빠르고 잔꾀 많은 책상물림</td><td>잔꾀 섞어 이문 따지듯</td><td><code>허, </code> ⋯ <code> 셈속이 그러하렷다.</code></td><td>0.30</td></tr>
+    <tr><td><b>황소 역사</b><br><code>ox</code></td><td>힘이 아주 센 장사</td><td>우직하고 뚝심 있다. 말수 적음</td><td>말수 적고 직설적으로</td><td><span class="dim">(없음)</span> ⋯ <code> 에두를 것 없네.</code></td><td>0.45</td></tr>
+    <tr><td><b>호랑이 대감</b><br><code>tiger</code></td><td>높은 벼슬아치</td><td>위엄 넘치고 오만한 주최자</td><td>위엄 있게 호령하듯</td><td><code>어험— </code> ⋯ <code> 감히 누구 앞이라고!</code></td><td><b>0.90</b></td></tr>
+    <tr><td><b>토끼 낭자</b><br><code>rabbit</code></td><td>젊은 여인</td><td>영민하고 새침. 눈치가 밝다</td><td>새침하고 빠르게 쏘아붙이듯</td><td><code>어머, </code> ⋯ <code> 눈치 못 챌 줄 알고?</code></td><td>0.55</td></tr>
+    <tr><td><b>게코 도령</b><br><code>gecko</code></td><td>양반집 도련님</td><td>자존심 세고 허풍이 심하다</td><td>허풍 섞어 과장되게</td><td><code>핫핫, </code> ⋯ <code> 내 눈은 못 속이지!</code></td><td>0.80</td></tr>
+    <tr><td><b>뱀 무녀</b><br><code>snake</code></td><td>굿을 하는 무당</td><td>음산하고 속을 알 수 없다</td><td>음산하게 에둘러</td><td><code>스으…, </code> ⋯ <code>… 두고 보면 알겠지.</code></td><td>0.20</td></tr>
+    <tr><td><b>말 장수</b><br><code>horse</code></td><td>장사꾼</td><td>발 넓고 수다스러운 장돌뱅이</td><td>수다스럽게 소문 옮기듯</td><td><code>그거 아나, </code> ⋯ <code> 소문이 파다하더군!</code></td><td>0.65</td></tr>
+    <tr><td><b>양 목동</b><br><code>sheep</code></td><td>가축 치는 아이</td><td>순박하고 겁 많다</td><td>조심스럽고 겁먹은 듯</td><td><code>저, 저기… </code> ⋯ <code>… 아니면 말고요.</code></td><td><b>0.05</b></td></tr>
+    <tr><td><b>잔나비 광대</b><br><code>monkey</code></td><td>연희 놀이꾼</td><td>익살맞고 촐랑댄다</td><td>익살맞게 농치듯</td><td><code>낄낄, </code> ⋯ <code> 이거 아주 볼만하구먼!</code></td><td>0.75</td></tr>
+    <tr><td><b>닭 훈장</b><br><code>rooster</code></td><td>서당의 글 선생</td><td>깐깐하고 원칙주의</td><td>훈계조로 꾸짖듯</td><td><code>쯧쯧, </code> ⋯ <code> 마땅히 그러하렷다.</code></td><td>0.15</td></tr>
+    <tr><td><b>삽살 포교</b><br><code>dog</code></td><td>포도청 관리</td><td>충직하고 우직</td><td>딱딱한 공무 말투로</td><td><code>고하오— </code> ⋯ <code> 지체 없이 밝히겠소.</code></td><td>0.25</td></tr>
+    <tr><td><b>돼지 객주</b><br><code>pig</code></td><td>숙식·중개 상인</td><td>넉살 좋고 셈에 밝다</td><td>넉살 좋게 흥정하듯</td><td><code>어이구, </code> ⋯ <code> 밑질 거래는 아니지 않소?</code></td><td>0.40</td></tr>
   </table></div>
+  <p class="note"><b><code>nerve</code> 열(2026-07-28 추가)은 LLM 프롬프트에 들어가지 않는다.</b>
+     같은 성격 한 줄에서 파생된 값이지만 <b>소비처가 규칙 엔진</b>(<code>BOT_NERVE</code> → 도박 고발 확률, §1.2)이다.
+     즉 이 표는 <b>하나의 페르소나 정의가 표현 계층(말투·추임새)과 진실 계층(의사결정)으로 각각 흘러간다</b>는 것을 보여준다 —
+     그리고 <b>그 둘은 서로의 값을 보지 않는다.</b> 진실값 경계는 그대로다.</p>
 
   <div class="card good">
     <h4>분리 검증 — 동일 결정, 다른 표현</h4>
@@ -484,18 +506,22 @@
     <li><b>의미</b>: 결정/표현 분리가 서버에서 끝나지 않고 <b>렌더 계층까지 관통한다.</b> 뷰5를 붙여도 표현 계층은 손대지 않는다.
         반대로 <b>뷰를 4개나 만들 수 있었던 것은 표현 계층이 렌더러를 모르기 때문</b>이다.</li>
   </ul>
-  <p class="note"><span class="badge b-amber">알려진 간극</span>타자기 효과가 뷰1·2·3은 <code>TYPE_MS 55</code>인데 <b>뷰4는 없고</b>
-     유지 시간도 2600 vs <b>3200 인라인</b>이다. → 상수를 <code>packages/shared/src/view-consts.ts</code>로 승격해
-     4뷰 + 서버가 같은 값을 보게 하고, 서버 <code>SPEAK_HOLD</code>(2400)와 말풍선 수명의 정합을 한 곳에서 계산한다
-     (어긋나면 <b>봇이 말하는 도중 턴이 넘어가 카메라가 튄다</b>). 설계: <code>20260727-view-contract-spec.md</code>
-     <span class="badge b-amber">요구사항</span></p>
+  <p class="note"><span class="badge b-green">알려진 간극 · 2026-07-28 해소</span>
+     <del>타자기 효과가 뷰1·2·3은 <code>TYPE_MS 55</code>인데 <b>뷰4는 없고</b> 유지 시간도 2600 vs <b>3200 인라인</b>이다.</del><br>
+     상수를 <code>packages/shared/src/view-consts.ts</code>로 승격해 <b>4뷰 + 서버가 같은 값을 본다.</b>
+     뷰4에도 타자기가 들어갔고(<code>scenes/typewriter.ts</code> 공용) <code>3200</code> 인라인은 삭제됐다.
+     고정 <code>SPEAK_HOLD</code>(2400)는 폐기하고 서버가 실제 방송한 문장으로 <code>bubbleLifeMs(line)</code>을 계산한다(§6.1)
+     — <b>정합을 문서가 아니라 코드가 보증한다.</b> 표기 계약 자체도 <code>implements ViewContract</code>로 잠겼다(렌더러 3종 × 15메서드).
+     설계·현황: <code>20260727-view-contract-spec.md</code></p>
 
   <!-- ══════ 3 ══════ -->
   <h2 id="s3">3. 환각 검증 프로토콜</h2>
   <div class="lead">
     <b>“LLM이 진실값을 바꾸지 않았는가”를 사람 눈이 아니라 기계로 판정한다.</b><br>
     실행체 <code>scripts/eval-narrator.mjs</code> <span class="badge b-green">2026-07-28 작성·실행 완료</span>
-    → <code>docs/design/eval-narrator-report.md</code> 자동 생성
+    → <code>docs/design/eval-narrator-report.md</code> 자동 생성<br>
+    실행: <code>pnpm eval:narrator</code>(오프라인 · Gemini 호출 0) / <code>pnpm eval:narrator:live</code>(C7 전용, 36콜).
+    <b>통합 게이트 <code>pnpm verify</code>에도 편입</b>돼 커밋마다 돈다(§3.5).
   </div>
 
   <h3>3.1 실행 절차</h3>
@@ -599,6 +625,26 @@
       <b class="no">무료 쿼터를 먹으면 그날 심사자가 보는 화면이 전부 폴백</b>이 된다.</p>
   </div>
 
+  <h3 id="s35">3.5 회귀 게이트 편입 <span class="badge b-green">2026-07-28</span></h3>
+  <p>검증은 <b>한 번 돌린 리포트가 아니라 상시 조건</b>이어야 의미가 있다. <code>scripts/verify.mjs</code>가 이 eval을 다른 게이트와 함께 묶는다.</p>
+  <div class="scroll"><table>
+    <tr><th style="width:190px">명령</th><th>이 문서와 관련된 항목</th></tr>
+    <tr><td><code>pnpm verify:quick</code><br><span class="note">3.4초</span></td>
+        <td>환각 검증 <b>36케이스</b> · <b>문서·코드 상수 정합</b>(본 문서 §3.2 C2의 «제안 25자 / 그 외 40자»를
+            <code>narrator.ts</code>의 <code>LINE_BUDGET_SUGGEST</code>·<code>LINE_MAX</code>와 대조) · 타입 · 밸런스 회귀 · GPU 정적 계측</td></tr>
+    <tr><td><code>pnpm verify</code><br><span class="note">전체</span></td>
+        <td>위 + 환각 검증 <b>전수 스윕</b>(≈11만 문장) + 빌드 + 번들 예산</td></tr>
+  </table></div>
+  <ul>
+    <li><b>어느 모드에서도 Gemini 실호출은 0이다.</b> <code>--live</code>(C7)만 예외이고 그것은 게이트에 들어 있지 않다 —
+        게이트가 심사자 몫의 무료 쿼터를 먹으면 안 되기 때문이다(실행계획 §7.2 ⑤).</li>
+    <li><b>문서·코드 상수 정합 검사가 이 문서를 직접 감시한다.</b> 07-28에 «12~40자»(문서) vs 80자(코드)로 한 번 갈라진 전력이 있어
+        그 사건을 검사 항목 <code>D3</code>으로 고정했다. 앵커 문장을 못 찾으면 FAIL이 아니라 <b>SKIP</b>이다 —
+        “문서가 리라이트됐다”와 “값이 갈라졌다”는 다른 사건이고, 전자를 FAIL로 만들면 게이트가 곧 무시된다.</li>
+    <li><b>SKIP은 사유와 함께 인쇄된다.</b> 조용히 건너뛴 검사는 통과와 구분되지 않는다는 것이
+        §3의 “스스로를 의심하는 방식”과 같은 원칙이다.</li>
+  </ul>
+
   <!-- ══════ 4 ══════ -->
   <h2 id="s4">4. 관측 가능성 <span class="badge b-green" style="vertical-align:3px">2026-07-28 구현 완료</span></h2>
   <div class="card crit">
@@ -643,7 +689,8 @@
     <code>source</code>/<code>ms</code> 계측과 AI 카운터 칩이 있었다면 첫 판에서 드러났을 문제다.</p>
   </div>
   <p class="note"><b>운영 선행 조건(사람 담당)</b> — 무료 쿼터는 심사 기간 내내 다수 심사자가 소모하는 구조이므로,
-     심사 기간에는 쿼터 잔량을 주기적으로 확인한다(현재 <code>GET /health</code>가 없어 서버 로그로만 확인 가능).</p>
+     심사 기간에는 쿼터 잔량을 주기적으로 확인한다 — <b><code>GET /health</code>가 구현돼(위 표 #4)
+     <code>llmCalls</code>·<code>fallbackCalls</code>·<code>quotaErrors</code>를 서버 로그 없이 확인할 수 있다.</b></p>
 
   <!-- ══════ 5·6 ══════ -->
   <h2 id="s5">5. Gemini 운용 (무료티어 안전)</h2>
@@ -718,9 +765,9 @@
     사용 내역의 증거는 커밋 메시지가 아니라 <b>저장소에 남은 워크플로 산출물</b>로 제시한다.
   </div>
   <div class="g3">
-    <div class="stat"><b>커밋 102개 · 커미터 1명</b><span>anveloper · 2026-07-19 ~ 07-25</span></div>
-    <div class="stat"><b>문서 55편</b><span><code>.md</code> 44편(AI용 압축) + 사람용 <code>.html</code> 11편</span></div>
-    <div class="stat"><b>플랜 워크플로</b><span>done 8 / active 3 / hold 1 — <code>git mv</code>로 이관</span></div>
+    <div class="stat"><b>커밋 148개 · 커미터 1명</b><span>anveloper · 2026-07-19 ~ 07-28</span></div>
+    <div class="stat"><b>문서 66편</b><span><code>.md</code> 50편(AI용 압축) + 사람용 <code>.html</code> 16편</span></div>
+    <div class="stat"><b>플랜 워크플로</b><span>done 10 / active 3 / hold 1 — <code>git mv</code>로 이관</span></div>
   </div>
 
   <h3>7.1 도구 · 용도 · 산출물 · 사람 검토 지점</h3>
@@ -730,12 +777,12 @@
     <tr>
       <td><b>Claude Code</b><br><span class="note">에이전트 CLI</span></td><td>코드·문서 전반</td>
       <td><code>CLAUDE.md</code> / <code>AGENTS.md</code> single-source, <code>docs/plans/README.md</code>가 정의한
-        <b>active → done <code>git mv</code> 워크플로</b>와 결과물(done 8 / active 3 / hold 1)</td>
+        <b>active → done <code>git mv</code> 워크플로</b>와 결과물(done 10 / active 3 / hold 1)</td>
       <td>플랜 단위 승인, <code>done</code> 이관 판정, <code>hold/02</code> 보류 결정</td>
     </tr>
     <tr>
       <td class="dim">↳ 개발 일지</td><td>하루 작업을 커밋 타입별로 그룹화</td>
-      <td><code>docs/logs/</code> <b>9편</b>. 예: <code>20260720-npc-llm-persona.md</code>는 thinking 모델 빈응답 문제와 해결을 기록</td>
+      <td><code>docs/logs/</code> <b>10편</b>. 예: <code>20260720-npc-llm-persona.md</code>는 thinking 모델 빈응답 문제와 해결을 기록</td>
       <td>일지에 남길 결함(= 공개할 실패)의 범위</td>
     </tr>
     <tr>
@@ -757,13 +804,27 @@
       <td>공개 문서 범위</td>
     </tr>
     <tr>
+      <td class="dim">↳ <b>회귀 게이트</b><br><span class="note">07-28 신설</span></td>
+      <td>에이전트가 만든 것을 <b>에이전트가 통과시킬 수 없게</b> 기계 판정으로 잠근다</td>
+      <td><code>scripts/verify.mjs</code>(<code>pnpm verify</code> / <code>--quick</code>) +
+        <code>gate-{bundle-budget,sim-regression,docs-consistency,gpu-baseline}.mjs</code> ·
+        판정 기준 <code>gate.config.mjs</code> / 기준선 <code>gate.baseline.json</code> (§3.5)</td>
+      <td><b>밴드 · 예산 · 기준선 값</b>과 그 사유. 기준선 갱신은 <code>--reason</code> 없이는 거부되므로
+        <b>사람이 사유를 쓰지 않으면 래칫이 풀리지 않는다</b></td>
+    </tr>
+    <tr>
+      <td class="dim">↳ 규칙 시뮬레이터</td><td>밸런스를 의견이 아니라 실측으로 결정</td>
+      <td><code>scripts/sim-balance.mjs</code> — 규칙 이식본, 시드 고정. §1.2 결함 b 도박 고발의 <b>5,000판 실측</b>이 여기서 나왔다</td>
+      <td>어떤 변형을 채택할지(예: 제안 상한 60 → 75)</td>
+    </tr>
+    <tr>
       <td class="dim">↳ 배포 파이프라인</td><td>CI 작성</td>
       <td><code>.github/workflows/deploy-server.yml</code> · <code>vercel.json</code></td>
       <td>서버 자격증명·시크릿, 배포 승인</td>
     </tr>
     <tr>
       <td><b>Google Gemini API</b></td><td><b>게임 내 유일한 LLM 사용처</b> — NPC 대사</td>
-      <td><code>apps/server/src/ai/narrator.ts</code>(175줄) · <code>.env.example</code></td>
+      <td><code>apps/server/src/ai/narrator.ts</code>(313줄) · <code>.env.example</code></td>
       <td>프롬프트 계약 문안, 금지 목록(§2.2), 파라미터</td>
     </tr>
     <tr>
@@ -876,14 +937,26 @@
     <tr><td>표현(LLM)</td><td><code>apps/server/src/ai/narrator.ts</code></td></tr>
     <tr><td>페르소나 · 라벨</td><td><code>packages/shared/src/cards.ts</code></td></tr>
     <tr><td>4뷰 말풍선</td><td><code>apps/client/src/scenes/{game-scene,iso-view,pixel-scene}.ts</code> · 라우팅 <code>main.ts</code></td></tr>
-    <tr><td>검증 <span class="badge b-red">미구현</span></td>
+    <tr><td>검증</td>
         <td><code>scripts/eval-narrator.mjs</code> → <code>docs/design/eval-narrator-report.md</code></td></tr>
+    <tr><td>규칙(에이전트 의사결정)</td>
+        <td><code>apps/server/src/rules/bot-accuse.ts</code> · <code>rules/rng.ts</code> · <code>packages/shared/src/cards.ts</code> <code>BOT_NERVE</code></td></tr>
+    <tr><td>회귀 게이트</td>
+        <td><code>scripts/verify.mjs</code>(<code>pnpm verify</code> · <code>--quick</code>) ·
+            <code>gate-{bundle-budget,sim-regression,docs-consistency,gpu-baseline}.mjs</code> ·
+            기준 <code>gate.config.mjs</code> / 기준선 <code>gate.baseline.json</code></td></tr>
   </table></div>
 
   <hr>
   <h2 style="border:0;margin-bottom:6px">변경 이력</h2>
   <div class="card">
     <p class="s13"><span class="badge">2026-07-20</span><b>초판(66줄)</b> — 구조 · 프롬프트 · 에셋 출처.</p>
+    <p class="s13"><span class="badge b-green">2026-07-28</span><b>3판 보정</b> —
+      §1.2 결함 b <b>봇 오답 고발 불가 해소</b>(페르소나 배짱 + 시드 해시 RNG, 봇 탈락 판 0.0% → 7.0%) 및 §0.3 정정 노트 5행 갱신 ·
+      결함 a도 해소 표기 · §2.4 페르소나 표에 <b><code>nerve</code> 열</b> 추가(하나의 페르소나가 표현·진실 두 계층으로 갈라져 흐른다) ·
+      §2.6 4뷰 말풍선 간극 <b>해소</b> 표기 · <b>§3.5 회귀 게이트 편입 신설</b> · §4 <code>GET /health</code> 구현 반영 ·
+      §7.1 실측 수치 갱신(커밋 148 · logs 10 · plans done 10) 및 회귀 게이트 · 시뮬레이터 행 추가 · §10 파일 맵 갱신 ·
+      실측 줄 수 정정(<code>clue-room.ts</code> 1030 → 1823 · <code>narrator.ts</code> 175 → 313).</p>
     <p class="s13"><span class="badge b-green">2026-07-27</span><b>2판</b> — 실코드 · 라이브 실측 기반 전면 개정.
       §0 핵심 원칙 재작성(load-bearing 용어 정정 + <b>초판 정정 노트 6건</b>) ·
       §2 디렉팅 명세 신설(입출력 계약 · 금지 목록 · 페르소나 12종 · 폴백 트리 · 4뷰 계약) ·
