@@ -66,6 +66,10 @@
     "dir": "plans/done",
     "items": [
       {
+        "path": "plans/done/14-planning-refresh-and-llm-fix.md",
+        "title": "plan: 기획 개선 문서 세트 + 배포 + LLM 폴백 장애 해결"
+      },
+      {
         "path": "plans/done/10-view-2.5d-toggle.md",
         "title": "plan: 2.5D 시점 토글 (Three.js)"
       },
@@ -103,6 +107,10 @@
     "label": "📓 개발일지",
     "dir": "logs",
     "items": [
+      {
+        "path": "logs/20260728-planning-docs-and-llm-fix.md",
+        "title": "20260728 — 기획 문서 세트 구축 + 배포 노출 차단 + LLM 폴백 장애 해결"
+      },
       {
         "path": "logs/20260722-view-evolution-and-assets.md",
         "title": "20260722 — 뷰 진화 단계·도트뷰 + 에셋 파이프라인 + 공개방 + 랜딩 정리"
