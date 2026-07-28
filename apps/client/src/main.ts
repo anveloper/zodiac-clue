@@ -205,11 +205,20 @@ const addLog = (text: string, opts: LogOpts = {}): void => {
 
 // ── AI 카운터 칩 + 상세 (로드맵 §7.7 · ④ §4) ─────────────────────────
 // **기본 노출**이다 — `?ai=1` 같은 게이팅은 폐기된 설계다(심사자는 파라미터 없는 URL로
-// 들어온다). 단, 계측이 **한 건도 오지 않은 동안에는 패널을 띄우지 않는다**:
-// 구버전 서버에서 `0 · 0 · 0`을 띄우면 "대사가 없었다"는 없는 사실을 주장하게 된다.
-// 첫 계측이 도착하는 순간(= NPC 첫 대사) 나타나고 그 뒤로는 사라지지 않는다.
+// 들어온다).
+//
+// 노출 시점이 둘로 갈린다 — 이 구분이 이 패널의 전부다.
+//  · **패널(자리)**: 판이 시작되면 곧바로 뜬다(`aiArmed`). 첫 NPC 순배까지 ≈27초를
+//    기다리게 하면 45초 안에 판단하는 심사자가 심사 1순위 축을 아예 못 본다.
+//  · **칩(숫자)**: 첫 계측이 도착해야 붙는다(`aiSeen`). `0 · 0 · 0`을 먼저 그리면
+//    "대사가 없었다"는, **서버가 하지 않은 주장**을 화면이 대신하게 된다.
+//    ui-copy §4.4의 확정 판단도 같다 — 계측 전 칩은 **문안 없음이 확정본**이다.
+//    "측정 대기"와 "0건"은 다른 말이고, 그 차이를 여기서 `—`(§4.4 "계측 전이면 `—`")로
+//    적는다. 자리는 보이되 수치는 주장하지 않는다.
 //
 // HUD는 DOM이라 뷰1~4 어느 렌더러가 떠 있어도 같은 마크업이 뜬다(뷰 독립).
+/** 판이 시작됐는가 = 패널 자리를 띄울 때가 됐는가. 계측 유무와 무관하다. */
+let aiArmed = false;
 let aiSeen = false;
 const aiCount: Record<AiSource, number> = { llm: 0, cache: 0, fallback: 0 };
 /** 서버 누적 집계(`aiStats`)의 평균. 없으면 로컬 관측 평균으로 대체한다. */
@@ -224,23 +233,41 @@ const aiReasons = new Map<string, number>();
 const aiRow = (k: string, v: string): string =>
   `<div class="ai-row"><span>${k}</span><b>${v}</b></div>`;
 
+/**
+ * 기호 범례. `✨`/`♻`/`⚙`는 로그 배지·칩에 이미 쓰이는데 뜻이 화면 어디에도 없었다.
+ * 표기는 ui-copy §2 기호 목록 확정본을 그대로 인용한다(새로 짓지 않는다).
+ */
+const AI_LEGEND =
+  `<div class="ai-legend">` +
+  `<span>${AI_GLYPH.llm} LLM 대사</span>` +
+  `<span>${AI_GLYPH.cache} 캐시 대사</span>` +
+  `<span>${AI_GLYPH.fallback} 폴백 대사</span>` +
+  `</div>`;
+
 const renderAi = (): void => {
-  if (!aiSeen) return;
+  if (!aiArmed && !aiSeen) return;
   $("aiPanel").classList.remove("hidden");
   const { llm, cache, fallback } = aiCount;
-  // 칩 문안은 ④ §4 요구사항 3의 지정본 그대로: `✨LLM 12 · ♻캐시 3 · ⚙폴백 0`.
-  // ⚠ 폴백만 세지 않는다 — 세 경로를 항상 같이 보여준다. 폴백이 전부라도 숫자를
-  //   가리거나 줄이지 않고, 대신 아래 note로 상태를 말로 밝힌다.
-  const chip = $("aiChip");
-  chip.innerHTML =
-    `✨LLM <span class="ai-n">${llm}</span> · ` +
-    `♻캐시 <span class="ai-n">${cache}</span> · ` +
-    `⚙폴백 <span class="ai-n">${fallback}</span>`;
   const total = llm + cache + fallback;
   const allFallback = total > 0 && llm === 0 && cache === 0;
+  const chip = $("aiChip");
+  // 계측 0건 동안에는 칩 자체를 붙이지 않는다(위 주석의 `aiSeen` 항목).
+  chip.classList.toggle("hidden", !aiSeen);
+  if (aiSeen) {
+    // 칩 문안은 ④ §4 요구사항 3의 지정본 그대로: `✨LLM 12 · ♻캐시 3 · ⚙폴백 0`.
+    // ⚠ 폴백만 세지 않는다 — 세 경로를 항상 같이 보여준다. 폴백이 전부라도 숫자를
+    //   가리거나 줄이지 않고, 대신 아래 note로 상태를 말로 밝힌다.
+    chip.innerHTML =
+      `✨LLM <span class="ai-n">${llm}</span> · ` +
+      `♻캐시 <span class="ai-n">${cache}</span> · ` +
+      `⚙폴백 <span class="ai-n">${fallback}</span>`;
+    chip.title = `✨LLM ${llm} · ♻캐시 ${cache} · ⚙폴백 ${fallback}`;
+  }
   chip.classList.toggle("warn", allFallback);
 
-  const avg = aiAvgMs ?? (aiMsN > 0 ? aiMsSum / aiMsN : null);
+  // 계측 0건이면 평균은 **없는 값**이다. 서버 빈 스냅샷의 `avgMs: 0`을 그대로 그리면
+  // `평균 0.0s`라는, 역시 서버가 하지 않은 주장이 된다 → ui-copy §4.4 "계측 전이면 `—`".
+  const avg = !aiSeen ? null : (aiAvgMs ?? (aiMsN > 0 ? aiMsSum / aiMsN : null));
   let html = aiRow("평균", avg === null ? "—" : secText(avg));
   html += aiRow("모델", aiModel || "—");
   for (const [reason, n] of aiReasons) {
@@ -248,8 +275,8 @@ const renderAi = (): void => {
   }
   // 문안은 ④ §4 요구사항 5의 확정 배지 문장을 그대로 쓴다(새로 짓지 않는다).
   if (allFallback) html += `<div class="ai-note">AI 대사 일시 폴백</div>`;
+  html += AI_LEGEND;
   $("aiDetail").innerHTML = html;
-  chip.title = `✨LLM ${llm} · ♻캐시 ${cache} · ⚙폴백 ${fallback}`;
 };
 
 /** `say`에 동봉된 계측 1건 반영. 값은 전부 서버가 준 것이다. */
@@ -284,9 +311,10 @@ const applyAiStats = (s: unknown): void => {
     got = true;
   }
   if (!got) return;
-  // 입장·재접속 시 서버가 빈 스냅샷(0·0·0)을 보낸다. 그것으로 패널을 띄우면
+  // 입장·재접속 시 서버가 빈 스냅샷(0·0·0)을 보낸다. 그것으로 **칩**을 띄우면
   // 아직 대사가 한 줄도 안 나온 시점에 "AI 0건"이라고 **서버가 하지 않은 주장**을
-  // 화면이 대신 하게 된다. 실제 측정이 하나라도 있을 때만 노출한다.
+  // 화면이 대신 하게 된다. 칩은 실제 측정이 하나라도 있을 때만 붙인다
+  // (패널 자리는 `aiArmed`가 따로 연다 — 자리를 여는 것은 주장이 아니다).
   if (AI_SOURCES.every((k) => aiCount[k] === 0)) {
     renderAi();
     return;
@@ -2027,6 +2055,73 @@ const buildEvidence = (roomId: string): void => {
   }
 };
 
+// ── 터치 이동 패드 (로드맵 §7.12 T1 — 07-28 컷 결정 복원) ─────────────
+// 로드맵은 T1·T2를 "본행사로 컷"했다(근거: T0로 화면 깨짐은 막힌다). 그 판단을 뒤집는다 —
+// **화면이 안 깨지는 것과 플레이가 되는 것은 다르다.** 터치 기기에서 이동 수단이 0이면
+// 방에 못 들어가고 → `[제안]`이 영구 비활성 → 제출물 ①의 "웹에서 즉시 플레이"가 절반만
+// 성립한다.
+//
+// **왜 D-패드인가(탭-투-무브가 아니라)**
+//  1. 이 게임은 주사위로 걸음 수가 정해지고 **칸 단위**로 움직인다. 탭-투-무브는 클라가
+//     경로를 계산해 `move`를 여러 번 큐잉해야 하고, 그 순간 **클라가 이동 규칙(벽·입구·
+//     충돌·한도)을 판정**하게 된다 — 진실값은 서버만이라는 규약 위반이다.
+//  2. D-패드가 보내는 것은 **방향 1칸(dx,dy)**뿐이다. 키보드 이동이 보내는 것과
+//     **완전히 같은 `move` 메시지**이고, 서버 `handleMove`가 벽·입구·충돌·걸음 한도·
+//     방 재진입까지 전부 다시 판정한다(거부는 조용한 no-op이라 오폭 비용도 0).
+//  3. 뷰2·3은 Three 캔버스라 화면 좌표 → 그리드 역변환이 뷰마다 다르다. 탭-투-무브는
+//     뷰별 코드가 되지만, **DOM 레이어의 패드는 좌표계를 아예 쓰지 않아** 뷰1~4에
+//     같은 코드가 그대로 성립한다.
+/** 주 포인터가 손가락인가. 데스크톱 마우스에서는 패드·터치 문안이 아예 뜨지 않는다. */
+const COARSE = window.matchMedia?.("(pointer: coarse)")?.matches ?? false;
+/** 꾹 누르기 반복 — 첫 반복까지의 뜸, 그 뒤 간격(ms). 키보드 오토리피트 감각에 맞춘 값. */
+const DPAD_HOLD_DELAY_MS = 340;
+const DPAD_REPEAT_MS = 190;
+let lastPadMove = 0;
+
+/**
+ * 방향 1칸 전송. 여기서 하는 판정은 **연타 억제(쿨다운)** 하나뿐이고 그것도 조작감
+ * 문제다 — 이동 가부는 한 줄도 계산하지 않는다.
+ */
+const sendMoveStep = (dx: number, dy: number): void => {
+  const now = performance.now();
+  if (now - lastPadMove < timing.MOVE_COOLDOWN_MS) return;
+  lastPadMove = now;
+  room?.send("move", { dx, dy });
+};
+
+/** 배선 1회 보장 — `enterGame()`이 청크 실패 후 재실행될 수 있어 중복 전송을 막는다. */
+let dpadWired = false;
+
+const wireDpad = (): void => {
+  if (dpadWired) return;
+  dpadWired = true;
+  const btns = $("dpad").querySelectorAll<HTMLElement>("[data-dx]");
+  for (const btn of Array.from(btns)) {
+    const dx = Number(btn.dataset.dx ?? 0);
+    const dy = Number(btn.dataset.dy ?? 0);
+    let delay: number | null = null;
+    let rep: number | null = null;
+    const stop = (): void => {
+      if (delay !== null) window.clearTimeout(delay);
+      if (rep !== null) window.clearInterval(rep);
+      delay = null;
+      rep = null;
+    };
+    btn.addEventListener("pointerdown", (e) => {
+      // 터치 지연(300ms)·더블탭 확대·포커스 이동을 한 번에 막는다.
+      e.preventDefault();
+      stop();
+      sendMoveStep(dx, dy);
+      delay = window.setTimeout(() => {
+        rep = window.setInterval(() => sendMoveStep(dx, dy), DPAD_REPEAT_MS);
+      }, DPAD_HOLD_DELAY_MS);
+    });
+    for (const ev of ["pointerup", "pointercancel", "pointerleave"]) {
+      btn.addEventListener(ev, stop);
+    }
+  }
+};
+
 const enterGame = async (): Promise<void> => {
   phaserStarted = true;
   // 로딩 화면·배너는 둘 다 `#gameScreen` 안에 있다 → **먼저 화면을 전환해야**
@@ -2331,6 +2426,9 @@ const enterGame = async (): Promise<void> => {
   const rpToggle = $("rpToggle") as HTMLButtonElement;
   const setRpOpen = (open: boolean): void => {
     rightCol.classList.toggle("rp-off", !open);
+    // 컬럼을 펴면 폭 min(86vw,300px)가 우하단 이동 패드를 통째로 덮는다 → 그동안은 접는다.
+    // (넓은 화면에서는 패드가 어차피 `pointer: coarse` 조건에서 걸러진다.)
+    $("dpad").classList.toggle("dp-off", open);
     rpToggle.setAttribute("aria-expanded", open ? "true" : "false");
     // 라벨 확정 문안이 없어 패널 제목의 기호를 재사용한다(툴팁도 제목 원문 그대로).
     rpToggle.textContent = open ? "✕" : "🔍";
@@ -2347,8 +2445,20 @@ const enterGame = async (): Promise<void> => {
     /* matchMedia 미지원 — 초기 판정값을 그대로 쓴다 */
   }
   applyNarrow();
+  wireDpad();
 
-  addLog("잔치 시작! 이동: 방향키, 방에 들어가 [제안]");
+  // AI 계측 패널의 **자리**를 판 시작과 함께 연다(첫 45초 안에 보이도록).
+  // 숫자는 아직 없다 — 칩은 첫 계측이 와야 붙는다(`renderAi()` 주석).
+  aiArmed = true;
+  renderAi();
+
+  // 조작 안내는 포인터 종류로 갈린다 — 터치에는 방향키가 없으므로 그 절을 뺀다.
+  // (문장은 확정본에서 절을 덜어낸 것이고 새 낱말을 넣지 않는다.)
+  addLog(
+    COARSE
+      ? "잔치 시작! 방에 들어가 [제안]"
+      : "잔치 시작! 이동: 방향키, 방에 들어가 [제안]",
+  );
 };
 
 // ── 랜딩 액션 ─────────────────────────────
