@@ -48,6 +48,24 @@ const BOT_ACT_GAP = 1300;
 // 제안 대사가 타이핑되는 동안 턴을 넘기지 않고 대기 (카메라 튐 방지)
 const SPEAK_HOLD = 2400;
 
+/**
+ * 즉시고발권(로드맵 §7.5.1): 사람이 자기 제안 직후 같은 턴에 고발할 수 있는 제한 시간.
+ * 시간이 지나면 자동으로 턴이 넘어간다(봇은 SPEAK_HOLD 안에서 이미 같은 턴에 고발한다).
+ */
+const ACCUSE_WINDOW_MS = 30000;
+/**
+ * 턴 스코프 타이머 키. 턴이 바뀌거나 판이 끝나면 반드시 취소된다.
+ * 즉시고발 창·봇 행동 딜레이가 모두 이 키를 쓴다(한 턴에 한 개만 살아 있음).
+ */
+const TURN_TIMER = "turn";
+/**
+ * 총 제안 상한(로드맵 §1.1 + §7.5 정정본 60). `revealed` 분리로 판이 길어지므로
+ * 40이 아니라 60이다(분리 후 총 제안 p95 = 53~60).
+ * 상한 도달 이후에는 제안마다 공통 단서를 1장씩 결정론적으로 추가 공개해 수렴을 강제하고,
+ * 더 공개할 카드가 없으면 무승부로 종료한다.
+ */
+const SUGGEST_CAP = 60;
+
 // 고정 NPC(계략) 배치 후보. 모서리(강한 이익) 1~2 + 건물 사이 중앙 근처에서 랜덤.
 const HELPER_CORNERS = [
   { x: 0, y: 0 },
@@ -81,6 +99,9 @@ const shuffle = <T>(arr: T[]): void => {
   }
 };
 
+/** 취소 가능한 타이머 핸들(colyseus `Delayed`와 구조적으로 호환). */
+type Cancelable = { clear: () => void };
+
 const cardMatches = (c: Card, s: Suggestion): boolean =>
   (c.kind === "suspect" && c.value === s.suspect) ||
   (c.kind === "weapon" && c.value === s.weapon) ||
@@ -94,11 +115,23 @@ export class ClueRoom extends Room<GameState> {
   private hands = new Map<string, Card[]>();
   private botKnowledge = new Map<string, BotKnowledge>();
   private botSeq = 0;
+  /** 로그 sid 생성용 — 방 단위로 단조 증가(리매치해도 재사용하지 않는다). */
   private suggestSeq = 0;
+  /** 이번 판의 총 제안 수 — SUGGEST_CAP 판정용(판마다 0으로). */
+  private suggestCount = 0;
   /** 이번 판 용의자 후보 = 참여자 6명의 캐릭터. */
   private suspectPool: string[] = [];
-  /** 반증으로 드러난(=정답 아님) 카드값. NPC들이 공유해 추리 가속. */
-  private revealed = new Set<string>();
+  /**
+   * 참가자별 "정답이 아님을 실제로 본" 카드값(로드맵 §1.1 — 정보 대칭성).
+   * 들어가는 것은 **자기 손패 · 공통 단서(전원 공개) · 자기 제안에 대한 반증으로 자기에게
+   * 보인 카드** 뿐이다. 예전의 룸 전역 `revealed`(모든 봇이 공유해 사람보다 더 알던 집합)를
+   * 대체한다 — 봇 추리도 반드시 이 맵에서 자기 id의 집합만 읽는다.
+   */
+  private seenNotSolution = new Map<string, Set<string>>();
+  /** 이번 턴에 이미 제안한 플레이어 id(즉시고발 창이 열려 있는 동안 재제안 금지). */
+  private suggestedTurnBy = "";
+  /** 키별 취소 가능한 타이머(§7.5.1 즉시고발 창 · §8.2 턴 클럭 공용 프리미티브). */
+  private timers = new Map<string, Cancelable>();
   // 사용자 턴 시간 이동평균(ms) + 현재 턴 시작 시각(clock)
   private avgHumanTurnMs = 0;
   private turnStartedAt = 0;
@@ -129,6 +162,68 @@ export class ClueRoom extends Room<GameState> {
     this.onMessage("passage", (client) => this.handlePassage(client));
     this.onMessage("rematch", (client) => this.handleRematch(client));
     this.onMessage("useBonus", (client) => this.handleUseBonus(client));
+  }
+
+  onDispose(): void {
+    // 방이 사라질 때 살아 있는 타이머를 전부 회수한다(타이머 누수 금지).
+    this.cancelAllTimers();
+  }
+
+  // ── 공용 타이머 프리미티브 ────────────────────────────────────────────
+  /**
+   * 지속시간·만료 콜백·취소를 인자로 받는 단일 타이머 프리미티브.
+   * 실행계획 §7.2 ⑦: 즉시고발 창(§7.5.1)과 턴 클럭 `armTurnClock`(§8.2)은 **같은 프리미티브**다.
+   * 전용 타이머를 따로 짜지 말고 이 함수에 (key, durationMs, onExpire)를 넘길 것.
+   *
+   * - 같은 key로 다시 걸면 이전 타이머는 자동 취소된다(중복 방지).
+   * - 반환된 핸들의 `cancel()` 또는 `cancelTimer(key)`로 언제든 취소할 수 있다.
+   * - 턴 전환(`advanceTurn`) · 판 종료 · 플레이어 이탈 · 방 종료(`onDispose`)에서 반드시 취소된다.
+   */
+  private armTimer(
+    key: string,
+    durationMs: number,
+    onExpire: () => void,
+  ): { cancel: () => void } {
+    this.cancelTimer(key);
+    const handle = this.clock.setTimeout(() => {
+      this.timers.delete(key);
+      onExpire();
+    }, durationMs);
+    this.timers.set(key, handle);
+    return { cancel: () => this.cancelTimer(key) };
+  }
+
+  private cancelTimer(key: string): void {
+    const t = this.timers.get(key);
+    if (!t) return;
+    t.clear();
+    this.timers.delete(key);
+  }
+
+  private cancelAllTimers(): void {
+    this.timers.forEach((t) => t.clear());
+    this.timers.clear();
+  }
+
+  // ── 참가자별 시야(정보 대칭성 §1.1) ──────────────────────────────────
+  /** 해당 참가자가 "정답 아님"을 실제로 확인한 카드값 집합(없으면 생성). */
+  private seenOf(id: string): Set<string> {
+    let s = this.seenNotSolution.get(id);
+    if (!s) {
+      s = new Set<string>();
+      this.seenNotSolution.set(id, s);
+    }
+    return s;
+  }
+
+  /** 특정 참가자에게만 "이 카드는 정답이 아니다"를 기록한다(반증 카드는 제안자에게만). */
+  private markSeen(id: string, value: string): void {
+    this.seenOf(id).add(value);
+  }
+
+  /** 공통 단서처럼 전원이 동시에 보는 정보만 여기로(공개 정보 → 비대칭 아님). */
+  private markSeenForAll(value: string): void {
+    this.state.players.forEach((_p, id) => this.markSeen(id, value));
   }
 
   // 공개방 목록(getAvailableRooms) 표시용 메타데이터 갱신 — 방장명·인원.
@@ -213,6 +308,8 @@ export class ClueRoom extends Room<GameState> {
     });
     shuffle(pool);
     const seen = pool.slice(0, n);
+    // 엿본 카드는 사용자 본인만 본 정보 → 본인 시야에만 기록.
+    seen.forEach((c) => this.markSeen(client.sessionId, c.value));
     client.send("peek", { from: label(helper.value), cards: seen });
     this.broadcast("log", {
       text: `🃏 계략 — ${player.name} · ${label(
@@ -328,6 +425,10 @@ export class ClueRoom extends Room<GameState> {
     this.state.players.delete(sessionId);
     this.hands.delete(sessionId);
     this.botKnowledge.delete(sessionId);
+    this.seenNotSolution.delete(sessionId);
+    // 이탈자가 자기 턴(즉시고발 창 포함)을 쥐고 있었다면 타이머를 회수한다.
+    if (this.state.currentTurn === sessionId) this.cancelTimer(TURN_TIMER);
+    if (this.state.players.size === 0) this.cancelAllTimers();
     if (this.state.host === sessionId) {
       this.state.host = [...this.state.players.keys()][0] ?? "";
     }
@@ -533,7 +634,10 @@ export class ClueRoom extends Room<GameState> {
     // 공통 단서: 솔로(사람1 + 봇들)일 때 추리 보조로 2장 앞면 공개(정답 아님).
     // 근거: 6인 꽉차면 딜이 딱 나눠떨어져 남는 카드가 없음 → 솔로 난이도 완화용 변형 룰.
     this.state.commonCards.clear();
-    this.revealed.clear();
+    this.seenNotSolution.clear();
+    this.suggestedTurnBy = "";
+    this.suggestCount = 0; // 총 제안 상한(SUGGEST_CAP)은 판마다 새로 센다
+    this.cancelAllTimers();
     const humanCount = ids.filter(
       (id) => !this.state.players.get(id)?.isBot,
     ).length;
@@ -543,7 +647,8 @@ export class ClueRoom extends Room<GameState> {
         const c = deck.shift();
         if (c) {
           this.state.commonCards.push(c.value);
-          this.revealed.add(c.value); // 봇도 정답 아님으로 인지
+          // 공통 단서는 동기화 상태로 전원에게 보이는 공개 정보 → 전원 시야에 기록.
+          this.markSeenForAll(c.value);
         }
       }
       if (this.state.commonCards.length > 0) {
@@ -560,6 +665,10 @@ export class ClueRoom extends Room<GameState> {
     ids.forEach((id) => this.hands.set(id, []));
     deck.forEach((card, i) => {
       this.hands.get(ids[i % ids.length])?.push(card);
+    });
+    // 자기 손패는 자기만 아는 "정답 아님" 정보 → 본인 시야에만 기록.
+    ids.forEach((id) => {
+      (this.hands.get(id) ?? []).forEach((c) => this.markSeen(id, c.value));
     });
 
     // 사람에게만 손패 private 전송, 봇은 추리 노트 초기화
@@ -663,7 +772,9 @@ export class ClueRoom extends Room<GameState> {
       weapons: new Set<string>(WEAPONS),
       rooms: new Set<string>(ROOMS),
     };
-    for (const c of this.hands.get(id) ?? []) this.eliminate(k, c);
+    // 자기 시야(자기 손패 + 전원 공개된 공통 단서)만 소거한다.
+    // 다른 좌석이 본 반증 카드는 여기 들어오지 않는다 — 사람과 같은 조건.
+    for (const v of this.seenOf(id)) this.eliminateValue(k, v);
     this.botKnowledge.set(id, k);
   }
 
@@ -673,6 +784,13 @@ export class ClueRoom extends Room<GameState> {
     else k.rooms.delete(card.value);
   }
 
+  /** 카테고리를 모르는 카드값 소거(값은 세 카테고리에서 유일하다). */
+  private eliminateValue(k: BotKnowledge, value: string): void {
+    k.suspects.delete(value);
+    k.weapons.delete(value);
+    k.rooms.delete(value);
+  }
+
   // ── 제안(Suggestion) + 시계방향 반증 (사람/봇 공용) ──
   private doSuggestion(
     suggesterId: string,
@@ -680,6 +798,7 @@ export class ClueRoom extends Room<GameState> {
   ): { by: string | null; card: Card | null } {
     const suggester = this.state.players.get(suggesterId);
     const sid = `s${++this.suggestSeq}`;
+    this.suggestCount += 1;
     // 카테고리별 명확 표기
     this.broadcast("log", {
       text:
@@ -723,14 +842,16 @@ export class ClueRoom extends Room<GameState> {
       );
       if (match) {
         const other = this.state.players.get(otherId);
-        // 드러난 카드는 정답 아님 → NPC 공유 지식에 반영(추리 가속)
-        this.revealed.add(match.value);
+        // 반증 카드는 **제안자에게만** 보인다(§1.1). 반증자는 자기 손패라 이미 알고 있고,
+        // 나머지 좌석은 "누가 반증했는가"라는 공개 정보만 얻는다.
+        this.markSeen(suggesterId, match.value);
         this.broadcast("log", {
           text: `🛡 반증 — ${other?.name} 님`,
           kind: "disprove",
           sid,
           disproved: true,
         });
+        this.enforceSuggestCap();
         return { by: other?.name ?? otherId, card: match };
       }
     }
@@ -740,7 +861,70 @@ export class ClueRoom extends Room<GameState> {
       sid,
       disproved: false,
     });
+    this.enforceSuggestCap();
     return { by: null, card: null };
+  }
+
+  /**
+   * 총 제안 상한(§1.1 · §7.5 정정본 60) — 판이 무한히 늘어지는 것을 막는다.
+   * 상한에 도달하면 제안마다 공통 단서를 1장씩 **결정론적으로** 추가 공개해 후보를 강제 수렴시키고,
+   * 더 공개할 카드가 없으면 무승부로 종료하며 정답 봉투를 공개한다(가장 보수적인 백스톱).
+   */
+  private enforceSuggestCap(): void {
+    if (this.state.phase !== "playing") return;
+    if (this.suggestCount < SUGGEST_CAP) return;
+    if (this.revealCommonClue()) return;
+    this.endInDraw();
+  }
+
+  /**
+   * 아직 공개되지 않은 비정답 카드 1장을 공통 단서로 추가 공개한다(결정론적 선택).
+   * 카드 "값"만 공개하므로 누가 들고 있는지는 드러나지 않는다(손패 비밀 유지).
+   */
+  private revealCommonClue(): boolean {
+    if (!this.solution) return false;
+    const already = new Set<string>([...this.state.commonCards] as string[]);
+    const order: string[] = [
+      ...this.suspectPool,
+      ...(WEAPONS as readonly string[]),
+      ...(ROOMS as readonly string[]),
+    ];
+    const next = order.find(
+      (v) =>
+        v !== "" &&
+        v !== this.solution?.suspect &&
+        v !== this.solution?.weapon &&
+        v !== this.solution?.room &&
+        !already.has(v),
+    );
+    if (!next) return false;
+    this.state.commonCards.push(next);
+    this.markSeenForAll(next);
+    this.botKnowledge.forEach((k) => this.eliminateValue(k, next));
+    this.broadcast("log", {
+      text: `📢 공통 단서 — 모두 공개 · 정답 아님: ${label(next)}`,
+      kind: "info",
+    });
+    return true;
+  }
+
+  /** 무승부 종료 — 승자 없음 + 정답 봉투 공개. */
+  private endInDraw(): void {
+    if (!this.solution) return;
+    this.state.phase = "ended";
+    this.state.winner = "";
+    this.cancelAllTimers();
+    this.broadcast("log", {
+      // 🚧 문안 미확정 — `20260727-ui-copy.md`에 상한 도달/무승부 문장이 없다(보고 항목).
+      text: `🏳 무승부 — 제안 ${SUGGEST_CAP}회 도달 · 판을 종료합니다`,
+      kind: "win",
+    });
+    this.broadcast("log", {
+      text: `📜 정답 봉투 — ${label(this.solution.suspect)} · ${label(
+        this.solution.weapon,
+      )} · 📍 ${label(this.solution.room)}`,
+      kind: "win",
+    });
   }
 
   private handleSuggest(client: Client, msg: Suggestion): void {
@@ -756,6 +940,13 @@ export class ClueRoom extends Room<GameState> {
       });
       return;
     }
+    // 즉시고발 창이 열려 있는 동안(같은 턴) 재제안 금지 — 남은 선택은 [고발] 또는 [턴 종료].
+    if (this.suggestedTurnBy === player.id) {
+      client.send("log", {
+        text: "지금 고발할 수 있어요. 넘기려면 [턴 종료].",
+      });
+      return;
+    }
     const suggestion: Suggestion = {
       suspect: msg.suspect,
       weapon: msg.weapon,
@@ -767,8 +958,25 @@ export class ClueRoom extends Room<GameState> {
       card: result.card,
       suggestion,
     });
-    // 정통 클루: 제안하면 그 턴은 종료된다.
-    this.advanceTurn();
+    // 상한 도달로 판이 끝났을 수 있다(§1.1 SUGGEST_CAP).
+    if (this.state.phase !== "playing") return;
+
+    // ── 즉시고발권(§7.5.1) ──────────────────────────────────────────────
+    // 예전에는 여기서 무조건 advanceTurn()이라 사람만 봇 5턴을 기다려야 고발할 수 있었다.
+    // 이제 사람도 자기 제안 직후 같은 턴에 고발한다(봇은 SPEAK_HOLD 안에서 이미 그렇게 한다).
+    // 이동은 소진하고(stepsLeft=0) 재제안은 잠근 뒤, 제한 시간이 지나면 자동으로 턴을 넘긴다.
+    this.state.stepsLeft = 0;
+    this.suggestedTurnBy = player.id;
+    client.send("canAccuse", { ms: ACCUSE_WINDOW_MS, suggestion });
+    client.send("log", {
+      text: "⏳ 지금 고발할 수 있어요 (30초). 넘기려면 [턴 종료]",
+    });
+    this.armTimer(TURN_TIMER, ACCUSE_WINDOW_MS, () => {
+      // 만료 시점에 여전히 같은 사람의 턴일 때만 넘긴다(고발·턴 종료로 이미 넘어갔으면 무시).
+      if (this.state.phase !== "playing") return;
+      if (this.state.currentTurn !== player.id) return;
+      this.advanceTurn();
+    });
   }
 
   // ── 고발(Accusation) (사람/봇 공용) ──
@@ -787,6 +995,7 @@ export class ClueRoom extends Room<GameState> {
     if (correct) {
       this.state.phase = "ended";
       this.state.winner = playerId;
+      this.cancelAllTimers();
       this.broadcast("log", {
         text: `🎉 사건 해결 — ${player.name} 님`,
         kind: "win",
@@ -851,10 +1060,9 @@ export class ClueRoom extends Room<GameState> {
       });
     }
 
-    // 2) 한 박자 쉬고 제안 (사용자 인지 시간)
-    this.clock.setTimeout(
-      () => this.botSuggestPhase(id, region.name),
-      BOT_ACT_GAP,
+    // 2) 한 박자 쉬고 제안 (사용자 인지 시간) — 턴 스코프 타이머
+    this.armTimer(TURN_TIMER, BOT_ACT_GAP, () =>
+      this.botSuggestPhase(id, region.name),
     );
   }
 
@@ -868,9 +1076,11 @@ export class ClueRoom extends Room<GameState> {
       return;
     }
 
-    // 공유 지식(revealed) 반영한 유효 후보 — 이미 드러난 카드는 제외하고 제안
+    // 이 봇이 **자기 눈으로 본** 카드만 제외하고 제안한다(§1.1 정보 대칭성).
+    // 룸 전역 공유 집합은 존재하지 않는다 — 다른 좌석이 본 반증은 여기 들어오지 않는다.
+    const seen = this.seenOf(id);
     const eff = (set: Set<string>): string[] => {
-      const c = [...set].filter((v) => !this.revealed.has(v));
+      const c = [...set].filter((v) => !seen.has(v));
       return c.length ? c : [...set];
     };
     const es = eff(k.suspects);
@@ -890,10 +1100,12 @@ export class ClueRoom extends Room<GameState> {
       room: label(suggestion.room),
       disproved: !!result.card,
     });
+    // 상한 도달로 판이 끝났으면 후속 타이머를 걸지 않는다(§1.1 SUGGEST_CAP).
+    if (this.state.phase !== "playing") return;
 
     // 제안 대사가 타이핑되는 동안엔 턴을 넘기지 않는다(카메라 튐 방지).
-    // 결정/고발/턴넘김은 대사 표시 시간 뒤에 수행.
-    this.clock.setTimeout(() => {
+    // 결정/고발/턴넘김은 대사 표시 시간 뒤에 수행. 턴 스코프 타이머(즉시고발 창과 같은 프리미티브).
+    this.armTimer(TURN_TIMER, SPEAK_HOLD, () => {
       if (this.state.phase !== "playing" || this.state.currentTurn !== id) return;
 
       if (result.card) {
@@ -941,7 +1153,7 @@ export class ClueRoom extends Room<GameState> {
       }
 
       this.advanceTurn();
-    }, SPEAK_HOLD);
+    });
   }
 
   // NPC 대사: 결정된 정보만 넘겨 LLM 대사 생성, 실패 시 규칙 폴백 → 브로드캐스트.
@@ -995,11 +1207,15 @@ export class ClueRoom extends Room<GameState> {
     if (this.state.phase !== "playing") return;
     const cur = this.state.players.get(this.state.currentTurn);
     if (cur?.isBot) {
-      this.clock.setTimeout(() => this.runBotTurn(cur.id), this.npcDelay());
+      // 턴 스코프 타이머 — 턴이 바뀌거나 방이 닫히면 함께 취소된다.
+      this.armTimer(TURN_TIMER, this.npcDelay(), () => this.runBotTurn(cur.id));
     }
   }
 
   private advanceTurn(): void {
+    // 턴 스코프 타이머(즉시고발 창·봇 행동)는 턴을 넘기는 순간 반드시 회수한다.
+    this.cancelTimer(TURN_TIMER);
+    this.suggestedTurnBy = "";
     this.recordTurnDuration();
     const order = ([...this.state.turnOrder] as string[]).filter((id) => {
       const p = this.state.players.get(id);
@@ -1009,6 +1225,7 @@ export class ClueRoom extends Room<GameState> {
     if (order.length === 1) {
       this.state.phase = "ended";
       this.state.winner = order[0];
+      this.cancelAllTimers();
       const w = this.state.players.get(order[0]);
       this.broadcast("log", {
         text: `🎉 최후 생존 — ${w?.name} 님 승리!`,

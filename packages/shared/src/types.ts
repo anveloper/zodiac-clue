@@ -60,6 +60,12 @@ export type ServerMessages = {
   say: { id: string; from: string; text: string };
   /** 계략 엿보기 결과 (사용자 본인에게만) — 상대가 가진(정답 아닌) 카드 */
   peek: { from: string; cards: Card[] };
+  /**
+   * 즉시고발권(로드맵 §7.5.1) — 제안자에게만.
+   * 자기 제안 직후 **같은 턴에** 고발할 수 있는 창이 열렸음을 알린다.
+   * `ms` 안에 `accuse` 또는 `endTurn`을 보내지 않으면 서버가 자동으로 턴을 넘긴다.
+   */
+  canAccuse: { ms: number; suggestion: Suggestion };
 };
 
 export type MessageType = keyof ClientMessages | keyof ServerMessages;
