@@ -1277,7 +1277,7 @@ export class ClueRoom extends Room<GameState> {
     this.setListed(true); // 판이 끝났다 → 공개방 목록으로 복귀
     this.logAiSummary();
     this.broadcast("log", {
-      // 🚧 문안 미확정 — `20260727-ui-copy.md`에 상한 도달/무승부 문장이 없다(보고 항목).
+      // 확정 문안(UI 문안 명세 §8.1 · 07-28 확정). 실측 발생률 0.0%지만 백스톱이라 남긴다.
       text: `🏳 무승부 — 제안 ${SUGGEST_CAP}회 도달 · 판을 종료합니다`,
       kind: "win",
     });

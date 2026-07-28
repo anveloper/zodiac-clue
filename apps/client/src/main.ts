@@ -94,6 +94,20 @@ const show = (which: ScreenId): void => {
 // 근거: 로드맵 §1.3·§7.7 · AI 기술문서 §4(관측 가능성)·§4.1(07-27 장애).
 type AiSource = "llm" | "cache" | "fallback";
 type AiReason = "timeout" | "http" | "empty" | "toolong" | "nokey" | "disabled";
+/**
+ * 폴백 사유의 화면 표기(UI 문안 명세 §4.4). 배지에 영문 토큰을 그대로 찍으면
+ * 화면 전체에서 그것만 영어가 된다. `시간 초과`는 §9.5 턴 만료가 이미 쓰므로 재사용하지 않는다.
+ */
+const AI_REASON_KO: Record<AiReason, string> = {
+  timeout: "응답 지연",
+  http: "응답 오류",
+  empty: "빈 응답",
+  toolong: "길이 초과",
+  nokey: "키 없음",
+  disabled: "LLM 꺼짐",
+};
+const aiReasonKo = (r: AiReason | string): string =>
+  AI_REASON_KO[r as AiReason] ?? String(r);
 type SayAi = {
   source: AiSource;
   /** `narrate()` 왕복 소요(ms) */
@@ -174,7 +188,7 @@ const addLog = (text: string, opts: LogOpts = {}): void => {
     b.className = `log-badge ai-${opts.ai.source}`;
     b.textContent =
       opts.ai.source === "fallback"
-        ? AI_GLYPH.fallback + (opts.ai.reason ? ` ${opts.ai.reason}` : "")
+        ? AI_GLYPH.fallback + (opts.ai.reason ? ` ${aiReasonKo(opts.ai.reason)}` : "")
         : `${AI_GLYPH[opts.ai.source]} ${secText(opts.ai.ms)}`;
     b.title = [
       opts.ai.source,
@@ -230,7 +244,7 @@ const renderAi = (): void => {
   let html = aiRow("평균", avg === null ? "—" : secText(avg));
   html += aiRow("모델", aiModel || "—");
   for (const [reason, n] of aiReasons) {
-    html += aiRow(`${AI_GLYPH.fallback} ${reason}`, String(n));
+    html += aiRow(`${AI_GLYPH.fallback} ${aiReasonKo(reason)}`, String(n));
   }
   // 문안은 ④ §4 요구사항 5의 확정 배지 문장을 그대로 쓴다(새로 짓지 않는다).
   if (allFallback) html += `<div class="ai-note">AI 대사 일시 폴백</div>`;
@@ -994,7 +1008,7 @@ const OVERLAY_PRIORITY = {
   end: 100, // 결과 화면 — 판이 끝나면 그 위에 아무것도 두지 않는다(§7.10)
   goal: 90, // 온보딩 목표 카드(§1.5) — §7.10에 값이 없어 여기서 확정. 주사위보다 앞선다
   dice: 80, // 주사위(§7.10)
-  interstitial: 60, // 뷰 전환 인터스티셜(§7.10) — 완전판 08-05 예약, 현재 미사용
+  interstitial: 60, // 뷰 청크 로딩 화면이 이 슬롯을 쓴다(§7.10). 전환 연출 완전판은 08-05 예약
   banner: 40, // 하단 배너 슬롯(§7.10 `fxBanner`) — 전면을 막지 않아 큐 밖에서 처리
 } as const;
 type OverlayId = keyof typeof OVERLAY_PRIORITY;
@@ -1853,7 +1867,11 @@ const buildEvidence = (roomId: string): void => {
       const own = myCards.has(v) || commonSet.has(v);
       if (own) {
         chip.className = base + " cleared own";
-        chip.title = commonSet.has(v) ? "공통 단서 (정답 아님)" : "내 패 (정답 아님)";
+        // 확정 문안(§4.3). `(자동 제외)`가 빠지면 **클릭에 반응하지 않는 유일한 칩**의
+        // 이유가 화면에서 사라진다.
+        chip.title = commonSet.has(v)
+          ? "공통 단서 — 모두 공개 · 정답 아님 (자동 제외)"
+          : "내 손패 — 정답 아님 (자동 제외)";
       } else {
         chip.title = "클릭: 없음(제외) → 의심 → 초기화";
         const apply = (): void => {
