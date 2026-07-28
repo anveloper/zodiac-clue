@@ -191,7 +191,57 @@
     <b>노출 위험을 마지막에 발견</b>했다(운 좋게 커밋 전이라 막았다).</p>
   </div>
 
-  <h2>4. 실행 이력</h2>
+  <h2>4. 라운드 실행 절차 <span class="note">(자기완결)</span></h2>
+  <div class="lead">
+    이 절만 읽고도 한 라운드를 돌릴 수 있어야 한다. 호출은 한 줄이면 된다:
+    <div style="margin:8px 0 6px"><code>/loop 30m docs/design/20260728-agent-loop-workflow.md §4에 따라 라운드 1회 수행</code></div>
+    절차를 바꾸고 싶으면 <b>프롬프트가 아니라 이 절을 고친다.</b>
+  </div>
+
+  <h3 style="margin-top:16px">4.0 상태 파일</h3>
+  <p>세션 스크래치패드(<code>&lt;scratchpad&gt;/planning/</code>)에 둔다. <b>저장소에 커밋하지 않는다.</b></p>
+  <div class="scroll"><table>
+    <tr><th>파일</th><th>용도</th><th>없으면</th></tr>
+    <tr><td><code>brief.md</code></td><td>에이전트에게 <b>인라인으로 그대로 전달</b>할 컨텍스트</td><td>§4.3 템플릿으로 새로 만든다</td></tr>
+    <tr><td><code>ledger.md</code></td><td>오케스트레이터 전용 원장(라운드 기록·사용자 액션)</td><td>헤더만 만들고 시작한다</td></tr>
+  </table></div>
+
+  <h3 style="margin-top:20px">4.1 라운드 절차</h3>
+  <div class="flow">
+    <div class="fl"><div class="n">1</div><div class="b"><b>현황 파악</b> — <code>brief.md</code>·<code>ledger.md</code> 읽기 + <code>git log --oneline -6</code> + <code>git status --short</code></div></div>
+    <div class="fl"><div class="n">2</div><div class="b"><b>작업 선택</b> — 큐는 <code>20260727-execution-plan.md</code>의 날짜별 순서. <b>의존성이 풀린 항목만</b>(§3.2). 근거는 roadmap의 해당 절</div></div>
+    <div class="fl"><div class="n">3</div><div class="b"><b>에이전트 3개 병렬</b> — §3.1 스코프로 파일이 겹치지 않게 배정. <code>brief.md</code> 인라인 전달 + 근거 절 번호.<br>
+      <span class="no"><b>루프·라운드·이전 회차를 언급하지 않는다</b>(§2.1)</span> — "지금 이 작업을 해달라"는 새 의뢰로만.<br>
+      <span class="note">에이전트 규칙: 배정 파일 밖 수정 금지 · <code>docs/**</code> 수정 금지 · 커밋 금지 · UI 문자열은 <code>ui-copy.md</code> 확정 문안 · <b>작업 후 <code>pnpm -r typecheck</code> 직접 통과 후 보고</b></span></div></div>
+    <div class="fl"><div class="n">4</div><div class="b"><b class="ok">검증 게이트</b>(§3.3) — <code>pnpm -r typecheck</code> → <code>pnpm --filter @zodiac-clue/client build</code>. 진실값을 바꿨으면 솔로 1판·시뮬로 동작 확인. 실패하면 고치거나 <b>그 변경만 되돌린다</b></div></div>
+    <div class="fl"><div class="n">5</div><div class="b"><b>커밋·푸시</b> — 초록일 때만. 기능별로 나눠 커밋 후 <code>git push origin main</code>. AI 협력 문구 제외. <b>라운드마다 커밋</b>(§3.4)</div></div>
+    <div class="fl"><div class="n">6</div><div class="b"><b>문서 갱신</b> — 코드 변경으로 사실이 바뀐 문서를 <b>오케스트레이터가</b>(<code>.md</code> 수정 시 짝 <code>.html</code>도). <code>execution-plan</code> 항목 완료 표기</div></div>
+    <div class="fl"><div class="n">7</div><div class="b"><b>상태 갱신</b> — <code>brief.md</code>의 "최근 완료 / 알려진 결함"(§2.2), <code>ledger.md</code>에 라운드 행 추가</div></div>
+    <div class="fl"><div class="n">8</div><div class="b"><b>보고</b> — Discord 채널 <code>1526444095646597170</code>에 3~5줄(구현 내용 · 검증 결과 · 다음 후보)</div></div>
+    <div class="fl"><div class="n">9</div><div class="b"><b>종료 판정</b> — 지정한 마지막 시각을 넘겼으면 <code>CronList</code>→<code>CronDelete</code> 후 누적 성과 종합 요약</div></div>
+  </div>
+
+  <div class="card case">
+    <h3>4.2 라운드가 막혔을 때</h3>
+    <ul>
+      <li><b>의존성이 안 풀린 항목뿐</b> → 선행 항목을 이번 라운드에 넣는다. <b>건너뛰지 않는다.</b></li>
+      <li><b>스코프가 겹침</b> → 겹치는 항목은 다음 라운드로 미루고, 다른 슬롯의 독립 항목으로 채운다.</li>
+      <li><b>게이트 실패</b> → 커밋하지 않는다. 원인이 한 에이전트의 변경이면 <b>그 파일만</b> <code>git checkout --</code>으로 되돌린다.</li>
+      <li><b>사람 결정 필요</b> → 임의 확정하지 말고 미결로 남기고 <b>기한·담당</b>을 적어 보고한다(§2.5).</li>
+    </ul>
+  </div>
+
+  <h3 style="margin-top:20px">4.3 <code>brief.md</code> 템플릿 <span class="note">(없을 때 생성)</span></h3>
+  <div class="card" style="font-size:13px">
+    <b>1. 공모</b> — 마감 · 제출물 5종 현황 · 심사 축<br>
+    <b>2. 프로젝트</b> — 스택 · 검증 명령 · AI 규약(진실값/표현 경계) · 뷰 4종 · 문서 규약<br>
+    <b>3. 설계 문서</b> — execution-plan(큐) · roadmap(근거) · view-contract-spec · ui-copy · ai-tech-doc<br>
+    <b>4. 최근 완료</b> — 중복 작업 방지용. 라운드마다 갱신<br>
+    <b>5. 알려진 결함</b> — 미구현 항목. 라운드마다 갱신<br>
+    <b>6. 제약</b> — 진실값 경계 · 4뷰 대응 · 배정 파일 밖 금지 · docs 금지 · ui-copy 사용 · typecheck 통과 · 커밋 금지
+  </div>
+
+  <h2>5. 실행 이력</h2>
   <div class="scroll"><table>
     <tr><th>일자</th><th>라운드</th><th>성격</th><th>결과</th></tr>
     <tr><td>07-27</td><td>6 (에이전트 18)</td><td>진단 → 초안 생산</td><td>신규 문서 6종 · ④ 2판 개정 · 배포 · LLM 장애 해결</td></tr>

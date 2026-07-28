@@ -20,6 +20,7 @@ export const PRIVATE_FILES = [
   "design/20260727-improvement-roadmap", // 자기 결함 목록
   "design/20260727-execution-plan", // 남은 일정·컷라인
   "plans/done/13-execution-plan-merge", // 위 두 문서를 경로로 지목하는 작업 기록
+  "design/20260728-agent-loop-workflow", // 내부 작업 절차(런북) — 산출물이 아니다
 ];
 
 /** docs/ 기준 상대 경로가 비공개 대상인지 */
