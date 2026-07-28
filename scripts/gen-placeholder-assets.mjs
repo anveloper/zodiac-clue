@@ -40,9 +40,6 @@ const LABEL = {
 
 const FONT = `'Apple SD Gothic Neo','Noto Sans KR',system-ui,sans-serif`;
 const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-const tag = (w) =>
-  `<g opacity="0.9"><rect x="${w - 118}" y="14" width="104" height="26" rx="6" fill="#000" opacity="0.45"/>` +
-  `<text x="${w - 66}" y="32" font-family="${FONT}" font-size="14" fill="${PAL.gold}" text-anchor="middle" letter-spacing="1">PLACEHOLDER</text></g>`;
 
 // 얼굴 아이콘(512²): 원형 토큰. 정면·빌보드/탑다운 공통.
 const faceSVG = (id) => {
@@ -53,8 +50,7 @@ const faceSVG = (id) => {
 <circle cx="256" cy="238" r="210" fill="none" stroke="${PAL.gold}" stroke-width="10"/>
 <text x="256" y="300" font-size="240" text-anchor="middle">${CHAR[id]}</text>
 <rect x="106" y="440" width="300" height="52" rx="12" fill="#000" opacity="0.5"/>
-<text x="256" y="476" font-family="${FONT}" font-size="30" fill="${PAL.ink}" text-anchor="middle">${esc(LABEL[id])}</text>
-${tag(W)}</svg>`;
+<text x="256" y="476" font-family="${FONT}" font-size="30" fill="${PAL.ink}" text-anchor="middle">${esc(LABEL[id])}</text></svg>`;
 };
 
 // SD(768²): 치비 느낌 — 큰 이모지 + 부드러운 그림자, 배경 옅음.
@@ -68,8 +64,7 @@ const sdSVG = (id) => {
 <rect x="120" y="120" width="528" height="528" rx="60" fill="url(#g)"/>
 <text x="384" y="470" font-size="380" text-anchor="middle">${CHAR[id]}</text>
 <rect x="214" y="668" width="340" height="60" rx="14" fill="#000" opacity="0.5"/>
-<text x="384" y="710" font-family="${FONT}" font-size="34" fill="${PAL.ink}" text-anchor="middle">${esc(LABEL[id])} · SD</text>
-${tag(W)}</svg>`;
+<text x="384" y="710" font-family="${FONT}" font-size="34" fill="${PAL.ink}" text-anchor="middle">${esc(LABEL[id])} · SD</text></svg>`;
 };
 
 // 장물 아이콘(512²): 원형, 금테.
@@ -81,8 +76,7 @@ const lootSVG = (id) => {
 <circle cx="256" cy="238" r="200" fill="none" stroke="${PAL.gold}" stroke-width="8" stroke-dasharray="6 10"/>
 <text x="256" y="300" font-size="220" text-anchor="middle">${LOOT[id]}</text>
 <rect x="116" y="440" width="280" height="52" rx="12" fill="#000" opacity="0.5"/>
-<text x="256" y="476" font-family="${FONT}" font-size="30" fill="${PAL.ink}" text-anchor="middle">${esc(LABEL[id])}</text>
-${tag(W)}</svg>`;
+<text x="256" y="476" font-family="${FONT}" font-size="30" fill="${PAL.ink}" text-anchor="middle">${esc(LABEL[id])}</text></svg>`;
 };
 
 // 방 바닥 타일(512² · 룸 종횡비=정사각): 한지 톤 + 격자 + 방 이름 현판.
@@ -95,8 +89,7 @@ ${Array.from({ length: 7 }, (_, i) => { const p = ((i + 1) * W) / 8; return `<li
 </g>
 <rect x="8" y="8" width="${W - 16}" height="${W - 16}" fill="none" stroke="${PAL.edge}" stroke-width="6"/>
 <rect x="106" y="222" width="300" height="68" rx="10" fill="${PAL.feast}" opacity="0.92"/>
-<text x="256" y="266" font-family="${FONT}" font-size="34" fill="${PAL.gold}" text-anchor="middle">${esc(LABEL[id])}</text>
-${tag(W)}</svg>`;
+<text x="256" y="266" font-family="${FONT}" font-size="34" fill="${PAL.gold}" text-anchor="middle">${esc(LABEL[id])}</text></svg>`;
 };
 
 const feastSVG = () => {
@@ -105,8 +98,7 @@ const feastSVG = () => {
 <rect width="${W}" height="${W}" fill="${PAL.feast}"/>
 <rect x="10" y="10" width="${W - 20}" height="${W - 20}" fill="none" stroke="${PAL.gold}" stroke-width="6"/>
 <text x="256" y="300" font-size="200" text-anchor="middle">🎁</text>
-<text x="256" y="430" font-family="${FONT}" font-size="40" fill="${PAL.gold}" text-anchor="middle">잔치상</text>
-${tag(W)}</svg>`;
+<text x="256" y="430" font-family="${FONT}" font-size="40" fill="${PAL.gold}" text-anchor="middle">잔치상</text></svg>`;
 };
 
 // 배경(1536×1024 근사)·UI 프레임.
@@ -116,8 +108,7 @@ const bgSVG = (title, emo, base) => {
 <defs><linearGradient id="v" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${base}"/><stop offset="100%" stop-color="${PAL.bg}"/></linearGradient></defs>
 <rect width="${W}" height="${H}" fill="url(#v)"/>
 <text x="768" y="470" font-size="220" text-anchor="middle">${emo}</text>
-<text x="768" y="640" font-family="${FONT}" font-size="60" fill="${PAL.gold}" text-anchor="middle">${esc(title)}</text>
-${tag(W)}</svg>`;
+<text x="768" y="640" font-family="${FONT}" font-size="60" fill="${PAL.gold}" text-anchor="middle">${esc(title)}</text></svg>`;
 };
 
 const uiFrameSVG = () => {
@@ -126,8 +117,7 @@ const uiFrameSVG = () => {
 <rect width="${W}" height="${H}" fill="none"/>
 <rect x="40" y="40" width="${W - 80}" height="${H - 80}" rx="28" fill="${PAL.card}" opacity="0.85" stroke="${PAL.gold}" stroke-width="8"/>
 <rect x="70" y="70" width="${W - 140}" height="${H - 140}" rx="18" fill="none" stroke="${PAL.edge}" stroke-width="3" stroke-dasharray="4 8"/>
-<text x="512" y="540" font-family="${FONT}" font-size="52" fill="${PAL.gold}" text-anchor="middle">UI 프레임</text>
-${tag(W)}</svg>`;
+<text x="512" y="540" font-family="${FONT}" font-size="52" fill="${PAL.gold}" text-anchor="middle">UI 프레임</text></svg>`;
 };
 
 // ── 생성 ────────────────────────────────────────────────────────
