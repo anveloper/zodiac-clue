@@ -66,6 +66,10 @@
     "dir": "plans/done",
     "items": [
       {
+        "path": "plans/done/15-loop-rounds-balance-ai-perf.md",
+        "title": "plan: 에이전트 루프 개발 라운드 — 밸런스·AI 계측·성능·4뷰 계약"
+      },
+      {
         "path": "plans/done/14-planning-refresh-and-llm-fix.md",
         "title": "plan: 기획 개선 문서 세트 + 배포 + LLM 폴백 장애 해결"
       },
@@ -110,6 +114,10 @@
       {
         "path": "logs/20260728-planning-docs-and-llm-fix.md",
         "title": "20260728 — 기획 문서 세트 구축 + 배포 노출 차단 + LLM 폴백 장애 해결"
+      },
+      {
+        "path": "logs/20260728-loop-rounds-balance-ai-perf.md",
+        "title": "20260728 — 에이전트 루프 개발 라운드: 밸런스·AI 계측·페이싱·성능·4뷰 계약"
       },
       {
         "path": "logs/20260722-view-evolution-and-assets.md",
