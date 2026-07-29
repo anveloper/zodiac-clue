@@ -58,6 +58,7 @@
   .t-new{background:#1d2f22;color:var(--green)}
   .t-soon{background:#33291a;color:var(--amber)}
   .t-keep{background:#1f2b3a;color:var(--blue)}
+  .t-done{background:#14331f;color:#6ee79c;box-shadow:inset 0 0 0 1px #2a5f3c}
   .bad{color:var(--red)} .good{color:var(--green)} .warn{color:var(--amber)} .dim{color:var(--dim)}
   .lim{display:inline-block;font-size:10.5px;color:var(--dim);border:1px dashed #5a4c36;border-radius:4px;padding:0 6px;margin-left:6px;vertical-align:2px}
 
@@ -290,7 +291,8 @@
     표기 — <span class="tag t-now">현재</span> 지금 화면에 나오는 문장 ·
     <span class="tag t-new">교체안</span> 이 문서가 확정한 문장 ·
     <span class="tag t-keep">유지</span> 고치지 않음 ·
-    <span class="tag t-soon">선행 조건</span> 요소·필드가 아직 없음(문안은 확정, 구현이 전제)
+    <span class="tag t-soon">선행 조건</span> 요소·필드가 아직 없음(문안은 확정, 구현이 전제) ·
+    <span class="tag t-done">적용 완료</span> 확정 문안이 실제로 화면에 붙었음
   </p>
 
   <!-- ════════════ 1 ════════════ -->
@@ -1058,20 +1060,27 @@
   <div class="box good"><b>07-29 적용 완료.</b> 위 표는 07-27에 확정됐지만 <b>코드에 붙지 않은 채</b> 남아 있었다 —
     <code>index.html</code>·<code>main.ts</code>에 그대로 반영했다(<code>참여</code>→<code>참가</code> 포함).</div>
 
-  <h3>8.5 공개방 목록 항목 — 상태 배지 <span class="tag t-soon">선행 조건</span></h3>
+  <h3>8.5 공개방 목록 항목 — 상태 배지 <span class="tag t-done">적용 완료</span></h3>
   <div class="box crit">
     <b>판이 끝난 방은 목록에 되돌아온다</b>(<code>setListed(true)</code> — 설계대로다). 그런데 거기 들어가면
     리매치 전까지 <b>관전</b>이다. 버튼이 <code>참가</code>라고만 적혀 있으면 «참가한다»고 읽고 들어가
     관전 화면을 본다. <b>심사자가 두 명이면 실제로 밟는 동선이다.</b>
   </div>
+  <div class="box">
+    <b>선행 조건은 풀렸다</b>(07-29). <code>syncMeta()</code>가
+    <code>{hostName, count, humans, isPublic, phase}</code>를 싣고, 클라 <code>PublicRoomMeta</code>가
+    그 필드와 <b>1:1</b>로 맞춰졌다. 아래 문안 3행은 <code>loadPublicRooms()</code>에 <b>그대로 붙어 있다.</b>
+  </div>
   <div class="box warn">
-    <b>선행 — 서버가 상태를 실어 보내야 한다.</b> <code>getAvailableRooms</code> 응답의 <code>metadata</code>는
-    지금 <code>{ hostName, count }</code>뿐이다(생성 직후에만 <code>isPublic</code>이 붙었다가 첫
-    <code>syncMeta()</code>에서 사라진다). <code>state.phase</code>는 <b>실려 오지 않는다.</b><br>
-    → <code>clue-room.ts</code>의 <code>syncMeta()</code>가 <code>phase</code>를 함께 싣고
-    <code>startGame()</code>·종료 3곳에서 부르면 아래 문안을 그대로 붙일 수 있다.<br>
     <b>클라가 추정하지 않는다.</b> <code>count &gt; clients</code>(NPC 충원 흔적) 같은 간접 신호로 상태를 만들면
-    <b>서버가 말한 적 없는 것을 화면이 단언</b>하게 된다 — §1.4 진실값 경계 위반이다.
+    <b>서버가 말한 적 없는 것을 화면이 단언</b>하게 된다 — §1.4 진실값 경계 위반이다.<br>
+    그래서 <code>phase</code>가 없으면 배지를 <b>아예 그리지 않는다.</b> 없는 값을 기본값으로 메우는 순간
+    그것도 추정이다 — «모르면 말하지 않는다»가 «모르면 대기 중이라고 한다»보다 항상 정직하다.
+  </div>
+  <div class="box">
+    <b>확인 범위.</b> <code>대기 중</code>+<code>참가</code>는 실제 화면에서 촬영해 확인했다.
+    <b><code>종료됨</code>+<code>관전</code>은 아직 화면으로 본 적이 없다</b> — 서버가
+    <code>phase:"ended"</code>로 목록에 복귀하는 것까지만 e2e로 확인했다. 안 잰 것을 잰 것처럼 두지 않는다.
   </div>
   <div class="scroll"><table>
     <tr><th>방 상태 (<code>metadata.phase</code>)</th><th>배지</th><th>버튼</th><th>부가</th></tr>
@@ -1212,7 +1221,7 @@
     <tr><td>8.2</td><td>폴백 대사 <span class="tag t-keep">코드 일치</span></td><td class="q">server/ai/narrator.ts</td><td class="q">fallbackLine() · fit()</td></tr>
     <tr><td>8.3</td><td>클라 로그 · 중복 제거</td><td class="q">client/src/main.ts</td><td class="q">wireRoom()의 onMessage 5개 · errMsg() · enterGame() 말미</td></tr>
     <tr><td>8.4</td><td>랜딩 <span class="tag t-new">07-29 적용</span></td><td class="q">client/index.html · main.ts</td><td class="q"><code>.hint-sm</code>·<code>.room-empty</code> · loadPublicRooms() · init()의 joinBtn</td></tr>
-    <tr><td>8.5</td><td>공개방 상태 배지 <span class="tag t-soon">선행</span></td><td class="q">server/clue-room.ts · client/main.ts</td><td class="q"><code>syncMeta()</code>에 <code>phase</code> 추가(선행) → loadPublicRooms()의 <code>li</code> 조립</td></tr>
+    <tr><td>8.5</td><td>공개방 상태 배지 <span class="tag t-done">적용 완료</span></td><td class="q">server/clue-room.ts · client/network.ts · main.ts · index.html</td><td class="q"><code>syncMeta()</code>의 <code>phase</code> → <code>PublicRoomMeta</code> → loadPublicRooms()의 <code>li</code> 조립 · <code>.ri-badge</code></td></tr>
     <tr><td>9.1</td><td>대기실 피드백 <span class="tag t-soon">선행</span></td><td class="q">client/index.html · main.ts · clue-room.ts</td><td class="q">신규 <code>#lobbyMsg</code> · renderLobby() · onJoin / removePlayer / handleChooseCharacter</td></tr>
     <tr><td>9.2</td><td>닉네임 <span class="tag t-soon">선행</span></td><td class="q">packages/shared · clue-room.ts · index.html</td><td class="q"><code>Player.name</code> 분리 · 대기실 <code>.field</code> 추가</td></tr>
     <tr><td>9.3</td><td>대리 NPC 표기 <span class="tag t-soon">선행</span></td><td class="q">packages/shared · 3개 렌더러</td><td class="q"><code>displayName(p)</code> · renderLobby / renderTurnStrip / openTurnCircle</td></tr>
@@ -1242,6 +1251,11 @@
 
   <footer>
     <b>변경 이력</b><br>
+    <b>2026-07-29 (3) — §8.5 선행 해제 → 적용 완료.</b> 서버 <code>syncMeta()</code>가 <code>phase</code>를
+    싣게 되면서 선행 조건이 풀렸고, 클라 <code>PublicRoomMeta</code>가 서버 필드와 1:1로 맞춰져 확정 문안 3행이
+    그대로 붙었다. <b><code>phase</code>가 없으면 배지를 그리지 않는다</b>는 규칙을 코드와 문안 양쪽에 명시 —
+    없는 값을 기본값으로 메우는 순간 §1.4의 추정 금지를 어긴다.
+    촬영 확인은 <code>대기 중</code>+<code>참가</code>까지이고 <code>종료됨</code>+<code>관전</code>은 미촬영.<br><br>
     <b>2026-07-29 (2) — §8.4 적용 완료 + §8.5 신설.</b> §8.4 확정본 6행이 07-27 확정 이후 <b>코드에 붙지 않고</b> 있었다 →
     <code>index.html</code>·<code>main.ts</code>에 적용(<code>참여</code>→<code>참가</code> 포함). 함께 «공개방 참가 진행·실패» 2행 추가.
     <b>§8.5는 «종료된 방의 버튼이 실제로는 관전»을 화면에서 말하기 위한 문안</b>인데, 서버가 <code>metadata</code>에
