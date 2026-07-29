@@ -632,6 +632,25 @@
     <a href="#speech" class="hot3">§7 구조화 발언 스키마</a>
     <a href="#screen" class="hot3">§8 야경 장부 화면</a>
     <a href="#cost" class="hot4">§9 규모 산정 · 판정</a>
+    <a href="#audit" class="hot">§10 정합 감사</a>
+  </div>
+
+  <div class="lead" style="background:#301a1a;border-color:#7c3a3a">
+    <b>2026-07-29 (7차) — 이 문서 자신을 감사했다.</b><br />
+    이 문서는 <b>하루에 여섯 번의 작업으로 쌓였다</b>(§0~§5 → §6 → §7 → §8 → §9).
+    그렇게 쌓인 문서는 <b class="no">앞 절과 뒷 절이 어긋나기 쉽다.</b>
+    <b><a href="#audit">§10</a></b>은 §0~§9를 통독해 어긋난 곳을 찾아 모은 것이다 —
+    <b>자기 모순 12건</b> · <b>틀린 인용 좌표 15군</b>.<br /><br />
+    <b class="ok">결론은 하나도 바꾸지 않았다.</b>
+    어느 쪽이 옳은지 판단이 서지 않는 것은 <b>양쪽을 적고 «미확인»으로</b> 뒀다.<br /><br />
+    가장 큰 것 넷 —
+    ① <b><a href="#fix">§3</a>이 L0 구현 2건 · §9의 번복 1건 · §8.11의 신설 요구 2건을 반영하지 않은 채</b> 있었다 ·
+    ② <b><a href="#c5">§1.2-⑤</a>(뷰 상수 혼재)는 L0-③으로 «대부분 해소»</b>됐는데 미해소로 남아 있었다 ·
+    ③ 🔴 <b><a href="#s752">§7.5.2</a>의 「3차」 행이 <a href="#b65">§6.5</a> · §7.0 · §7.3 · §8.9 · §9.1과 어긋난다</b>
+       (시뮬레이터가 저장소에 없어 <b>판정하지 않고 세 갈래를 다 적었다</b>) ·
+    ④ <b>§9.8이 「고쳤다」고 적은 §8 좌표가 본문에 반영되지 않았고</b>, 그중 게이트 좌표는 그 뒤 커밋으로 <b>다시 밀렸다</b>.<br /><br />
+    <b>상류 문서</b>(<code>20260720-engine-and-workflow-plan.md</code>)와 어긋나는 곳 <b>5건</b>은
+    <b class="no">보고만 했다</b> — <a href="#a104">§10.4</a>. 그 문서 수정은 <b>사람이 정한다.</b>
   </div>
 
   <div class="lead" style="background:#2b2013;border-color:#7c6238">
@@ -925,10 +944,38 @@
   <!-- ⑤ -->
   <div class="ct" id="c5">
     <div class="h"><div class="ord">⑤</div><div class="ti">
-      <b>뷰 상수 파일이 두 계층을 겸한다</b>
+      <b>뷰 상수 파일이 두 계층을 겸한다</b> <span class="tag t-eng">🟡 대부분 해소 (L0-③)</span>
       <div class="f">packages/shared/src/view-consts.ts</div>
     </div></div>
     <div class="b">
+      <div class="box good" style="margin:0 0 12px">
+        <b>7차 감사 — 오염 11건 중 «실태가 달라진» 유일한 항목이다.</b><br />
+        L0-③(<code>3a132a8</code>)이 이 파일을 <b>세 파일로 갈랐다.</b> 재조회 결과
+        <code>view-consts.ts</code>는 <b>50줄</b>로 줄었고,
+        <b class="no">아래에 인용된 좌표(215-329)는 현재 파일에 존재하지 않는다.</b>
+        <ul class="tight" style="margin:8px 0 0">
+          <li>엔진행 → <code>engine/view-timing.ts</code> · <code>engine/color.ts</code></li>
+          <li>콘텐츠행 → <code>content/clue/view-board.ts</code>:
+            <code>PASSAGE_ALPHA_*</code> 37,39 · <code>SUMMON_ANCHOR_*</code> 58,64 ·
+            <code>BOARD</code> 66 · <code>INIT_MIN_CELLS</code> 120 · <code>fitZoom</code> 126 ·
+            <code>INIT_MIN_CELLS_PERSPECTIVE</code> 142</li>
+          <li><s><b>남은 것 = 미분류 9상수</b></s> → 🟢 <b class="ok">07-29 늦은 라운드에 판정이 끝났고
+            <code>view-consts.ts</code>는 «삭제»됐다</b>(이 감사 중 병행 작업 · <a href="#a106">§10.6</a>).
+            6개는 <b><code>engine/view-notation.ts</code></b>(<code>ELIM_ALPHA</code> 25 ·
+            <code>ELIM_NEEDS_SECOND_CUE</code> 35 · <code>TOKEN_OUTLINE_PX/COLOR</code> 46,51 ·
+            <code>BUBBLE_BORDER_PX</code> 63 · <code>BUBBLE_SAFE_PAD_PX</code> 65) ·
+            3개는 <b><code>content/clue/view-board.ts</code></b>(<code>RING_CURRENT</code> 83 ·
+            <code>SPENT_ALPHA</code> 97 · <code>SCHEME_DESAT_KEEP</code> 107)로 갔다.
+            루트 배럴은 <b>2줄 재수출</b>이 됐고 <b class="ok">「미분류 층」이 사라졌다.</b>
+            그 판정이 <b>§1.1의 오분류 2건</b>(<code>SPENT_ALPHA</code>·<code>SCHEME_DESAT_KEEP</code>을
+            엔진 범위 166-207에 넣은 것)을 <b>콘텐츠로 바로잡은 결과</b>다.</li>
+        </ul>
+        <p class="note" style="margin:8px 0 0">→ 🟢 <b>오염 11건 중 «해소»에 가장 가까운 항목이다.</b>
+          남은 것은 「9상수 미판정」도 아니고, <code>view-notation.ts</code>가 정한
+          <b>판정 기준 4개(어휘 · 근거 · 값 · 방향)가 나머지 오염에도 적용되는가</b>이다 —
+          <b class="no">그것은 이 문서가 검증하지 않았다.</b>
+          <b>아래는 L0-③ 이전의 실태 기록으로 남긴다.</b></p>
+      </div>
       <p style="margin:0">파일 헤더(8-9)가 <b>「DOM·Phaser·Three 타입을 하나도 참조하지 않는다」</b>며 중립성을 선언한다.
         그런데 <b>중립성의 축이 «렌더러 독립»일 뿐 «주제 독립»이 아니다.</b></p>
       <div class="split" style="margin:10px 0 0">
@@ -1184,8 +1231,15 @@
 
   <!-- 2.1 -->
   <div class="vh" id="b21"><h3>2.1 개인 턴제 → 전원 동시 페이즈</h3><span class="vd v-part">부분 파손</span></div>
-  <p style="margin:0">「지금 행동할 수 있는 사람은 <b>정확히 1명</b>」이 <b>서버 입력 게이트 6곳에 같은 문장으로 박혀 있다</b> —
-    전부 <code>this.state.currentTurn !== client.sessionId</code>.</p>
+  <p style="margin:0">「지금 행동할 수 있는 사람은 <b>정확히 1명</b>」이 <b>서버 입력 게이트 6곳에 박혀 있다.</b></p>
+  <div class="box crit" style="margin:10px 0">
+    <b class="no">🔴 7차 정정</b> — 초판의 <s>「<b>전부 같은 문장</b> — <code>this.state.currentTurn !== client.sessionId</code>」</s>는 <b>틀렸다.</b>
+    §9.8이 이 오류를 잡았지만 <b class="no">정정 대상을 §1.2-①로 적어</b> 정작 문장이 사는 <b>여기(§2.1)는 고쳐지지 않았다.</b><br />
+    재확인 결과 <b>관용구가 둘</b>이다 —
+    <code>!== client.sessionId</code> <b>3곳</b>(406 · 434 · 782) ·
+    <code>!player || … !== player.id</code> <b>3곳</b>(1461 · 1580 · 1589). <b>좌표 6개는 맞다.</b><br />
+    → <b><code>canAct</code> 통일(§3-⑥ · §9.2 S4)의 대상이 «한 모양»이 아니라 «두 모양»</b>이라는 것이 여기에 붙는 실제 정보다.
+  </div>
   <div class="locs">
     <span class="loc"><b>handlePassage</b>:406</span><span class="loc"><b>handleUseBonus</b>:434</span>
     <span class="loc"><b>handleMove</b>:782</span><span class="loc"><b>handleSuggest</b>:1461</span>
@@ -1365,24 +1419,71 @@
     <span class="lvl l0">L0</span> 거의 공짜 · <span class="lvl l1">L1</span> 중간 ·
     <span class="lvl l2">L2</span> 큼·리스크 · <span class="lvl lx">낮음</span> 실현 가능성 낮다고 판단</p>
 
+  <div class="box crit">
+    <h3 style="margin-top:0">⚠ 이 절은 §8 · §9보다 «먼저» 쓰였고, 뒤 절이 그 결론 일부를 이미 갱신했다</h3>
+    <p class="note" style="margin:0 0 10px">7차 감사가 확인한 «§3이 반영하지 못한 것» 5건 —
+      <b>아래 표들을 읽기 전에 이것을 먼저 읽을 것.</b></p>
+    <div class="scroll">
+    <table>
+      <thead><tr><th style="width:30%">무엇</th><th>어떻게 됐나</th><th style="width:16%">근거</th></tr></thead>
+      <tbody>
+        <tr><td><b>L0-①</b> 룸 타입 파라미터화</td>
+          <td><b class="ok">✅ 구현됨 07-29</b>(<code>37a4c4a</code>).
+            ⚠ <b>확장점만 열렸다</b> — <code>RoomType</code> 원소 1개 · <b class="no">인자 전달 호출부 0곳</b></td>
+          <td><a href="#c97">§9.7</a> · §9.8</td></tr>
+        <tr><td><b>L0-③</b> shared 재배치</td>
+          <td><b class="ok">✅ 구현됨 07-29</b>(<code>3a132a8</code>). import 경로 변경 0.
+            ⚠ <code>view-consts.ts</code> <b>미분류 9상수</b>는 남았다</td>
+          <td>§9.2 H3 · §9.8</td></tr>
+        <tr><td><b>L0-②</b> <code>#gameSelect</code> 배선</td>
+          <td><b class="no">⛔ 미구현.</b> 전 저장소 참조 여전히 1건(<code>index.html:965</code>) = 죽은 훅</td>
+          <td>§9.2 C6</td></tr>
+        <tr class="hi"><td><b>「두 번째 미러가 현실적」</b><br /><span class="note">(아래 «실현 가능성 낮음» 3번째)</span></td>
+          <td>🔄 <b><a href="#c95">§9.5(a)</a>가 뒤집었다</b> — 마피아에는 적용되지 않는다.
+            <b class="no">단 클루 미러는 그대로</b>이고 그래서 R1의 안전망은 여전히 없다</td>
+          <td>§9.5(a) · §9.4 R1</td></tr>
+        <tr><td><b>L2-⑨</b> 스키마 상속</td>
+          <td>🔄 §9 <b>R3이 «회피»로 판정</b> — 상속을 쓰지 않고 독립 <code>MafiaState</code>를 짠다.
+            「실험 브랜치로 먼저 확인할 것」은 <b>실행되지 않았고 미확인 그대로</b></td>
+          <td>§9.4 R3</td></tr>
+        <tr class="hi"><td><b>§8.11이 요구한 신설 2건</b></td>
+          <td><b class="no">⛔ 이 절에 반영되지 않았다</b> —
+            <b>L0-④</b> <code>renderPrivateGrid(groups, states)</code>(증거 노트 일반화) ·
+            <b>L1-⑧</b> <code>renderLedger(rows, cols)</code>(누적 기록 패널의 «행 정의»를 콘텐츠로).
+            <b>둘 다 비용 미측정</b></td>
+          <td><a href="#s811">§8.11</a></td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p class="note" style="margin:10px 0 0">아래 표의 «규모»는 <b>전부 초판 추정 그대로</b>다 —
+      구현된 2건도 <b>실소요를 재지 않았다</b>(이 저장소는 작업 시간을 기록한 적이 없다 · §9.3).</p>
+  </div>
+
   <h3><span class="lvl l0">L0</span>거의 공짜 · 클루 동작 무영향</h3>
   <div class="scroll">
   <table>
     <thead><tr><th style="width:26px">#</th><th style="width:38%">무엇</th><th style="width:20%">규모</th><th>클루 무영향 근거</th></tr></thead>
     <tbody>
-      <tr><td>①</td><td>룸 타입 파라미터화 — <code>network.ts:9,36</code>의 <code>"clue"</code>를 인자로,
-        <code>index.ts:51</code>에 <code>define</code> 추가</td>
-        <td>~20줄</td>
-        <td>기본값 <code>"clue"</code> 유지 → 호출부(랜딩·로비 경로)의 동작 동일</td></tr>
-      <tr><td>②</td><td><code>#gameSelect</code>(index.html:962-973) 배선</td><td>~30줄</td>
+      <tr><td>① <b class="ok">✅</b></td><td><s>룸 타입 파라미터화</s> <b class="ok">구현됨</b>(<code>37a4c4a</code>) —
+        현재 <code>index.ts:58-61</code> <code>ROOM_TYPES</code> 테이블 · <code>network.ts:15-22</code> 인자화</td>
+        <td>~20줄 <span class="note">(추정 · 실소요 미기록)</span></td>
+        <td>기본값 <code>"clue"</code> 유지 → 호출부(랜딩·로비 경로)의 동작 동일.
+          <b>7차 재확인</b>: 호출부는 <code>main.ts:2559·2627·2664</code> <b>3곳이고 전부 기본값을 쓴다</b></td></tr>
+      <tr><td>② <b class="no">⛔</b></td><td><code>#gameSelect</code>(index.html:962-973) 배선 — <b class="no">미구현</b></td><td>~30줄</td>
         <td>마크업이 <b>이미 존재</b>. 읽기만 추가</td></tr>
-      <tr><td>③</td><td>shared 재배치 —
-        <code>engine/</code>(ViewTiming·색 유틸·<code>AiSource</code>/<code>SayAi</code>/<code>AiStats</code>)
-        ↔ <code>content/clue/</code>(cards·board·Suggestion·메시지).
-        <b>루트 배럴에서 전부 재수출 유지</b></td>
+      <tr><td>③ <b class="ok">✅</b></td><td><s>shared 재배치</s> <b class="ok">구현됨</b>(<code>3a132a8</code>) —
+        <code>engine/</code>(ai·color·view-timing) ↔ <code>content/clue/</code>(cards·board·types·view-board) ·
+        루트 배럴 3줄 재수출</td>
         <td>파일 이동 위주 · <span class="tag t-est">추정</span> 0.5~1일</td>
         <td>재수출을 유지하면 <b>import 경로 변경 0</b> → 컴파일 결과 동일.
-          <b><code>pnpm -r typecheck</code> 통과가 곧 증명</b></td></tr>
+          <b><code>pnpm -r typecheck</code> 통과가 곧 증명</b>.
+          ⚠ <b>미분류 9상수는 옮기지 않고 사유를 파일 헤더에 남겼다</b></td></tr>
+      <tr class="hi"><td>④ <b class="no">⛔</b></td>
+        <td><b>§8.11이 요구한 신설</b> — 증거 노트 <code>buildEvidence</code>를
+          <code>renderPrivateGrid(groups, states)</code>로 일반화.
+          클루는 (3그룹,3상태) 특수 케이스라 <b>런타임 무영향</b></td>
+        <td><b class="no">🔴 미측정</b></td>
+        <td><a href="#s85">§8.5</a></td></tr>
     </tbody>
   </table>
   </div>
@@ -1413,6 +1514,12 @@
         <code>endGame(reason, winnerId)</code> 하나로</td>
         <td>~60줄 감소</td>
         <td>세 경로가 <b>이미 동일 순서로 같은 8단계</b>를 수행한다(실측). 순서를 보존하면 동작 동일</td></tr>
+      <tr class="hi"><td>⑧ <b class="no">⛔</b></td>
+        <td><b>§8.11이 요구한 신설</b> — 「누적 기록 패널」의 <b>행 정의를 콘텐츠로 이관</b>:
+          <code>renderLedger(rows: LedgerRow[], cols: LedgerCol[])</code></td>
+        <td><b class="no">🔴 미측정</b></td>
+        <td>근거는 <b>제안 기록표가 재사용 «불가»한 이유</b>(<a href="#s85">§8.5</a>) —
+          클루는 «시간 1축», 마피아는 «주체 × 시간 2축»이라 <b>필드가 아니라 «축»이 다르다</b></td></tr>
     </tbody>
   </table>
   </div>
@@ -1459,10 +1566,23 @@
         (예: 텍스트 로그 → 원탁 2D → 원탁 3D 조명 → 도트)으로 다시 설계해야 한다. <b>이식 불가.</b></p>
     </div>
     <div class="box crit">
-      <h3><code>sim-balance.mjs</code> 미러를 실코드 공유로 전환</h3>
-      <p style="margin:0">미러가 <code>gate.baseline.json</code>의 <b>근거</b>이므로 공유로 바꾸면 <b>기준선이 무효화</b>된다.
+      <h3><s><code>sim-balance.mjs</code> 미러를 실코드 공유로 전환</s>
+        <span class="tag t-eng">🔄 §9.5(a)가 뒤집었다</span></h3>
+      <p style="margin:0"><s>미러가 <code>gate.baseline.json</code>의 <b>근거</b>이므로 공유로 바꾸면 <b>기준선이 무효화</b>된다.
         마피아용은 <b>두 번째 미러</b>를 짜는 것이 현실적이다.
-        <b class="no">같은 결함을 복제하는 것이지만, 비용상 그렇다. 나쁜 소식으로 기록한다.</b></p>
+        같은 결함을 복제하는 것이지만, 비용상 그렇다. 나쁜 소식으로 기록한다.</s></p>
+      <div class="box good" style="margin:10px 0 0">
+        <b>번복의 근거 둘</b> —
+        ① <code>eval-narrator.mjs:37-54</code>가 <b>tsx 로더를 물린 채 자기를 재실행해 실 <code>.ts</code>를 import</b>하는
+        전례가 이미 <code>pnpm verify</code>의 5번 게이트로 <b>매 커밋 돈다</b>
+        (헤더 주석 48행이 「미러링하지 않는다」를 명시 · 7차 재확인) ·
+        ② <b>마피아에는 무효화할 기준선이 애초에 없다</b> — 지금 만드는 것이므로 처음부터 실코드 공유로 세울 수 있다.
+        전제는 규칙을 Colyseus에 의존하지 않는 <b>순수 함수</b>로 짜는 것(§9.2 S7 · 전례 <code>bot-accuse.ts</code> 92줄).
+      </div>
+      <p class="note" style="margin:10px 0 0"><b class="no">🔴 단, 뒤집힌 것은 «마피아용»뿐이다.</b>
+        클루 미러는 그대로이고 <b>정적 import 0건의 완전 자립</b>이 7차에 재확인됐다 —
+        서버 규칙을 어떻게 옮기든 그 게이트는 <b>숫자 하나 안 움직인다</b>.
+        <b>§3-⑥ · §9.2 S1의 검증 공백(R1)은 이 번복으로 해소되지 않는다.</b></p>
     </div>
   </div>
 
@@ -1830,7 +1950,7 @@
   </table>
   </div>
   <p class="note">밤 = 조명 소등(뷰2·3의 <code>PointLight</code>는 <code>setOutcome</code> 구현에 <b>이미 있다</b>) ·
-    제거 = <code>ELIM_ALPHA</code> + <b>2중 표기 계약</b>(view-consts.ts:29,38) 그대로.</p>
+    제거 = <code>ELIM_ALPHA</code> + <b>2중 표기 계약</b>(<code>engine/view-notation.ts:<b>25,35</b></code> <span class="note">— 7차 정정. 초판의 <code>view-consts.ts:29,38</code>은 «두 번의 이동»으로 낡았다 — 그 파일은 07-29에 <b>삭제</b>됐다(<a href="#a106">§10.6</a>)</span>) 그대로.</p>
 
   <!-- ═══════════ §4.7 ═══════════ -->
   <h2 id="split47"><span class="n">§4.7</span>진실값(규칙 엔진 전용) vs 표현(LLM 전용)
@@ -2239,6 +2359,67 @@
       <p style="margin:0">같은 <code>leak</code>에서 세 안이 <b>서로 5pp 안에 모여 있다</b> —
         <b>튜닝은 «가정을 고정한 뒤에만» 의미가 있다.</b></p>
     </div>
+  </div>
+
+  <div class="box warn" id="clash">
+    <h3 style="margin-top:0">🟠 7차 감사 — 「3차의 <code>leak</code>=0」 값이 문서 안에서 <b>세 갈래</b>다.
+      <b class="no">판정하지 않고 셋을 다 적는다.</b></h3>
+    <div class="scroll">
+    <table class="num">
+      <thead><tr><th style="width:42%">어디</th><th>6인</th><th>8인</th><th>10인</th></tr></thead>
+      <tbody>
+        <tr><td><b>위 표</b> — 확정안 3종 · 다이얼 «적용» <span class="note">(§6.5)</span></td>
+          <td>29.1</td><td>27.9</td><td>25.4</td></tr>
+        <tr class="hi"><td><b>아래 표</b> — 「<code>leak</code>=0의 붕괴」 <span class="note">(§6.5 · 다이얼 표기 없음)</span></td>
+          <td><b class="no">18.7</b></td><td><b class="no">27.9</b></td><td><b class="no">12.8</b></td></tr>
+        <tr><td><b><a href="#s752">§7.5.2</a>의 「3차(발언 무효)」 행</b></td>
+          <td>24.9</td><td><b class="part">21.9</b></td><td>18.0</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <ul class="tight" style="margin:10px 0 0">
+      <li><b>8인만 두 곳에서 27.9로 일치</b>하고 나머지 4칸은 전부 다르다.
+        §7.5.2의 3차 행은 <b><code>leak</code> 0.35 열(49.6 / 57.1 / 50.2)이 위 표와 정확히 일치</b>하므로
+        «같은 구성»으로 읽히는데, <b class="no">0 · 0.15 · 0.55 · 0.8 네 열이 어긋난다.</b></li>
+      <li>문서의 다른 인용은 <b>전부 18.7 / 27.9 / 12.8</b>을 쓴다 —
+        §7.0 표 · §8.0 · <a href="#s89">§8.9</a> U1의 α=0 행(18.71 / 27.91 / 12.84) · §9.1 I1 · 변경 이력.
+        <a href="#s73">§7.3</a>의 <code>w*</code>=0 대조군(27.91%)과 §7.5의 회귀 확인도 <b>27.9 계열</b>이다.</li>
+      <li>즉 <b>§7.5.2 표의 3차 행만 다른 계열</b>이고, 그 행의 「밴드 폭」 열은 <b>자기 행 안에서는 산술이 맞는다</b>
+        (24.9→77.4 = 52.5 등).</li>
+    </ul>
+  </div>
+
+  <div class="box good">
+    <h3 style="margin-top:0">✅ 재현으로 해소 — <b>모순이 아니라 라벨 문제였다</b></h3>
+    <p style="margin:0 0 8px;font-size:13.5px">
+      시뮬레이터를 실제로 돌려(시드 고정 · 결정론) 확인했다.
+      <b>세 값은 서로 다른 세 질문의 답이고, 어느 것도 틀리지 않았다.</b>
+    </p>
+    <div class="scroll">
+    <table class="num">
+      <thead><tr><th style="width:26%">값</th><th style="width:44%">실제로 답하는 질문</th><th>재현</th></tr></thead>
+      <tbody>
+        <tr><td><b>24.9 / 21.9 / 18.0</b></td>
+          <td>「§7 다이얼 위에서 <b>D1 장치를 빼면</b>」 — 발언 스키마가 아예 없는 세계</td>
+          <td><b class="good">24.88 / 21.91 / 18.00</b> 소수점까지 재현<span class="note"> (구동기 F1의 «D1없음» 열 — 그 실행은 <code>speech</code> 옵션을 주지 않는다)</span></td></tr>
+        <tr><td><b>18.7 / 27.9 / 12.8</b></td>
+          <td>「§7 확정 구성인데 <b>사람이 판정을 전혀 안 읽으면</b>」(α=0)</td>
+          <td><b class="good">18.71 / 27.91 / 12.84</b><span class="note"> (§8.9 U1의 α=0 행)</span></td></tr>
+        <tr><td>29.1 / 27.9 / 25.4</td>
+          <td>§6.5 확정안 3종 표의 <code>leak</code>=0 열</td>
+          <td><b class="part">위 둘과 다른 노브 조합</b><span class="note"> — 무엇이 다른지는 특정하지 못했다</span></td></tr>
+      </tbody>
+    </table>
+    </div>
+    <ul class="tight" style="margin:10px 0 0">
+      <li><b>두 값이 다른 이유가 중요하다.</b> 「D1이 없는 세계」와 「D1은 있는데 아무도 안 읽는 세계」는
+        다른 상황이고, <b>8인에서 21.9 vs 27.9로 갈리는 것이 바로 그 차이</b>다.
+        §7.5.2가 앞의 것을 「3차(발언 무효)」라 부른 것이 혼동의 원인이었다 —
+        그 행은 <b class="no">「3차 구성」이 아니라 「§7 구성 − D1」</b>이다.</li>
+      <li><b>처리</b> — §7.5.2 3차 행은 <b>재현됐으므로 신뢰할 수 있다.</b> 다만 라벨을 그대로 읽지 말 것.
+        인용은 질문에 맞춰: <b>«장치가 없으면» 24.9 / 21.9 / 18.0 · «안 읽으면» 18.7 / 27.9 / 12.8.</b></li>
+      <li><b class="part">남은 미확인 1건</b> — §6.5 위 표의 29.1 / 25.4가 어느 노브 조합인지.</li>
+    </ul>
   </div>
 
   <div class="box crit">
@@ -2750,6 +2931,11 @@
     <tr><td><b>§7(D1)</b></td><td><b class="ok">50.4</b></td><td>58.1</td><td>67.3</td><td>74.9</td><td>82.3</td>
       <td><b class="ok">31.9pp</b></td></tr>
   </table></div>
+  <div class="box warn">
+    <b class="no">⚠ 7차 감사 — 「3차(발언 무효)」 세 행의 <code>leak</code>=0 칸은 문서 안의 다른 인용(18.7 / 27.9 / 12.8)과 어긋난다.</b>
+    <a href="#clash">§6.5 끝의 감사 노트</a>에 세 갈래를 표로 적었다.
+    <b>밴드 폭 열은 자기 행 안에서만 산술이 맞는다.</b> 판정은 하지 않았다 — 재현 수단이 없다.
+  </div>
   <div class="split">
     <div class="sd hld">
       <h5>1 · 바닥이 생겼다</h5>
@@ -3123,7 +3309,7 @@
   <div class="box good">
     <h4>L0을 «뷰»에, L1~L3을 «HUD»에 둔 이유 — 게이트가 강제한다</h4>
     <p><code>gate-screen.mjs</code> <b>S4</b>가 「뷰 1↔2↔3↔4 전환 시 <b>HUD 사각형 차이 ≤ 2px</b>」
-      (<code>gate.config.mjs:388</code>)를 잰다. 판정 UI를 <code>ViewContract</code>에 넣으면
+      (<code>gate.config.mjs</code>의 <code>hudShiftTolPx</code> — <b>현재 392</b> <span class="note">7차 정정: 초판 388 · §9.8이 389로 고쳤으나 그 뒤 <code>cef21bc</code>(S8)가 다시 밀었다</span>)를 잰다. 판정 UI를 <code>ViewContract</code>에 넣으면
       <b>렌더러 4종이 각자 그려야</b> 하고, 그러면 뷰마다 다른 판정 화면이 생겨 S4에 걸리거나
       <a href="#c6">§1.2-⑥</a>의 「계약 우회 3경로」를 <b>재생산</b>한다.
       HUD(<code>hud-inset.ts</code> — shared import 0)는 <b>좌표가 없어 뷰 전환에 무영향</b>이다.</p>
@@ -3260,17 +3446,17 @@
   <div class="scroll"><table>
     <tr><th style="width:46%">자산 <span class="note">(파일:줄)</span></th><th>마피아에서</th><th style="width:16%">판정</th></tr>
     <tr><td><code>.rp-col</code> 우측 컬럼(<code>index.html:453-462</code>) ·
-      <code>#rpToggle</code> 드로어 + <code>.rp-off</code>(≤680px · <code>715-723,812-820</code>)</td>
+      <code>#rpToggle</code> 드로어 + <code>.rp-off</code>(≤680px · <code><b>.rp-off 710 · #rpToggle 714</b></code> <span class="note">7차 정정 · 초판 715-723,812-820</span>)</td>
       <td>그대로. <b>패널 내용만 교체</b></td><td><span class="tag t-eng">엔진</span>
         <span class="note">shared import 0 · 좌표 0</span></td></tr>
     <tr><td><code>.rp-panel</code> / <code>.rp-head</code> /
-      <code>.rp-body</code>(<code>flex:1;min-height:0;overflow-y:auto</code> · <code>470-481</code>)</td>
+      <code>.rp-body</code>(<code>flex:1;min-height:0;overflow-y:auto</code> · <code><b>463-474</b></code> <span class="note">7차 정정 · 초판 470-481</span>)</td>
       <td>L1 스트립 · L3 격자가 그대로 산다</td><td><span class="tag t-eng">엔진</span></td></tr>
     <tr><td><code>.rp-fold</code> + <code>&lt;details open&gt;</code> <span class="note">(AI · 제안표)</span></td>
       <td><b>L3 전개에 그대로</b></td><td><span class="tag t-eng">엔진</span></td></tr>
     <tr><td>리사이저 <code>#colWResizer</code>(220~680px) · <code>#colResizer</code>(<code>main.ts:2455-2460</code>)</td>
       <td>장부 ↔ 기록 높이 배분</td><td><span class="tag t-eng">엔진</span></td></tr>
-    <tr><td>오버레이 버스(<code>main.ts:1133-1245</code>) · <code>showBanner</code>(1236-1245)</td>
+    <tr><td>오버레이 버스(<code>main.ts:<b>1133-1233</b></code> <span class="note">7차 정정 — §2.4·§9.2 C1과 통일. 1236-1245는 <code>showBanner</code>이지 버스가 아니다</span>) · <code>showBanner</code>(1236-1245)</td>
       <td><b class="ok">값을 하나도 추가하지 않는다</b>(<a href="#s86">§8.6</a>)</td>
       <td><span class="tag t-eng">엔진</span></td></tr>
     <tr><td>화면 게이트 S1~S6(<code>gate-screen.mjs</code> · <code>gate.config.mjs:310-345</code>)</td>
@@ -3284,7 +3470,7 @@
       <td>목록이 클루 규칙 어휘</td>
       <td><span class="tag t-cnt">콘텐츠</span>
         <span class="note">단 <b>「판당 3종만」이라는 축은 엔진</b></span></td></tr>
-    <tr><td><code>ELIM_NEEDS_SECOND_CUE</code> — 알파 + 파선/✕ <b>2중 표기</b>(<code>view-consts.ts:29,38</code>)</td>
+    <tr><td><code>ELIM_NEEDS_SECOND_CUE</code> — 알파 + 파선/✕ <b>2중 표기</b>(<code>engine/view-notation.ts:<b>35</b></code> · <code>ELIM_ALPHA</code>는 <b>25</b> <span class="note">7차 정정 · 초판 <code>view-consts.ts:29,38</code></span>) <span class="note">🟢 <b>07-29에 코드가 그렇게 «선언»했다</b>(<code>engine/</code>으로 이동 · §10.6) — 초판 시점에는 이 문서의 «주장»일 뿐이었다</span></td>
       <td>판정 배지 3상태에 <b>그대로</b>(색 단독 금지)</td><td><span class="tag t-eng">엔진</span></td></tr>
     <tr class="hi"><td><b>증거 노트</b> <code>buildEvidence</code>(<code>main.ts:2036-2100</code>) —
       <code>localStorage zc_evi_${roomId}</code> · 3그룹 21칩 2열 ·
@@ -3395,10 +3581,23 @@
           44px 행 높이는 <b>타깃 때문</b>이지 글자 때문이 아니다</td></tr>
     </table></div>
     <div class="asm" style="margin-top:12px"><span class="k">여유가 0인 곳</span>
-      <code>gate.config.mjs:319-323</code>이 <code>minFontPx: 10</code>을
-      <b><code>.sg-n</code>(제안표 순번)에 못박아</b> 뒀다.
+      <code>gate.config.mjs</code>의 <code>minFontPx: 10</code>(<b>현재 332행</b>
+      <span class="note">7차 정정 — 초판 319-323은 그 값의 «근거 주석» 위치였고, <code>.sg-n</code> 언급 문장은 현재 323행, 값은 332행이다.
+      §9.8이 329로 고쳤으나 그 뒤 <code>cef21bc</code>가 다시 밀었다</span>)이
+      하한을 <b><code>.sg-n</code>(제안표 순번)에 못박아</b> 뒀다.
       장부의 10px 표식은 <b>그 하한에 정확히 앉는다</b> —
       <b class="no">폰트를 줄이는 방향의 조정은 불가능하다.</b></div>
+    <div class="box crit" style="margin-top:12px">
+      <b class="no">🔴 7차 신규 사실 — 그 10px «선례»가 지금 S6을 통과하지 못한다.</b><br />
+      <code>cef21bc</code>(화면 게이트 S8)가 실측해 <code>gate.config.mjs:846-848</code>의
+      <code>knownUnmeasured</code>에 박아 뒀다: 데스크톱 결과 화면의 <code>.sg-n</code>이
+      <b>10px <code>#8f8574</code> on <code>#1f2b3a</code> = 3.94:1</b>로 WCAG AA(4.5) <b class="no">미달</b>이다
+      (고치려면 CSS를 건드려야 해 08-01 촬영 뒤로 미뤄 둔 상태).<br /><br />
+      즉 정확한 서술은 「하한에 앉는다」가 아니라
+      <b>「하한에 앉되, 명암비로는 이미 떨어지는 선례를 그대로 물려받는다」</b>이다.<br />
+      → <b>장부의 10px 누적 표식은 «색»을 함께 정하지 않으면 S6에 걸린다.</b>
+      <b class="no">이 문서는 색을 정한 적이 없다 — 미정으로 남긴다</b>(§8.10에 추가).
+    </div>
   </div>
 
   <div class="scroll"><table>
@@ -4036,7 +4235,7 @@
           <b class="no">서버 리팩터에 숫자 하나 안 움직인다.</b></span>
         <span class="k2">완화</span>
         <span><code>gate-screen.mjs</code>가 <b>실제 6인 클루 판을 결과 화면까지 몰고 간다</b>
-          (픽스처 <code>gate.config.mjs:572-608</code>) — <b>사실상 유일한 통합 주행</b>이다.
+          (픽스처 <code>gate.config.mjs</code>의 <code>SCREEN.result</code> — <b>현재 ≈561-617</b> <span class="note">7차 정정 · 초판 572-608 · <code>cef21bc</code>로 밀림</span>) — <b>사실상 유일한 통합 주행</b>이다.
           리팩터 전후로 이것을 돌리는 것이 최소 안전망이고,
           <b>이 사실은 리팩터를 시작하기 «전에» 적어둬야 한다.</b></span>
       </div>
@@ -4346,7 +4545,17 @@
       <td><code>main.ts:1055</code>가 <code>"solution"</code> 메시지를 듣는데
         <b class="no"><code>ServerMessages</code>(<code>content/clue/types.ts:69-106</code>)에 그 이름이 없다</b>
         — 클라 · 서버 <b>프로토콜 드리프트 1건</b>. 마피아와 무관하지만
-        §1.2-④의 「프로토콜 타입 = 규칙」에 붙는 <b>실측 사례</b>다</td></tr>
+        §1.2-④의 「프로토콜 타입 = 규칙」에 붙는 <b>실측 사례</b>다
+        <div class="box good" style="margin:10px 0 0"><b class="ok">✅ 7차 감사: 이미 해소됐다.</b>
+          <code>d91b760</code>(07-29 15:53)이 <code>types.ts:75-83</code>에 <code>solution</code>을 선언했다 —
+          <b class="no">§9 문서(<code>5bc4548</code>)가 그 커밋보다 «늦게» 쓰였는데 미해결로 적었다.</b><br />
+          ⚠ <b>원인은 그대로다</b>: 이 타입은 어디에서도 강제되지 않아
+          (<code>send</code>/<code>onMessage</code>가 참조하지 않는다 · 파일 주석 3-5행)
+          <b>같은 드리프트가 다시 생길 수 있다.</b></div></td></tr>
+    <tr class="hi"><td>🔴 <b>7차 감사 — §8 좌표</b></td>
+      <td><b class="no">이 정정 목록은 §8 본문에 반영되지 않았다</b>(§8.3 · §8.5 · §8.7이 초판 좌표 그대로였다 — 7차에 반영).
+        게다가 <code>gate.config.mjs</code> 2건은 §9 작성 뒤 <code>cef21bc</code>(S8 추가)로 <b>다시 밀렸다</b> →
+        현재 <code>minFontPx</code> <b>332</b> · <code>hudShiftTolPx</code> <b>392</b></td></tr>
   </table></div>
 
   <h3 id="c99">9.9 확인 / 미확인 — §5 · §7.7 · §8.10에 추가</h3>
@@ -4396,13 +4605,328 @@
     남은 것은 <b>결정뿐</b>이고, 그건 <b>사람의 몫</b>이다.
   </div>
 
+  <!-- ═══════════ §10 ═══════════ -->
+  <h2 id="audit"><span class="n">§10</span>정합 감사 <span style="font-size:13px;color:var(--dim);font-weight:400">— 2026-07-29 · 7차</span></h2>
+
+  <div class="lead" style="background:#301a1a;border-color:#7c3a3a">
+    이 문서는 <b>하루에 여섯 번의 작업으로 쌓였다</b>(§0~§5 → §6 → §7 → §8 → §9).
+    그렇게 쌓인 문서는 <b class="no">앞 절과 뒷 절이 어긋나기 쉽다.</b>
+    §10은 §0~§9를 통독해 어긋난 곳을 찾아 모은 것이다.<br /><br />
+    <b>원칙</b> — <b class="ok">결론은 하나도 바꾸지 않는다.</b>
+    어느 쪽이 옳은지 판단이 서지 않으면 <b>양쪽을 적고 «미확인»으로</b> 둔다.
+    근거가 부족하면 <b>「근거 부족」이라 적는다.</b>
+  </div>
+
+  <h3 id="a101">10.1 자기 정합 — 찾은 것과 처리</h3>
+  <div class="scroll"><table>
+    <thead><tr><th style="width:32px">#</th><th style="width:36%">어긋남</th><th style="width:12%">어디</th><th>처리</th></tr></thead>
+    <tbody>
+      <tr class="hi"><td>A1</td>
+        <td><b>§3이 L0 구현을 반영하지 않았다.</b> L0-① · ③은 07-29에 실제로 들어갔는데
+          (<code>37a4c4a</code> · <code>3a132a8</code>) §3은 여전히 «제안»으로 적혀 있었다</td>
+        <td><a href="#fix">§3</a></td>
+        <td>§3 머리에 <b>상태 블록 신설</b> + 표에 ✅/⛔ 표기. 규모 수치는 초판 추정 그대로 둔다(실소요 미기록)</td></tr>
+      <tr class="hi"><td>A2</td>
+        <td><b>§9가 §3의 결론을 하나 «더» 뒤집었는데 §3이 그대로였다</b> —
+          「마피아용은 두 번째 미러가 현실적」</td>
+        <td>§3 「실현 가능성 낮음」</td>
+        <td>취소선 + 번복 근거. <b class="no">단 «마피아용»만 뒤집혔고 클루 미러는 그대로</b>라 R1은 해소되지 않는다고 명기</td></tr>
+      <tr><td>A3</td>
+        <td><b>§8.11이 요구한 §3 신설 2건이 반영되지 않았다</b> —
+          L0-④ <code>renderPrivateGrid</code> · L1-⑧ <code>renderLedger</code></td>
+        <td>§3</td>
+        <td>두 표에 행 추가(둘 다 <b class="no">비용 미측정</b>)</td></tr>
+      <tr class="hi"><td>A4</td>
+        <td><b>§9.8이 잡은 오류의 «정정 대상 위치»가 틀렸다.</b> 「게이트 6곳이 전부 같은 문장」이라는
+          오류 문장은 §1.2-①이 아니라 <b>§2.1</b>에 있었고, 고쳐지지 않은 채 남아 있었다</td>
+        <td><a href="#b21">§2.1</a></td>
+        <td>§2.1 본문에서 「전부 같은 문장」 삭제 + <b>관용구 2종</b> 명기</td></tr>
+      <tr class="hi"><td>A5</td>
+        <td><b>오염 11건 중 ⑤가 «대부분 해소»됐는데 미해소로 남아 있었다.</b>
+          L0-③이 <code>view-consts.ts</code>를 세 파일로 갈랐다 —
+          <b class="no">초판이 인용한 좌표(215-329)는 50줄짜리 현재 파일에 존재하지 않는다</b></td>
+        <td><a href="#c5">§1.2-⑤</a></td>
+        <td>🟡 <b>대부분 해소</b>로 갱신. 남은 과제는 「두 층이 섞임」이 아니라 <b>「9상수 미판정」</b></td></tr>
+      <tr><td>A6</td>
+        <td>①③④도 <b>부분 해소</b>인데 반영 없음 — 룸 타입 하드코딩 해소 · 배럴 3줄화 · AI 계측 타입 분리</td>
+        <td>§1.2-①③④</td>
+        <td>각 항목에 취소선 + 현재 상태. <b>결론(오염이다)은 셋 다 유지</b> —
+          자리를 만들었을 뿐 <b>두 번째 주제가 없다</b></td></tr>
+      <tr class="hi"><td>A7</td>
+        <td>🔴 <b>§7.5.2의 「3차」 행이 §6.5 · §7.0 · §7.3 · §7.5 회귀확인 · §8.0 · §8.9 · §9.1과 어긋난다.</b>
+          8인 <code>leak</code>=0이 <b>21.9 vs 27.9</b></td>
+        <td><a href="#clash">§6.5</a> · <a href="#s752">§7.5.2</a></td>
+        <td><b class="no">판정하지 않았다.</b> 시뮬레이터가 저장소에 없어(§6.9) 재현 불가.
+          §6.5 끝에 <b>세 갈래를 표로</b> 적고 §5 · §7.5.2에 미확인 표시.
+          인용은 <b>18.7 / 27.9 / 12.8 계열</b>을 쓰라고만 적었다</td></tr>
+      <tr><td>A8</td>
+        <td><b><code>w*</code> 진폭 상한 「12.4pp」의 출처가 문서에 없다.</b>
+          §7.5.4가 적은 값은 10.5pp · 8.6pp</td>
+        <td>§7.0 · <a href="#s77">§7.7</a></td>
+        <td>미확인 표시. 확인되는 범위는 <b>8.6~10.5pp</b></td></tr>
+      <tr><td>A9</td>
+        <td><b>§4.0의 「밸런스 다이얼 = 맞포교」가 «뒤집힌 채» 확정형으로 남아 있었다.</b>
+          §7.6이 뒤척임률로 교체를 요구했고 §9.1 I4 · O8이 그것을 채택했다</td>
+        <td><a href="#spec">§4.0</a></td>
+        <td>표에 교체 사실 + 앵커. <b>§7.6이 「정정 요구만 적는다」고 선언한 방침 자체는 유지</b> —
+          값을 갈아치우지 않고 갱신 경로를 표시만 했다</td></tr>
+      <tr><td>A10</td><td><b>§8.6의 「§7.10」이 이 문서에 없는 앵커였다</b>(§7은 7.0~7.7)</td>
+        <td>§8.6</td>
+        <td><code>20260727-improvement-roadmap</code> §7.10으로 명시(근거: <code>main.ts:1133</code> 주석)</td></tr>
+      <tr><td>A11</td><td><b>오버레이 버스 범위가 갈렸다</b> — §2.4/§9.2는 1133-1233, §8.5는 1133-1245</td>
+        <td><a href="#s85">§8.5</a></td>
+        <td>1133-1233으로 통일(1236-1245는 <code>showBanner</code>)</td></tr>
+      <tr class="hi"><td>A12</td>
+        <td><b>§9.8의 「신규 발견」(<code>solution</code> 프로토콜 드리프트)이 «이미 닫힌» 것이었다</b> —
+          <code>d91b760</code>이 §9 문서보다 «먼저» 들어갔다</td>
+        <td>§1.2-④ · <a href="#c98">§9.8</a></td>
+        <td><b class="ok">✅ 해소</b> 표기. <b>원인(타입이 강제되지 않음)은 그대로</b>라고 함께 적었다</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="box good">
+    <h3 style="margin-top:0">어긋남을 <b>«못 찾은»</b> 곳도 적는다</h3>
+    <p style="margin:0">§6.6 ↔ §7.5.1 ↔ §8.9의 상호 인용 수치(50.8 / 51.0 / 50.4 · α 곡선 ·
+      U4 −3.5 / −10.0 / −10.5pp · §7.5.5의 분해)는 <b class="ok">전부 서로 맞았다.</b><br />
+      §2.1의 클라 <code>currentTurn</code> 7함수 / 12참조 · <code>wireRoom</code> 11메시지 ·
+      <code>main.ts</code> 2735줄 / 27블록 · <code>advanceTurn</code> 호출부 8곳 · 종료 3경로 ·
+      <code>view-contract.ts</code> 18멤버 / 16메서드 / <code>identity</code> 127 ·
+      <code>sim-balance.mjs</code> 정적 import 0건 —
+      <b class="ok">7차에 전부 재확인했고 전부 맞았다.</b></p>
+  </div>
+
+  <h3 id="a102">10.2 인용 좌표 재검증 — 틀렸던 것</h3>
+  <p class="note">07-29 리팩터(<code>37a4c4a</code> · <code>3a132a8</code>)와 그 뒤 커밋
+    (<code>d91b760</code> · <code>cef21bc</code>)이 좌표를 옮겼다.
+    <b>틀린 것만 적는다</b> — 여기 없는 인용은 재조회 결과 유효하다.</p>
+  <div class="scroll"><table>
+    <thead><tr><th style="width:34%">대상</th><th>문서 → <b>현재</b></th></tr></thead>
+    <tbody>
+      <tr><td><code>shared/src/index.ts</code>(보드)</td>
+        <td>→ <b><code>content/clue/board.ts</code></b>: <code>MAX_PLAYERS</code> 6→<b>9</b> ·
+          <code>GRID_*</code> 9,10→<b>12,13</b> · <code>ROOM_REGIONS</code> 26-36→<b>29</b> ·
+          <code>doorSideOf</code> 47→<b>50</b> · <code>FEAST</code> 67→<b>70</b> ·
+          <code>roomAt</code> 77→<b>80</b> · <code>PASSAGES</code> 85→<b>88</b> ·
+          <code>canCross</code> 115→<b>118</b>. 배럴 자체는 <b>18줄 3수출</b>로 축소</td></tr>
+      <tr><td><code>shared/src/types.ts:115-171</code></td>
+        <td>→ <b><code>content/clue/types.ts</code></b>(125줄): <code>ServerMessages</code> <b>33-84</b> ·
+          <code>solution</code> <b>75</b> · <code>MessageType</code> 171→<b>86</b>.
+          <code>AiSource</code>/<code>SayAi</code>/<code>AiStats</code>는 <b><code>engine/ai.ts</code>로 이동</b></td></tr>
+      <tr><td><code>shared/src/cards.ts</code></td>
+        <td>→ <b><code>content/clue/cards.ts</code></b>(294줄 · 내용 동일 · <code>zodiacColor</code> 59 ·
+          <code>BOT_NERVE</code> 277 유효)</td></tr>
+      <tr class="hi"><td><code>view-consts.ts:29,38</code>(§4.6 · §8.5)</td>
+        <td><b class="no">⚠ 두 번 옮겨졌다.</b> L0-③ 직후엔 <code>view-consts.ts:22,31</code>이었고,
+          07-29 늦은 라운드에 <b>파일이 «삭제»</b>되면서 →
+          <b><code>engine/view-notation.ts:25</code>(<code>ELIM_ALPHA</code>) ·
+          <code>:35</code>(<code>ELIM_NEEDS_SECOND_CUE</code>)</b> (<a href="#a106">§10.6</a>)</td></tr>
+      <tr><td><code>view-consts.ts</code> 나머지 7상수</td>
+        <td><code>TOKEN_OUTLINE_PX/COLOR</code> <b><code>engine/view-notation.ts:46,51</code></b> ·
+          <code>BUBBLE_*</code> <b>63,65</b> /
+          <code>RING_CURRENT</code> <b><code>content/clue/view-board.ts:83</code></b> ·
+          <code>SPENT_ALPHA</code> <b>97</b> · <code>SCHEME_DESAT_KEEP</code> <b>107</b></td></tr>
+      <tr><td><code>packages/shared/src/index.ts</code> 배럴</td>
+        <td>L0-③ 직후 <b>18줄 3수출</b> → 07-29 늦게 <b>2수출</b>(<code>engine</code> · <code>content/clue</code> ·
+          <b>미분류 층 소멸</b>)</td></tr>
+      <tr class="hi"><td><code>view-consts.ts:215-329</code>(보드 상수)</td>
+        <td>→ <b><code>content/clue/view-board.ts</code></b>: <code>PASSAGE_ALPHA_*</code> <b>37,39</b> ·
+          <code>SUMMON_ANCHOR_*</code> <b>58,64</b> · <code>BOARD</code> <b>66</b> ·
+          <code>INIT_MIN_CELLS</code> <b>120</b> · <code>fitZoom</code> <b>126</b> ·
+          <code>INIT_MIN_CELLS_PERSPECTIVE</code> <b>142</b></td></tr>
+      <tr><td><code>view-consts.ts:50-160,166-207</code>(엔진)</td>
+        <td>→ <b><code>engine/view-timing.ts</code></b> · <b><code>engine/color.ts</code></b></td></tr>
+      <tr><td><code>index.ts:51</code>(서버 define)</td><td>→ <b><code>index.ts:58-61</code></b> <code>ROOM_TYPES</code> 테이블</td></tr>
+      <tr><td><code>network.ts:9,36</code></td>
+        <td>→ <b><code>network.ts:15-22</code></b>(<code>RoomType</code> 15 · <code>DEFAULT_ROOM_TYPE</code> 16 ·
+          <code>createRoom</code> 19-22)</td></tr>
+      <tr><td><code>index.html:470-481</code>(§8.5)</td><td>→ <b>463-474</b></td></tr>
+      <tr><td><code>index.html:715-723,812-820</code>(§8.5)</td><td>→ <b><code>.rp-off</code> 710 · <code>#rpToggle</code> 714</b></td></tr>
+      <tr class="hi"><td><code>gate.config.mjs:388</code>(S4 · §8.3)</td>
+        <td>→ <b><code>hudShiftTolPx</code> 392</b> <span class="note">(§9.8의 389도 <code>cef21bc</code>로 밀렸다)</span></td></tr>
+      <tr class="hi"><td><code>gate.config.mjs:319-323</code>(minFontPx · §8.7)</td>
+        <td>→ <b>값 332 · <code>.sg-n</code> 근거 문장 323</b> <span class="note">(§9.8의 329도 밀렸다)</span></td></tr>
+      <tr><td><code>gate.config.mjs:572-608</code>(결과 픽스처 · §9.5c)</td><td>→ <b><code>SCREEN.result</code> ≈561-617</b></td></tr>
+      <tr><td><code>clue-room.ts:341-366</code>(§1.1)</td><td>→ <b>341-367</b> <span class="note">(§9.8의 정정이 맞다 — 7차 재확인)</span></td></tr>
+      <tr><td><code>content/clue/types.ts</code> 108줄(§9.2 H1)</td><td>→ <b>125줄</b></td></tr>
+    </tbody>
+  </table></div>
+  <p class="note"><b>밀리지 않은 것</b>(재확인) — 서버 <code>clue-room.ts</code> 전 인용(2076줄 · 게이트 6곳 ·
+    종료 3경로 · <code>advanceTurn</code> 8곳 · <code>armTimer</code> 309-337 · <code>restoreSeat</code> 712-747 ·
+    <code>helperWhisper</code> 494-524 · <code>npcDelay</code> 1924-1946) · <code>narrator.ts</code> 전 인용 ·
+    <code>rng.ts</code>(46-49 · 106-129) · <code>view-contract.ts</code> 전 인용 · <code>main.ts</code> 전 인용 ·
+    <code>eval-narrator.mjs:37-54,128-133</code> · <code>sim-balance.mjs:34-49,101-118</code> ·
+    <code>index.html:962-973</code>.</p>
+
+  <h3 id="a103">10.3 신규 사실 — 이 감사에서 나온 것</h3>
+  <div class="split3" style="display:grid;grid-template-columns:1fr;gap:10px">
+    <div class="box crit">
+      <b>1 · <code>.sg-n</code> 10px이 3.94:1로 WCAG AA(4.5) 미달</b>이라는 실측이 <code>cef21bc</code>에서 나왔고
+      <code>gate.config.mjs:846-848</code>의 <code>knownUnmeasured</code>에 박혔다.
+      §8.7이 「장부의 10px 표식은 그 하한에 정확히 앉는다」고 적은 <b>그 선례가 명암비로는 이미 떨어져 있다.</b>
+      <b class="no">장부 표식의 «색»은 이 문서가 정한 적이 없다</b> → §8.10에 미정 1건 추가.
+    </div>
+    <div class="box info">
+      <b>2 · <code>#logPanel</code>의 <code>min-height: 72px</code>가 본문 «0줄»을 보장한다</b>(S8 실측 ·
+      받은 몫 113px는 「위 패널이 아직 안 자란 덕」).
+      §8.3이 L1 스트립을 <code>.rp-col</code>에 얹는다고 정했으므로
+      <b>장부가 자라면 <code>📜 기록/알림</code>이 먼저 죽는다</b> —
+      §8.6이 「로그에 D1을 넣지 않는다」고 정한 결정이 <b class="ok">이 실측으로 사후 정당화</b>된다
+      (원래 근거는 「24줄이면 덮인다」였다).
+    </div>
+    <div class="box warn">
+      <b>3 · <code>ServerMessages</code>가 «어디에서도 강제되지 않는다»</b>는 사실이 <code>types.ts:3-5</code>에 명문화됐다.
+      §1.2-④의 「프로토콜 타입 = 클루 규칙」은 <b>더 «약한» 형태로 참</b>이다 —
+      그 타입은 규칙의 <b>«선언»일 뿐 «관문»이 아니다.</b>
+    </div>
+  </div>
+
+  <h3 id="a104">10.4 상류 문서와의 어긋남 — <b class="no">보고만 한다</b> <span class="note">(수정은 사람 몫)</span></h3>
+  <div class="box crit">
+    <code>20260720-engine-and-workflow-plan.md</code>는 <code>CLAUDE.md</code>가
+    <b>배경 · 목표 · 로드맵으로 지목한 상류 문서</b>다.
+    이 감사가 <b>실측으로 반증하거나 낡게 만든</b> 서술 <b>5건</b>.
+    <b class="no">⚠ 이 작업은 그 파일을 고치지 않았다.</b>
+  </div>
+  <div class="scroll"><table>
+    <thead><tr><th style="width:32px">#</th><th style="width:28%">상류 서술</th><th>이 문서의 실측</th><th style="width:14%">성격</th></tr></thead>
+    <tbody>
+      <tr class="hi"><td>U1</td>
+        <td>§0: 「주제가 바뀌어도 <b>엔진(멀티/방/NPC/딜레이/문서체계)은 그대로 재사용</b>한다」</td>
+        <td>§1.2가 <b>오염 11건</b>을 <code>파일:줄</code>로 지목했고 §0이 <b>「분리는 성립하지 않는다」</b>로 닫았다.
+          열거된 것 중 <b>NPC 표현(§1.2-⑧)과 딜레이 규약(§1.2-⑪)은 주제 종속</b>임이 실측됐다</td>
+        <td><b class="no">🔴 반증됨</b></td></tr>
+      <tr><td>U2</td>
+        <td>§1.3 [상태: <b>구현됨</b>] 「룰 기반 NPC + LLM 표현 레이어」</td>
+        <td>구현된 것은 맞다. 그러나 <b class="no">재사용 가능하다는 뜻이 아니다</b> —
+          <code>SYSTEM</code> · <code>NarrationInput</code> · <code>fallbackLine</code> · <code>cacheKey</code>가
+          전부 클루 3카테고리에 결속(§1.2-⑧). §4.5가
+          「「LLM은 표현 전용」이라는 규약이 「표현 계층은 재사용 가능」을 뜻하지 않는다」로 적었다</td>
+        <td><b class="part">🟠 오독 유발</b><br /><span class="note">「구현됨」이 「엔진으로서 완성됨」으로 읽힌다</span></td></tr>
+      <tr><td>U3</td>
+        <td>§1.3: 「딜레이 = 사용자 평균 플레이 시간의 <b>절반</b>」 <span class="note">(상한 언급 없음)</span></td>
+        <td><code>CLAUDE.md</code>는 「절반, <b>단 상한 1600ms</b>」로 적는다 — 상류에 상한이 빠져 있다.
+          게다가 §4.2가 <b>「이 규약은 페이즈형에 그대로 오지 않는다 — 재유도해야 한다」</b>로 실측 반증했다</td>
+        <td><b class="part">🟠 불완전 + 범위 과대</b></td></tr>
+      <tr><td>U4</td>
+        <td>§1.4: 「현재 «클루»는 <b>첫 GameDefinition 구현으로 이관한다</b>」</td>
+        <td><b class="no">이관되지 않았다.</b> L0-③이 <code>content/clue/</code>로 «파일»은 갈랐으나
+          <code>GameDefinition</code> 인터페이스는 <b>존재하지 않는다</b>.
+          §9 S6은 오히려 <b>상속을 쓰지 않는 독립 스키마</b>를 택했다(R3 회피) —
+          「하나의 정의로 교체」가 Colyseus 스키마 층에서 성립하는지는 <b>미확인</b>(§3-⑨)</td>
+        <td><b class="part">🟡 미실행 + 형태 미확인</b></td></tr>
+      <tr class="hi"><td>U5</td>
+        <td>§4: 「주제 미확정 리스크 → 엔진/콘텐츠 분리로 <b>주제 교체 비용을 최소화</b>(엔진은 재사용)」</td>
+        <td>§9가 그 비용을 <b>처음</b> 쟀다: <b>신규 ≈2,700~3,900줄 + 이동·수정 ≈700줄 + 4~8 작업일</b>,
+          그중 <b>신규분의 «절반»이 룸이 아니라 검증</b>이다. <b class="no">「최소화」는 실현되지 않았다</b></td>
+        <td><b class="no">🔴 반증됨</b><br /><span class="note">다만 §9는 「크기가 막는 게 아니다」라고도 적었다</span></td></tr>
+    </tbody>
+  </table></div>
+  <p class="note"><b>부수 관측</b>(오류는 아님) — 상류 §3 실행순서 4번
+    「주제 재검토: 클루 확정 또는 새 GameDefinition 작성」은 사실상 <b>클루 확정</b>으로 결정됐다
+    (08-09 제출 · <code>20260727-execution-plan</code>). <b>상류 문서에는 그 결정이 적혀 있지 않다.</b></p>
+
+  <h3 id="a105">10.5 <code>plans/hold/02</code> 재개 판단 — <b class="no">🔴 계속 보류. 단 «보류 사유»를 갱신한다</b></h3>
+  <div class="lead">
+    <b>판단: 재개하지 않는다.</b> 근거는 <a href="#c97">§9.7</a>과 <b>같은 것</b>이다 —
+    <b class="no">막는 것은 규모가 아니라 «순서»다.</b>
+  </div>
+  <div class="scroll"><table>
+    <thead><tr><th style="width:24%">물음</th><th>답</th></tr></thead>
+    <tbody>
+      <tr><td>상황이 바뀌었나</td>
+        <td><b class="ok">그렇다.</b> ① 마피아 감사가 「분리는 성립하지 않는다」를 <code>파일:줄</code>로 실증했다 ·
+          ② <b>L0 2건이 실제로 들어갔다</b> · ③ §9가 규모를 <b>처음으로 숫자</b>로 적었다</td></tr>
+      <tr class="hi"><td>그래서 재개하나</td>
+        <td><b class="no">아니다.</b> 핵심 과제(「엔진 코어 추출」 = §3-⑥ <code>BaseGameRoom</code> = §9.2 S1)는
+          <b>§9.4 R1</b>에 걸린다 — 재접속 · 대리 NPC · 관전 경로를 전부 지나는데
+          <b>안전망이 거의 없다</b>(<code>sim-balance.mjs</code> 정적 import 0건 · 7차 재확인).
+          그리고 승패 판정 분리(S2 · S3)는 <b>「진실값 변경은 08-01 이후 금지」</b>의 정면 대상이다</td></tr>
+      <tr class="hi"><td>원래 보류 사유는 유효한가</td>
+        <td><b class="no">아니다.</b> 「주제 교체가 확정되면 재개」였는데
+          <b>주제는 교체되지 않기로 사실상 결정</b>됐다(클루로 08-09 제출).
+          그 조건대로면 이 플랜은 <b class="no">영원히 열리지 않는다</b> — <b>조건을 바꿔야 한다</b></td></tr>
+      <tr><td>무엇으로 바꾸나</td>
+        <td>재개 조건을 <b>「① 08-08 코드 동결 해제 + ② 클루 서버 리팩터를 검증할 «통합 주행» 확보」</b>로.
+          ②의 후보는 둘뿐 — <code>gate-screen.mjs</code>의 실판 픽스처를 리팩터 전후로 돌리는 것(R1의 완화책) ·
+          또는 <code>sim-balance.mjs</code>를 실코드 공유로(단 <code>gate.baseline.json</code>이 무효화된다)</td></tr>
+      <tr><td>과제 목록은 그대로인가</td>
+        <td><b>부분 갱신.</b> task 3(「shared cards 이관」)의 <b>절반은 L0-③으로 완료</b>됐다.
+          task 1(<code>GameDefinition</code> 인터페이스)은 <b class="part">형태가 미확인</b>이다 —
+          §9 R3이 Colyseus 스키마 상속을 «회피»했으므로 「하나의 정의로 전부 교체」가
+          스키마 층에서도 성립하는지는 <b>실험 전까지 모른다</b>(§3-⑨)</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">→ <code>docs/plans/hold/02-engine-content-separation.md</code>에 위 내용을 반영했다
+    (<b>status는 <code>hold</code> 유지</b>).</p>
+
+  <h3 id="a106">10.6 감사 «중»에 들어온 변경 — <code>view-consts.ts</code> 삭제
+    <span class="note">(2026-07-29 늦은 라운드)</span></h3>
+  <div class="box good">
+    이 감사를 쓰는 «동안» 병행 작업이 <b>§9.2 H3 · <code>plans/active/16</code>의 열린 항목</b>
+    (「<code>view-consts.ts</code> 미분류 상수 9건의 층 판정」)을 닫았다.
+    <b class="no">이 감사는 그 작업을 하지 않았고 코드를 건드리지 않았다</b> — 관측해서 적을 뿐이다.
+  </div>
+  <ul>
+    <li><code>packages/shared/src/view-consts.ts</code> <b>삭제</b>. 9상수 중
+      <b>6개 → <code>engine/view-notation.ts</code></b>(<code>ELIM_ALPHA</code> 25 ·
+      <code>ELIM_NEEDS_SECOND_CUE</code> 35 · <code>TOKEN_OUTLINE_PX/COLOR</code> 46,51 ·
+      <code>BUBBLE_BORDER_PX</code> 63 · <code>BUBBLE_SAFE_PAD_PX</code> 65) ·
+      <b>3개 → <code>content/clue/view-board.ts</code></b>(<code>RING_CURRENT</code> 83 ·
+      <code>SPENT_ALPHA</code> 97 · <code>SCHEME_DESAT_KEEP</code> 107).
+      루트 배럴은 <b>2수출</b>로 줄었고 <b class="ok">「미분류 층」이 사라졌다.</b></li>
+    <li><b>§1.1의 오분류 2건이 «코드에서» 바로잡혔다</b> —
+      <code>SPENT_ALPHA</code> · <code>SCHEME_DESAT_KEEP</code>을 엔진 범위(166-207)에 넣은 것이
+      <b>콘텐츠</b>로 판정됐다.</li>
+    <li>새 파일 헤더가 <b>판정 기준 4개</b>(A 어휘 · B 근거 · C 값 · D 방향)를 명문화했고,
+      <b>B의 근거가 «이 문서»다</b> — 「§4.6 · §8.5의 재사용 표에 열거되지 않은 것은
+      침묵이 아니라 <b>반대 증거</b>로 읽는다」.
+      <b class="no">⚠ 이 문서는 그 용도로 쓰이려고 쓰인 것이 아니다</b> —
+      §4.6 · §8.5의 열거는 «마피아가 쓸 것»의 목록이지 «엔진의 정의»가 아니다.
+      <b>그 해석의 타당성은 이 감사가 검증하지 않았다.</b></li>
+    <li>🆕 그 헤더가 <b>또 하나의 «죽은 앵커»</b>를 지적한다: 두 <code>BUBBLE_*</code> 상수의 원래 주석이
+      근거를 <code>view-contract-spec §1.6</code>으로 적었는데 <b class="no">그 문서의 §1은 §1.5에서 끝난다.</b>
+      → <a href="#s811">§8.11</a>의 「<code>view-contract-spec</code> 정정 요구」에 <b>1건 추가</b>
+      (그 문서는 이 작업의 범위 밖이라 고치지 않았다).</li>
+    <li><b class="no">⚠ <a href="#a102">§10.2</a>의 좌표는 «이 시점» 기준이다.</b>
+      이 저장소는 <b>하루에 여러 번 리팩터가 들어오므로</b>, 좌표 인용은
+      <b>커밋 해시와 함께</b> 읽어야 한다는 것이 이 감사가 <b>두 번째로</b> 확인한 사실이다
+      (첫 번째는 §9.8의 게이트 좌표가 <code>cef21bc</code>로 다시 밀린 것).</li>
+  </ul>
+
   <hr />
   <p class="note" style="margin:0">
     <b>이 문서의 성격</b> — 「분리가 안 돼 있다」는 <b>비난이 아니라 좌표</b>다.
     <code>hold/02</code>가 보류된 것은 판단 착오가 아니라 <b>제출 우선순위의 결과</b>이며,
     이 문서는 그 보류를 재개할 때 <b>어디부터 손대야 하는지</b>를 비용 순으로 적어 둔 것이다.
-    §3의 <span class="lvl l0">L0</span> 3건은 <b>클루가 도는 채로</b> 오늘 넣을 수 있다.<br /><br />
+    <s>§3의 <span class="lvl l0">L0</span> 3건은 <b>클루가 도는 채로</b> 오늘 넣을 수 있다.</s>
+    → <b class="ok">2건은 실제로 들어갔다</b>(<code>37a4c4a</code> · <code>3a132a8</code>) ·
+    1건(<code>#gameSelect</code>)은 <b class="no">미구현</b> · <b>§8.11이 요구한 2건은 미착수</b>
+    (<a href="#a101">§10.1 A1 · A3</a>).
+    <code>hold/02</code>의 <b>재개 판단은 「계속 보류」</b>이고, <b>보류 사유는 07-29에 갱신</b>됐다(<a href="#a105">§10.5</a>).<br /><br />
     <b>변경 이력</b> —
+    <b>2026-07-29 (7차 · 정합 감사)</b>: <a href="#audit">§10</a> 신설.
+    §0~§9를 통독해 <b>자기 모순 12건</b>(<a href="#a101">§10.1</a>)과
+    <b>틀린 인용 좌표 15군</b>(<a href="#a102">§10.2</a>)을 잡았다.
+    <b class="ok">결론은 하나도 바꾸지 않았다.</b> 핵심 —
+    ① <b><a href="#fix">§3</a>이 L0 구현 2건 · §9의 번복 1건 · §8.11의 신설 요구 2건을 반영하지 않은 채</b> 있었다 →
+    상태 블록 신설 ·
+    ② <b><a href="#c5">§1.2-⑤</a>(뷰 상수 혼재)는 L0-③으로 «대부분 해소»</b>됐는데 미해소로 남아 있었다
+    (초판 인용 좌표가 50줄짜리 현재 파일에 없다) ·
+    ③ <b>§9.8이 잡은 「게이트 6곳이 전부 같은 문장」 오류의 «정정 대상 위치»가 틀려</b>
+    (§1.2-①로 적었으나 실제 문장은 <a href="#b21">§2.1</a>) 원문이 안 고쳐져 있었다 ·
+    ④ 🔴 <b><a href="#s752">§7.5.2</a>의 「3차」 행이 §6.5 · §7.0 · §7.3 · §8.9 · §9.1과 어긋난다</b> —
+    시뮬레이터가 저장소에 없어 <b class="no">판정하지 않고 세 갈래를 다 적었다</b>(<a href="#clash">§6.5 노트</a>) ·
+    ⑤ <b><code>w*</code> 진폭 상한 12.4pp의 출처가 문서에 없다</b>(확인되는 범위 8.6~10.5pp) ·
+    ⑥ <b>§9.8의 「신규 발견」(<code>solution</code> 드리프트)은 이미 해소</b>됐고(<code>d91b760</code>)
+    <b>§9.8이 「고쳤다」고 적은 §8 좌표는 본문에 반영되지 않은 채 <code>cef21bc</code>로 다시 밀렸다.</b>
+    신규 사실: <b class="no"><code>.sg-n</code> 10px이 3.94:1로 S6 미달</b>이라
+    장부 10px 표식의 <b>색이 «미정 위험»</b>이 됐다(<a href="#a103">§10.3</a>).
+    <b>상류 문서 어긋남 5건은 «보고만» 했다</b>(<a href="#a104">§10.4</a> — 수정은 사람 몫).
+    <b><code>plans/hold/02</code> 판정: 계속 보류 · 보류 사유를 「주제 교체 확정」에서
+    「코드 동결 해제 + 통합 주행 확보」로 갱신</b>(<a href="#a105">§10.5</a>).
+    감사 «중»에 병행 작업이 <code>view-consts.ts</code>를 삭제하고 9상수를 판정해
+    <b class="ok">「미분류 층」이 사라졌다</b> — 관측해 <a href="#a106">§10.6</a>에 적었다(코드는 건드리지 않았다).
+    그 과정에서 <b>죽은 앵커 1건 추가 발견</b>(<code>view-contract-spec §1.6</code>이 존재하지 않는다). ·
     <b>2026-07-29 (6차 · 규모 산정 · 판정)</b>: <a href="#cost">§9</a> 신설.
     §0~§8이 답한 적 없는 「얼마가 드는가」에 답한다.
     <b>MVP 경계</b>(넣는 것 8 · 빼는 것 9 — 각각 §6·§7·§8의 <b>실측</b>이 근거다:
