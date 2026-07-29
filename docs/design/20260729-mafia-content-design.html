@@ -56,6 +56,7 @@
   .toc a.hot{background:#3a1f1a;border-color:#6b3931;color:#e0857a;font-weight:700}
   .toc a.hot2{background:#2a1f38;border-color:#4e3b6b;color:#c3aae8;font-weight:700}
   .toc a.hot3{background:#12302a;border-color:#2f6b5c;color:#8fe3cf;font-weight:700}
+  .toc a.hot4{background:#3a2f14;border-color:#7c6238;color:#f0d9a8;font-weight:700}
 
   /* ── §7 장치 카드(D1~D4) ── */
   .dev{background:var(--card);border:1px solid var(--edge);border-left:3px solid var(--green);
@@ -336,6 +337,60 @@
   .curve .v{font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--gold)}
   .curve .v.lo{color:#f0a096}
 
+  /* ══ §9 규모 산정 — «아는 것 / 유추한 것 / 모르는 것»을 시각적으로 가른다 ═══ */
+
+  /* 신뢰도 등급 — 글자(A·B·C)가 들어 있어 색 없이도 읽힌다 */
+  .t-ca{background:#12303a;color:#8fd6ec;border-color:#2c5566}  /* A 전례 실측 */
+  .t-cb{background:#33291a;color:#e0c25a;border-color:#5d4a24}  /* B 유추 */
+  .t-cc{background:#3a1f1a;color:#f0a096;border-color:#7a3f36}  /* C 전례 없음 */
+  .t-um{background:#2e2320;color:#d69a8e;border-color:#6b4038}  /* 미측정 */
+
+  /* 작업 종류 — 신규 / 수정 / 그대로 */
+  .k{display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;flex:none;
+    border-radius:5px;font-size:10px;font-weight:800;border:1px solid transparent;vertical-align:-3px}
+  .k-new{background:#1f2b3a;color:#8fd6ec;border-color:#31505f}
+  .k-mod{background:#33291a;color:#e8c877;border-color:#5d4a24}
+  .k-keep{background:#1d2f22;color:#8fe9ac;border-color:#31573d}
+  .k-cut{background:#2b2723;color:#a89e90;border-color:#4a443c}
+  .klegend{display:flex;flex-wrap:wrap;gap:14px;margin:10px 0 4px;font-size:12px;color:var(--dim)}
+  .klegend b{color:var(--ink);font-weight:600}
+
+  /* 총계 스트립 */
+  .tot{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin:16px 0}
+  .tot .c{background:#191510;border:1px solid var(--edge);border-radius:10px;padding:12px 14px}
+  .tot .c .l{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);font-weight:800}
+  .tot .c .v{font-size:21px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.25;
+    margin-top:4px;color:var(--gold)}
+  .tot .c small{display:block;font-size:11px;color:var(--dim);font-weight:400;margin-top:3px;line-height:1.5}
+  .tot .c.n{border-top:3px solid var(--blue)}    .tot .c.n .v{color:#8fd6ec}
+  .tot .c.m{border-top:3px solid var(--amber)}   .tot .c.m .v{color:#e8c877}
+  .tot .c.u{border-top:3px solid var(--red)}     .tot .c.u .v{color:#f0a096}
+  .tot .c.t{border-top:3px solid var(--violet)}  .tot .c.t .v{color:#c3aae8}
+
+  /* 위험 카드 — «시간이 아니라 위험» */
+  .rk{background:var(--card);border:1px solid var(--edge);border-left:3px solid var(--red);
+    border-radius:10px;margin:12px 0;overflow:hidden}
+  .rk.avoid{border-left-color:var(--green)}
+  .rk>.h{display:flex;align-items:baseline;gap:10px;padding:11px 16px;background:#271c18;
+    border-bottom:1px solid var(--edge);flex-wrap:wrap}
+  .rk.avoid>.h{background:#1b2a22}
+  .rk>.h .d{flex:none;font-weight:800;font-size:13px;color:#f0a096;font-variant-numeric:tabular-nums}
+  .rk.avoid>.h .d{color:#8fe9ac}
+  .rk>.h b{font-size:13.5px;color:var(--gold)}
+  .rk>.h em{font-style:normal;font-size:11px;color:var(--dim);margin-left:auto}
+  .rk>.b{padding:11px 16px 13px;font-size:12.8px}
+  .rk>.b>:first-child{margin-top:0} .rk>.b>:last-child{margin-bottom:0}
+  .rk .net{display:grid;grid-template-columns:74px 1fr;gap:4px 11px;margin:9px 0 0;font-size:12.4px;
+    padding-top:9px;border-top:1px dashed #3a3126}
+  .rk .net .k2{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#c98d84;
+    font-weight:800;padding-top:2px}
+  .rk.avoid .net .k2{color:#7fbf95}
+
+  /* 일정 충돌 — 잠긴 날 */
+  table.sch td:first-child{white-space:nowrap;font-variant-numeric:tabular-nums;font-weight:700}
+  table.sch tr.lock td{background:rgba(224,115,107,.10)}
+  table.sch tr.lock td:first-child{color:#f0a096;box-shadow:inset 3px 0 0 var(--red)}
+
   *{scrollbar-width:thin;scrollbar-color:#4a3d2b #16130f}
   ::-webkit-scrollbar{width:9px;height:9px}
   ::-webkit-scrollbar-track{background:#16130f}
@@ -576,6 +631,20 @@
     <a href="#balance" class="hot2">§6 밸런스 실측</a>
     <a href="#speech" class="hot3">§7 구조화 발언 스키마</a>
     <a href="#screen" class="hot3">§8 야경 장부 화면</a>
+    <a href="#cost" class="hot4">§9 규모 산정 · 판정</a>
+  </div>
+
+  <div class="lead" style="background:#2b2013;border-color:#7c6238">
+    <b>2026-07-29 (6차) — 「그래서 얼마가 드는가」에 답한다.</b><br />
+    §0~§8은 마피아를 <b>설계</b>했지만 <b class="no">비용을 한 번도 적지 않았다.</b>
+    그 답이 없으면 이 문서는 읽을거리로 끝나고 사람이 <b>«할지 말지»</b>를 정할 수 없다.
+    <b><a href="#cost">§9</a></b>는 MVP 경계를 긋고(§6·§7·§8의 실측이 근거다),
+    항목마다 <b>규모와 신뢰도</b>를 적고, <b>시간으로 적을 수 없는 것 4건은 «위험»으로</b> 적는다.<br /><br />
+    결과: 신규 <b>≈2,700~3,900줄</b> · <b>4~8 작업일</b>(하한만 유추, 상한은 전례 없음) ·
+    미측정 2건 · 위험 4건.
+    <b class="no">판정은 «본행사 이후로 미룬다»</b>이고,
+    <b>막는 것은 규모가 아니라 「진실값 변경은 08-01 이후 금지」</b>다(<a href="#c97">§9.7</a>) —
+    MVP의 최소 집합에 <b>클루의 승패 판정 경로를 여는 작업</b>이 들어 있기 때문이다.
   </div>
 
   <div class="lead" style="background:#11241f;border-color:#3a6b5c">
@@ -3628,6 +3697,705 @@
     사람 플레이 데이터는 여전히 <b>0건</b>이다.
   </div>
 
+  <!-- ═══════════ §9 ═══════════ -->
+  <h2 id="cost"><span class="n">§9</span>1차 마피아를 만든다면 — MVP 경계 · 규모 · 위험 · 검증</h2>
+
+  <div class="box warn">
+    <p style="margin:0"><b>이 절은 «지금 만들자»는 제안이 아니다.</b>
+    마감은 <b>2026-08-10</b>이고 08-01 촬영 · 08-08 코드 동결 · 08-09 제출이 남아 있다(<a href="#c97">§9.7</a>).
+    산출물은 <b>결정의 «근거»</b>이지 결정이 아니다.
+    결론이 「미룬다」여도 완전히 정당하고, <b>실제로 그렇게 나왔다.</b></p>
+    <p class="note" style="margin:8px 0 0">
+      <b>좌표 재검증</b> — §9가 쓰는 인용은 서버 · shared · 클라 · <code>scripts</code> 전량 재조회했다.
+      L0 리팩터(<code>37a4c4a</code> · <code>3a132a8</code>) 이후에도 §1~§8의 인용은 <b>거의 전부 유효</b>했고,
+      <b>오류 2건 · 밀림 1건 · 신규 발견 1건</b>을 <a href="#c98">§9.8</a>에 적었다.</p>
+  </div>
+
+  <h3 id="c90">9.0 결론 먼저</h3>
+
+  <div class="tot">
+    <div class="c n"><div class="l">신규 코드</div><div class="v">2,700~3,900</div>
+      <small>줄 · 서버 1,010~1,550 · shared 100~180<br />클라 700~1,050 · <b>검증 900~1,100</b></small></div>
+    <div class="c m"><div class="l">이동 · 수정</div><div class="v">≈700</div>
+      <small>줄 · <code>BaseGameRoom</code> 600 «이동»<br /><code>endGame</code> −60 · <code>canAct</code> 40</small></div>
+    <div class="c u"><div class="l">미측정</div><div class="v">2건</div>
+      <small>클라 마피아 엔트리<br />shared 배럴 이름 충돌</small></div>
+    <div class="c t"><div class="l">시간 밴드</div><div class="v">4~8일</div>
+      <small>하한만 <span class="tag t-cb">B</span> 유추<br />상한은 <span class="tag t-cc">C</span> 전례 없음</small></div>
+  </div>
+
+  <div class="scroll"><table>
+    <tr><th style="width:19%">축</th><th>값</th></tr>
+    <tr><td><b class="ok">1차에 넣는 것</b></td>
+      <td>8인 고정 · 역할 4종 · 페이즈 5종 · <b>D1 야경 신고 + D3 강제 격자</b> ·
+        L0/L1 장부 · <code>endGame</code> · 재접속 복구 · 시드 재생</td></tr>
+    <tr><td><b class="dim">1차에서 빼는 것</b></td>
+      <td><b>LLM 표현 계층 전부</b>(Gemini 호출 <b>0</b>) · D2 역할 주장 · D4 반박 토큰 ·
+        L2/L3 · 6·10인 · 4뷰 진화 · 증거 노트</td></tr>
+    <tr><td><b class="no">위험 4건</b></td>
+      <td><a href="#c94">§9.4</a> — <b>시간이 아니라 «위험»으로 적는다</b></td></tr>
+    <tr class="hi"><td><b>판정</b></td>
+      <td><span class="vd v-break">본행사 이후로 미룬다</span> &nbsp; 근거는 <b>규모가 아니라 «순서»</b>다(<a href="#c97">§9.7</a>)</td></tr>
+  </table></div>
+
+  <div class="lead">
+    <b>한 줄</b> — 마피아 1차 판은 <b class="ok">만들 수 있고 크기도 잴 수 있다.</b>
+    못 하는 이유는 크기가 아니라
+    <b class="no">「진실값 변경은 08-01 이후 금지」</b>(실행계획 폴백 규칙 2)이며,
+    <b>MVP의 최소 집합에 «클루의 승패 판정 경로를 여는 작업»(I5)이 들어 있다.</b>
+  </div>
+
+  <h3 id="c91">9.1 MVP 경계 — 「한 판이 돌고 그것을 마피아라고 부를 수 있는」 최소 집합</h3>
+
+  <h4>넣는다 — 근거는 전부 §6 · §7 · §8의 실측이다</h4>
+  <div class="scroll"><table>
+    <tr><th style="width:5%">#</th><th style="width:26%">1차에 넣는다</th><th style="width:14%">근거</th><th>뺄 수 없는 이유</th></tr>
+    <tr class="hi"><td><b>I1</b></td><td><b>D1 야경 신고 + D3 강제 격자</b></td>
+      <td><a href="#s752">§7.5.2</a> · <a href="#s89">§8.9</a> U1</td>
+      <td>빼면 집안 승률 <b class="no">18.7 / 27.9 / 12.8%</b> — §8.9의 α=0 열이 §6.5 붕괴 수치를
+        <b>소수점까지 재현</b>한다. <b>게임이 성립하지 않는다.</b>
+        D3는 D1의 «봉인»이라 분리 불가(<a href="#s74">§7.4</a> — 관측 대상을 고르게 하면 <b>−28pp</b>)</td></tr>
+    <tr><td><b>I2</b></td><td>역할 4종 (밤2 · 의1 · 포1 · 집4)</td>
+      <td><a href="#b64">§6.4</a> 4위 · <a href="#s754">§7.5.4</a> 5위</td>
+      <td>권능역이 없으면 <code>leak</code>=0에서 <b>10.2%</b>.
+        게다가 「누가 밤에 자리를 비우는가」가 <b>D1의 신호원</b>이라 <b>역할표가 곧 I1의 입력</b>이다
+        (의원 밤 이동 하나가 <b>25.5pp</b>)</td></tr>
+    <tr><td><b>I3</b></td><td>페이즈 5종 · 밤 선행</td><td>§4.2</td>
+      <td>전원 동시 페이즈가 <b>마피아의 정의</b>. 밤 선행/낮 선행 차는 <b>0.8pp</b>(§6.4 11위)라
+        초판 그대로 두면 된다</td></tr>
+    <tr><td><b>I4</b></td><td>좌석 <b>8인 고정</b></td><td>§6.4 1위 · §7.5</td>
+      <td>좌석 수가 최대 밸런스 변수(밤손님 수 <b>60.7pp</b>)인데
+        <b>다이얼이 좌석마다 따로 튜닝</b>된다(<code>stirP</code> 0.20 / 0.80 / 0.50).
+        하나만 고르면 튜닝 대상이 <b>1개</b></td></tr>
+    <tr><td><b>I5</b></td><td>승패 판정 + <code>endGame()</code></td><td><a href="#breaks">§2.3</a></td>
+      <td>판이 끝나지 않으면 판이 아니다. 클루 종료 <b>8단계가 3벌 복붙</b>(재확인)이라,
+        통합하지 않으면 마피아가 <b class="no">4번째 사본</b>이 된다</td></tr>
+    <tr><td><b>I6</b></td><td>재접속 복구 <code>onSeatRestored</code></td><td>§2.2 · <a href="#s84">§8.4</a></td>
+      <td>복구가 없으면 재접속 · 관전자의 <b>α가 0</b> → <b>I1이 무효화된다.</b>
+        즉 I1의 «부속품»이지 별건이 아니다</td></tr>
+    <tr><td><b>I7</b></td><td>시드 재생</td><td>§2.5</td>
+      <td><code>rng.ts</code>(129줄)를 그대로 쓴다 — <b class="ok">거의 공짜</b>이고
+        이 저장소의 결정론 규약 그 자체</td></tr>
+    <tr><td><b>I8</b></td><td>L0 좌석 점 + L1 판정 스트립(+요약줄)</td><td>§8.9 U3</td>
+      <td>α=0 행은 이력에 <b>전혀 반응하지 않는다</b>(곱셈적) → <b>L1이 L3보다 먼저</b>다.
+        순서를 뒤집으면 L3을 아무리 잘 만들어도 <b>0</b>이다</td></tr>
+  </table></div>
+
+  <h4>뺀다 — 각 항목의 «대가»를 함께 적는다</h4>
+  <p class="note" style="margin:0 0 8px">뺄 수 있다는 말이 <b>손해가 없다</b>는 뜻은 아니다.</p>
+  <div class="scroll"><table>
+    <tr><th style="width:5%">#</th><th style="width:22%">2차로 미룬다</th><th>미뤄도 되는 근거</th><th style="width:24%">대가</th></tr>
+    <tr class="hi"><td><b>O1</b></td>
+      <td><b>LLM 표현 계층 전부</b><br /><span class="note">1차는 폴백 문안 전용 · Gemini 호출 <b>0</b></span></td>
+      <td>① <code>CAT</code> 라벨 사전이 클루 3카테고리에 결속(<code>eval-narrator.mjs:128-132</code> · 재확인)
+        → 켜는 순간 「검증 없는 기능은 넣지 않는다」에 <b class="no">스스로 걸린다</b>(<a href="#pollution">§1.2-⑨</a>)<br />
+        ② 클루가 <b>폴백 전수 112,752문장 C1~C6 0위반</b>을 증명해 «LLM 없는 표현 계층»의 전례가 있다<br />
+        ③ LLM 대사는 §6~§8의 <b>어떤 숫자에도 기여하지 않는다</b></td>
+      <td><b class="no">크다.</b> NPC 대사 다양성 <b>0</b>. 이 저장소의 심사축 1위가 AI라
+        제출물로서는 큰 손실이다 — 그래서 <b>«본행사 항목»이지 «영구 삭제»가 아니다</b></td></tr>
+    <tr><td><b>O2</b></td><td>D2 역할 주장 + 증거 슬롯<br />+ 사망 시 역할 공개</td>
+      <td>시뮬 효과 <b>+0.1 / +0.6 / +1.6pp</b> — 6·8인은 해상도(±0.5pp) 근처.
+        <b class="ok">D1만으로 50.8 / 51.0 / 50.4%</b>가 나온다(<a href="#s751">§7.5.1</a>)</td>
+      <td><b class="no">사칭 층이 통째로 빠진다.</b> §7.2가 「논리로 요구했고 측정은 못 했다」고 적은 그대로 —
+        <b>측정이 못 잡는 재미</b>를 버리는 것이다</td></tr>
+    <tr><td><b>O3</b></td><td>D4 반박 토큰</td>
+      <td><b>모델 밖</b>이라 §7·§8의 어떤 숫자에도 없다. §7.2가 스스로
+        「D1·D2 없이는 아무것도 아니다」</td>
+      <td class="dim">없음 — 측정된 것이 없으므로 잃는 것도 측정 불가</td></tr>
+    <tr><td><b>O4</b></td><td>L2 행 확장 · L3 좌석×라운드 격자</td>
+      <td>§8.9 U3(α=0 행 무반응) · U2 <b>8인 −0.7pp</b>(해상도 이하 · <b>분리 불가</b>)</td>
+      <td>10인은 −10.0pp. <b>I4(8인 고정)가 이 컷을 가능하게 한다</b> — 두 결정이 서로를 지탱한다</td></tr>
+    <tr><td><b>O5</b></td><td>6인 · 10인 좌석</td>
+      <td>좌석마다 다이얼 재튜닝 + 7·9인은 <b>미측정</b></td>
+      <td class="dim">8인 판만 돈다</td></tr>
+    <tr><td><b>O6</b></td><td>4뷰 진화 서사</td>
+      <td><a href="#fix">§3</a>이 이미 「이식 불가」로 판정.
+        뷰가 1개면 게이트 <b>S4</b>(뷰 간 HUD ≤2px)도 판정 대상이 없다</td>
+      <td>이 저장소의 <b>시각적 서사</b>가 마피아엔 없다</td></tr>
+    <tr><td><b>O7</b></td><td>증거 노트 일반화(<code>renderPrivateGrid</code>)</td>
+      <td>사적 판단이라 §6~§8 모델에 <b>없다</b></td>
+      <td>장부(공개)의 «짝»인 「내가 정한 것」을 적을 자리가 없다</td></tr>
+    <tr><td><b>O8</b></td><td>맞포교 다이얼의 좌석별 튜닝</td>
+      <td>§7에서 <b>좌석 공통 0.70 상수로 격하</b>됐다(진폭 25pp → 6.7pp)</td>
+      <td class="dim">없음</td></tr>
+    <tr><td><b>O9</b></td><td>동점 처리 · 과반 요구<br /><span class="note">— <b>가장 단순한 형태로 고정</b></span></td>
+      <td>동점 <b>0.2pp</b>(확정안 3종 × leak 3점 재측정에서도 최대 |Δ| <b>1.6pp</b>이고
+        <b>부호가 뒤집힌다</b>) · 과반 요구 +1.4pp에 미처형 11% → <b>23%</b></td>
+      <td class="dim">없음. <b>「처형 없음 · 단순 다수결」이 코드도 가장 짧다</b></td></tr>
+  </table></div>
+
+  <div class="box info">
+    <p style="margin:0"><b>경계를 그은 것은 «취향»이 아니라 <a href="#s754">§7.5.4</a>의 변수 순위표다.</b><br />
+    밸런스 손잡이가 <b>아닌</b> 것(동점 0.2pp · 과반 1.4pp · 첫 페이즈 0.8pp — 전부 ≤1.6pp이고
+    <a href="#b69">§6.9</a>의 해상도 근처)은 1차에서 가장 단순한 형태로 두어도 된다.
+    반대로 손잡이인 것(밤손님 수 <b>60.7pp</b> · 뒤척임률 <b>49.8pp</b> · 오관측률 <b>31.8pp</b>)은
+    <b>전부 D1과 역할표에 붙어 있어</b> 1차에서 뺄 수 없다.
+    <b class="ok">I1과 O9는 같은 표의 양 끝이다.</b></p>
+  </div>
+
+  <h3 id="c92">9.2 무엇을 만들어야 하는가 — 층별 항목</h3>
+
+  <div class="klegend">
+    <span><span class="k k-new">新</span> <b>새로 짠다</b></span>
+    <span><span class="k k-mod">改</span> <b>고친다</b></span>
+    <span><span class="k k-keep">維</span> <b>그대로 쓴다</b></span>
+    <span><span class="k k-cut">後</span> <b>2차</b></span>
+    <span>신뢰도 <span class="tag t-ca">A 전례 실측</span> <span class="tag t-cb">B 유추</span>
+      <span class="tag t-cc">C 전례 없음</span> <span class="tag t-um">미측정</span></span>
+  </div>
+
+  <h4>서버 <code>apps/server/src</code></h4>
+  <div class="scroll"><table>
+    <tr><th style="width:4%">#</th><th style="width:3%"></th><th style="width:26%">항목</th>
+      <th>근거 좌표 <span class="dim">(07-29 재확인)</span></th><th style="width:12%">규모</th><th style="width:13%">신뢰도</th></tr>
+    <tr><td><b>S1</b></td><td><span class="k k-mod">改</span></td>
+      <td><code>BaseGameRoom</code> 추출 — 타이머 · 재접속/대리/관전 · <code>syncMeta</code> ·
+        AI 계측 · 좌석별 시야 + <b>훅 3개</b>(<code>onSeatRestored</code>/<code>onGameEnd</code>/<code>canAct</code>)</td>
+      <td class="q">clue-room.ts:309-337 · 196,526-545,582-607,622-747 · 381-399 · <b>341-367</b><sup>정정</sup> · 1903</td>
+      <td>~600줄 <b>이동</b></td><td><span class="tag t-cc">C</span> → <b class="no"><a href="#c94">위험 R1</a></b></td></tr>
+    <tr><td><b>S2</b></td><td><span class="k k-mod">改</span></td>
+      <td><code>endGame(reason, winnerId)</code> — 종료 <b>8단계 3벌</b> 통합</td>
+      <td class="q">1435-1456 · 1538-1559 · 2022-2050 <span class="dim">— 8단계가 세 경로에 전부 존재함을 재확인</span></td>
+      <td><b class="ok">−60줄</b></td><td><span class="tag t-ca">A</span></td></tr>
+    <tr class="hi"><td><b>S3</b></td><td><span class="k k-mod">改</span></td>
+      <td>승패 판정을 <code>advanceTurn()</code>에서 분리</td>
+      <td class="q">정의 2010-2062 · 인라인 2022-2050 · <b>호출부 8곳</b> 771·1521·1573·1590·1600·1668·1826·1997</td>
+      <td class="dim">—</td><td><span class="tag t-cc">C</span> → <b class="no"><a href="#c94">위험 R2</a></b></td></tr>
+    <tr><td><b>S4</b></td><td><span class="k k-mod">改</span></td>
+      <td>행동 자격 술어 <code>canAct(client, phase)</code>로 통일</td>
+      <td class="q">게이트 6곳 — <b>관용구가 둘</b>: <code>!== client.sessionId</code> 406·434·782 /
+        <code>!player || … !== player.id</code> 1461·1580·1589 <sup>정정</sup></td>
+      <td>~40줄</td><td><span class="tag t-cb">B</span></td></tr>
+    <tr><td><b>S5</b></td><td><span class="k k-new">新</span></td><td><code>MafiaRoom</code></td>
+      <td class="dim">클루 룸 잔존 ~1,400줄에서 보드·이동·주사위·제안·반증을 뺀 값</td>
+      <td>700~1,000줄</td><td><span class="tag t-cb">B</span></td></tr>
+    <tr><td><b>S6</b></td><td><span class="k k-new">新</span></td>
+      <td><code>schema/mafia-state.ts</code> — <b>상속하지 않는 독립 스키마</b></td>
+      <td class="dim"><code>game-state.ts</code> 67줄 대비. <code>roundPhase</code>·누적 장부가 붙고 좌표가 빠진다</td>
+      <td>60~100줄</td><td><span class="tag t-cb">B</span> · <b class="ok">R3 회피</b></td></tr>
+    <tr><td><b>S7</b></td><td><span class="k k-new">新</span></td>
+      <td><code>rules/mafia-{roles,night,vote,watch}.ts</code> — <b>순수 규칙 함수</b></td>
+      <td class="q">전례 bot-accuse.ts(92줄) · rng.ts(129줄)</td>
+      <td>250~450줄</td><td><span class="tag t-cb">B</span></td></tr>
+    <tr><td><b>S8</b></td><td><span class="k k-mod">改</span></td>
+      <td><code>ROOM_TYPES</code>에 <code>mafia</code> <b>1줄</b></td>
+      <td class="q">index.ts:58-61 — <b class="ok">이미 테이블 구동</b>(L0-① 완료)</td>
+      <td><b class="ok">1줄</b></td><td><span class="tag t-ca">A</span></td></tr>
+    <tr><td class="dim">♻</td><td><span class="k k-keep">維</span></td>
+      <td><code>rng.ts</code> · <code>ai/telemetry.ts</code> · <code>util/josa.ts</code></td>
+      <td class="dim">주제 무관</td><td class="ok">0</td><td><span class="tag t-ca">A</span></td></tr>
+  </table></div>
+
+  <h4>shared <code>packages/shared/src</code></h4>
+  <div class="scroll"><table>
+    <tr><th style="width:4%">#</th><th style="width:3%"></th><th style="width:26%">항목</th>
+      <th>근거 좌표</th><th style="width:12%">규모</th><th style="width:13%">신뢰도</th></tr>
+    <tr><td><b>H1</b></td><td><span class="k k-new">新</span></td>
+      <td><code>content/mafia/{types,roles}.ts</code> — 역할 · 페이즈 · <code>Statement</code> ·
+        <code>watchLedger</code> 프로토콜</td>
+      <td class="dim">대비 <code>content/clue/types.ts</code>(108줄)</td>
+      <td>100~180줄</td><td><span class="tag t-cb">B</span></td></tr>
+    <tr class="hi"><td><b>H2</b></td><td><span class="k k-mod">改</span></td>
+      <td>루트 배럴의 <b>이름 충돌 해소 → 서브패스 export</b></td>
+      <td><code>index.ts:16-18</code>이 3층을 <b>평면 재수출</b>. 주석 12-14가
+        <b class="no">「두 번째 주제가 들어오는 순간 이름 충돌로 먼저 깨진다」고 스스로 예고</b>.
+        <code>MessageType</code>(<code>content/clue/types.ts:108</code>) 충돌은 확실</td>
+      <td><b class="no">미측정</b></td><td><span class="tag t-um">충돌 개수 미집계</span></td></tr>
+    <tr><td><b>H3</b></td><td><span class="k k-mod">改</span></td>
+      <td><code>view-consts.ts</code> <b>미분류 9상수</b>의 층 판정</td>
+      <td>파일 헤더 3-14가 판정 보류를 <b>선언</b>(50줄 · <code>ELIM_*</code>/<code>RING_CURRENT</code>/
+        <code>SPENT_ALPHA</code>/<code>SCHEME_DESAT_KEEP</code>/<code>TOKEN_OUTLINE_*</code>/<code>BUBBLE_*</code>)</td>
+      <td>소</td><td><span class="tag t-ca">A</span> <span class="note">plans/active/16에 이미 열림</span></td></tr>
+    <tr><td class="dim">♻</td><td><span class="k k-keep">維</span></td>
+      <td><code>engine/{ai,color,view-timing}.ts</code></td>
+      <td class="dim">L0에서 이미 갈라져 나옴</td><td class="ok">0</td><td><span class="tag t-ca">A</span></td></tr>
+  </table></div>
+
+  <h4>클라 <code>apps/client/src</code></h4>
+  <div class="scroll"><table>
+    <tr><th style="width:4%">#</th><th style="width:3%"></th><th style="width:26%">항목</th>
+      <th>근거 좌표</th><th style="width:12%">규모</th><th style="width:13%">신뢰도</th></tr>
+    <tr class="hi"><td><b>C1</b></td><td><span class="k k-new">新</span></td>
+      <td>마피아 전용 <b>엔트리</b> + 공용 조각 추출</td>
+      <td><code>main.ts</code> 2735줄 · 재사용 후보: 오버레이 버스(1133-1233) · <code>showBanner</code> ·
+        AI 칩 · 랜딩/로비/초대/재접속(2516-2732) · 뷰 전환 기계(<code>STAGES</code> 775-782 ·
+        <code>applyStage</code> 2222 · <code>setStage</code> 2283).
+        <b class="no">전부 전역 가변 상태로 얽혀 있다</b></td>
+      <td><b class="no">미측정</b></td>
+      <td><span class="tag t-um">미측정</span> <span class="note">§3의 「새로 짜기가 싸다」도 <b>판단이지 실측이 아니다</b></span></td></tr>
+    <tr><td><b>C2</b></td><td><span class="k k-new">新</span></td><td>원탁 뷰 1종</td>
+      <td class="dim">대비: 클루 보드 빌드 ≈550줄(<code>game-scene.ts:548-701</code> 등) — 원탁은 격자·통로·문이 없다</td>
+      <td>300~500줄</td><td><span class="tag t-cb">B</span></td></tr>
+    <tr><td><b>C3</b></td><td><span class="k k-new">新</span></td>
+      <td>야경 장부 <b>L0+L1</b>(요약줄 · 좌석 행 · 판정 배지) + HTML/CSS</td>
+      <td><a href="#s83">§8.3</a> 설계 그대로. 껍데기 재사용:
+        <code>.rp-panel</code>/<code>.rp-head</code>/<code>.rp-body</code>(<code>index.html:463-474</code>) ·
+        <code>.rp-col.rp-off</code>+<code>#rpToggle</code>(<code>:710,714</code>)</td>
+      <td>250~400줄<br />+ CSS ~150</td><td><span class="tag t-cb">B</span></td></tr>
+    <tr><td><b>C4</b></td><td><span class="k k-mod">改</span></td>
+      <td><code>ViewContract</code> 완화 — <code>cell?</code>·<code>suspect?</code> +
+        <code>setTag(actorId, tag)</code></td>
+      <td><b>18멤버 / 메서드 16 재확인</b>. <code>ActorSnapshot.cell:60</code>·<code>suspect:57</code>
+        <b class="no">여전히 필수</b>. 클루 어휘 메서드는 <b>6이 아니라 7</b>
+        (<code>identity(suspect)</code> 127 포함)<sup>정정</sup> · 렌더러 3곳 가드</td>
+      <td>3파일 각 1~2곳</td><td><span class="tag t-ca">A</span></td></tr>
+    <tr><td><b>C5</b></td><td><span class="k k-mod">改</span></td>
+      <td><code>network.ts</code> <code>RoomType</code>에 <code>"mafia"</code> + <b>호출부에서 실제로 넘기기</b></td>
+      <td><code>network.ts:15-22</code>가 이미 인자화(L0-① 완료).
+        <b class="no">⚠ <code>RoomType</code>의 원소가 <code>"clue"</code> 하나 · 인자를 넘기는 호출부 0곳</b>
+        — 확장점이 열렸을 뿐 쓰이지 않는다</td>
+      <td>소</td><td><span class="tag t-ca">A</span></td></tr>
+    <tr><td><b>C6</b></td><td><span class="k k-mod">改</span></td><td><code>#gameSelect</code> 배선</td>
+      <td class="q">index.html:965(data-game 966) — 전 저장소 코드 참조 <b>1건뿐</b>(재확인) = 여전히 죽은 훅</td>
+      <td>~30줄</td><td><span class="tag t-ca">A</span></td></tr>
+    <tr><td class="dim">♻</td><td><span class="k k-keep">維</span></td>
+      <td><code>hud-inset.ts</code>(shared import 0) · <code>view-motion.ts</code> ·
+        <code>typewriter.ts</code> · <code>three-res.ts</code> · 오버레이 버스</td>
+      <td class="dim">좌표가 없어 그대로 산다</td><td class="ok">0</td><td><span class="tag t-ca">A</span></td></tr>
+  </table></div>
+
+  <h4>검증 <code>scripts</code></h4>
+  <div class="scroll"><table>
+    <tr><th style="width:4%">#</th><th style="width:3%"></th><th style="width:26%">항목</th>
+      <th>근거</th><th style="width:12%">규모</th><th style="width:13%">신뢰도</th></tr>
+    <tr class="hi"><td><b>V1</b></td><td><span class="k k-new">新</span></td>
+      <td>마피아 밸런스 시뮬 — <b class="ok">미러가 아니라 «실코드 import»</b></td>
+      <td><code>eval-narrator.mjs:37-54</code>의 <b>tsx 부트스트랩 전례</b>(<a href="#c95">§9.5 a</a>)</td>
+      <td>400~600줄</td><td><span class="tag t-cb">B</span></td></tr>
+    <tr><td><b>V2</b></td><td><span class="k k-mod">改</span></td>
+      <td><code>gate.baseline.json</code>에 <b>마피아 전용 기준선 블록</b> + 마피아 지표 · 밴드</td>
+      <td><code>gate-sim-regression.mjs</code>가 <code>games</code>/<code>seed</code> 불일치를
+        <b class="no">hard FAIL</b>(<code>configMismatch</code>)로 잡는다 → 클루 블록과 <b>섞으면 안 된다</b></td>
+      <td>소</td><td><span class="tag t-ca">A</span></td></tr>
+    <tr><td><b>V3</b></td><td><span class="k k-new">新</span></td>
+      <td>화면 게이트 <b>마피아 픽스처</b></td>
+      <td><b>전례 실측</b>: 화면 게이트에 항목 <b>1건</b>(S7 공개방 배지) 추가가
+        <b>528줄</b>이었다(<code>91429fa</code> diff)</td>
+      <td>~500줄</td><td><span class="tag t-ca">A</span> <span class="note">전례</span> /
+        <span class="tag t-cb">B</span> <span class="note">적용</span></td></tr>
+    <tr><td><b>V4</b></td><td><span class="k k-cut">後</span></td>
+      <td><code>CAT</code> 사전 주제별 개방 + <code>NarrationInput</code> 개방</td>
+      <td class="dim">§3-⑧ 추정(narrator ~120 · eval ~80) — <b>미검증</b></td>
+      <td class="dim"><b>2차</b></td><td><span class="tag t-cc">C</span></td></tr>
+    <tr><td class="dim">♻</td><td><span class="k k-keep">維</span></td>
+      <td>S1~S6 <b>검사식</b> · <code>gate-bundle-budget</code> · <code>gate-gpu-baseline</code> ·
+        <code>verify.mjs</code> 골격</td>
+      <td class="dim">주제 무관</td><td class="ok">0</td><td><span class="tag t-ca">A</span></td></tr>
+  </table></div>
+
+  <h3 id="c93">9.3 규모 산정 총계 — 신뢰도를 «함께»</h3>
+
+  <div class="scroll"><table class="num">
+    <tr><th style="width:18%">층</th><th>신규</th><th>이동 · 수정</th><th style="text-align:left">미측정</th></tr>
+    <tr><td>서버</td><td>1,010 ~ 1,550</td><td>~640 − 60</td><td style="text-align:left" class="dim">—</td></tr>
+    <tr><td>shared</td><td>100 ~ 180</td><td>소</td><td style="text-align:left"><b class="no">배럴 충돌 해소 (H2)</b></td></tr>
+    <tr><td>클라</td><td>700 ~ 1,050</td><td>소</td><td style="text-align:left"><b class="no">마피아 엔트리 (C1)</b></td></tr>
+    <tr><td>검증</td><td>900 ~ 1,100</td><td>소</td><td style="text-align:left" class="dim">—</td></tr>
+    <tr class="hi"><td><b>합</b></td><td><b>≈2,700 ~ 3,900줄</b></td><td><b>≈700줄</b></td>
+      <td style="text-align:left"><b>2건</b></td></tr>
+  </table></div>
+
+  <div class="box warn">
+    <h3 style="margin-top:0">시간으로 옮기면 — 그리고 왜 그 밴드가 넓은가</h3>
+    <p>이 저장소의 <b>관측 속도</b>는 10일(07-19 → 07-29) · 199커밋 ·
+      TS <b>12,524줄</b> + <code>scripts</code> <b>7,210줄</b>이다.
+      그 속도로 <b>순수 신규분만</b> 환산하면 <b>2~3일</b>.
+      그러나 그 속도는 <b class="no">«위험 없는 신규»에서 관측된 것</b>이고
+      <a href="#c94">§9.4</a>의 4건은 그 속도가 적용되지 않는 부분이다.</p>
+    <p style="margin-bottom:0">→ <b>밴드 4~8 작업일.</b>
+      <b>하한만 <span class="tag t-cb">B</span></b>(줄 수 환산)이고
+      <b class="no">상한은 <span class="tag t-cc">C</span></b> — 위험 4건이 각각 하루를 먹을 수 있다는
+      <b>판단</b>이지 실측이 아니다.</p>
+    <p class="note" style="margin:10px 0 0;padding-top:9px;border-top:1px dashed #3a3126">
+      ⚠️ <b>이 저장소는 «작업 시간»을 기록한 적이 없다.</b> 커밋 타임스탬프는 있으나
+      그것은 작업 시간이 아니다(에이전트 루프 + 사람 검수 + 대기가 섞여 있다).
+      <b>「4일」과 「4일(±거의 2배, 해본 적 없음)」은 다른 정보이고, 이것은 후자다.</b></p>
+  </div>
+
+  <div class="box info">
+    <p style="margin:0"><b>규모가 실제로 큰 것 3개</b> — 전부 <b>신규</b>라 위험은 낮고 시간만 든다:
+      <code>MafiaRoom</code>(S5) · 화면 게이트 픽스처(V3) · 밸런스 시뮬(V1).<br />
+      <b class="ok">셋을 합치면 신규분의 «절반»이 «룸»이 아니라 «검증»이다</b> —
+      「검증 없는 기능은 넣지 않는다」 규약의 <b>실제 가격표</b>가 여기 있다.</p>
+  </div>
+
+  <h3 id="c94">9.4 시간이 아니라 «위험»으로 적는 것</h3>
+  <p class="note" style="margin:0 0 4px">
+    규모를 적을 수 없어서가 아니다. <b>규모를 알아도 «결과»를 알 수 없기 때문</b>에 위험으로 적는다.</p>
+
+  <div class="rk">
+    <div class="h"><span class="d">R1</span><b><code>BaseGameRoom</code> 추출</b>
+      <em>S1 · ~600줄 이동</em></div>
+    <div class="b">
+      <p style="margin:0">재접속 · 대리 NPC · 관전 경로를 <b>전부 지난다.</b>
+        이 경로들은 <b>타입이 같은 채로 동작만 틀릴 수 있어</b> <code>typecheck</code>가 잡지 못한다.</p>
+      <div class="net">
+        <span class="k2">안전망</span>
+        <span><b class="no">거의 없다.</b> <code>pnpm verify</code>의 sim 게이트는
+          <code>sim-balance.mjs</code>를 도는데, 그 파일은 <b>정적 import 0건의 «자립 미러»</b>(재확인)라
+          <b class="no">서버 리팩터에 숫자 하나 안 움직인다.</b></span>
+        <span class="k2">완화</span>
+        <span><code>gate-screen.mjs</code>가 <b>실제 6인 클루 판을 결과 화면까지 몰고 간다</b>
+          (픽스처 <code>gate.config.mjs:572-608</code>) — <b>사실상 유일한 통합 주행</b>이다.
+          리팩터 전후로 이것을 돌리는 것이 최소 안전망이고,
+          <b>이 사실은 리팩터를 시작하기 «전에» 적어둬야 한다.</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="rk">
+    <div class="h"><span class="d">R2</span><b>승패 판정을 <code>advanceTurn()</code>에서 분리</b>
+      <em>S3 · 호출부 8곳</em></div>
+    <div class="b">
+      <p style="margin:0">「턴을 넘긴다」와 「판이 끝난다」가 <b>한 반환값에 섞여</b> 있다.
+        호출부 <b>8곳</b>이 각자 「끝났으면 그만둔다」를 재현해야 한다.</p>
+      <div class="net">
+        <span class="k2">안전망</span>
+        <span><code>typecheck</code>는 <b>반환 타입을 바꾸면</b> 잡는다 —
+          <b class="no">바꾸지 않으면 한 곳도 못 잡는다.</b></span>
+        <span class="k2">완화</span>
+        <span>반환 타입을 <code>void</code> → <code>"advanced" | "ended"</code>로
+          <b>일부러 깨서</b> 8곳을 컴파일러가 지목하게 만든다.<br />
+          ⚠️ <b class="no">더 큰 것은 «일정 제약»이다</b> — 실행계획 폴백 규칙 2가
+          <b>「진실값 변경은 08-01 이후 금지」</b>이고 <b>승패 경로가 정확히 그 대상</b>이다
+          (<a href="#c97">§9.7</a>).</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="rk avoid">
+    <div class="h"><span class="d">R3</span><b>Colyseus 스키마 상속의 와이어 호환성</b>
+      <em>S6 · <b>MVP가 회피</b></em></div>
+    <div class="b">
+      <p style="margin:0"><a href="#fix">§3-⑨</a>가 <b>미확인</b>으로 남긴 것.
+        필드 순서 · 타입 id가 <b>재접속 토큰 · 관전 경로</b>를 지나므로
+        「클루 무영향」을 <b>정적으로 보장할 수 없다.</b></p>
+      <div class="net">
+        <span class="k2">완화</span>
+        <span><b class="ok">MVP가 밟지 않는다</b> — 상속을 쓰지 않고 독립 <code>MafiaState</code>를 짠다.
+          필드 몇 개 중복이 «미확인 위험»보다 싸다.
+          <b>위험을 «푼» 게 아니라 «밟지 않기로 한» 것</b>이다.</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="rk">
+    <div class="h"><span class="d">R4</span><b>게이트 앵커의 «조용한 SKIP»</b>
+      <em>전 층 · 재발 확정</em></div>
+    <div class="b">
+      <p style="margin:0">파일을 옮기거나 늘리면 게이트가 <b class="no">FAIL이 아니라 SKIP으로 죽는다.</b>
+        <code>plans/active/16</code>이 L0에서 <b>이미 겪었고</b>,
+        <code>gate.config.mjs:186-192</code>가 그 사유를 <b>주석으로 박아뒀다.</b></p>
+      <div class="net">
+        <span class="k2">안전망</span>
+        <span>사유 인쇄는 있으나 <b class="no">SKIP 자체를 «실패»로 세지 않는다.</b></span>
+        <span class="k2">완화</span>
+        <span>마피아 파일 추가는 <b>앵커를 늘리는 일</b>이라 같은 실패 모드가 재발한다.
+          특히 게이트 <b>S4</b>(뷰 간 HUD ≤2px)는 마피아가 뷰 1개면 <b>판정 대상이 없어 자동 SKIP</b>된다 —
+          <b class="no">「통과」로 읽으면 안 된다.</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="box crit">
+    <p style="margin:0"><b>R1이 이 목록의 «머리»인 이유</b> —
+      <a href="#fix">§3-⑥</a>이 이미 「검증 공백」이라 적었는데, <b>이번 재확인으로 더 나빠졌다.</b>
+      <code>sim-balance.mjs</code>가 «자립 미러»라는 것이 <b>정적 import 0건</b>으로 확정됐기 때문이다 —
+      <b class="no">서버 규칙을 어떻게 옮기든 그 게이트는 숫자 하나 안 움직인다.</b></p>
+  </div>
+
+  <h3 id="c95">9.5 검증은 어떻게 할 것인가 — 3종</h3>
+
+  <h4>(a) 밸런스 회귀 — <b class="ok">§3의 「두 번째 미러」 결론을 뒤집는다</b></h4>
+
+  <div class="quote">
+    <span class="cite">§3 「실현 가능성이 낮다고 판단한 것」</span>
+    <code>sim-balance.mjs</code> 미러를 실코드 공유로 전환 — 미러가 <code>gate.baseline.json</code>의
+    근거이므로 공유로 바꾸면 기준선이 무효화된다. 마피아용은 <b>두 번째 미러</b>를 짜는 것이 현실적이다.
+    같은 결함을 복제하는 것이지만, 비용상 그렇다. <b>나쁜 소식으로 기록한다.</b>
+  </div>
+
+  <p><b>이번 재확인으로 그 결론이 «마피아에는» 적용되지 않는다는 것이 드러났다.</b></p>
+
+  <div class="two">
+    <div class="box good">
+      <h3 style="margin-top:0">① 패턴이 이미 저장소 안에 있다</h3>
+      <p style="margin:0"><code>eval-narrator.mjs:37-54</code>가 <b>tsx 로더를 <code>--import</code>로 물린 채
+        자기 자신을 재실행</b>해서 실제 <code>.ts</code>(<code>narrator.ts</code> ·
+        <code>content/clue/cards.ts</code>)를 <b>그대로 import</b>한다.
+        헤더 주석 7행과 48행이 <b class="ok">「미러링하지 않는다」</b>를 명시한다.<br /><br />
+        이 스크립트는 <code>pnpm verify</code>의 <b>5번 게이트로 매 커밋 돈다</b> —
+        즉 <b>패턴은 이미 검증됐다</b>(직접 실행해 PASS 관측).</p>
+    </div>
+    <div class="box good">
+      <h3 style="margin-top:0">② 마피아에는 «무효화할 기준선»이 없다</h3>
+      <p style="margin:0"><code>sim-balance.mjs</code>가 미러인 이유는 <b>그게 옳아서가 아니라</b>
+        <code>gate.baseline.json</code>이 <b>그 미러를 기준선으로 «잠갔기»</b> 때문이다.<br /><br />
+        마피아 기준선은 <b>지금 만드는 것</b>이므로
+        <b class="ok">처음부터 실코드 공유로 세울 수 있다.</b></p>
+    </div>
+  </div>
+
+  <ul class="tight">
+    <li><b>전제</b> — 규칙을 Colyseus에 의존하지 않는 <b>순수 함수</b>(<code>rules/mafia-*.ts</code>)로 짤 것.
+      S7이 이미 그 형태이고 <code>bot-accuse.ts</code>(92줄)가 전례다.</li>
+    <li><b>성능 여유</b> — 클루 20,000판 게이트가 <b>1.24초</b>(실측 2026-07-29).
+      <b class="no">⚠ tsx 경유의 시작 비용은 미측정.</b></li>
+  </ul>
+
+  <div class="box warn">
+    <p style="margin:0"><b>지표는 «분리»해야 한다</b> — <a href="#b66">§6.6</a>이 이미
+      「같은 «사람 승률»이라는 말이 두 주제에서 <b>다른 양</b>을 가리킨다」고 적었다.
+      클루 지표(<code>humanWinPct</code> 21.45 · <code>avgRounds</code> 7.23 ·
+      <code>p95Suggestions</code> 67 · <code>avgHumanRooms</code> 5.092)는
+      <b class="no">마피아에 하나도 옮겨가지 않는다.</b><br /><br />
+      마피아 지표 = <b>집안 승률 · 중앙 라운드 · 미처형 라운드율 · 투표 정확도</b>.
+      밴드는 <a href="#b69">§6.9</a>의 해상도(시드 간 ±0.5pp)의 <b>2배인 ±1pp 이상</b> —
+      「1pp 미만은 읽지 말 것」이 이미 규약이다.</p>
+  </div>
+
+  <div class="box crit">
+    <p style="margin:0"><b>그래도 R1은 안 풀린다.</b> 마피아 시뮬이 마피아 실규칙을 공유해도
+      <b class="no">클루 미러는 그대로</b>다. S1~S3(클루 리팩터)의 안전망은 여전히 없다.</p>
+  </div>
+
+  <h4>(b) 환각 검증 — <b>규칙을 «우회»하지 않고, 규칙이 요구하는 것을 «안 만든다»</b></h4>
+
+  <p>§1이 지적한 자기 차단(「<code>CAT</code>이 클루 3카테고리에 결속돼 새 주제는 스스로 규칙에 걸린다」)에
+    대한 1차의 답은 <b>회피가 아니라 «스코프»</b>다:
+    <b class="ok">1차는 Gemini 호출이 0</b>이므로 검증해야 할 <b>LLM 출력이 존재하지 않는다.</b></p>
+
+  <div class="scroll"><table>
+    <tr><th style="width:22%">검사</th><th style="width:12%">1차 마피아</th><th>근거</th></tr>
+    <tr><td>C1 한 줄 · C2 길이 · C3 마크업</td><td><b class="ok">그대로 성립</b></td>
+      <td>검사식이 <code>CAT</code>을 쓰지 않는다 (재확인)</td></tr>
+    <tr><td>C4 진실값 치환 · C5 누출 · C6 손패</td><td><b class="no">결속</b></td>
+      <td><code>CAT</code>(128-132) 결속 → 마피아 폴백에는 <b>«치환할 진실값»의 정의부터 다르다</b>
+        (<a href="#pollution">§1.2-⑨</a>)</td></tr>
+    <tr class="hi"><td><b>M1 / M5</b> <span class="note">(마피아판 C4)</span></td><td><b class="ok">성립한다</b></td>
+      <td><code>CAT</code>을 <b>「좌석 라벨」 1카테고리 + 「비트 값 <code>{비움, 있음}</code>」</b>으로 갈아끼우면
+        판정식 「A의 라벨 최소 1개 포함 + A에 없는 <b>같은 카테고리</b> 라벨 0개」에서
+        <code>A</code>가 <b>「확정된 신고 레코드」로 치환될 뿐 검사식은 그대로다</b>
+        — §3-⑧과 <a href="#s74">§7.4</a>가 같은 구조를 <b>두 번</b> 확인했다</td></tr>
+    <tr><td>C7 경로 분포</td><td class="dim">해당 없음</td><td class="dim">LLM이 없다</td></tr>
+  </table></div>
+
+  <ul class="tight">
+    <li>→ <b>1차의 환각 검증 = 폴백 문안 «전수 스윕» + M1 · M5.</b>
+      전례: 클루가 폴백 <b>112,752문장</b>에서 C1~C6 <b>0위반</b>을 이미 증명했고,
+      그 검사기는 <b class="ok">미러가 아니라 실소스 import</b>다(위 (a)와 같은 근거).</li>
+    <li>→ <b>2차(LLM 켜기) = §3의 L2-⑧</b>: <code>NarrationInput</code> 개방 +
+      <code>CAT</code> 주제별 사전. <b class="no">그때 O1의 대가를 치른다.</b></li>
+  </ul>
+
+  <h4>(c) 화면 게이트 — <b>검사식은 살고 «픽스처»는 새로 짠다</b></h4>
+
+  <div class="split">
+    <div class="sd hld">
+      <h5>그대로 산다 — 검사식</h5>
+      <ul>
+        <li><b>S1</b> 기하 겹침 · <b>S2</b> 스크롤</li>
+        <li><b>S3</b> 44px 터치 하한</li>
+        <li><b>S5</b> 10px 폰트 하한</li>
+        <li><b>S6</b> 4.5:1 대비</li>
+        <li class="dim">전부 <b>주제를 모른다</b></li>
+      </ul>
+    </div>
+    <div class="sd brk">
+      <h5>새로 짠다 — 픽스처 (100% 클루)</h5>
+      <ul>
+        <li><code>#lobbyChars .char min 12</code> — 캐릭터 12칸</li>
+        <li><code>{click:"#accuse"}</code></li>
+        <li><code>.modal select min 3</code> — 용의자·훔친 것·장소</li>
+        <li>결과 4화면(<code>result-lose/survivor/win/defeat</code>)을
+          <b>실제 6인 클루 판을 끝까지 몰아서</b> 도달</li>
+      </ul>
+    </div>
+  </div>
+
+  <ul class="tight">
+    <li><b>규모 근거는 «실측»이다</b> — 화면 게이트에 항목 <b>1건</b>(S7 공개방 배지)을 더한 것이
+      <b>528줄</b>이었다(<code>91429fa</code>). 마피아 픽스처는 <b>판을 끝까지 몰아야</b> 하므로 그보다 크다.</li>
+    <li>⚠️ <b class="no">S4는 자동 SKIP된다</b> — 뷰가 1개면 「뷰 간 HUD 차」의 판정 대상이 없다.
+      <b>통과가 아니라 «미판정»</b>이고, R4의 실패 모드 그대로다.</li>
+    <li>⚠️ <b><a href="#s87">§8.7</a>의 390px 배분은 «산술»이지 렌더 실측이 아니다</b>
+      (<a href="#s810">§8.10</a>이 이미 명시 · 실기 촬영 0건 · 게이트 미실행).
+      픽스처를 처음 돌리면 S1(겹침) · S3(44px) · S5(<code>.sg-n</code> 10px 하한에 <b>여유 0</b>)가
+      <b>실패할 수 있다.</b>
+      → <b class="ok">그 실패는 «사고»가 아니라 «정보»다.</b>
+      그래서 V3(픽스처)를 C3(장부 UI) <b>뒤가 아니라 «옆에»</b> 두어야 한다.</li>
+  </ul>
+
+  <h3 id="c96">9.6 세 검증이 각각 무엇을 «못» 잡는가</h3>
+  <div class="scroll"><table>
+    <tr><th style="width:18%">검증</th><th style="width:32%">잡는 것</th><th><b class="no">못 잡는 것</b></th></tr>
+    <tr><td>밸런스 회귀</td><td>규칙 변경이 승률을 옮겼는가</td>
+      <td><b class="no">클루 서버 리팩터</b>(미러라서) · <b>재미</b>(§6.10 그대로) ·
+        <code>leak</code>의 실제 값</td></tr>
+    <tr><td>환각 검증</td><td>폴백 문안이 진실값을 바꾸는가</td>
+      <td><b>LLM 실출력</b>(1차엔 없음) · 「대사가 «좋은가»」</td></tr>
+    <tr><td>화면 게이트</td><td>겹침 · 스크롤 · 타깃 · 폰트 · 대비</td>
+      <td><b class="no">α</b> — 사람이 장부를 «실제로 읽는가».
+        <a href="#s810">§8.10</a>이 「측정하지 않았다」고 못박은 바로 그것</td></tr>
+  </table></div>
+
+  <div class="box crit">
+    <p style="margin:0"><b>세 게이트를 전부 통과해도 §7.7 · §8.10이 남긴 최우선 미확인은 그대로다</b>:
+      「사람이 D1 판정을 읽고 쓰는가」. 그것을 확인하는 방법은 여전히 하나뿐이고
+      (<b class="ok">사람이 플레이하는 것</b>) 그 데이터는 <b>0건</b>이다.<br /><br />
+      <b>검증 3종은 «틀리지 않았음»을 보증하지 «성립함»을 보증하지 않는다.</b></p>
+  </div>
+
+  <h3 id="c97">9.7 왜 「지금」이 아닌가 — 일정과의 대조</h3>
+  <div class="scroll"><table class="sch">
+    <tr><th style="width:16%">시점</th><th style="width:42%">남은 필수 작업
+      <span class="dim">(<code>20260727-execution-plan.md</code> §2·§4)</span></th><th>마피아와의 충돌</th></tr>
+    <tr class="lock"><td>08-01</td>
+      <td>★ <b>안전 테이크 촬영 · 업로드</b> — 필수 제출물 5종 중 <b>유일한 미제작 항목</b></td>
+      <td>실행계획: 「🚨 <b>다른 모든 작업을 버리고 이것만 한다</b>」</td></tr>
+    <tr class="lock"><td>08-01 이후</td>
+      <td>🔒 <b>폴백 규칙 2 — 진실값 변경 금지</b></td>
+      <td><b class="no">S2 · S3(클루 승패 경로)이 정확히 그 대상</b>이고,
+        <b>MVP의 I5가 그것을 «요구»한다</b></td></tr>
+    <tr><td>08-02 ~ 08-07</td>
+      <td>코드 스플리팅 · 계측 · FX · eval <code>--live</code> · ④ 문서 승격</td>
+      <td class="dim">전 슬롯이 이미 배정돼 있다</td></tr>
+    <tr class="lock"><td>08-08 12:00</td><td>🔒 코드 동결 · ★ 본 테이크 촬영</td><td class="dim">—</td></tr>
+    <tr class="lock"><td>08-09</td><td>★ PDF 5종 + <b>신청서 제출</b></td>
+      <td>「제출은 어떤 경우에도 08-09를 넘기지 않는다」</td></tr>
+  </table></div>
+
+  <div class="clash">
+    <div class="c a">
+      <h5>08-01 «전»에 밀어 넣으면</h5>
+      4~8일치를 <b>오늘 포함 3일</b>에 넣는 것 →
+      <b class="no">08-01 촬영을 위협한다.</b><br />
+      폴백 규칙 1 <b>「되돌릴 수 없는 것이 코드를 이긴다」</b>의 정면 위반.
+    </div>
+    <div class="x">×</div>
+    <div class="c b">
+      <h5>08-01 «후»로 미루면</h5>
+      MVP의 <b>I5</b>(승패 판정 + <code>endGame</code>)가
+      <b class="no">폴백 규칙 2에 걸린다.</b><br />
+      진실값 변경은 08-01 이후 금지.
+    </div>
+  </div>
+
+  <div class="lead" style="background:#2e1f1b;border-color:#7a4034">
+    <b class="no">두 문 다 닫혀 있다 → 판정: 본행사 이후.</b><br />
+    이 판정은 §3이 「<span class="lvl l0">L0</span> 3건은 클루가 도는 채로 오늘 넣을 수 있다」고
+    적은 것과 <b>모순되지 않는다</b> — <b>L0은 런타임 무영향이고 마피아 MVP는 그렇지 않다.</b>
+    실제로 L0 2건은 이미 들어갔다(<code>37a4c4a</code> · <code>3a132a8</code>).
+  </div>
+
+  <div class="box warn">
+    <h3 style="margin-top:0">미루면서도 «오늘» 가능한 것 3건 — 전부 클루 런타임 경로 밖</h3>
+    <p><span class="lvl l0">L0</span>
+      <b>S8</b>(<code>ROOM_TYPES</code> 1줄) · <b>C5</b>(<code>RoomType</code> 유니온) ·
+      <b>C6</b>(<code>#gameSelect</code> 배선).</p>
+    <p style="margin-bottom:0">⚠️ 그러나 <b class="no">셋을 다 넣어도 마피아는 한 발짝도 돌지 않는다.</b>
+      이것이 현 상태의 정확한 모양이다 —
+      <b>경계를 넓혀놨지만 그 자리에 들어올 «두 번째 주제»가 없다.</b>
+      L0-①이 이미 그 모양이다: <code>RoomType</code>의 원소가 <b>하나뿐</b>이고
+      <b>인자를 넘기는 호출부가 0곳</b>이다.</p>
+  </div>
+
+  <h3 id="c98">9.8 좌표 재검증 — 이 절이 «고친» 것 <span style="font-size:12px;color:var(--dim);font-weight:400">(2026-07-29 · 6차)</span></h3>
+  <div class="scroll"><table>
+    <tr><th style="width:24%">대상</th><th>기존 → 정정</th></tr>
+    <tr class="hi"><td><a href="#pollution">§1.2-①</a> <b>서버 게이트 6곳</b></td>
+      <td>「전부 <code>this.state.currentTurn !== client.sessionId</code>」 →
+        <b class="no">틀렸다. 관용구가 «둘»이다.</b>
+        <code>client.sessionId</code> <b>3곳</b>(406·434·782) ·
+        <code>!player || … !== player.id</code> <b>3곳</b>(1461·1580·1589).
+        좌표 6개는 맞다. <b><code>canAct</code> 통일의 대상이 «한 모양»이 아니라 «두 모양»</b>이라는 것이
+        §2.1 · §3-⑥에 붙는 실제 정보다</td></tr>
+    <tr class="hi"><td><a href="#pollution">§1.2-⑥</a> <b>클루 어휘 메서드 수</b></td>
+      <td>「6메서드」 → <b>7</b>. <code>identity(suspect: string)</code>(<code>view-contract.ts:127</code>)이
+        <b>파라미터 이름부터 클루</b>다.
+        「18멤버 / 메서드 16」과 <code>ActorSnapshot.cell:60</code>·<code>suspect:57</code> 필수는
+        <b class="ok">재확인 결과 맞다</b></td></tr>
+    <tr><td><a href="#layers">§1.1</a> 좌석별 시야</td><td><code>341-366</code> → <b>341-367</b></td></tr>
+    <tr><td><a href="#fix">§3-①</a> 룸 타입 파라미터화</td>
+      <td><b class="ok">완료</b>(<code>37a4c4a</code>). <code>index.ts:58-61</code> <code>ROOM_TYPES</code>
+        테이블 구동 · <code>network.ts:15-22</code> 인자화.
+        <b class="no">⚠ <code>RoomType</code> 원소 1개 · 인자 전달 호출부 0곳</b></td></tr>
+    <tr><td><a href="#fix">§3-③</a> shared 재배치</td>
+      <td><b class="ok">완료</b>(<code>3a132a8</code>). <code>engine/</code>(ai·color·view-timing) ↔
+        <code>content/clue/</code>(cards·board·types·view-board) · 루트 배럴 3줄 재수출 →
+        <b>import 경로 변경 0</b>.
+        <b class="part">⚠ <code>view-consts.ts</code>는 «미분류 층»으로 남았다</b>(9상수)</td></tr>
+    <tr><td><a href="#pollution">§1.2-③</a> 「배럴이 클루 보드다」</td>
+      <td><b>여전히 참</b>(L0 이후에도). <code>index.ts:17</code>이 <code>content/clue</code>를 재수출하므로
+        <code>@zodiac-clue/shared</code>를 import하면 보드가 그대로 딸려온다.
+        배럴 주석 12-14가 <b class="no">「두 번째 주제가 들어오는 순간 이름 충돌로 먼저 깨진다」</b>고
+        <b>스스로 예고</b></td></tr>
+    <tr><td><a href="#pollution">§1.2-⑨</a> <code>sim-balance.mjs</code> 미러</td>
+      <td><b>여전히 참이고 «더 강해졌다»</b> — <b class="no">정적 import 0건</b>(완전 자립).
+        L0 이후 갱신된 것은 <b>경로 주석뿐</b>이다</td></tr>
+    <tr class="hi"><td><a href="#pollution">§1.2-⑨</a> <code>eval-narrator.mjs</code></td>
+      <td><b class="ok">미러가 «아니다»</b>(초판이 다루지 않은 사실).
+        <code>:37-54</code>가 tsx를 부트스트랩해 실 <code>.ts</code>를 import한다
+        → <b><a href="#c95">§9.5 (a)</a>의 근거</b></td></tr>
+    <tr><td><a href="#s85">§8.5</a> 인용 <span class="note">(참고)</span></td>
+      <td><code>.rp-panel</code>/<code>.rp-head</code>/<code>.rp-body</code>는 <code>470-481</code>이 아니라
+        <b>463-474</b> · <code>#rpToggle</code>/<code>.rp-off</code>는 <b>710·714</b> ·
+        <code>minFontPx</code>는 <code>319-323</code>이 아니라 <b>329</b> ·
+        S4 <code>hudShiftTolPx</code>는 <code>388</code>이 아니라 <b>389</b>(주석 383-388)</td></tr>
+    <tr class="hi"><td>🆕 <b>신규 발견</b></td>
+      <td><code>main.ts:1055</code>가 <code>"solution"</code> 메시지를 듣는데
+        <b class="no"><code>ServerMessages</code>(<code>content/clue/types.ts:69-106</code>)에 그 이름이 없다</b>
+        — 클라 · 서버 <b>프로토콜 드리프트 1건</b>. 마피아와 무관하지만
+        §1.2-④의 「프로토콜 타입 = 규칙」에 붙는 <b>실측 사례</b>다</td></tr>
+  </table></div>
+
+  <h3 id="c99">9.9 확인 / 미확인 — §5 · §7.7 · §8.10에 추가</h3>
+  <div class="scroll"><table>
+    <tr><th style="width:38%">주장</th><th>근거</th></tr>
+    <tr><td>§9.2의 근거 좌표 전량</td>
+      <td><b class="ok">직접 재조회</b>(2026-07-29 · 서버 · shared · 클라 · <code>scripts</code>)</td></tr>
+    <tr><td>종료 8단계가 세 경로에 전부 복붙</td><td><b class="ok">직접 확인</b> — 8단계 각각을 세 경로에서 대조</td></tr>
+    <tr><td><code>advanceTurn()</code> 호출부 <b>8곳</b></td><td><b class="ok">직접 확인</b></td></tr>
+    <tr><td>서버 게이트 관용구 <b>2종</b></td>
+      <td><b class="ok">직접 확인</b> — 초판의 단일 문자열 주장이 <b class="no">틀렸다</b></td></tr>
+    <tr><td><code>eval-narrator.mjs</code>가 실 <code>.ts</code>를 import</td>
+      <td><b class="ok">직접 확인 + 실행</b>(tsx 부트스트랩 <code>:37-54</code> · PASS 관측)</td></tr>
+    <tr><td><code>sim-balance.mjs</code> 정적 import <b>0건</b></td><td><b class="ok">직접 확인</b></td></tr>
+    <tr><td>클루 밸런스 게이트 20,000판 = <b>1.24초</b></td><td><b class="ok">실측</b>(2026-07-29)</td></tr>
+    <tr><td>화면 게이트 <b>1건 추가 = 528줄</b></td><td><b class="ok">실측</b>(<code>91429fa</code> diff)</td></tr>
+    <tr><td>§9.3의 <b>줄 수 밴드</b></td>
+      <td><span class="tag t-cb">B</span> <b>유추.</b> 기존 파일의 실측 줄 수에서 뺄셈 · 대비로 유도한 값이다 —
+        <b class="no">짜본 적 없다</b></td></tr>
+    <tr class="hi"><td>§9.3의 <b>시간 밴드 4~8일</b></td>
+      <td><span class="tag t-cc">C</span> <b class="no">추정.</b>
+        이 저장소는 <b>작업 시간을 기록한 적이 없다.</b>
+        하한은 줄 수 환산, <b>상한은 위험 4건에 대한 «판단»</b></td></tr>
+    <tr><td>클라 마피아 엔트리(C1) 비용</td>
+      <td><span class="tag t-um">미측정</span> §3의 「분해보다 새로 짜기가 싸다」도
+        <b class="no">판단이지 실측이 아니다</b>(모듈 27블록만 실측)</td></tr>
+    <tr><td>shared 배럴 충돌 해소(H2) 비용</td>
+      <td><span class="tag t-um">미측정</span> 충돌 «개수»를 세지 않았다(<code>MessageType</code>은 확실)</td></tr>
+    <tr><td>tsx 경유 시뮬의 시작 비용</td>
+      <td><span class="tag t-um">미측정</span> 클루 미러의 1.24초는 tsx를 <b>안 탄</b> 값이다</td></tr>
+    <tr><td>Colyseus 스키마 상속</td>
+      <td><b>여전히 미확인.</b> MVP는 <b>쓰지 않기로</b> 해서 회피했을 뿐 — <b class="no">푼 것이 아니다</b></td></tr>
+    <tr class="hi"><td><b>「1차 MVP면 마피아가 재미있다」</b></td>
+      <td><b class="no">주장하지 않는다.</b> 잰 것은 §7 · §8의 밸런스와 정보 부피뿐이고,
+        <b>D2 · D4 · LLM을 뺀 판이 재미있는지는 사람이 플레이해야 안다.</b>
+        사람 플레이 데이터는 여전히 <b>0건</b></td></tr>
+    <tr><td>「본행사 이후로 미루는 것이 옳다」</td>
+      <td><b>판단.</b> 근거(일정 · 폴백 규칙)는 문서에서 직접 읽었지만,
+        <b>미루는 것과 강행하는 것의 손익을 «잰» 것은 아니다</b></td></tr>
+  </table></div>
+
+  <div class="lead">
+    <b>§9의 쓰임</b> — 「마피아를 만들자」도 「만들지 말자」도 아니라 —<br />
+    <b>「만든다면 ≈2,700~3,900줄 · 4~8일이고, 그중 «시간»으로 못 적는 것이 4건이며,
+    막는 것은 «크기»가 아니라 «08-01 이후 진실값 동결»이다」</b>이다.<br /><br />
+    §0~§8은 <b>설계</b>를 끝냈고 §9는 그것을 <b class="ok">«결정 가능한 형태»</b>로 닫는다.
+    남은 것은 <b>결정뿐</b>이고, 그건 <b>사람의 몫</b>이다.
+  </div>
+
   <hr />
   <p class="note" style="margin:0">
     <b>이 문서의 성격</b> — 「분리가 안 돼 있다」는 <b>비난이 아니라 좌표</b>다.
@@ -3635,6 +4403,28 @@
     이 문서는 그 보류를 재개할 때 <b>어디부터 손대야 하는지</b>를 비용 순으로 적어 둔 것이다.
     §3의 <span class="lvl l0">L0</span> 3건은 <b>클루가 도는 채로</b> 오늘 넣을 수 있다.<br /><br />
     <b>변경 이력</b> —
+    <b>2026-07-29 (6차 · 규모 산정 · 판정)</b>: <a href="#cost">§9</a> 신설.
+    §0~§8이 답한 적 없는 「얼마가 드는가」에 답한다.
+    <b>MVP 경계</b>(넣는 것 8 · 빼는 것 9 — 각각 §6·§7·§8의 <b>실측</b>이 근거다:
+    <b>D1은 뺄 수 없고</b>(빼면 18.7 / 27.9 / 12.8% = 게임 불성립)
+    <b>동점·과반·첫 페이즈는 가장 단순한 형태로 두어도 된다</b>(≤1.6pp)).
+    <b>1차는 LLM 호출 0</b> — 환각 검증기의 <code>CAT</code> 결속을 «우회»하는 게 아니라
+    <b>규칙이 요구하는 것을 «안 만드는» 것</b>.
+    규모 <b>≈2,700~3,900줄 신규 + ~700줄 이동·수정 + 미측정 2건</b>,
+    시간 <b>4~8일</b>(하한 B · <b>상한 C</b>).
+    <b>위험 4건을 «시간»이 아니라 «위험»으로 표시</b>
+    (R1 <code>BaseGameRoom</code> — 안전망이 «거의 없다»는 것이
+    <code>sim-balance.mjs</code> <b>정적 import 0건</b>으로 확정 ·
+    R2 <code>advanceTurn</code> 호출부 8곳 + 08-01 동결 ·
+    R3 스키마 상속은 <b>회피</b> · R4 조용한 SKIP).
+    <b>검증 3종</b>: 밸런스는 <b>§3의 「두 번째 미러」 결론을 뒤집는다</b>
+    (<code>eval-narrator.mjs:37-54</code>의 tsx 부트스트랩 전례 + 마피아엔 무효화할 기준선이 없다) ·
+    환각은 <b>폴백 전수 + M1/M5</b> ·
+    화면은 <b>검사식 재사용 · 픽스처 신규</b>(전례 실측 <b>528줄</b>).
+    <b class="no">판정: 본행사 이후</b> — 막는 것은 규모가 아니라
+    <b>「진실값 변경은 08-01 이후 금지」</b>(<a href="#c97">§9.7</a>).
+    좌표 전량 재검증 — <b>오류 2건</b>(게이트 관용구 2종 · 클루 어휘 메서드 6→7) · 밀림 1건 ·
+    <b>신규 발견 1건</b>(<code>"solution"</code> 프로토콜 드리프트). ·
     <b>2026-07-29 (5차 · 야경 장부 화면)</b>: <a href="#screen">§8</a> 신설.
     <a href="#s77">§7.7</a>이 남긴 최우선 과제(「사람이 D1 판정을 읽고 쓰는가」)를 <b>화면 설계 문제로 규정</b>하고,
     <b>접기 규칙 3개</b>(F1 판정은 펼치고 원본은 접는다 · F2 세로는 항상 · 가로는 좌석 1개만
