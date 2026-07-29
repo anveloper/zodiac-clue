@@ -2576,21 +2576,29 @@ const loadPublicRooms = async (): Promise<void> => {
     // 이어 붙어 화면에 «대기 중님의 방»으로 나갔다(실측 — ui-copy §8.4).
     // 이름이 있을 때만 `님`을 쓴다(R1: 변수 뒤에 조사를 붙이지 않고 받침 고정 접미어를 끼운다).
     const title = host ? `<b>${host}</b> 님의 방` : "<b>방장 대기 중</b>";
+    // ── 상태 배지·버튼(ui-copy §8.5 확정) ─────────────────────────────
+    // 상태는 **서버가 실어 보낸 `metadata.phase`만** 읽는다. `count > clients`(NPC 충원
+    // 흔적) 같은 간접 신호로 상태를 만들어내면 서버가 말한 적 없는 것을 화면이 단언한다
+    // (§1.4 진실값 경계 위반). 그래서 `phase`를 모르면 배지를 **아예 그리지 않는다**.
+    // 목록에 «진행 중»은 원리적으로 나타나지 않는다 — 판이 도는 동안 방은 목록에서 빠진다.
+    const phase = r.metadata?.phase;
+    const ended = phase === "ended";
+    const badge = ended ? "종료됨" : phase === "lobby" ? "대기 중" : "";
+    // 부가 문구: 대기 중은 인원(현행 유지), 종료된 방은 **변수 없는 고정 문장**(R2).
+    const sub = ended ? "다시 하기를 기다리는 중" : `${r.clients}/${r.maxClients}인`;
     const li = document.createElement("li");
     li.className = "room-item";
     li.innerHTML =
       `<span class="ri-body">${title}` +
-      `<span class="ri-sub"> · ${r.clients}/${r.maxClients}인</span></span>`;
+      `<span class="ri-sub"> · ${sub}</span></span>` +
+      (badge
+        ? `<span class="ri-badge${ended ? " ended" : ""}">${badge}</span>`
+        : "");
     const btn = document.createElement("button");
     // §2 어휘 통일: 방 참가 동작은 **참가**다(`참여`는 쓰지 않는다).
-    // ⚠️ 이 버튼이 «참가»인지 «관전»인지는 **아직 화면에서 말할 수 없다.**
-    //    판이 끝난 방은 목록에 되돌아오지만(설계대로) 리매치 전까지 관전이고,
-    //    목록 응답(`getAvailableRooms`)에는 그것을 가릴 값이 없다 —
-    //    metadata = `{ hostName, count }`뿐이고 `state.phase`는 실려 오지 않는다.
-    //    클라가 «count > clients면 NPC가 찼으니 시작한 방»으로 추정하는 것은
-    //    서버가 말한 적 없는 것을 만들어내는 것이라 하지 않는다.
-    //    문안은 ui-copy §8.4에 `[선행]`으로 확정해 뒀다 — 서버가 `phase`를 실어 보내면 그때 붙인다.
-    btn.textContent = full ? "만석" : "참가";
+    // 라벨은 «들어가면 무엇이 되는지»를 말한다 — 배지가 «지금», 버튼이 «다음»이다.
+    // 끝난 방에 들어가면 리매치 전까지 관전이므로(서버 `onJoin`) 라벨도 «관전»이다.
+    btn.textContent = full ? "만석" : ended ? "관전" : "참가";
     btn.disabled = full;
     btn.onclick = async () => {
       setLandingMsg("참가하는 중…");

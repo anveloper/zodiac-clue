@@ -17,6 +17,20 @@ export const joinRoomById = (id: string): Promise<Room> =>
  * 잠금(`lock`)이 아니라 목록 숨김이므로, 목록에서 사라진 방도 **코드로는 참가**할 수 있고
  * 그때 좌석을 줄지 관전으로 받을지는 서버 `onJoin`이 정한다. 판이 끝나면 다시 뜬다.
  */
-export type PublicRoom = RoomAvailable<{ hostName?: string; count?: number }>;
+/**
+ * 목록에 실려 오는 방 메타데이터 — **서버 `syncMeta()`가 쓰는 필드와 1:1**이다.
+ * 전부 공개 정보다(손패·정답 봉투·좌석 배정은 어떤 형태로도 들어오지 않는다).
+ * `phase`는 서버 `state.phase`와 같은 값 — 클라는 이 값을 **추정하지 않고 그대로 읽는다**.
+ */
+export type PublicRoomMeta = {
+  hostName?: string;
+  /** 좌석 총원(사람 + NPC). */
+  count?: number;
+  /** 그중 사람 좌석 수. */
+  humans?: number;
+  isPublic?: boolean;
+  phase?: "lobby" | "playing" | "ended";
+};
+export type PublicRoom = RoomAvailable<PublicRoomMeta>;
 export const listPublicRooms = (): Promise<PublicRoom[]> =>
-  client.getAvailableRooms<{ hostName?: string; count?: number }>("clue");
+  client.getAvailableRooms<PublicRoomMeta>("clue");

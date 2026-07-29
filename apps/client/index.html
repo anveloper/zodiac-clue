@@ -162,6 +162,15 @@
       .room-item .ri-body { flex: 1; min-width: 0; }
       .room-item .ri-body b { color: #f0d9a8; }
       .room-item .ri-sub { color: #a89778; font-size: 11px; }
+      /* 방 상태 배지(ui-copy §8.5) — 텍스트 + CSS 뱃지다(이모지를 늘리지 않는다).
+         `flex: none`이 없으면 방장 이름이 길 때 배지가 «대기…»로 줄어 상태가 사라진다. */
+      .room-item .ri-badge {
+        flex: none; padding: 2px 8px; border-radius: 999px; font-size: 10px;
+        background: #2c2317; border: 1px solid #6f5a37; color: #e0a35a; white-space: nowrap;
+      }
+      .room-item .ri-badge.ended {
+        background: #241f18; border-color: #3a3126; color: #a89778;
+      }
       .room-item button { padding: 5px 12px; font-size: 12px; }
       .room-empty { padding: 12px; text-align: center; color: #8f8574; font-size: 12px; }
       .divider { text-align: center; color: #8f8574; font-size: 11px; margin: 16px 0; }
