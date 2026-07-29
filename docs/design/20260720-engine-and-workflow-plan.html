@@ -25,6 +25,29 @@
   .note { color:var(--dim); font-size:13px; }
   .pill { background:#2c2519; border:1px solid var(--edge); border-radius:6px; padding:2px 8px; font-size:12px; color:var(--dim); }
   ol { padding-left:22px; }
+
+  /* ── 2026-07-29 실측 정정 노트 ─────────────────────────────
+     원문은 지우지 않는다. 반증된 서술 «옆»에 근거와 함께 붙인다. */
+  .lead { background:#2a1d13; border:1px solid #7a4526; border-left:4px solid var(--accent);
+          border-radius:10px; padding:14px 18px; margin:0 0 26px; }
+  .lead .lt { color:#f0a86a; font-weight:700; font-size:14px; display:block; margin-bottom:6px; }
+  .lead p { margin:6px 0; font-size:13px; }
+  .fix { background:#241a12; border:1px solid #5e3a22; border-left:4px solid var(--accent);
+         border-radius:8px; padding:12px 16px; margin:12px 0 6px; }
+  .fix .ft { color:#e8a06a; font-weight:700; font-size:13.5px; display:block; margin-bottom:7px; }
+  .fix p { font-size:13px; margin:7px 0; }
+  .fix ul { margin:7px 0; }
+  .fix li { font-size:13px; margin:3px 0; }
+  .fix .keep { color:#7ee29a; }
+  .src { display:block; color:var(--dim); font-size:12px; margin-top:9px;
+         border-top:1px dashed var(--edge); padding-top:7px; }
+  /* 판정 칩 — 항목별로 결과가 갈린다는 것을 눈으로 보여준다 */
+  .v { display:inline-block; font-size:11px; font-weight:700; padding:1px 7px; border-radius:4px;
+       margin-right:5px; vertical-align:middle; white-space:nowrap; }
+  .v-no   { background:#4a1e18; color:#f2a092; }
+  .v-part { background:#3d3410; color:#e0c25a; }
+  .v-ok   { background:#1f3d24; color:#7ee29a; }
+  .warn { color:#e0c25a; }
   /* scrollbar-theme */
   * { scrollbar-width: thin; scrollbar-color: #4a3d2b #16130f; }
   ::-webkit-scrollbar { width:9px; height:9px; }
@@ -69,13 +92,37 @@
   .b-done { background:#e4f2e7 !important; color:#1d6b3a !important; border-color:#a5c8ae !important; }
   .b-partial { background:#fbf0d8 !important; color:#7a5209 !important; border-color:#d6bb85 !important; }
   .b-todo { background:#f7e6d5 !important; color:#8a4718 !important; border-color:#d6b28d !important; }
+
+  /* 이 문서 고유 — 07-29 정정 노트 */
+  .fix { background:#fbf4ea !important; border-color:#c9a37c !important;
+         border-left:4px solid var(--accent) !important; }
+  .fix .ft { color:#8a4718 !important; }
+  .fix .keep { color:var(--green) !important; }
+  .lead .lt { color:#8a4718 !important; }
+  .warn { color:#8a5b0a !important; }
+  .v { -webkit-print-color-adjust:exact; print-color-adjust:exact; border:1px solid var(--edge) !important; }
+  .v-no   { background:#f7e0dc !important; color:#a1281e !important; border-color:#d3a9a2 !important; }
+  .v-part { background:#fbf0d8 !important; color:#7a5209 !important; border-color:#d6bb85 !important; }
+  .v-ok   { background:#e4f2e7 !important; color:#1d6b3a !important; border-color:#a5c8ae !important; }
+  .src { border-top-color:var(--edge) !important; }
 }
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>게임 엔진 &amp; AI 개발 협업 플랜</h1>
-  <p class="sub">zodiac-clue · 2026-07-20 · 주제 미확정, 엔진 우선 · <span class="pill">사람용 .html</span></p>
+  <p class="sub">zodiac-clue · 2026-07-20 · 주제 미확정, 엔진 우선 · <span class="pill">사람용 .html</span> · <span class="pill">🔴 07-29 실측 정정 5건</span></p>
+
+  <div class="lead">
+    <span class="lt">🔴 실측 정정 (2026-07-29) — 이 문서의 서술 5건이 반증·갱신됐습니다</span>
+    <p>두 번째 주제(<b>마피아</b>)를 <b>실제로 설계해 엔진/콘텐츠 경계를 <code>파일:줄</code>로 실측</b>한 결과입니다.
+       정정 대상은 <b>§0 · §1.3(2건) · §1.4 · §3 · §4</b> — 각 절 아래 주황색 <b>정정 노트</b>로 붙여 두었습니다.</p>
+    <p><b>원문은 하나도 지우지 않았습니다.</b> 07-20의 서술은 <b>근거가 없었을 뿐 거짓이 아니었고</b>,
+       이 저장소는 «판단이 왜 바뀌었는가»의 경로를 기록으로 칩니다.</p>
+    <p class="warn">⚠️ 한 줄 요약이 필요하다면 — 「엔진이 쓸모없다」가 아니라
+       <b>「엔진 자산의 상당 부분은 재사용되지만, 엔진 자리에 콘텐츠가 박힌 지점이 11곳 있고 경계는 아직 그어지지 않았다」</b>.</p>
+    <span class="src">근거: <code>20260729-mafia-content-design.md</code> §0(결론) · §1.1(3층 분류) · §1.2(오염 11건) · §4.2(페이즈 규약) · §9.3(규모) · §10.4(상류 어긋남)</span>
+  </div>
 
   <div class="card">
     <h2 style="margin-top:0;border:0;padding:0;">0. 배경 / 방향 전환</h2>
@@ -83,6 +130,29 @@
       <li><b>게임 주제는 확정이 아니다.</b> "클루"는 현재 프로토타입일 뿐, 바뀔 수 있다.</li>
       <li>전략: <b>재사용 가능한 "게임 엔진"</b>과 <b>교체 가능한 "게임 콘텐츠(주제)"</b>를 분리한다. 주제가 바뀌어도 엔진(멀티/방/NPC/딜레이/문서체계)은 그대로 재사용.</li>
     </ul>
+
+    <div class="fix">
+      <span class="ft">🔴 정정 노트 (2026-07-29) — 「엔진은 그대로 재사용」은 실측으로 반증됐다</span>
+      <p>두 번째 주제를 실제로 설계해 경계를 <code>파일:줄</code>로 실측했고, 그 결론은 <b>«분리는 성립하지 않는다»</b>였다.
+         가장 심각한 3건: ① <b>동기화 스키마 전체가 클루 전용</b>이고 «주제별 스키마»라는 개념이 없다
+         ② <b>LLM 표현 계층과 환각 검증기가 3카테고리에 결속</b> ③ <code>ViewContract</code>가 <b>좌표 없는 액터를 표현하지 못한다</b>.</p>
+      <p><b>단, 위에 열거한 5가지는 통째로 틀린 것이 아니라 항목별로 판정이 갈린다:</b></p>
+      <ul>
+        <li><span class="v v-no">반증</span><b>NPC(표현)</b> — <code>narrator.ts</code>의 <code>SYSTEM</code>(84-103)·<code>NarrationInput</code>(13-33)·<code>fallbackLine</code>(129-171)·<code>cacheKey</code>(358-368)가 전부 클루 3카테고리(용의자·흉기·장소)에 결속.</li>
+        <li><span class="v v-no">반증</span><b>딜레이</b> — 규약 자체가 클루의 <b>순차 턴 예산</b>에서 유도됐다(→ §1.3 정정 노트 ②).</li>
+        <li><span class="v v-part">부분</span><b>방 / 멀티</b> — 골격은 엔진이나 <code>restoreSeat</code>이 <code>sendHand</code>/<code>sendSuggestLog</code>/<code>sendSolutionTo</code>를 직접 호출해 콘텐츠에 결속. 반면 관전자 모델·<code>syncMeta</code>·랜딩/로비/초대/재접속 셸은 재사용 판정.</li>
+        <li><span class="v v-ok">유효</span><b>문서체계</b> — <b>반증되지 않았다.</b> 마피아 문서 자체가 이 체계 위에서 쓰였다.</li>
+      </ul>
+      <p class="warn">⚠️ <b>「엔진이 쓸모없다」는 뜻이 아니다.</b> 같은 실측이 <b class="keep">즉시 재사용 가능한 자산</b>도 함께 확인했다 —
+         타이머 프리미티브(<code>clue-room.ts:309-337</code>) · <b>시드 해시 RNG</b>(<code>rules/rng.ts</code> — 「최고 재사용 자산」) ·
+         재접속/대리 NPC/관전 골격 · 공개방 메타 <code>syncMeta</code> · AI 계측·폴백·정규화(<code>ai/telemetry.ts</code>) ·
+         좌표 없는 뷰 크롬(<code>hud-inset.ts</code>·<code>view-motion.ts</code>·<code>typewriter.ts</code>·<code>three-res.ts</code>) · 오버레이 버스 · 랜딩/로비/초대/재접속 셸.</p>
+      <p><b>정확한 표현</b>: 「엔진은 그대로 재사용된다」가 아니라
+         <b>「엔진 자산의 상당 부분은 재사용되지만, 엔진 자리에 콘텐츠가 박힌 지점이 11곳 있고 그 경계는 아직 코드에 그어지지 않았다」</b>.
+         마피아를 얹었을 때 가장 크게 부러지는 것은 「보드가 없다」는 표면적 문제가 아니라
+         <b>승패 판정이 <code>advanceTurn()</code> 한복판에 인라인돼 있다는 것</b>(<code>clue-room.ts:2022-2050</code>) — 훅으로 뺄 자리 자체가 없다.</p>
+      <span class="src">근거: 마피아 설계 §0 · §1.1 · §1.2</span>
+    </div>
   </div>
 
   <h2>1. 게임 플레이 엔진 (확정 룰 — 주제 불문 유지)</h2>
@@ -93,7 +163,7 @@
   <h3>1.2 방 만들기 + 캐릭터 선택 <span class="badge b-done">구현됨</span></h3>
   <p>방 생성 / 초대 링크(<code>/room/&lt;코드&gt;</code>) / 대기실 / 호스트 시작. 캐릭터 선택은 선택 사항, <b>중복 검증은 방 안(대기실)</b>에서 실시간.</p>
 
-  <h3>1.3 룰 기반 NPC + LLM 표현 레이어 <span class="badge b-done">구현됨</span> <span style="opacity:.6;font-size:11px">(갱신 2026-07-21: narrate+fallback+캐시·EMA 절반딜레이·speak/helperWhisper)</span></h3>
+  <h3>1.3 룰 기반 NPC + LLM 표현 레이어 <span class="badge b-done">구현됨</span> <span class="badge b-partial">재사용성은 별개 ↓</span> <span style="opacity:.6;font-size:11px">(갱신 2026-07-21: narrate+fallback+캐시·EMA 절반딜레이·speak/helperWhisper)</span></h3>
   <ul>
     <li><b>결정(무엇을)</b>은 <b>결정론적 규칙 엔진</b>이 계산 — 이동·제안·반증·추리·판정. 환각 차단 · 무료티어 안전.</li>
     <li><b>대사·연출(어떻게 보이나)</b>은 <b>LLM 경유</b>. 규칙 엔진이 확정한 "결정된 정보"만 입력 → 자연어 대사/제스처 생성. <b>LLM은 진실값을 만들지 않는다(표현 전용).</b></li>
@@ -101,12 +171,66 @@
     <li><b>폴백</b>: LLM 실패/한도(429) 시 규칙 기반 정적 대사로 대체 → 게임 안 끊김.</li>
   </ul>
 
-  <h3>1.4 엔진 추상화 (게임 교체 대응) <span class="badge b-todo">예정</span></h3>
+  <div class="fix">
+    <span class="ft">🟠 정정 노트 ① (2026-07-29) — 「구현됨」을 「엔진으로서 완성」으로 읽으면 안 된다</span>
+    <p><b class="keep">구현됐다는 사실 자체는 맞다.</b> 반증된 것은 아무도 문장으로 적지 않은 <b>함의</b>다 —
+       이 절이 §1 「확정 룰 <b>주제 불문 유지</b>」 아래 놓여 있어 <b>표현 계층도 주제 불문</b>으로 읽힌다.</p>
+    <p><b>실측</b>: 표현 계층의 네 요소가 전부 클루 전용이다. <code>SYSTEM</code>(84-103)은 「조선 사극풍 추리 보드게임 NPC」·「호랑이 대감의 생신 잔치」를 프롬프트에 박아 뒀고,
+       <code>NarrationInput</code>(13-33)의 <b>필수 필드가 <code>suspect</code>/<code>weapon</code>/<code>room</code> 3개</b> + <code>action:"suggest"|"accuse"|"scheme"</code>이며,
+       <code>fallbackLine</code>(129-171) 전체가 클루 문안이고 <code>cacheKey</code>(358-368)가 3요소 조합이다.</p>
+    <p><b>더 조용하고 치명적인 쪽은 검증 계층이다</b> — <code>scripts/eval-narrator.mjs:128-132</code>의 <code>CAT = {suspect, weapon, room}</code> 라벨 사전 위에
+       환각 검사 <b>C4(진실값 치환 없음)·C5·C6</b>가 세워져 있다. <b>새 주제의 대사는 현 검사기로 판정할 수 없고</b>,
+       그러면 <code>20260720-ai-tech-doc.md</code> §8.1-2 「<b>검증할 수 없는 기능은 넣지 않는다</b>」에 스스로 걸린다 — <b>규칙이 새 주제를 막는 구조</b>다.</p>
+    <p>마피아 문서 §4.5의 한 줄: <b>「LLM은 표현 전용」이라는 규약은 「표현 계층은 재사용 가능」을 뜻하지 않는다.</b></p>
+    <p><b class="keep">재사용되는 부분은 분명히 있다</b> — 「결정은 규칙 엔진 · 표현만 LLM」이라는 <b>분업 원칙 자체</b>와
+       AI 계측·폴백·정규화 골격(<code>ai/telemetry.ts</code> · <code>narrator.ts:269-331,435-544</code>)은 <b>엔진</b>으로 판정됐다.
+       갈아야 하는 것은 <b>프롬프트·입력 계약·폴백 문안·캐시 키</b>다.</p>
+    <span class="src">근거: 마피아 설계 §1.2-⑧ · §1.2-⑨ · §4.5</span>
+  </div>
+
+  <div class="fix">
+    <span class="ft">🟠 정정 노트 ② (2026-07-29) — 딜레이 규약: 위 서술은 «불완전»하고, 적용 범위는 «과대»하다</span>
+    <p><b>(a) 상한이 빠져 있다.</b> <code>CLAUDE.md</code>는 이 규약을 <b>「절반, 단 상한 1600ms」</b>로 적는다.
+       코드 확인(<code>clue-room.ts:1924-1946</code> · 상수 65-67,72): 실제 식은
+       <code>max(NPC_DELAY_MIN 800, min(NPC_DELAY_MAX 1600, 라운드예산, base))</code>이고 <code>base = avgHumanTurnMs / (2 × 사람수)</code>다.
+       <b>「절반」은 기준값일 뿐</b>이며 그 위에 라운드 예산(<code>12000 / 봇 수</code> − 나머지 비용)과 상한·하한이 얹혀 있다.
+       같은 파일 주석(1920-1922)이 <b>「판이 길어진 뒤에는 상한이 사실상 항상 이긴다」</b>고 적는다.
+       즉 이 절은 <b>틀리진 않았으나 지배적인 항을 빠뜨렸다</b> — 상한은 미관이 아니라 <b>판 길이를 묶는 장치</b>다.</p>
+    <p><b>(b) 「주제 불문 유지」가 과대하다.</b> 이 규약은 <b>「봇 1턴 = npcDelay + BOT_ACT_GAP + bubbleLifeMs ≤ 4000ms」라는 순차 턴 예산</b>에서 유도된 것인데,
+       페이즈형 게임에서는 봇 전원이 <b>같은 페이즈 안에서 동시에</b> 움직인다.
+       페이즈형의 대응 규약은 <b>「봇 발화를 <code>talk</code> 길이 T 안에 균등 분산 · 라운드당 좌석별 1회 이하」</b>이며,
+       이는 <b>규약의 이식이 아니라 재유도</b>다.</p>
+    <p><b>파급</b>: 대사 길이 상한(<code>narrator.ts:61</code> <code>LINE_BUDGET_SUGGEST = 25</code>)의 역산 근거도 <b>같은 턴제 예산식</b>이다.
+       주제를 바꾸면 <b>문안 길이 규약까지 다시 유도해야 한다.</b></p>
+    <span class="src">근거: 마피아 설계 §4.2(⚠️ 블록) · §1.2-⑪ · 코드 재확인 <code>apps/server/src/rooms/clue-room.ts</code></span>
+  </div>
+
+  <h3>1.4 엔진 추상화 (게임 교체 대응) <span class="badge b-todo">예정</span> <span class="badge b-partial">형태 미확인 ↓</span></h3>
   <ul>
     <li>게임별 요소를 <code>GameDefinition</code> 인터페이스로 분리: 구성물(카드/역할/맵), 승리조건, <b>NPC 결정 정책</b>(decideTurn), 초기 배치, 표현 라벨/이모지.</li>
     <li><b>엔진 코어</b>(방/턴/동기화/NPC 스케줄/LLM 표현/딜레이/재접속)는 <b>게임 독립</b>.</li>
     <li>현재 "클루"는 첫 <code>GameDefinition</code> 구현으로 이관. 새 주제 = 새 GameDefinition만 작성.</li>
   </ul>
+
+  <div class="fix">
+    <span class="ft">🟡 정정 노트 (2026-07-29) — 이 절은 «틀린» 것이 아니라 «미실행 + 형태 미확인»이다</span>
+    <p class="warn">⚠️ <b>먼저 정확히</b>: 이 문서는 <b>이관이 끝났다고 주장한 적이 없다.</b>
+       §3-2가 처음부터 「보류」로 적었고 위 배지도 「예정」이다. 07-29 실측이 바꾼 것은 <b>완료 여부가 아니라 그 다음 세 가지</b>다.</p>
+    <ul>
+      <li><b>① 8일이 지나도 여전히 미실행이다.</b> 07-29 리팩터(<code>3a132a8</code>)가 <code>packages/shared/src/content/clue/</code>로 <b>파일은 갈랐지만</b>
+          <code>GameDefinition</code> 인터페이스는 <b>존재하지 않는다</b>. 오염 11건 중 <b>완전 해소 0건 · 부분 해소 3건</b>이며,
+          「부분」인 이유는 셋 다 <b>자리를 만들었을 뿐 그 자리에 들어올 두 번째 주제가 없기</b> 때문이다.</li>
+      <li><b>② 「하나의 정의로 전부 교체」라는 형태가 성립하는지 미확인이다.</b> 마피아 §9는 Colyseus 스키마 <b>상속을 일부러 회피</b>하고 독립 <code>MafiaState</code>를 택했다(§9.4 <b>R3</b> —
+          필드 순서·타입 id가 재접속 토큰·관전 경로를 지나므로 「클루 무영향」을 <b>정적으로 보장할 수 없다</b>). <b>위험을 푼 것이 아니라 밟지 않기로 한 것</b>이다.
+          따라서 「엔진 코어는 게임 독립」이 <b>동기화 스키마 층에서도</b> 참인지는 <b>실험 전까지 모른다</b>.</li>
+      <li><b>③ §3-2에 적힌 재개 조건이 무효가 됐다</b> → §3 정정 노트.</li>
+    </ul>
+    <p><b class="keep">유효한 부분</b>: 「엔진 코어 ≠ 콘텐츠」라는 <b>축 자체는 실측이 지지한다</b> — 3층 분류가 실제로 그 축으로 갈렸고 재사용 층이 확인됐다.
+       반증된 것은 <b>「이미 그렇게 돼 있다」</b>이지 <b>「그렇게 해야 한다」</b>가 아니다.</p>
+    <p class="warn">⚠️ 다만 이 절이 「게임 독립」으로 열거한 것 중 <b>「LLM 표현」과 「딜레이」는 실측에서 게임 독립이 아니었다</b>(→ §1.3 정정 노트 ①·②).
+       목록을 그대로 믿고 설계하면 안 된다.</p>
+    <span class="src">근거: 마피아 설계 §10.4 U4 · §9.4 R3 · §1.2 머리 · <code>docs/plans/hold/02-engine-content-separation.md</code></span>
+  </div>
 
   <h2>2. AI 개발 협업 규칙 (문서 체계)</h2>
 
@@ -136,11 +260,70 @@
   </ol>
   <p class="note">파생 체크리스트(갱신 2026-07-21): 완료 → <code>docs/plans/done/01-docs-workflow.md</code>·<code>03-npc-llm-expression.md</code> · 진행중 → <code>docs/plans/active/09-helper-npcs.md</code>·<code>10-view-2.5d-toggle.md</code> · 보류 → <code>docs/plans/hold/02-engine-content-separation.md</code></p>
 
+  <div class="fix">
+    <span class="ft">🟡 정정 노트 (2026-07-29) — 2번의 «재개 조건»과 4번의 «결말»</span>
+    <p><b>2번 — 「주제 확정 시 재개」는 더 이상 유효하지 않다.</b> 주제는 <b>교체하지 않는 쪽으로 사실상 결정</b>됐다(클루로 08-09 제출 · <code>20260727-execution-plan</code>).
+       <b>원래 조건대로면 이 플랜은 영원히 열리지 않는다.</b> 그래서 <code>docs/plans/hold/02-engine-content-separation.md</code>가 07-29에 재개 조건을
+       <b>①&nbsp;08-08 코드 동결 해제</b> + <b>②&nbsp;클루 서버 리팩터를 검증할 «통합 주행» 확보</b>(둘 다 충족)로 <b>교체</b>했다 — <b>status는 <code>hold</code> 유지</b>.</p>
+    <p><b>②가 조건이 된 이유</b>: 핵심 과제인 <b>엔진 코어 추출</b>(<code>BaseGameRoom</code>)은 재접속·대리 NPC·관전 경로를 <b>전부 지나는데</b>,
+       이 경로들은 <b>타입이 같은 채로 동작만 틀릴 수 있어 <code>typecheck</code>가 잡지 못한다.</b>
+       그런데 <code>pnpm verify</code>의 sim 게이트가 도는 <code>scripts/sim-balance.mjs</code>는 <b>정적 import 0건의 자립 미러</b>라
+       <b>서버 리팩터에 숫자 하나 반응하지 않는다.</b> 후보 안전망은 둘뿐이다 —
+       <code>gate-screen.mjs</code>의 <b>실판 픽스처</b>(6인 클루를 결과 화면까지 몰고 가는 <code>SCREEN.result</code>)를 리팩터 전후로 대조하거나,
+       <code>sim-balance.mjs</code>를 실코드 공유로 전환(<span class="warn">⚠️ <code>gate.baseline.json</code> 기준선이 무효화된다</span>).</p>
+    <p>또 하나의 잠금: 승패 판정 분리는 <b>「진실값 변경은 08-01 이후 금지」</b>(실행계획 폴백 규칙 2)의 <b>정면 대상</b>이다.
+       <b>막는 것은 규모가 아니라 순서다.</b></p>
+    <p><b>4번 — 「클루 확정 또는 새 GameDefinition 작성」은 «클루 확정»으로 결말이 났다.</b> 이 문서에는 그 결정이 적혀 있지 않았다.
+       다만 그것은 §0의 「주제는 바뀔 수 있다」를 폐기하는 것이 아니라 <b>이번 제출 범위의 결정</b>이다.</p>
+    <span class="src">근거: 마피아 설계 §10.5 · §9.4 R1 · §9.7 · §10.4 부수 관측 · <code>docs/plans/hold/02-engine-content-separation.md</code></span>
+  </div>
+
   <h2>4. 무료티어 / 리스크</h2>
   <ul>
     <li><b>LLM은 표현 전용</b> → 호출 최소화, 절반 딜레이 분산, 캐시/폴백. 프레임 호출 0.</li>
     <li><b>주제 미확정 리스크</b> → 엔진/콘텐츠 분리로 교체 비용 최소화.</li>
     <li><b>문서 드리프트</b> → <del>동기화 방식 확정 필요</del> <b>확정됨</b>: .html은 Claude 수기 디자인, md→html 자동 변환 미사용(<code>CLAUDE.md</code> 명시).</li>
+  </ul>
+
+  <div class="fix">
+    <span class="ft">🔴 정정 노트 (2026-07-29) — 「교체 비용 최소화」는 실현되지 않았다. 단 «크기»가 막은 것은 아니다</span>
+    <p>마피아 §9가 그 비용을 <b>처음으로 쟀다</b>(MVP 기준: 8인 고정 · 역할 4종 · 페이즈 5종 · <b>LLM 호출 0</b>):
+       <b>신규 ≈2,700~3,900줄</b> + <b>이동·수정 ≈700줄</b> + <b>미측정 2건</b>, 시간 <b>4~8 작업일</b>.
+       「최소화」의 전제였던 「엔진은 재사용」이 항목별로 갈린 이상(→ §0 정정 노트) <b>이 리스크 대응은 성립하지 않는다.</b></p>
+    <p><b>가장 뼈아픈 내역</b>: 신규분의 <b>절반이 «룸»이 아니라 «검증»</b>이다(밸런스 시뮬 · 화면 게이트 픽스처).
+       「검증 없는 기능은 넣지 않는다」 규약의 <b>실제 가격표</b>가 여기 있다.</p>
+    <p class="warn">⚠️ <b>과장하지 말아야 할 두 가지</b></p>
+    <ul>
+      <li><b>(a) 「4~8일」은 관측이 아니다.</b> 이 저장소는 <b>작업 시간을 기록한 적이 없다</b>(커밋 타임스탬프는 에이전트 루프 + 사람 검수 + 대기가 섞여 있어 «작업 시간»이 아니다).
+          그 밴드는 줄 수와 위험 건수에서 <b>유도</b>한 것이고, <b>하한만 🟨 B</b>(줄 수 환산) <b>상한은 🟥 C</b>(전례 없음)다.</li>
+      <li><b>(b) 막는 것은 크기가 아니라 순서다.</b> §9의 판정은 「불가능」이 아니라 <b>「본행사 이후로 미룬다」</b>이고,
+          근거는 규모가 아니라 <b>「진실값 변경은 08-01 이후 금지」</b>(실행계획 폴백 규칙 2)다 —
+          MVP 최소 집합에 <b>클루의 승패 판정 경로를 여는 작업</b>이 들어 있기 때문이다.</li>
+    </ul>
+    <p>즉 <b>교체 비용은 최소화되지 않았지만, 교체가 «불가능»하다고 실측된 것도 아니다.</b></p>
+    <span class="src">근거: 마피아 설계 §9.0 · §9.3 · §9.7 · §10.4 U5</span>
+  </div>
+
+  <h2>변경 이력</h2>
+  <ul>
+    <li><b>2026-07-20</b> 최초 작성(엔진/콘텐츠 분리 + AI 협업 문서 체계 플랜).</li>
+    <li><b>2026-07-21</b> 진척 반영(문서체계·NPC LLM 완료, 문서 이원화 확정, 플랜 경로 갱신).</li>
+    <li><b>2026-07-29</b> <b>실측 정정 5건 — 정정 노트 부착.</b> 두 번째 주제(마피아)를 설계해 경계를 실측한
+      <code>20260729-mafia-content-design.md</code>(§0·§1.1·§1.2·§4.2·§9.3·§10.4)를 근거로
+      <b>§0 · §1.3(2건) · §1.4 · §3 · §4</b>에 정정 노트를 달았다. <b>원문은 하나도 지우지 않았다.</b>
+      <ul>
+        <li><span class="v v-no">반증</span><b>§0</b> 「엔진은 그대로 재사용」 — 오염 11건. 단 <b>항목별로 갈린다</b>(NPC·딜레이 반증 / 방·멀티 부분 / <b>문서체계 유효</b>). 재사용 가능 자산 목록을 같은 노트에 함께 적었다.</li>
+        <li><span class="v v-part">오독 유발</span><b>§1.3 ①</b> 「구현됨」은 사실이나 <b>재사용 가능을 뜻하지 않는다</b>(환각 검증기 <code>CAT</code> 결속이 더 치명적).</li>
+        <li><span class="v v-part">불완전</span><b>§1.3 ②</b> 딜레이 규약 — <b>상한 1600ms 누락 + 페이즈형 이식 불가</b>(코드 재확인).</li>
+        <li><span class="v v-part">미확인</span><b>§1.4</b> <b>미실행 + 형태 미확인</b>(<code>GameDefinition</code> 부재 · 스키마 상속은 R3에서 회피). 축 자체는 유효.</li>
+        <li><span class="v v-part">낡음</span><b>§3</b> 2번 재개 조건 <b>무효</b> → 「08-08 동결 해제 + 통합 주행 확보」로 교체. 4번은 <b>클루 확정으로 결말</b>.</li>
+        <li><span class="v v-no">반증</span><b>§4</b> 교체 비용 <b>≈2,700~3,900줄 · 4~8 작업일</b>. 단 <b>4~8일은 관측이 아니라 유도</b>이며 <b>막는 것은 크기가 아니라 순서</b>.</li>
+      </ul>
+      <b>감사 표(§10.4)와 달랐던 것 2건</b>: ① <b>U4의 「미실행이라 반증」은 과하다</b> — 이 문서는 이관을 완료로 주장한 적이 없다(§3-2가 처음부터 「보류」 · 배지 「예정」).
+      실제 정정 대상은 «미실행»이 아니라 <b>§3-2의 재개 조건이 무효가 된 것</b>이다.
+      ② <b>U1을 「반증」 한 단어로 덮으면 부정확하다</b> — 열거된 5항목 중 <b>문서체계는 반증되지 않았고 방·멀티는 부분</b>이다.
+      <br><b>코드는 건드리지 않았다</b>(08-01 촬영 · 화면 동결). 확인차 읽기만 한 파일: <code>apps/server/src/rooms/clue-room.ts</code>.
+    </li>
   </ul>
 </div>
 </body>
