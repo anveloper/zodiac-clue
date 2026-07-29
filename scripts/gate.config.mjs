@@ -185,7 +185,10 @@ export const DOC_CHECKS = [
     label: "MAX_PLAYERS — shared ↔ 시뮬 SEATS",
     kind: "code-vs-code",
     why: "좌석 수가 갈라지면 시뮬의 승률·공정몫(16.7%)이 전부 무의미해진다.",
-    a: { file: "packages/shared/src/index.ts", re: /^export const MAX_PLAYERS = (\d+);/m },
+    // shared가 engine/ ↔ content/clue/ 로 갈리면서 보드 상수가 배럴 루트에서 나왔다
+    // (docs/design/20260729-mafia-content-design.md §1.2-③). 앵커는 **값이 사는 파일**을 따라간다 —
+    // 경로를 안 고치면 이 검사가 FAIL이 아니라 조용한 SKIP으로 죽는다.
+    a: { file: "packages/shared/src/content/clue/board.ts", re: /^export const MAX_PLAYERS = (\d+);/m },
     b: { file: "scripts/sim-balance.mjs", re: /^const SEATS = (\d+);/m },
   },
   {
@@ -211,7 +214,8 @@ export const DOC_CHECKS = [
     label: "CELL_PX / PX_PER_UNIT — 코드 ↔ view-contract-spec §1.1",
     kind: "code-vs-doc",
     why: "4뷰 좌표 환산의 유일한 상수. 문서가 «1칸 = CELL_PX 40 … PX_PER_UNIT(40)»으로 값을 박아뒀다.",
-    code: [{ name: "CELL_PX", file: "packages/shared/src/view-consts.ts", re: /^export const CELL_PX = (\d+);/m }],
+    // 좌표계 상수는 클루 보드에서 나온 값이라 `content/clue/view-board.ts`로 옮겨졌다(같은 문서 §1.2-⑤).
+    code: [{ name: "CELL_PX", file: "packages/shared/src/content/clue/view-board.ts", re: /^export const CELL_PX = (\d+);/m }],
     doc: {
       file: "docs/design/20260727-view-contract-spec.md",
       re: /1칸\s*=\s*`?CELL_PX`?\s*\*{0,2}(\d+)/,

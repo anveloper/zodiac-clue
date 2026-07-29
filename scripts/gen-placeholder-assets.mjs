@@ -1,7 +1,7 @@
 // placeholder 에셋 생성기 (SVG) — S3(three-asset) 로더 배선을 위한 스탠드인.
 // 조선 사극 팔레트 + 이모지 + 한글 라벨로 테마형 placeholder를 컨벤션 경로에 찍는다.
 // 나중에 GPT 이미지 2.0로 만든 상세 아트(PNG)로 같은 경로에 교체.
-// 데이터는 packages/shared/src/cards.ts 를 미러링(변경 시 함께 갱신).
+// 데이터는 packages/shared/src/content/clue/cards.ts 를 미러링(변경 시 함께 갱신).
 //
 // 실행: node scripts/gen-placeholder-assets.mjs
 // 출력: apps/client/public/assets/{char,loot,room,ui,bg}/*.svg

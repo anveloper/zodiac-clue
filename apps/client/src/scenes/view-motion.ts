@@ -5,7 +5,7 @@ import {
 } from "@zodiac-clue/shared";
 
 // 감속 프로파일·색각 대체 표기의 **클라이언트 측 결정**만 담당한다.
-// 값 자체는 전부 `@zodiac-clue/shared`의 view-consts에 있다(단일 소스).
+// 값 자체는 전부 `@zodiac-clue/shared`(engine/view-timing)에 있다(단일 소스).
 // DOM을 읽어야 해서 shared에 둘 수 없는 부분만 여기 있다.
 
 const param = (key: string): string | null => {

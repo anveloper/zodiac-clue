@@ -75,7 +75,8 @@ import type {
 // 2.5D 뷰: 평면 보드를 카메라로 살짝 내려다보는(피치) 원근 뷰.
 // 서버 상태(그리드 x,y)를 그대로 읽어 3D 월드로 매핑한다. 룰/입력은 2D와 동일.
 //
-// ⚠ 표기 수치(알파·보간 길이·타자기 속도·팔레트)는 전부 shared의 view-consts에서 온다.
+// ⚠ 표기 수치(알파·보간 길이·타자기 속도·팔레트)는 전부 shared에서 온다
+//   (engine/view-timing · view-consts · content/clue/view-board).
 //   여기서 리터럴로 다시 쓰면 뷰1·뷰4와 갈라진다.
 // ⚠ 지오메트리는 `three-res`의 **공유 단위 프리미티브 + scale**만 쓴다.
 //   여기서 `new THREE.XxxGeometry`를 다시 쓰면 뷰 왕복마다 GPU에 쌓인다(§9.3).

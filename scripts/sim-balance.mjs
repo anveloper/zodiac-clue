@@ -27,7 +27,7 @@
  * scripts/gate.config.mjs · scripts/gate.baseline.json 에 있다(규칙/판정/기준선 3분리).
  */
 
-// ── 카드 (packages/shared/src/cards.ts 미러) ─────────────────────────
+// ── 카드 (packages/shared/src/content/clue/cards.ts 미러) ────────────
 // ⚠️ 예전 미러에는 `dragon`·`goat`가 있었다 — 실제 `cards.ts`는 `gecko`·`sheep`다.
 //    이름만 다르고 규칙은 같아 지금까지 결과에 영향이 없었지만, 페르소나 상수
 //    `BOT_NERVE`가 캐릭터 id로 조회되므로 여기서부터 실값과 맞춘다.
@@ -36,7 +36,7 @@ const SUSPECTS = [
   "horse", "sheep", "monkey", "rooster", "dog", "pig",
 ];
 
-/** 캐릭터 배짱 — `packages/shared/src/cards.ts`의 `BOT_NERVE` 미러. */
+/** 캐릭터 배짱 — `packages/shared/src/content/clue/cards.ts`의 `BOT_NERVE` 미러. */
 const BOT_NERVE = {
   rat: 0.3, ox: 0.45, tiger: 0.9, rabbit: 0.55,
   gecko: 0.8, snake: 0.2, horse: 0.65, sheep: 0.05,

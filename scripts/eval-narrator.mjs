@@ -5,7 +5,7 @@
  *
  * 이 스크립트는 **읽기 전용**이다. 게임 규칙·상태·문서를 일절 바꾸지 않는다.
  * 검사 대상 함수는 미러링하지 않고 **실제 소스를 그대로 import**한다
- * (`apps/server/src/ai/narrator.ts` · `packages/shared/src/cards.ts`).
+ * (`apps/server/src/ai/narrator.ts` · `packages/shared/src/content/clue/cards.ts`).
  * 미러링하면 "미러가 규약을 지킨다"만 증명되고 배포되는 코드는 증명되지 않는다.
  *
  * ── 모드 ────────────────────────────────────────────────────────────
@@ -106,7 +106,7 @@ if (!OPT.live || dryLive) {
 
 // ── 2. 검사 대상 실제 소스 로드 ──────────────────────────────────────
 const NARRATOR_TS = join(ROOT, "apps/server/src/ai/narrator.ts");
-const CARDS_TS = join(ROOT, "packages/shared/src/cards.ts");
+const CARDS_TS = join(ROOT, "packages/shared/src/content/clue/cards.ts");
 
 const narrator = await import(pathToFileURL(NARRATOR_TS).href);
 const cards = await import(pathToFileURL(CARDS_TS).href);
@@ -1171,7 +1171,7 @@ const report = {
   generatedAt: new Date().toISOString(),
   source: {
     narrator: "apps/server/src/ai/narrator.ts",
-    cards: "packages/shared/src/cards.ts",
+    cards: "packages/shared/src/content/clue/cards.ts",
     LINE_MAX,
     LINE_BUDGET_SUGGEST,
   },
