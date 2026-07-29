@@ -18,13 +18,10 @@ import {
   type ZodiacFamily,
 } from "@zodiac-clue/shared";
 import type { Room } from "colyseus.js";
-import {
-  client,
-  createRoom,
-  joinRoomById,
-  listPublicRooms,
-  type PublicRoom,
-} from "./network";
+// 네트워크(colyseus.js)도 **타입만** 정적으로 가져온다(§9.1 코드 스플리팅).
+// 값(`client`·`createRoom`…)은 아래 `loadNet()`의 동적 `import()`로 들어온다 —
+// 첫 페인트(랜딩)는 서버에 붙기 전에 이미 그려져야 하므로 크리티컬 경로가 아니다.
+import type { PublicRoom } from "./network";
 // 렌더러는 **타입만** 정적으로 가져온다(§9.1 코드 스플리팅).
 // 값(클래스·Phaser 네임스페이스)은 전부 아래 `loadPhaserMod`/`loadIsoMod`의
 // 동적 `import()`로 들어오므로, 이 세 줄은 번들에 1바이트도 남기지 않는다.
@@ -673,6 +670,27 @@ let room: Room | null = null;
 let game: Phaser.Game | null = null;
 let iso: IsoView | null = null;
 let phaserStarted = false;
+
+// ── 네트워크 청크 로더 (§9.1 코드 스플리팅) ─────────────────────────────
+// `colyseus.js` + `@colyseus/schema`는 합쳐서 초기 청크의 **65%**였다(실측:
+// schema UMD 43.3 kB + 클라 런타임 32.2 kB / 초기 119.1 kB). 그런데 랜딩은
+// **서버에 붙기 전에 이미 그려져 있어야 하는 화면**이다 — 방 만들기·참가·공개방
+// 목록·재접속은 전부 그 뒤의 동작이다. 정적 import를 걷어내 첫 페인트에서 뺀다.
+//
+// 규약은 렌더러 로더와 같다: **멱등**(같은 Promise)이고, 실패하면 캐시를 비워
+// 재시도가 가능하게 남긴다. 호출부는 전부 이미 try/catch로 감싸여 있어
+// 청크 수신 실패도 «방 생성 실패»·«목록을 불러오지 못했어요»로 사용자에게 알려진다.
+type NetMod = typeof import("./network");
+let netReq: Promise<NetMod> | null = null;
+const loadNet = (): Promise<NetMod> => {
+  if (!netReq) {
+    netReq = import("./network").catch((e: unknown) => {
+      netReq = null;
+      throw e;
+    });
+  }
+  return netReq;
+};
 
 // ── 렌더러 청크 로더 (§9.1 코드 스플리팅) ─────────────────────────────
 // 진입 화면(랜딩·대기실)은 **두 엔진 중 어느 것도 필요 없다.** 그리고 판은 항상
@@ -2538,7 +2556,7 @@ const loadPublicRooms = async (): Promise<void> => {
   const list = $("roomList");
   let rooms: PublicRoom[] = [];
   try {
-    rooms = await listPublicRooms();
+    rooms = await (await loadNet()).listPublicRooms();
   } catch {
     // 문안은 ui-copy §8.4 확정본. «다음에 뭘 하면 되는지»를 반드시 붙인다(§1.3).
     list.innerHTML =
@@ -2577,7 +2595,7 @@ const loadPublicRooms = async (): Promise<void> => {
     btn.onclick = async () => {
       setLandingMsg("참가하는 중…");
       try {
-        wireRoom(await joinRoomById(r.roomId));
+        wireRoom(await (await loadNet()).joinRoomById(r.roomId));
       } catch (e) {
         showJoinFailed(e);
         void loadPublicRooms();
@@ -2598,7 +2616,7 @@ const loadPublicRooms = async (): Promise<void> => {
 const startSolo = async (): Promise<void> => {
   setLandingMsg("비공개방 만드는 중…");
   try {
-    const r = await createRoom(false);
+    const r = await (await loadNet()).createRoom(false);
     wireRoom(r); // 대기실 배선 + 재접속 토큰 저장 + /room/ID로 주소 정리
     r.send("start", {}); // 방장 = 나 → 빈자리 NPC 충원 후 즉시 시작
   } catch (e) {
@@ -2635,7 +2653,7 @@ const init = async (): Promise<void> => {
   ($("createBtn") as HTMLButtonElement).onclick = async () => {
     setLandingMsg(createPublic ? "공개방 만드는 중…" : "비공개방 만드는 중…");
     try {
-      wireRoom(await createRoom(createPublic));
+      wireRoom(await (await loadNet()).createRoom(createPublic));
     } catch (e) {
       setLandingMsg("방 생성 실패: " + errMsg(e));
     }
@@ -2649,7 +2667,7 @@ const init = async (): Promise<void> => {
     }
     setLandingMsg("참가하는 중…");
     try {
-      wireRoom(await joinRoomById(code));
+      wireRoom(await (await loadNet()).joinRoomById(code));
     } catch (e) {
       goMain();
       showJoinFailed(e);
@@ -2682,7 +2700,7 @@ const init = async (): Promise<void> => {
   if (token) {
     setLandingMsg("이전 세션에 재접속 중…");
     try {
-      wireRoom(await client.reconnect(token));
+      wireRoom(await (await loadNet()).client.reconnect(token));
       return;
     } catch {
       sessionStorage.removeItem(RECONNECT_KEY);
@@ -2693,7 +2711,7 @@ const init = async (): Promise<void> => {
     // 좌석을 줄지 관전으로 받을지는 서버 `onJoin`이 정한다(클라는 좌석을 만들지 않는다).
     if (invited) {
       try {
-        wireRoom(await joinRoomById(invited));
+        wireRoom(await (await loadNet()).joinRoomById(invited));
         return;
       } catch {
         /* 방 자체가 사라졌다 → 아래 랜딩 문구 */
