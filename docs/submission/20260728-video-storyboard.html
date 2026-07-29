@@ -275,6 +275,8 @@
     <span class="chip"><b>작성</b> 2026-07-27</span>
   </div>
   <nav class="toc">
+    <a href="#audit" style="background:#3a1a16;border-color:#8a3b33;color:#ffb3ab;font-weight:700">🔴 07-29 실측 정정</a>
+    <a href="#dayof" style="background:#3a1a16;border-color:#8a3b33;color:#ffb3ab;font-weight:700">📋 촬영 당일 순서</a>
     <a href="#gate">⛔ 허용/금지 경계</a>
     <a href="#env">🖥 환경 고정값</a>
     <a href="#timeline">📊 타임라인</a>
@@ -285,6 +287,131 @@
     <a href="#edit">✂️ 편집·업로드</a>
     <a href="#fallback">🧭 폴백 트리</a>
   </nav>
+
+  <!-- ═══════════ 0′. 07-29 실측 정정 ═══════════ -->
+  <section id="audit">
+  <div class="danger">
+    <span class="tag" style="background:#3a1a16;border-color:#8a3b33;color:#ffb3ab">아래 컷 시트보다 이 절이 우선한다</span>
+    <h3>0′. 07-29 리허설 실측 정정</h3>
+    <p style="margin:2px 0 0;font-size:14px">
+      콘티는 07-27~28에 쓰였고 그 뒤 화면이 여러 번 바뀌었다. 07-29에 <b>전 컷을 헤드리스로 실제 밟아 본 결과
+      13곳이 화면과 어긋난다.</b> 촬영일에 발견하면 그날이 통째로 날아가므로 여기 먼저 적는다.
+    </p>
+  </div>
+
+  <h3 style="color:var(--red)">0′.1 촬영을 막을 수 있는 것 2건</h3>
+  <div class="danger">
+    <h3>🔴 Gemini 무료 쿼터 소진</h3>
+    <p style="font-size:13.5px;margin:0 0 8px">
+      07-29 기준 <b>HTTP 429 <code>RESOURCE_EXHAUSTED · limit: 500</code></b>(일일). 2판 실측 <b>LLM 4 / 폴백 51</b>.
+      한 판이 <b>40~60콜</b>을 먹으므로 <b>하루 8~12판이 한계</b>다.
+    </p>
+    <ul class="tree">
+      <li class="t-red"><span class="when">촬영 전</span> 생존 확인 1회(S0-2). <b>200이면 LLM 자막 · 429면 컷 C는 대체 자막으로 지금 확정</b> — 판단을 촬영 뒤로 미루지 않는다.</li>
+      <li class="t-red"><span class="when">리허설</span> 반드시 <code>AI_NARRATE=off</code>로 별도 기동. <b>쿼터를 리허설에 쓰면 본 테이크가 폴백이 된다.</b></li>
+    </ul>
+  </div>
+  <div class="danger">
+    <h3>🔴 판 중반 로그 패널 붕괴 — 컷 B·C·D의 무대가 사라진다</h3>
+    <p style="font-size:13.5px;margin:0 0 8px">
+      우측 컬럼이 <code>AI 대사 → 증거 노트 → 제안 기록표 → 기록</code> 세로 스택인데
+      <b>제안 기록표가 자라 로그를 밀어낸다.</b> 900px 높이에서 로그 몫이 <b>72px · 가시 0줄</b>.
+    </p>
+    <p style="font-size:13.5px;margin:0">
+      회피는 <b>조작 하나</b>다 — 「제안 기록표」 제목을 <b>한 번 클릭</b>하면 로그가 72 → <b>299px·6줄</b>,
+      AI 대사까지 접으면 <b>458px·9줄</b>(실제 마우스 클릭으로 검증).
+    </p>
+  </div>
+  <div class="danger">
+    <h3>⚠️ 컷 순서가 바뀐다</h3>
+    <p style="font-size:13.5px;margin:0">
+      콘티는 계략(D)을 4번째(0:29)에 두지만 <b>실제로는 제일 먼저 찍어야 한다</b> —
+      제안이 3~4건 쌓이면 로그 패널이 죽어 그 뒤로는 B·C·D를 못 찍는다.
+    </p>
+  </div>
+
+  <h3 style="color:var(--red)">0′.2 콘티가 화면과 어긋나는 곳 13건</h3>
+  <div class="scroll"><table>
+    <tr><th>콘티</th><th>콘티가 말하는 것</th><th>실제 화면</th></tr>
+    <tr class="no-row"><td>§2.A 51</td><td>랜딩 <b>[혼자 바로 시작]</b> 버튼</td><td><b>그런 버튼 없다.</b> <code>?solo=1</code> 딥링크뿐(<code>main.ts:2701</code>)</td></tr>
+    <tr class="no-row"><td>§2.A 52</td><td>(목표 카드 언급 없음)</td><td>첫 진입에 <b><code>🐯 60초 안내</code> 카드가 주사위 앞을 막는다.</b> <code>?demo=1</code>이면 안 뜬다</td></tr>
+    <tr class="no-row"><td>§2.B 57</td><td>로그의 파란 <code>🔍 [제안]</code> · <code>반증됨</code> 배지</td><td><b>제안은 로그에 안 남고 「제안 기록표」로 간다.</b> 로그엔 <code>🔎 … 반증 (나만 봄)</code> 한 줄</td></tr>
+    <tr class="warn-row"><td>§2.C 63</td><td>칩 <code>✨LLM 2 · ⚙폴백 0</code></td><td><b>3항목</b>이다 — <code>✨LLM n · ♻캐시 n · ⚙폴백 n</code></td></tr>
+    <tr class="no-row"><td>§2.C 64</td><td>"✅ 라이브 LLM 동작(12/12 폴백 0)"</td><td><b>07-29 현재 429.</b> 이 문장을 믿고 촬영하면 안 된다</td></tr>
+    <tr class="warn-row"><td>§2.D 69</td><td><code>🃏 … 계략(엿보기 2·이동 +5)</code></td><td><code>🃏 계략 — {이름} · {NPC}에게서 엿보기 2 · 이동 <b>+6</b></code></td></tr>
+    <tr class="ok-row"><td>§2.D 70</td><td>"주사위 눈이 큰 턴을 기다려라"</td><td><b>9 이상 한 번이면 1턴에 도달</b>(방 안 통과가 무료). 실측 <b>4초</b></td></tr>
+    <tr class="warn-row"><td>§2.E 75</td><td>"말 위치는 그대로인 채 표현만"</td><td>좌표는 유지되나 <b>뷰2·3은 카메라가 크게 당겨진다</b> → 이 자막은 쓰지 말 것</td></tr>
+    <tr class="ok-row"><td>§2.E 76</td><td>🔶 선행 = PLACEHOLDER 제거</td><td><b>이미 제거됨</b>(07-28). 선행 0건</td></tr>
+    <tr class="no-row"><td>§2.F 81</td><td><code>🎉 승리!</code></td><td>제목은 <b><code>🎉 사건 해결!</code></b>. <b>자막을 «승리!»로 쓰면 화면과 어긋난다</b></td></tr>
+    <tr class="ok-row"><td>§2.B/D 58·70</td><td>🔶 선행 = 장소 고정행·소환 FX·즉시고발</td><td><b>전부 구현 완료.</b> 🔶 모두 해소</td></tr>
+    <tr class="warn-row"><td>§3 103</td><td>"AI 칩·소환 FX는 한 글자도 언급 말 것"</td><td><b>둘 다 살아 있다.</b> 과도한 제약</td></tr>
+    <tr class="warn-row"><td>§1 32·33</td><td>컬럼 320px · 증거노트 300px 드래그</td><td>되지만 리사이저가 <b>실제로 잡히는 폭 8px</b>이고, <b>진짜 문제는 제안 기록표</b>다</td></tr>
+  </table></div>
+
+  <h3 style="color:var(--green)">0′.3 확인된 것 — 그대로 가도 되는 컷</h3>
+  <p style="font-size:13.5px">
+    주사위 6프레임 + <code>이동 N칸</code> · 턴 배너 문안 <b>문자 그대로 일치</b> · 제안 모달의
+    <code>장소 · 현재 방 · 고정</code> 고정행 · 소환 워프 · NPC 말풍선·타자기 · 계략 귓속말 + 증거노트 자동
+    취소선 · 뷰 4연속 전환(300~650ms, 로딩 없음, <code>PLACEHOLDER</code> 없음) · 턴 순서 원형 ·
+    고발 모달 3열 · [다시 하기] 즉시 새 판 · 대기실 12캐릭터 도감.
+  </p>
+
+  <h3 style="color:var(--amber)">0′.4 못 잰 것 — 통과로 세지 않는다</h3>
+  <ul class="tree">
+    <li class="t-amber"><span class="when">솔로에서 사람이 이기는 결말을 못 찍었다</span>
+      실측 3판 모두 NPC가 먼저 맞혔다(<code>🔍 사건 종결</code>). 승리 화면 자체는 화면 게이트와 같은
+      방식으로 도달해 확인했으나, <b>촬영 당일 솔로 판에서 사람이 이길 확률은 재지 못했다.</b></li>
+    <li class="t-amber"><span class="when">컷 C의 «말투 다른 두 캐릭터 연속 턴»을 확인하지 못했다</span>
+      쿼터 소진으로 LLM 대사 표본이 4건뿐이라 말투 대비를 판단할 수 없었다.</li>
+  </ul>
+
+  <h3 style="color:var(--dim)">0′.5 촬영과 무관하게 남은 결함 2건 (기록만)</h3>
+  <ul class="tree">
+    <li><span class="when">뷰2·3에서 방 이름표가 우측 컬럼 위로 넘어온다</span> 「별당」 라벨 x≈1330. §6 재촬영 트리거에 없던 새 결함.</li>
+    <li><span class="when">컬럼 폭 리사이저의 오른쪽 절반을 형제 패널이 덮는다</span> 로직은 정상, 스택 순서 문제.</li>
+  </ul>
+  </section>
+
+  <!-- ═══════════ 4′. 촬영 당일 순서 ═══════════ -->
+  <section id="dayof">
+  <div class="danger">
+    <span class="tag" style="background:#3a1a16;border-color:#8a3b33;color:#ffb3ab">§5 체크리스트보다 이것을 따른다</span>
+    <h3>4′. 촬영 당일 순서 — 07-29 실측판</h3>
+    <p style="margin:2px 0 0;font-size:14px">전부 실제 빌드에서 밟아 본 값이다. <b>「해보면 알겠지」를 남기지 않는다.</b></p>
+  </div>
+  <ul class="tree">
+    <li class="t-red"><span class="when">S0. 준비 (15분)</span>
+      창 <b>1600×900</b>·확대 100%(실측 기준값), 터미널은 프레임 밖.<br>
+      🔴 <b>LLM 생존 확인을 1회 실행하고 그 결과로 컷 C를 지금 확정한다</b> —
+      <code>gemini-flash-lite-latest</code>에 ping 1회, <b>200이면 LLM 자막 · 429면 대체 자막</b>.<br>
+      🔴 <b>리허설은 <code>AI_NARRATE=off</code>로 별도 기동.</b> 리허설 1판으로 뷰4 예열하되
+      <b>브라우저 프로필은 그대로</b> 본 테이크에 쓴다(목표 카드 재노출 방지).</li>
+    <li class="t-blue"><span class="when">S1. 컷 A (10초) — 진입</span>
+      <code>?solo=1</code>을 넣은 상태에서 녹화 시작. 첫 진입이면 <code>🐯 60초 안내</code>가 먼저 뜬다 —
+      <b>(권장)</b> 1.5초 보여주고 [확인](닫으면 대기하던 주사위가 이어 굴러간다), 또는 <code>?solo=1&amp;demo=1</code>.<br>
+      진입 약 3초 뒤 주사위가 사라진다 → <code>↑</code> 6번(1.1초). <b>총 4.1초.</b> 필요한 눈 <b>3 이상</b>.</li>
+    <li class="t-red"><span class="when">S2. 컷 D (8초) — 계략 ※ 제일 먼저</span>
+      <b>첫 턴 주사위가 9 이상이면 그 자리에서 모서리 계략 NPC로</b>(실측 1턴·4초).
+      <code>[계략]</code> → 귓속말 + 로그 2줄 + 증거노트 취소선이 <b>한 프레임에</b>.<br>
+      ⚠️ 봇이 내 캐릭터를 제안하면 내 말이 <b>소환</b>된다 → 그 테이크는 버리고 다시.</li>
+    <li class="t-blue"><span class="when">S3. 컷 B (10초) — 제안·반증</span>
+      🔴 <b>자막을 «로그»에 걸지 말 것.</b> 반증은 「제안 기록표」 행의 <code>🛡 {반증자}</code>에서 읽힌다.
+      <b>크롭 대상은 「제안 기록표」 패널.</b></li>
+    <li class="t-red"><span class="when">S4. 컷 C (9초) — NPC 대사</span>
+      🔴 <b>먼저 「제안 기록표」 제목을 한 번 클릭해 접는다</b> → 로그 6줄. AI 대사까지 접으면 9줄.<br>
+      ⚠️ 칩에 <code>⚙폴백</code>만 오르면 <b>LLM 자막 금지</b>. 칩은 3항목이다.</li>
+    <li class="t-amber"><span class="when">S5. 컷 E (9초) — 뷰 4연속</span>
+      <b>내 턴에</b> 드롭다운 → 뷰1→2→3→4를 2초 간격.
+      ⚠️ 뷰2·3에서 <b>「별당」 라벨이 우측 패널을 침범</b>하면 카메라를 왼쪽으로 팬해 다시.
+      ⚠️ <b>«말 위치는 그대로» 자막은 쓰지 않는다.</b></li>
+    <li class="t-blue"><span class="when">S6. 컷 F (9초) — 결말</span>
+      솔로 1판 실측 <b>~90초 · NPC 15제안</b>. 반복은 [다시 하기].
+      🔴 오버레이 제목은 <b><code>🎉 사건 해결!</code></b> — <b>«승리!»로 쓰면 화면과 어긋난다.</b>
+      못 뽑으면 대체 컷 ①(<code>🔍 사건 종결</code>)이 <b>실측으로 자주 나온다</b>.</li>
+    <li><span class="when">S7. 마감</span>
+      원본 전량 보관 · 타임코드 정리 · <b>자막 문안을 §0′.2로 교정한 뒤</b> 편집.</li>
+  </ul>
+  </section>
 
   <!-- ═══════════ 0. 경계 ═══════════ -->
   <section id="gate">
@@ -797,7 +924,11 @@
     zodiac-clue · NHN NAN 2026 사전과제 제출물 ② · 사람용 <code>.html</code><br>
     근거: <code>docs/design/20260727-improvement-roadmap.md</code> §7.5(고발 평균 7라운드) · §7.6(컷 편집 가능) ·
     AI용 원문 <code>docs/submission/20260728-video-storyboard.md</code><br>
-    변경 이력 — 2026-07-27 최초 작성(컷 편집 구성, 안전 테이크 + 본 테이크 이원화).
+    변경 이력 — <b>2026-07-29 전 컷을 실제 빌드로 밟아 §0′ 실측 정정 + §4′ 촬영 당일 순서 신설.</b>
+    콘티가 화면과 어긋나는 곳 13건, 촬영을 막을 수 있는 것 2건(Gemini 일일 쿼터 429 · 판 중반 로그 패널
+    72px 붕괴)을 실측했다. <b>컷 순서가 바뀐다 — 계략(D)을 제일 먼저 찍어야 한다.</b>
+    못 잰 것 2건도 §0′.4에 통과로 세지 않고 남긴다. ·
+    2026-07-27 최초 작성(컷 편집 구성, 안전 테이크 + 본 테이크 이원화).
   </p>
 </div>
 </body>
