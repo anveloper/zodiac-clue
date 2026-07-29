@@ -256,6 +256,86 @@
   .band .b.hi2{border-top:3px solid var(--green)} .band .b.hi2 .v{color:#8fe9ac}
   .band .b small{display:block;font-size:11px;color:var(--dim);font-weight:400;margin-top:2px}
 
+  /* ══ §8 화면 설계 — 390px 실물 목업 ══════════════════════════ */
+  .mock{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start;margin:16px 0}
+  .mock>.cap{flex:1 1 240px;min-width:230px;font-size:12.6px;color:var(--dim);line-height:1.65}
+  .mock>.cap b{color:var(--gold)}
+  .mock>.cap ul{padding-left:17px;margin:7px 0}
+  .mock>.cap li{font-size:12.4px;margin:3px 0}
+
+  .phone{flex:none;width:390px;max-width:100%;background:#0f0c09;border:1px solid #4a3d2b;
+    border-radius:14px;padding:8px;font-family:system-ui,-apple-system,"Apple SD Gothic Neo",sans-serif}
+  .phone .vp{background:#16130f;border-radius:8px;overflow:hidden;border:1px solid #2b2419}
+  .phone .lab{font-size:10px;color:#7d7360;letter-spacing:.06em;text-align:right;padding:3px 4px 0;
+    font-variant-numeric:tabular-nums}
+
+  .ph-bar{display:flex;align-items:center;gap:8px;height:32px;padding:0 12px;background:#1c1710;
+    border-bottom:1px solid #2b2419;font-size:12px;color:var(--gold)}
+  .ph-bar em{font-style:normal;margin-left:auto;color:var(--dim);font-size:11px;font-variant-numeric:tabular-nums}
+  .ph-hd{display:flex;align-items:center;gap:6px;height:28px;padding:0 12px;background:#211c16;
+    border-bottom:1px solid #2b2419;font-size:11px;color:var(--gold);font-weight:700}
+  .ph-hd span{color:var(--dim);font-weight:400}
+  .ph-hd b{margin-left:auto;font-size:10px;color:var(--dim);font-weight:400;border:1px solid #3a3126;
+    border-radius:5px;padding:1px 7px}
+  .ph-sum{padding:8px 12px;background:#2e1f1b;border-bottom:1px solid #2b2419;
+    font-size:11.5px;color:#ffd0c8;line-height:1.5}
+  .ph-sum b{color:#ff9d90}
+
+  .ph-row{display:grid;grid-template-columns:1fr 62px 46px 44px 48px;align-items:center;
+    height:44px;padding:0 12px;border-bottom:1px solid #241e17;gap:0}
+  .ph-row>.who{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ph-row>.who i{flex:none;width:8px;height:8px;border-radius:50%;font-style:normal}
+  .ph-row>.who u{flex:none;text-decoration:none;font-size:10px;color:#7d7360;font-variant-numeric:tabular-nums}
+  .vb{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:5px;
+    border:1px solid transparent;white-space:nowrap}
+  .vb.still{background:#16301f;color:#8fe9ac;border-color:#2f6440}
+  .vb.moved{background:#33291a;color:#e8c877;border-color:#5d4a24}
+  .vb.conf {background:#3a1f1a;color:#f0a096;border-color:#7a3f36;border-style:dashed}
+  .ph-row>.acc{display:flex;gap:3px;flex-wrap:nowrap}
+  .ph-row>.acc s{text-decoration:none;font-size:10px;padding:1px 4px;border-radius:4px;
+    background:#2c2519;border:1px solid #463c2c;color:#c9b998;font-variant-numeric:tabular-nums}
+  .ph-row>.tg{display:flex;align-items:center;justify-content:center;height:44px;
+    color:var(--dim);font-size:12px;background:rgba(126,200,224,.07);
+    box-shadow:inset 0 0 0 1px rgba(126,200,224,.22)}
+  .ph-row>.vt{display:flex;align-items:center;justify-content:center;height:44px;margin-left:4px;
+    font-size:11px;font-weight:700;color:#95d2e6;border-radius:6px;
+    background:rgba(126,200,224,.10);box-shadow:inset 0 0 0 1px rgba(126,200,224,.35)}
+  .ph-l2{padding:9px 12px 10px 30px;background:#191510;border-bottom:1px solid #241e17;
+    font-size:11px;color:var(--dim);line-height:1.65}
+  .ph-l2 b{color:#d8c9a6;font-weight:600}
+  .ph-l3{display:flex;align-items:center;gap:7px;height:32px;padding:0 12px;
+    font-size:11px;color:var(--dim);background:#1c1710}
+
+  /* 행 해부 — 폭 예산 자 */
+  .ruler{display:grid;grid-template-columns:1fr 62px 46px 44px 48px;margin:6px 0 0;padding:0 12px}
+  .ruler span{font-size:9.5px;color:#7d7360;text-align:center;border-top:1px solid #3a3126;
+    padding-top:3px;font-variant-numeric:tabular-nums;position:relative}
+  .ruler span::before,.ruler span::after{content:"";position:absolute;top:0;width:1px;height:4px;background:#3a3126}
+  .ruler span::before{left:0} .ruler span::after{right:0}
+  .ruler span em{display:block;font-style:normal;font-size:9px;color:#5f5748}
+  .ruler span.t{color:#95d2e6} .ruler span.t em{color:#5d8797}
+
+  /* 접기 규칙 카드 */
+  .folds{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:12px;margin:14px 0}
+  .fold{background:var(--card);border:1px solid var(--edge);border-top:3px solid var(--blue);
+    border-radius:10px;padding:13px 16px}
+  .fold h5{margin:0 0 6px;font-size:13px;color:var(--gold)}
+  .fold h5 i{font-style:normal;color:#95d2e6;font-weight:800;margin-right:6px}
+  .fold p{margin:5px 0 0;font-size:12.5px;color:var(--dim);line-height:1.6}
+  .fold p b{color:var(--ink)}
+  .fold .why{margin-top:8px;padding-top:8px;border-top:1px dashed #3a3126;font-size:12px;color:#c9b998}
+  .fold .why b{color:var(--gold)}
+
+  /* α 곡선 — 이득의 8할이 앞 절반 */
+  .curve{display:grid;grid-template-columns:56px 1fr 62px;gap:5px 9px;align-items:center;margin:12px 0}
+  .curve .a{font-size:11.5px;color:var(--dim);text-align:right;font-variant-numeric:tabular-nums}
+  .curve .t{height:15px;border-radius:4px;background:#241e17;overflow:hidden}
+  .curve .t i{display:block;height:100%;border-radius:4px;
+    background:linear-gradient(90deg,#7a3f36,#e0c25a 55%,#7ee29a);font-style:normal}
+  .curve .v{font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--gold)}
+  .curve .v.lo{color:#f0a096}
+
   *{scrollbar-width:thin;scrollbar-color:#4a3d2b #16130f}
   ::-webkit-scrollbar{width:9px;height:9px}
   ::-webkit-scrollbar-track{background:#16130f}
@@ -387,6 +467,41 @@
   .lim .t b{color:#5b430f!important}
   .lim{border-top-color:var(--edge)!important}
   hr{border-top-color:var(--edge)!important}
+
+  /* §8 화면 목업 — 종이에서도 «390px 안에 무엇이 들어가는가»가 보여야 한다 */
+  .mock{display:flex!important}
+  .phone{background:#fff!important;border-color:var(--edge)!important;flex:none!important}
+  .phone .vp{background:#fff!important;border-color:var(--edge)!important}
+  .phone .lab{color:var(--dim)!important}
+  .ph-bar{background:#f4efe2!important;border-bottom-color:var(--edge)!important;color:#5b430f!important}
+  .ph-bar em{color:var(--dim)!important}
+  .ph-hd{background:#efe8d8!important;border-bottom-color:var(--edge)!important;color:#5b430f!important}
+  .ph-hd span,.ph-hd b{color:var(--dim)!important;border-color:var(--edge)!important}
+  .ph-sum{background:#fbf1ef!important;border-bottom-color:var(--edge)!important;color:#1a1712!important}
+  .ph-sum b{color:#8c1f16!important}
+  .ph-row{border-bottom-color:var(--edge)!important}
+  .ph-row>.who{color:#1a1712!important} .ph-row>.who u{color:var(--dim)!important}
+  .vb.still{background:#e2f2e6!important;color:#14562c!important;border-color:#83b795!important}
+  .vb.moved{background:#faefd6!important;color:#6f4805!important;border-color:#c9a85c!important}
+  .vb.conf{background:#fae2df!important;color:#8c1f16!important;border-color:#c98d86!important}
+  .ph-row>.acc s{background:#f4f0e6!important;border-color:#c7bba4!important;color:#3a3126!important}
+  .ph-row>.tg{background:#eef4f8!important;box-shadow:inset 0 0 0 1px #a3c2d1!important;color:var(--dim)!important}
+  .ph-row>.vt{background:#e4eef5!important;box-shadow:inset 0 0 0 1px #7fa8bd!important;color:#0f4256!important}
+  .ph-l2{background:#f7f4ec!important;border-bottom-color:var(--edge)!important;color:var(--dim)!important}
+  .ph-l2 b{color:#1a1712!important}
+  .ph-l3{background:#f4efe2!important;color:var(--dim)!important}
+  .ruler span{color:var(--dim)!important;border-top-color:var(--edge)!important}
+  .ruler span::before,.ruler span::after{background:#c7bba4!important}
+  .ruler span em{color:#6b6355!important}
+  .ruler span.t{color:#0f4256!important} .ruler span.t em{color:#3d6273!important}
+  .fold{background:var(--card)!important;border-color:var(--edge)!important;border-top-color:#14506b!important}
+  .fold h5{color:#5b430f!important} .fold h5 i{color:#0f4256!important}
+  .fold p{color:var(--dim)!important} .fold p b{color:#1a1712!important}
+  .fold .why{border-top-color:var(--edge)!important;color:#3a3126!important} .fold .why b{color:#5b430f!important}
+  .curve .a{color:var(--dim)!important}
+  .curve .t{background:#eeeae2!important}
+  .curve .v{color:#5b430f!important} .curve .v.lo{color:#a1281e!important}
+  .mock,.phone,.folds,.fold,.curve{break-inside:avoid;page-break-inside:avoid}
 }
 </style>
 </head>
@@ -460,6 +575,7 @@
     <a href="#unknown">§5 확인·미확인</a>
     <a href="#balance" class="hot2">§6 밸런스 실측</a>
     <a href="#speech" class="hot3">§7 구조화 발언 스키마</a>
+    <a href="#screen" class="hot3">§8 야경 장부 화면</a>
   </div>
 
   <div class="lead" style="background:#11241f;border-color:#3a6b5c">
@@ -2774,6 +2890,744 @@
     <b class="ok">「사람이 D1 판정을 읽고 쓰는가」</b>로 한 칸 옮겨갔다.
   </div>
 
+  <!-- ═══════════════════ §8 ═══════════════════ -->
+  <h2 id="screen"><span class="n">§8</span>야경 장부 — D1 공개 판정을 «읽고 쓰는» 화면</h2>
+
+  <div class="lead" style="background:#11241f;border-color:#3a6b5c">
+    <b>2026-07-29 (5차) — §7이 남긴 최우선 과제는 «화면» 문제였다.</b><br />
+    <a href="#s77">§7.7</a>은 스스로 이렇게 적었다 —
+    <b class="no">「스키마는 정보의 «존재»를 보장할 뿐 «사용»을 보장하지 못한다.
+    <code>w*</code>=0이면 집안 27.9%로 <code>leak</code>=0 세계로 정확히 되돌아간다」</b>.
+    엔진이 모순을 계산해 공개해도 <b>읽히지 않으면 없는 것과 같다.</b><br /><br />
+    <b>§8은 그 «사용»을 화면으로 푼다.</b> 다만 여기서 잰 것은 <b class="no">«UI 품질»이 아니다</b> —
+    잰 것은 오직 <b>「가중이 낮으면 무슨 일이 나는가」</b>이고(<a href="#s89">§8.9</a>),
+    「이 화면이 그 가중을 올린다」는 <b class="no">측정되지 않았다</b>.
+  </div>
+
+  <!-- ─────── 8.0 ─────── -->
+  <h3 id="s80">8.0 결론 먼저 — 무엇을 접고 무엇을 펼쳤는가</h3>
+
+  <div class="scroll"><table>
+    <tr><th style="width:22%">층</th><th>무엇</th></tr>
+    <tr class="hi"><td><b class="ok">펼친다</b> <span class="note">(상시)</span></td>
+      <td>좌석별 <b>이번 라운드 판정 1개</b> + <b>누적 표식</b> — 좌석당 <b>1행 · 1줄</b></td></tr>
+    <tr><td><b class="part">접는다</b> <span class="note">(탭 1회)</span></td>
+      <td>그 좌석의 <b>신고 원본 2건</b> + <b>라운드별 이력</b></td></tr>
+    <tr><td><b class="part">더 접는다</b> <span class="note">(명시적 펼침)</span></td>
+      <td>좌석 × 라운드 <b>전체 격자</b>(L3). 데스크톱 기본 펼침 · <b>모바일 기본 접힘</b></td></tr>
+    <tr><td><b class="no">아예 안 만든다</b></td>
+      <td>D1 판정의 <b>로그 줄</b>. 라운드당 좌석 수만큼 쌓여 기록 패널을 덮는다 —
+        <b>「다 보여주면 아무도 안 읽는다」의 표본</b></td></tr>
+    <tr><td><b>접기의 축</b></td>
+      <td><b class="ok">세로(좌석)는 항상 · 가로(라운드)는 좌석 1개를 고를 때만</b> →
+        정보량 <code>N×R×2</code> → <code>N + (요청 시) R</code></td></tr>
+  </table></div>
+
+  <div class="box hero">
+    <b>한 줄 — D1 판정은 «기록»이 아니라 «장부»다.</b><br />
+    기록은 <b>사건의 시간열</b>이라 흘러가고, 장부는 <b>좌석의 현재값</b>이라 머문다.
+    투표 직전에 필요한 것은 후자다.
+    이 구분 하나가 <b>화면 배치 · 오버레이 우선순위 · 문안 규약을 전부</b> 결정한다
+    (<a href="#s86">§8.6</a> · <a href="#s88">§8.8</a>).
+  </div>
+
+  <div class="stats">
+    <div class="stat s-bad"><div class="big">27.9<span style="font-size:17px">%</span></div>
+      <b>가중 α = 0</b><span>판정이 화면에 있으나 아무도 쓰지 않을 때(8인).
+        <b>§6.5의 붕괴 수치와 소수점까지 일치</b></span></div>
+    <div class="stat s-warn"><div class="big">49.2<span style="font-size:17px">%</span></div>
+      <b>α = 0.5 — 절반만 읽음</b><span>이미 <b>이득의 8할</b>이 회수된다.
+        <b>0을 면하는 것이 정밀도보다 크다</b></span></div>
+    <div class="stat s-ok"><div class="big">51.0<span style="font-size:17px">%</span></div>
+      <b>α = 1 — 전부 읽음</b><span>§7.5.1의 확정 구성 수치.
+        0.5 → 1 구간의 이득은 <b>+1.8pp뿐</b></span></div>
+  </div>
+
+  <div class="box warn">
+    <b>그래서 화면의 목표는 «정밀하게 읽히는 것»이 아니라 <span class="ok">«0을 면하는 것»</span>이다.</b>
+    이 곡선 모양이 <a href="#s82">§8.2</a>의 접기 규칙 <b>F3</b>을 만든다.
+  </div>
+
+  <!-- ─────── 8.1 ─────── -->
+  <h3 id="s81">8.1 무엇을 보여줘야 하는가 — D1이 만드는 정보의 «실제 부피»</h3>
+
+  <div class="scroll"><table class="num">
+    <tr><th style="width:38%">산출물</th><th>부피</th><th>8인 1라운드</th><th>10인 p95 누적</th></tr>
+    <tr><td>신고 원본 <span class="note">(<code>by</code>, <code>target</code>, 1비트)</span></td>
+      <td><code>2m</code></td><td>16건</td><td><b class="no">≈90건</b></td></tr>
+    <tr><td>좌석별 판정 <span class="note">(일치·비움 / 일치·있음 / 충돌)</span></td>
+      <td><code>m</code></td><td>8건</td><td>≈60건</td></tr>
+    <tr><td>관측 격자 <span class="note">(D3 · 라운드마다 재계산)</span></td>
+      <td><code>m</code> 쌍</td><td>8쌍</td><td>라운드마다 갱신</td></tr>
+    <tr><td>D2 역할 주장 + 증거 슬롯</td><td>소수</td><td>0~3건</td><td>판당 ≤6건</td></tr>
+    <tr><td>D4 반박 토큰 잔량</td><td><code>m</code></td><td>8건</td><td>—</td></tr>
+  </table></div>
+
+  <p class="note">라운드 중앙 3(8인) · 4(10인), p95 5·6(<a href="#s751">§7.5.1</a>).
+    <b>최대 부피는 10인 p95의 신고 원본 90건</b> — 그대로 그리면 화면이 아니라 덤프다.</p>
+
+  <div class="box crit">
+    <h3 style="color:#f0a096">화면이 «반드시 틀리지 말아야 하는 것» 2건 — 둘 다 좌석 1개에 붙지 않는다</h3>
+    <div class="lim"><div class="k">1</div><div class="t">
+      <b>충돌의 귀속.</b> 충돌은 신고 <b>대상</b>이 아니라 <b class="no">신고자 «양쪽»</b>에 의심을 준다
+      (§7.2 D1 규칙 3 · 시뮬 <code>claimB[a] += wConflict; claimB[b] += wConflict</code>).
+      대상 행에 충돌 배지를 달면 <b>판정이 정확히 반대로 읽힌다.</b>
+    </div></div>
+    <div class="lim"><div class="k">2</div><div class="t">
+      <b>카운트 모순의 귀속.</b> 「포교 주장 2건」은 <b>「둘 중 최소 1건이 거짓」</b>이지
+      「둘 다 거짓」도 「누구가 거짓」도 아니다(§7.2 D2). <b>좌석 1개에 붙일 수 없다.</b>
+    </div></div>
+    <div class="asm"><span class="k">그래서 나온 구조적 발견</span>
+      <b>좌석 행 목록만으로는 D1·D2 판정의 일부를 표현할 수 없다.</b>
+      행 <b>위에</b> «쌍·집합에 붙는 판정» 줄이 따로 필요하다 —
+      <a href="#s83">§8.3</a>의 <b>L1 요약줄</b>이 그것이다.</div>
+  </div>
+
+  <div class="two">
+    <div class="box info">
+      <h4>한 라운드 vs 누적 — 다른 물건인 이유</h4>
+      <p style="margin:0">한 라운드의 판정은 <b>엔진이 확정한 값</b>이고,
+        누적은 <b>패턴</b>이다. 「3라운드 연속 「비움」」과 「엇갈림 2건」은
+        <b>어느 단일 라운드의 판정도 아니다.</b> 사람은 이것을 기억하지 못한다 —
+        <b class="ok">누적 표식은 «요약»이 아니라 «기억의 대체물»</b>이다.</p>
+    </div>
+    <div class="box warn">
+      <h4>단, 소원 성취식으로 쓰지 않는다</h4>
+      <p style="margin:0">누적의 값은 시뮬에서 <b>좌석 수에 크게 의존</b>했다(<a href="#s89">§8.9</a> U2):
+        라운드 간 지속을 끄면 <b>6인 −3.5pp · 8인 −0.7pp<span class="note">(해상도 이하)</span> ·
+        10인 <b class="no">−10.0pp</b></b>.
+        <b>「누적이 항상 결정적」이라고 쓰지 않는다.</b></p>
+    </div>
+  </div>
+
+  <!-- ─────── 8.2 ─────── -->
+  <h3 id="s82">8.2 접기 규칙 3개 — 이 설계의 전부</h3>
+
+  <div class="folds">
+    <div class="fold">
+      <h5><i>F1</i>판정은 펼치고 원본은 접는다</h5>
+      <p><b>엔진이 이미 계산했으므로 사람이 재계산할 이유가 없다</b>(<code>2m → m</code>, 절반).
+        원본이 필요한 유일한 순간은 「왜 저 판정이 나왔나」이고 그것은 <b>요청형</b>이다.</p>
+      <div class="why"><b>근거는 제약이기도 하다</b> — 화면이 원본을 상시 펼치는 것은
+        사람에게 <b>재계산을 시키는 것</b>이고, 그것은 「진실값은 규칙 엔진에서만」의 화면판 위반에 가깝다.
+        화면은 엔진 판정을 <b>보여줄 뿐 다시 판단하지 않는다.</b></div>
+    </div>
+    <div class="fold">
+      <h5><i>F2</i>세로는 항상 · 가로는 좌석 1개만</h5>
+      <p><code>N×R</code> 격자 → <code>N</code>행(상시) + <code>R</code>셀(탭 시 1좌석).
+        8인 5라운드면 <b class="ok">40셀 → 8행</b>.</p>
+      <div class="why"><b>투표는 «좌석 1개를 고르는» 행위다.</b>
+        화면의 기본 단위가 좌석이면 <b>손가락 하나가 곧 판단 하나</b>다.
+        라운드를 기본 축으로 두면(= 클루 제안 기록표의 축) 투표할 때마다 <b>축을 뒤집어 읽어야 한다.</b></div>
+    </div>
+    <div class="fold" style="border-top-color:var(--green)">
+      <h5><i style="color:#8fe9ac">F3</i>접혀도 신호 1개는 남긴다 — 그리고 그 1개는 «무죄»다</h5>
+      <p>두 개의 실측이 근거다 —<br />
+        ① <b>곡선 모양</b>: α 0→0.5가 <b class="ok">+21.3pp</b>, 0.5→1이 <b>+1.8pp</b>.
+        <b>이득의 8할이 앞 절반에 있다.</b><br />
+        ② <b>어느 신호가 가장 싼가</b>: 「있음」만 읽어도 <b class="ok">47.5%</b>(−3.5pp)인데
+        「비움」만은 41.0%(−10.0pp) · 충돌만은 40.4%(−10.5pp) · 전무는 <b class="no">27.9%</b>(−23.0pp).</p>
+      <div class="why"><b class="no">직관과 반대다.</b> UI는 보통 «위험»을 강조하는데,
+        여기서는 <b class="ok">「있음」(무죄 확정)이 가장 값싸고 강한 단일 신호</b>다.
+        §7.5.5가 밸런스 축에서 발견한 「무죄 확정이 유죄 표식보다 강한 정보」와
+        <b>같은 결론이 UI 축에서 재현</b>됐다.<br />
+        → 장부가 접혀 있어도 <b>「있음」 표식만은 원탁 위 좌석 점에 남긴다</b>(L0).</div>
+    </div>
+  </div>
+
+  <!-- ─────── 8.3 ─────── -->
+  <h3 id="s83">8.3 화면 — 4층 구조</h3>
+
+  <div class="scroll"><table>
+    <tr><th style="width:8%">층</th><th style="width:36%">무엇</th><th>어디</th><th style="width:22%">기본 상태</th></tr>
+    <tr><td><b>L0</b></td><td>좌석당 <b>판정 점 1개</b>(3상태)</td>
+      <td><b>원탁 뷰</b> — <code>ViewContract</code></td><td><b class="ok">상시 · 접히지 않음</b></td></tr>
+    <tr class="hi"><td><b>L1</b></td><td><b>판정 스트립</b> — 요약줄 + 좌석 1행씩</td>
+      <td>HUD 우측 패널 <code>.rp-col</code></td><td><b class="ok">상시</b></td></tr>
+    <tr><td><b>L2</b></td><td>좌석 1개의 <b>신고 원본 2건 + 라운드 이력</b></td>
+      <td>L1 행 인라인 확장</td><td><b class="part">접힘</b> <span class="note">(▾ 탭)</span></td></tr>
+    <tr><td><b>L3</b></td><td><b>좌석 × 라운드 전체 격자</b></td>
+      <td><code>.rp-fold</code> + <code>&lt;details&gt;</code></td>
+      <td>데스크톱 펼침 · <b class="part">모바일 접힘</b></td></tr>
+  </table></div>
+
+  <div class="box good">
+    <h4>L0을 «뷰»에, L1~L3을 «HUD»에 둔 이유 — 게이트가 강제한다</h4>
+    <p><code>gate-screen.mjs</code> <b>S4</b>가 「뷰 1↔2↔3↔4 전환 시 <b>HUD 사각형 차이 ≤ 2px</b>」
+      (<code>gate.config.mjs:388</code>)를 잰다. 판정 UI를 <code>ViewContract</code>에 넣으면
+      <b>렌더러 4종이 각자 그려야</b> 하고, 그러면 뷰마다 다른 판정 화면이 생겨 S4에 걸리거나
+      <a href="#c6">§1.2-⑥</a>의 「계약 우회 3경로」를 <b>재생산</b>한다.
+      HUD(<code>hud-inset.ts</code> — shared import 0)는 <b>좌표가 없어 뷰 전환에 무영향</b>이다.</p>
+    <div class="asym"><b>분업</b> — 뷰 = <b>관측 격자의 «위상»</b>(누가 누구의 이웃인가 — 원탁에서만 자명하다) ·
+      HUD = <b>판정의 «값»</b>(읽을 수 있는 글자).
+      계약에 추가되는 것은 <b>1개뿐</b>: 좌석에 이산 표식을 다는
+      <code>setTag(actorId, tag: string|null)</code>.</div>
+  </div>
+
+  <h4 style="margin-top:22px">L1 실물 목업 — 8인 · 3라운드 · <code>vote</code> 페이즈 · 390 × 844</h4>
+
+  <div class="mock">
+    <div class="phone">
+      <div class="vp">
+        <div class="ph-bar">삼경 3 · 낮 <em>남은 시간 0:24</em></div>
+        <div class="ph-hd">🌙 야경 장부 <span>(모두 공개)</span> <b>닫기</b></div>
+        <div class="ph-sum">엇갈린 신고 2건 · 「포교」 주장 2건 — <b>최소 1건 거짓</b></div>
+
+        <div class="ph-row">
+          <div class="who"><i style="background:#efc8f0"></i><u>1</u>호랑대감</div>
+          <div><span class="vb still">있음</span></div><div class="acc"></div>
+          <div class="tg">▾</div><div class="vt">투표</div></div>
+
+        <div class="ph-row">
+          <div class="who"><i style="background:#017cb6"></i><u>2</u>토끼낭자</div>
+          <div><span class="vb moved">비움</span></div><div class="acc"><s>엇1</s></div>
+          <div class="tg">▾</div><div class="vt">투표</div></div>
+
+        <div class="ph-row" style="background:#1d1712">
+          <div class="who"><i style="background:#866488"></i><u>3</u>삽살포교</div>
+          <div><span class="vb conf">엇갈림</span></div><div class="acc"><s>엇2</s><s>포</s></div>
+          <div class="tg">▴</div><div class="vt">투표</div></div>
+        <div class="ph-l2">
+          3라운드 · 왼쪽 <b>2 토끼낭자</b> 「자리를 비웠다」<br />
+          <span style="padding-left:52px"></span>오른쪽 <b>4 원숭광대</b> 「방에 있었다」<br />
+          2라운드 <b>있음</b> · 1라운드 <b>엇갈림</b>
+        </div>
+
+        <div class="ph-row">
+          <div class="who"><i style="background:#d96861"></i><u>4</u>원숭광대</div>
+          <div><span class="vb still">있음</span></div><div class="acc"><s>반1</s></div>
+          <div class="tg">▾</div><div class="vt">투표</div></div>
+
+        <div class="ph-row">
+          <div class="who"><i style="background:#b94d48"></i><u>5</u>쥐서생</div>
+          <div><span class="vb conf">엇갈림</span></div><div class="acc"><s>엇2</s><s>포</s></div>
+          <div class="tg">▾</div><div class="vt">투표</div></div>
+
+        <div class="ph-row" style="border-bottom:0">
+          <div class="who"><i style="background:#8ed6c8"></i><u>6</u>닭소저</div>
+          <div><span class="vb moved">비움</span></div><div class="acc"></div>
+          <div class="tg">▾</div><div class="vt">투표</div></div>
+
+        <div class="ph-l3">▸ 지난 삼경 기록 <span style="opacity:.75">(3라운드)</span></div>
+      </div>
+      <div class="ruler">
+        <span>1fr<em>읽기 · 좌석</em></span><span>62<em>읽기 · 판정</em></span>
+        <span>46<em>읽기 · 누적</em></span><span class="t">44<em>타깃 ▾</em></span>
+        <span class="t">44<em>타깃 투표</em></span>
+      </div>
+      <div class="lab">390 × (32 + 28 + 34 + 6×44 + 32) = 390 × 390px · 생존 6명</div>
+    </div>
+
+    <div class="cap">
+      <b>읽는 곳과 누르는 곳을 분리한다.</b>
+      행 본문 <b>141px</b>은 <b class="no">타깃이 아니다</b>. 타깃은 <code>▾</code>(44×44)와
+      <code>투표</code>(44×44) <b>둘뿐</b>이다.
+      <ul>
+        <li>행 전체를 타깃으로 만들면 <code>vote</code> 페이즈의 <b>오탭이 곧 투표</b>가 된다.</li>
+        <li><code>vote</code> 페이즈가 아니면 <code>투표</code>가 사라져 <b>44px이 이름 · 판정으로 돌아간다.</b></li>
+        <li>행은 <b>1줄</b>이다. 클루 제안 기록표는 2줄(<code>.sg-top</code>+<code>.sg-combo</code>)인데
+          그건 <b>읽기 전용 행</b>이라 가능했다. 장부 행은 타깃을 겸하므로 2줄이면
+          각 줄 18px에 11px 글자(line-height 1.6 = 17.6px)가 들어가 <b>S1 겹침 위험</b>에 붙는다.</li>
+        <li>붉은 요약줄은 <b>좌석 행이 표현할 수 없는 판정</b>(§8.1) 전용 자리다.
+          여기 없으면 「포교 주장 2건」이 <b>어느 행에도 못 실린다.</b></li>
+      </ul>
+    </div>
+  </div>
+
+  <h4>L3 펼침 — 좌석 × 라운드 격자 <span class="note">(데스크톱 기본 · 모바일 접힘)</span></h4>
+  <pre><code>        1경    2경    3경      엇갈림  주장
+ 1 호랑  있음   있음   있음         0     —
+ 2 토끼  비움   —      비움         1     —
+ 3 삽살  엇갈   있음   엇갈         2    포교
+ 4 원숭  있음   비움   있음         0     —
+ 5 쥐    엇갈   엇갈   엇갈         2    포교   ← 「포교」 주장 2건 = 최소 1건 거짓
+ 6 닭    비움   있음   비움         0     —
+ 7 소*   있음   비움   —            0     —    * 제거된 좌석 — L3에만 남는다</code></pre>
+
+  <div class="box info">
+    <b>제거된 좌석은 L1에서 빼고 L3에만 남긴다.</b>
+    <b>투표 대상이 아니므로</b> L1(= 투표 목록)에 있을 이유가 없고,
+    <b>D2 사후 반증의 대조 대상</b>이므로 L3에는 있어야 한다.
+    10인 판이 4라운드면 L1은 <b>6~7행</b>으로 줄어 모바일 예산에 들어간다(<a href="#s87">§8.7</a>).
+  </div>
+
+  <!-- ─────── 8.4 ─────── -->
+  <h3 id="s84">8.4 서버가 보내는 것 / 화면이 «하지 않는» 것</h3>
+
+  <pre><code>watchLedger {                      // roundPhase = dawn→talk 전이에 broadcast
+  round,
+  grid:     [{ seat, left, right }],                      // D3 공개 격자(T15)
+  reports:  [{ by, target, bit }],                        // 원본 2m건 — L2 전용
+  verdicts: [{ target, kind: "still"|"moved"|"conflict",
+               pair?: [seatA, seatB] }],                  // T19 · L0 / L1
+  pairs:    [{ kind: "roleCount", role, seats: [] }],     // D2 카운트 모순 — 요약줄
+  tally:    [{ seat, conflicts, moved, still, claim?, rebutLeft }],   // ★ 누적
+}</code></pre>
+
+  <div class="scroll"><table>
+    <tr><th style="width:38%">왜 클라가 «세지» 않는가</th><th>근거</th></tr>
+    <tr><td>클라가 세면 <b>진실값이 두 곳</b>에 생긴다</td>
+      <td><code>syncMeta</code> 주석(<code>clue-room.ts:373-375</code>)의 논리 그대로 — <b>클라 추정 금지</b></td></tr>
+    <tr><td><b>재접속하면 클라 누적이 비어 있다</b></td>
+      <td><a href="#b22">§2.2</a>가 이미 지적한 <code>restoreSeat</code> 문제.
+        <code>onSeatRestored(client)</code> 훅(§3-⑥)이 <code>watchLedger</code> 전량을 재전송해야 복구된다</td></tr>
+    <tr><td><b>관전자</b>는 라운드 도중 합류한다</td>
+      <td>관전자 모델(<code>clue-room.ts:196</code>)은 좌석을 만들지 않으므로 누적을 «따라온» 적이 없다</td></tr>
+  </table></div>
+
+  <div class="box crit">
+    <b>화면이 «판단하지 않는» 것</b> — 판정 종류 · 충돌의 귀속 대상 · 카운트 모순의 후보 집합 ·
+    누적 카운트 · 관측 격자 · 제거 여부. 화면이 하는 것은 <b>접기 · 정렬 · 강조</b>뿐이다.<br /><br />
+    <b>화면이 «정하는» 것은 하나 있다 — 정렬 순서.</b>
+    기본은 <b class="ok">좌석 번호 순</b>(= 원탁 순서 = 관측 격자 순서)으로 <b>고정</b>한다.
+    <b class="no">「의심도 순」으로 정렬하면 화면이 «순위»를 만드는 것</b>이고 그것은 진실값 생성이다.
+    좌석 순 고정이면 L0(원탁)과 L1(장부)의 순서가 같아 <b>두 화면이 서로를 검산</b>한다.
+  </div>
+
+  <!-- ─────── 8.5 ─────── -->
+  <h3 id="s85">8.5 기존 자산 — 항목별 <span class="tag t-eng">엔진</span> /
+    <span class="tag t-pol">마피아 전용</span> 판정</h3>
+
+  <div class="scroll"><table>
+    <tr><th style="width:46%">자산 <span class="note">(파일:줄)</span></th><th>마피아에서</th><th style="width:16%">판정</th></tr>
+    <tr><td><code>.rp-col</code> 우측 컬럼(<code>index.html:453-462</code>) ·
+      <code>#rpToggle</code> 드로어 + <code>.rp-off</code>(≤680px · <code>715-723,812-820</code>)</td>
+      <td>그대로. <b>패널 내용만 교체</b></td><td><span class="tag t-eng">엔진</span>
+        <span class="note">shared import 0 · 좌표 0</span></td></tr>
+    <tr><td><code>.rp-panel</code> / <code>.rp-head</code> /
+      <code>.rp-body</code>(<code>flex:1;min-height:0;overflow-y:auto</code> · <code>470-481</code>)</td>
+      <td>L1 스트립 · L3 격자가 그대로 산다</td><td><span class="tag t-eng">엔진</span></td></tr>
+    <tr><td><code>.rp-fold</code> + <code>&lt;details open&gt;</code> <span class="note">(AI · 제안표)</span></td>
+      <td><b>L3 전개에 그대로</b></td><td><span class="tag t-eng">엔진</span></td></tr>
+    <tr><td>리사이저 <code>#colWResizer</code>(220~680px) · <code>#colResizer</code>(<code>main.ts:2455-2460</code>)</td>
+      <td>장부 ↔ 기록 높이 배분</td><td><span class="tag t-eng">엔진</span></td></tr>
+    <tr><td>오버레이 버스(<code>main.ts:1133-1245</code>) · <code>showBanner</code>(1236-1245)</td>
+      <td><b class="ok">값을 하나도 추가하지 않는다</b>(<a href="#s86">§8.6</a>)</td>
+      <td><span class="tag t-eng">엔진</span></td></tr>
+    <tr><td>화면 게이트 S1~S6(<code>gate-screen.mjs</code> · <code>gate.config.mjs:310-345</code>)</td>
+      <td>그대로 적용</td><td><span class="tag t-eng">엔진</span></td></tr>
+    <tr><td>문안 규약 — <b>R1~R6 조사 회피</b>(<code>ui-copy §1.2</code>) · 3목소리 분리(§1.1) ·
+      1문장 1행동(§1.3) · 길이 상한표(§1.5)</td>
+      <td>그대로</td><td><span class="tag t-eng">엔진</span>
+        <span class="note">한국어 UI 규약 · 주제 무관</span></td></tr>
+    <tr><td>접두 기호 확정 목록 · 어휘 통일표(<code>ui-copy §2</code>) ·
+      느낌표 허용 <b>3종</b>(승리 · 최후 생존 · 미반증)</td>
+      <td>목록이 클루 규칙 어휘</td>
+      <td><span class="tag t-cnt">콘텐츠</span>
+        <span class="note">단 <b>「판당 3종만」이라는 축은 엔진</b></span></td></tr>
+    <tr><td><code>ELIM_NEEDS_SECOND_CUE</code> — 알파 + 파선/✕ <b>2중 표기</b>(<code>view-consts.ts:29,38</code>)</td>
+      <td>판정 배지 3상태에 <b>그대로</b>(색 단독 금지)</td><td><span class="tag t-eng">엔진</span></td></tr>
+    <tr class="hi"><td><b>증거 노트</b> <code>buildEvidence</code>(<code>main.ts:2036-2100</code>) —
+      <code>localStorage zc_evi_${roomId}</code> · 3그룹 21칩 2열 ·
+      <code>""→cleared→suspect</code> 순환</td>
+      <td><b class="part">개념은 «필요»하고 구현은 «못 쓴다»</b></td>
+      <td><span class="tag t-mix">개념 엔진 / 구현 클루</span></td></tr>
+    <tr class="hi"><td><b>제안 기록표</b> <code>SuggestEntry</code>(<code>main.ts:343-352</code>) ·
+      <code>renderSug</code>(407-415)</td>
+      <td><b class="no">재사용 불가</b></td>
+      <td><span class="tag t-pol">불가 — 이유가 산출물</span></td></tr>
+    <tr><td><code>showBanner</code> 위치 상수 <code>bottom: calc(240px + …)</code>
+      (<code>index.html:576</code> — <b>D패드를 피한 값</b>)</td>
+      <td>마피아엔 D패드가 없다</td><td><span class="tag t-mix">엔진</span>
+        <span class="note">상수 1개가 클루 전제</span></td></tr>
+  </table></div>
+
+  <div class="split">
+    <div class="sd hld" style="border-top-color:var(--amber)">
+      <h5 style="color:#efc76c">증거 노트 — 개념은 엔진, 구현은 클루 전용</h5>
+      <ul>
+        <li><b>필요하다.</b> 「내가 이 좌석을 어떻게 보는가」는 엔진 판정이 아니라 <b>내 판단</b>이고
+          <b>서버에 보내면 안 된다</b>(§4.3 비밀 등급 밖).
+          장부(공개)와 <b>짝</b>을 이룬다 — 장부는 「엔진이 안 것」, 노트는 「내가 정한 것」.</li>
+        <li><b>못 쓰는 이유</b>: <code>groups</code>가
+          <code>["용의자",…],["훔친 것",…],["장소",…]</code> 3튜플 <b>리터럴</b>
+          (<code>main.ts:2048-2052</code>)이고 칩 원천이
+          <code>participantSuspects()</code>/<code>WEAPONS</code>/<code>ROOMS</code>.
+          마피아는 <b>카테고리 1개(좌석)</b>이고 상태 축이 다르다
+          (<code>cleared|suspect</code> → 집안 확신 | 밤손님 의심 | 보류).</li>
+        <li><b>일반화 형태</b>: <code>renderPrivateGrid(groups, states)</code>.
+          클루는 (3그룹, 3상태)의 특수 케이스라 <b class="ok">런타임 무영향</b>.
+          → §3의 <span class="lvl l0">L0</span> <b>4번째 항목</b>.
+          <span class="tag t-est">비용 미측정</span></li>
+      </ul>
+    </div>
+    <div class="sd brk">
+      <h5>제안 기록표 — 재사용 불가. «왜 못 쓰는가»가 다음 경계 작업의 입력</h5>
+      <ul>
+        <li><code>SuggestEntry</code>는 <b>평면 8필드</b>이고 행이 «사건 1건». <code>renderSug</code>는
+          <code>seq</code> 내림차순 <b>전체 재렌더 · 캡 없음</b>.</li>
+        <li>야경 장부는 <b>좌석 × 라운드 2차원</b>이고 행이 «좌석». 같은 좌석의 여러 라운드가
+          <b>한 행에 누적</b>된다.</li>
+        <li><b class="no">근본 차이는 필드가 아니라 «축»이다</b> — 클루는 «시간 1축»,
+          마피아는 «주체 × 시간 2축». 1축 로그를 2축 격자로 바꾸는 것은
+          <b>자료구조 교체</b>지 필드 교체가 아니다.</li>
+        <li><b>판정의 «소유자»도 다르다</b>: 클루의 반증은 「카드 1장을 냈다」는 <b>사실만</b> 기록하고
+          <b>연역은 사람이 한다</b>(그래서 증거 노트가 «따로» 필요하다).
+          마피아는 <b>엔진이 판정을 확정해서 준다.</b> 즉 클루 기록표는 «원본 로그»,
+          마피아 장부는 «판정 로그» — <b>§8.2 F1의 양쪽에 하나씩 서 있다.</b></li>
+        <li><b>재사용되는 것은 껍데기 3개뿐</b>:
+          <code>.rp-panel.rp-fold</code> + <code>&lt;details open&gt;</code> + <code>.rp-body</code> 스크롤.</li>
+        <li><b class="ok">경계 작업 입력</b>: 「누적 기록 패널」을 엔진 자산으로 만들려면
+          <b>«행이 무엇인가»를 콘텐츠가 정하게</b> 해야 한다.
+          최소 형태 <code>renderLedger(rows, cols)</code>. <b>§3에 없던 항목</b>이다.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ─────── 8.6 ─────── -->
+  <h3 id="s86">8.6 오버레이 버스 — 우선순위 표에 <b class="ok">값을 하나도 추가하지 않는다</b></h3>
+
+  <p>현행 5값(<code>main.ts:1139-1146</code>):
+    <span class="pill">end 100</span> <span class="pill">goal 90</span> <span class="pill">dice 80</span>
+    <span class="pill">interstitial 60</span> <span class="pill">banner 40</span></p>
+
+  <div class="scroll"><table>
+    <tr><th style="width:26%">쓰임</th><th style="width:26%">슬롯</th><th>근거</th></tr>
+    <tr><td>판정 갱신 알림</td><td><b><code>showBanner</code></b> <span class="note">(40 · 큐 밖 · 단일 슬롯)</span></td>
+      <td><b>사실만 알리고 내용은 상시 패널</b>에 둔다</td></tr>
+    <tr><td>장부 읽는 법 <span class="note">(판당 1회)</span></td><td>기존 <code>goal</code>(90)의 <b>두 번째 카드</b></td>
+      <td>온보딩 카드는 이미 그 슬롯의 물건. <b>새 id를 만들면 §7.10이 정한 5값의 근거가 흐려진다</b></td></tr>
+    <tr><td>종료 시 장부 요약</td><td>기존 <code>end</code>(100)</td><td>이미 있는 슬롯</td></tr>
+  </table></div>
+
+  <div class="clash">
+    <div class="c a"><h5>판정을 전면 오버레이로 «띄우면»</h5>
+      <code>dice</code>(80)가 정확한 대비다 — <b>주사위는 «보고 잊는 것»</b>이다.
+      판정을 그 자리에 놓으면 <b class="no">«지나가는 정보»</b>가 되고,
+      <b>§7.7이 경고한 실패 모드(정보는 존재하나 사용되지 않는다)를 화면이 «직접 만들어낸다».</b><br /><br />
+      <b>오버레이는 «주목»을 사지만 «참조»를 팔지 않는다.</b></div>
+    <div class="x">✕</div>
+    <div class="c b"><h5>그래서 상시 패널 + 배너 1줄</h5>
+      판정은 <b>투표하는 내내 참조해야 하는 것</b>이라 사라지면 안 된다.<br /><br />
+      <b>로그(<code>📜 기록 / 알림</code>)에도 넣지 않는다.</b> 라운드당 좌석 수만큼 48자 줄이 쌓이면
+      (8인 3라운드 = <b>24줄</b>) 기록 패널이 D1으로 덮인다.
+      <code>addLog</code>는 <code>prepend</code> + <b class="no">트리밍 없음</b>
+      (<code>main.ts:164-201</code>)이라 <b>스스로 방어하지도 않는다.</b></div>
+  </div>
+
+  <!-- ─────── 8.7 ─────── -->
+  <h3 id="s87">8.7 모바일 390 × 844 — 무엇을 «포기»했는가</h3>
+
+  <p class="note">게이트 실측 기준(<code>gate.config.mjs:310-345</code>):
+    <b>S3 44px</b>(0.5px slack · <code>aria-disabled</code>도 계측 대상) · <b>S5 10px</b> ·
+    <b>S6 4.5:1</b> · <b>S2 세로/가로 스크롤 0</b> · <b>S1 겹침</b>.
+    실기 뷰포트 390×844 · dsf3 · <code>pointer: coarse</code>.</p>
+
+  <div class="box hero">
+    <h4>「44px은 «누를 수 있다»이지 «읽힌다»가 아니다」의 적용</h4>
+    <div class="scroll"><table style="margin:6px 0 0">
+      <tr><th style="width:22%">축</th><th style="width:16%">단위</th><th>값</th></tr>
+      <tr><td><b>누를 수 있다</b></td><td>타깃</td>
+        <td><code>▾</code> 44×44 · <code>투표</code> 44×44 — <b>행당 2개뿐</b></td></tr>
+      <tr><td><b>읽힌다</b></td><td>글자</td>
+        <td>좌석 이름 <b>12px</b> · 판정 배지 <b>11px</b> · 누적 표식 <b>10px</b>(하한)</td></tr>
+      <tr><td>둘의 관계</td><td>—</td>
+        <td><b class="ok">행 본문 141px은 타깃이 아니다.</b>
+          44px 행 높이는 <b>타깃 때문</b>이지 글자 때문이 아니다</td></tr>
+    </table></div>
+    <div class="asm" style="margin-top:12px"><span class="k">여유가 0인 곳</span>
+      <code>gate.config.mjs:319-323</code>이 <code>minFontPx: 10</code>을
+      <b><code>.sg-n</code>(제안표 순번)에 못박아</b> 뒀다.
+      장부의 10px 표식은 <b>그 하한에 정확히 앉는다</b> —
+      <b class="no">폰트를 줄이는 방향의 조정은 불가능하다.</b></div>
+  </div>
+
+  <div class="scroll"><table>
+    <tr><th style="width:5%">#</th><th style="width:30%">포기한 것</th><th style="width:24%">대신</th><th>왜</th></tr>
+    <tr><td>1</td><td>행에서 <b>신고자 이름 2개</b> 제거</td><td>L2 탭 펼침</td>
+      <td>이름 3개(대상 + 신고자 2)를 11px로 넣으면 <b>판정 배지가 밀린다.</b> 350px에 안 들어간다</td></tr>
+    <tr><td>2</td><td><b>L3 격자를 모바일 기본에서 제거</b></td>
+      <td>접힘 · 펼치면 축을 뒤집어 «좌석 1행 × 라운드»</td>
+      <td><b>S2가 가로 스크롤을 «어디서든» 실패로 잡는다.</b> 패널 내부 스크롤은 body 스크롤이 아니라 허용되지만,
+        「가로로 읽는 표」는 390에서 읽힘이 낮다</td></tr>
+    <tr><td>3</td><td><b>제거된 좌석을 L1에서 제거</b></td><td>L3에만 남긴다</td>
+      <td>10인 10행 = <b>440px</b>가 원탁을 239px로 밀어낸다. 4라운드면 생존 6~7 → <b>308px</b></td></tr>
+    <tr><td>4</td><td><b>좌석 이름을 4글자로 절단</b></td>
+      <td><code>.evi-name</code>의 <code>text-overflow: ellipsis</code> 패턴 그대로</td>
+      <td>「삽살 포교」류 십이지 라벨이 길다</td></tr>
+    <tr><td>5</td><td><b>색 단독 표기 포기</b> — 판정 배지에 <b>글자</b>를 넣는다</td>
+      <td>「있음」「비움」「엇갈림」</td>
+      <td><a href="#mafia">§4.1</a>이 CIEDE2000으로 검증한 것은 <b>좌석 12색</b>이고
+        판정 3상태는 <b>별개 축</b>이다. <code>ELIM_NEEDS_SECOND_CUE</code>와 같은 논리</td></tr>
+    <tr><td>6</td><td><b>판정 배지에 이모지 포기</b></td><td>순수 글자</td>
+      <td><code>ui-copy §2</code>가 이모지 <b>폭 편차(VS16)</b>를 이미 지적.
+        폭이 흔들리면 44px 행에서 <b>배지가 줄바꿈</b>된다</td></tr>
+    <tr><td>7</td><td><b>원탁과 장부의 동시 표시 포기</b>(모바일)</td><td><b>페이즈가 정한다</b></td>
+      <td><code>talk</code> = 원탁(관측 격자 위상이 필요) · <code>vote</code> = 장부(값이 필요).
+        드로어는 <code>min(86vw,300px)</code>로 <b>이미 원탁을 덮는다</b>(<code>index.html:815</code>)</td></tr>
+  </table></div>
+
+  <div class="box good">
+    <b>자동 열림 — F3의 직접 적용.</b>
+    <code>vote</code> 페이즈 진입 시 <code>#rpToggle</code> 드로어를 <b>자동으로 연다</b>
+    (<code>aria-expanded</code> 갱신 포함 — <code>main.ts:2479</code>가 이미 그 배선을 갖고 있다).
+    근거: 드로어가 닫혀 있으면 §8.9의 α가 0에 가깝고, <b>α 0→0.5 구간이 이득의 8할</b>이다.<br /><br />
+    <b class="no">⚠ 「드로어가 닫혀 있으면 α=0」은 «내가 세운 대응»이지 측정된 것이 아니다.</b>
+    측정한 것은 α의 «결과»뿐이다.<br /><br />
+    <b>L0(원탁 판정 점)은 드로어와 무관하게 남는다</b> — 접힘 상태의 최소 신호이며,
+    F3에 따라 <b class="ok">「있음」을 가장 읽히게</b> 그린다
+    (가장 값싼 단일 신호 −3.5pp vs 「비움」 −10.0pp).
+  </div>
+
+  <!-- ─────── 8.8 ─────── -->
+  <h3 id="s88">8.8 문안 — <code>ui-copy</code> 규약 준수</h3>
+
+  <p><b>R1~R6(조사 회피) 적용</b>: 판정 배지 · 표식은 전부 <b>체언 종결 · 조사 0</b>.
+    「엇갈린 신고 2건」처럼 <b>변수 뒤에 조사를 붙이지 않는다</b>(R1). 인용은 낫표(R4). 이동은 화살표(R3).</p>
+
+  <div class="scroll"><table>
+    <tr><th style="width:20%">자리</th><th>확정 문안</th><th style="width:8%">자수</th><th style="width:26%">근거</th></tr>
+    <tr><td>패널 제목</td><td><code>🌙 야경 장부</code> + 부제 <code>(모두 공개)</code></td><td>—</td>
+      <td><code>🧾 제안 기록표 (모두 공개)</code> 선례. D3 부산물로 <b>전원에게 같은 값</b>이라 부제가 정확</td></tr>
+    <tr><td>빈 상태</td><td><code>아직 신고가 없어요. 첫 삼경이 지나면 채워져요.</code></td><td>24</td>
+      <td><code>🃏 내 손패 — 잔치가 시작되면 3장이 배부돼요.</code> 패턴</td></tr>
+    <tr><td>판정 배지</td><td><code>있음</code> / <code>비움</code> / <code>엇갈림</code></td><td>2·2·3</td>
+      <td>로그 배지 8자 상한 안 · 조사 0</td></tr>
+    <tr><td rowspan="3">배지 툴팁</td><td><code>양옆 두 사람 모두 「방에 있었다」로 신고</code></td><td>21</td>
+      <td rowspan="2">40자 상한</td></tr>
+    <tr><td><code>양옆 두 사람 모두 「자리를 비웠다」로 신고</code></td><td>22</td></tr>
+    <tr class="hi"><td><code>양옆 두 사람 신고가 엇갈림 — 신고자 양쪽 의심</code></td><td>25</td>
+      <td><b>§8.1의 오독 위험 ①을 문장으로 못박는다</b></td></tr>
+    <tr><td>누적 표식</td><td><code>엇2</code> / <code>포</code> <code>의</code> / <code>반1</code></td><td>2·1·2</td>
+      <td>10px 하한에 앉는 최소 폭</td></tr>
+    <tr><td>표식 툴팁</td><td><code>이 좌석이 낀 엇갈림 2건 · 2 · 3라운드</code></td><td>22</td><td></td></tr>
+    <tr class="hi"><td>요약줄</td><td><code>엇갈린 신고 2건 · 「포교」 주장 2건 — 최소 1건 거짓</code></td><td>30</td>
+      <td><b>§8.1의 오독 위험 ②.</b> 「둘 중 하나가 거짓」을 말하지 <b class="no">「누가」를 말하지 않는다</b></td></tr>
+    <tr><td>L3 summary</td><td><code>지난 삼경 기록 (3라운드)</code></td><td>15</td><td></td></tr>
+    <tr><td>투표 버튼</td><td><code>투표</code> / 툴팁 <code>이 좌석에 투표해요. 집계만 공개돼요.</code></td><td>2 / 21</td>
+      <td>버튼 8자 상한. 「개별 투표 비공개」(§4.0)를 툴팁이 알린다</td></tr>
+    <tr><td>펼침 버튼</td><td>아이콘 <code>▾</code> + <code>aria-label="신고 원본 펼치기"</code></td><td>—</td>
+      <td>S3 대상이므로 44×44 · <b>접근 이름 필수</b></td></tr>
+    <tr><td>배너</td><td><code>야경 장부 갱신 — 엇갈린 신고 2건</code></td><td>20</td>
+      <td>48자 상한 · <b>이모지 0</b></td></tr>
+    <tr><td>온보딩 <span class="note">(goal 카드)</span></td>
+      <td><code>장부에 「엇갈림」이 뜨면 신고자 양쪽을 의심해요.</code><br />
+        <code>「있음」은 그 좌석의 무죄에 가까워요.</code></td><td>26 / 20</td>
+      <td>목표 카드 1줄 32자 상한 · <b class="ok">F3의 «무죄가 강한 신호»를 사람에게 직접 가르친다</b></td></tr>
+  </table></div>
+
+  <h4>버튼 비활성 사유 — <code>ui-copy §5.1</code>의 «판정 순서» 준수</h4>
+  <p class="note"><code>disabled</code> 금지 · <code>aria-disabled="true"</code> + <code>.is-off</code> ·
+    <b>툴팁과 클릭 피드백이 같은 문자열</b> · 출력처는 턴 배너 부제 <code>.ti-sub</code>.</p>
+  <div class="scroll"><table>
+    <tr><th style="width:10%">순서</th><th>문안</th><th style="width:10%">자수</th></tr>
+    <tr><td>1 <span class="note">phase</span></td><td><code>지금은 투표 시간이 아니에요. 낮이 오면 켜집니다.</code></td><td>25</td></tr>
+    <tr><td>2 <span class="note">제거</span></td><td><code>제거돼서 투표할 수 없어요. 장부는 계속 볼 수 있어요.</code></td><td>27</td></tr>
+    <tr><td>3 <span class="note">이미 함</span></td><td><code>이미 투표했어요. 바꾸려면 다시 눌러요.</code></td><td>20</td></tr>
+  </table></div>
+
+  <div class="box warn">
+    <h4>어휘 요구 2건 — <code>ui-copy §2</code>를 «먼저» 고쳐야 한다</h4>
+    <ul class="tight">
+      <li><b>「제거」</b> ← 금지 <code>탈락</code>. 클루의 <code>탈락</code>은
+        「행동권 박탈 + <b>반증 유지</b>」이고 마피아의 <code>제거</code>는
+        「완전 퇴장 + <b>승패 카운터</b>」다(<a href="#b23">§2.3</a>).
+        <b class="no">같은 말을 쓰면 두 규칙이 하나로 읽힌다.</b></li>
+      <li><b>「신고」</b> ← 금지 <code>증언</code> · <code>목격</code> · <code>보고</code>. D1의 1비트 제출.</li>
+      <li><b>느낌표 허용 목록</b> — 클루의 3종(승리 · 최후 생존 · 미반증) 중 마피아에 있는 것은
+        <b>승리뿐</b>이다. <b class="ok">「판당 3종만」이라는 «축»은 유지</b>하고 <b>목록만 교체</b>한다.</li>
+    </ul>
+  </div>
+
+  <div class="box good">
+    <b>로그에는 D1 사건을 만들지 않으므로(<a href="#s86">§8.6</a>)
+    <span class="ok">접두 기호를 하나도 늘리지 않는다.</span></b>
+    <code>ui-copy §2</code>의 「이모지를 늘리지 않는다」를 건드리지 않고 끝난다 —
+    <b>§8.0의 「판정은 기록이 아니라 장부다」가 문안 층에서 회수한 배당</b>이다.
+  </div>
+
+  <!-- ─────── 8.9 ─────── -->
+  <h3 id="s89">8.9 «사용»의 재측정 — 잰 것과 «안 잰» 것</h3>
+
+  <div class="box crit">
+    <b>모델링 방법</b> — 「사람이 공개 판정에 두는 가중」 = §7.5의
+    <code>wMoved</code>/<code>wStill</code>/<code>wConflict</code>(0.9/0.9/0.7).
+    이 3개를 <b>스칼라 α로 균일 배율</b>했다.
+    <b>α=0 = 판정이 화면에 있으나 아무도 쓰지 않음</b> · <b>α=1 = §7 기본</b>.<br /><br />
+    <b class="no">⚠ α는 «UI 품질»의 대리 변수가 아니다.</b>
+    α는 시뮬 모델 안의 가중일 뿐이고, <b>「이 화면이 α를 얼마로 만드는가」는 재지 않았다.</b>
+    아래 표가 말하는 것은 <b>오직 「가중이 낮으면 무슨 일이 나는가」</b>다.
+  </div>
+
+  <p class="note">시뮬: 스크래치패드 <code>mafia-sim2.mjs</code> + 신규 <code>run-ui.mjs</code>
+    (<b>저장소 미포함</b> · 클루 코드 · 게이트 무접촉). 구성당 <b>20,000판</b> · seed <b>20260729</b> ·
+    §7 확정 구성(포교 비이동 · 의원 이동 · <code>misObsP</code> 0.10 · 맞포교 0.70 ·
+    <code>stirP</code> 0.20/0.80/0.50) · 해상도 <b>±0.5pp</b> — <b>1pp 미만은 읽지 말 것.</b></p>
+
+  <h4>U1 — 가중 α <span class="note">(집안 승률 % · <code>leak</code>=0 최악 가정)</span></h4>
+  <div class="scroll"><table class="num">
+    <tr><th>구성</th><th>α=0</th><th>0.25</th><th>0.5</th><th>0.75</th><th>1.0</th><th>1.5</th></tr>
+    <tr><td>6인 · 밤2</td><td><b class="no">18.71</b></td><td>36.31</td><td>46.35</td><td>49.54</td>
+      <td><b>50.77</b></td><td>51.19</td></tr>
+    <tr class="hi"><td>8인 · 밤2</td><td><b class="no">27.91</b></td><td>43.59</td><td>49.20</td><td>50.42</td>
+      <td><b>50.95</b></td><td>50.49</td></tr>
+    <tr><td>10인 · 밤3</td><td><b class="no">12.84</b></td><td>34.59</td><td>45.92</td><td>49.42</td>
+      <td><b>50.39</b></td><td>50.83</td></tr>
+  </table></div>
+
+  <div class="curve">
+    <div class="a">α 0</div><div class="t"><i style="width:14.6%"></i></div><div class="v lo">27.91%</div>
+    <div class="a">α 0.25</div><div class="t"><i style="width:70.9%"></i></div><div class="v">43.59%</div>
+    <div class="a">α 0.5</div><div class="t"><i style="width:92.3%"></i></div><div class="v">49.20%</div>
+    <div class="a">α 0.75</div><div class="t"><i style="width:97.6%"></i></div><div class="v">50.42%</div>
+    <div class="a">α 1.0</div><div class="t"><i style="width:100%"></i></div><div class="v">50.95%</div>
+  </div>
+  <p class="note" style="margin-top:-4px">8인 · 막대는 α=1 대비 회복률. <b>0 → 0.5 구간에서 8할이 회수된다.</b></p>
+
+  <ul class="tight">
+    <li><b class="ok">회귀 확인</b>: α=0 열이 <a href="#b65">§6.5</a>의 붕괴 수치
+      (<b>18.7 / 27.9 / 12.8%</b>)와 <b>소수점까지 일치</b>한다.
+      즉 <b>「판정을 아무도 안 읽는 세계」와 「발언이 아무것도 안 하는 스키마」는 같은 세계</b>다 —
+      §7.7이 예고한 그대로.</li>
+    <li><b>곡선 모양이 설계를 결정한다</b>: 0→0.5가 <b>+27.6 / +21.3 / +33.1pp</b>,
+      0.5→1이 <b>+4.4 / +1.8 / +4.5pp</b>. → <a href="#s82">§8.2</a> F3.</li>
+    <li>α=1.5(과신)는 <b>이득이 없다</b> — 판정을 과대평가하면 <b>의원까지 태운다</b>
+      (§7.5.5의 「비움 표식이 의원을 태운다」와 같은 현상).</li>
+  </ul>
+
+  <h4>U2 — 누적 이력의 «지속» <span class="note">(<code>claimDecay</code> · α=1)</span></h4>
+  <div class="scroll"><table class="num">
+    <tr><th>구성</th><th>0 <span class="note">라운드마다 리셋</span></th><th>0.35</th>
+      <th>0.7 <span class="note">기본</span></th><th>1.0 <span class="note">완전 기억</span></th><th>Δ(0 − 0.7)</th></tr>
+    <tr><td>6인</td><td>47.27</td><td>49.95</td><td><b>50.77</b></td><td>50.97</td><td class="part">−3.5pp</td></tr>
+    <tr><td>8인</td><td>50.24</td><td>50.41</td><td><b>50.95</b></td><td>50.05</td>
+      <td class="dim">−0.7pp <span class="note">해상도 이하</span></td></tr>
+    <tr class="hi"><td>10인</td><td><b class="no">40.35</b></td><td>46.99</td><td><b>50.39</b></td><td>50.77</td>
+      <td class="no">−10.0pp</td></tr>
+  </table></div>
+
+  <div class="box warn">
+    <b>정직하게 적는다</b> — ① <b>격리 실험이 아니다</b>: <code>claimDecay</code>는 D1 판정과
+    <b>포교 공개 지목 가중을 «함께»</b> 감쇠시킨다.
+    ② <b>이력의 값을 «과소평가»할 가능성이 크다</b>: 시뮬은 D2 카운트 모순 · 사후 반증을
+    <b>부분 모델링뿐</b>이고 D4는 <b>모델 밖</b>이다(§7.7) —
+    <b>「여러 라운드에 걸친 모순」의 본체가 모델에 거의 없다.</b>
+  </div>
+
+  <h4>U3 — α × 이력의 상호작용 <span class="note">(8인 · 집안 승률 %)</span></h4>
+  <div class="scroll"><table class="num">
+    <tr><th></th><th>decay 0</th><th>0.35</th><th>0.7</th><th>1.0</th></tr>
+    <tr class="hi"><td><b>α = 0</b></td><td>27.09</td><td>27.71</td><td>27.91</td><td>26.64</td></tr>
+    <tr><td>α = 0.5</td><td>48.14</td><td>49.01</td><td>49.20</td><td>49.02</td></tr>
+    <tr><td>α = 1</td><td>50.24</td><td>50.41</td><td><b>50.95</b></td><td>50.05</td></tr>
+  </table></div>
+  <div class="box info">
+    <b>α=0 행은 이력에 «전혀» 반응하지 않는다</b>(26.6~27.9 = 해상도 폭). <b class="ok">곱셈적이다</b> —
+    이력을 아무리 잘 보관해도 <b>이번 라운드 판정을 안 읽으면 0</b>이다.
+    → <b>L1(상시)이 L3(이력)보다 «먼저»다. 순서를 뒤집으면 안 된다.</b>
+  </div>
+
+  <h4>U4 — 어느 신호를 «못 읽으면» 얼마를 잃는가 <span class="note">(8인 · α=1 · 기준 50.95%)</span></h4>
+  <div class="scroll"><table class="num">
+    <tr><th>읽는 것</th><th>집안 승률</th><th>Δ</th><th style="width:34%">읽는 법</th></tr>
+    <tr><td>전부</td><td><b>50.95%</b></td><td>—</td><td>§7.5.1 확정 구성</td></tr>
+    <tr class="hi"><td><b>「있음」만</b> <span class="note">무죄 확정</span></td><td><b class="ok">47.47%</b></td>
+      <td class="ok">−3.5pp</td><td><b>가장 값싼 단일 신호</b></td></tr>
+    <tr><td>「비움」만</td><td>41.00%</td><td class="no">−10.0pp</td>
+      <td>「비움」은 <b>의원까지 태운다</b>(§7.5.5)</td></tr>
+    <tr><td>일치 2종만 <span class="note">충돌 무시</span></td><td>44.76%</td><td class="no">−6.2pp</td><td></td></tr>
+    <tr><td>충돌만 <span class="note">일치 무시</span></td><td>40.41%</td><td class="no">−10.5pp</td><td></td></tr>
+    <tr><td><b>아무것도 못 읽음</b></td><td><b class="no">27.91%</b></td><td class="no">−23.0pp</td>
+      <td><code>leak</code>=0 세계로 <b>완전 복귀</b></td></tr>
+  </table></div>
+
+  <h4>U5 — 실패의 «대가»는 <code>leak</code>에 달려 있다 <span class="note">(8인)</span></h4>
+  <div class="scroll"><table class="num">
+    <tr><th></th><th>α=0</th><th>0.25</th><th>0.5</th><th>1.0</th><th>실패 대가</th></tr>
+    <tr class="hi"><td><code>leak</code> = 0 <span class="note">최악</span></td>
+      <td><b class="no">27.91</b></td><td>43.59</td><td>49.20</td><td><b>50.95</b></td>
+      <td class="no"><b>−23.0pp</b></td></tr>
+    <tr><td><code>leak</code> = 0.35</td><td>62.48</td><td><b>71.89</b></td><td>71.12</td><td>66.81</td>
+      <td class="part">−4.3pp <span class="note">부호도 흔들린다</span></td></tr>
+  </table></div>
+
+  <div class="box hero">
+    <ul class="tight" style="margin:0">
+      <li><code>leak</code>=0.35 · α=0의 <b>62.48%는 <a href="#b64">§6.4</a> 기준선과 정확히 일치</b>한다
+        (2차 회귀 확인).</li>
+      <li><b class="ok">D1 화면은 「자유 토론이 아무 신호도 안 준다」는 «최악 가정»에 대한 «보험»</b>이지
+        상시 이득이 아니다. §7.5.3의 「D1은 자유 토론의 «대체재»이지 «추가재»가 아니다」가
+        <b>UI 축에서 같은 모양으로 나타난다.</b></li>
+    </ul>
+  </div>
+
+  <!-- ─────── 8.10 ─────── -->
+  <h3 id="s810">8.10 확인 / 미확인 — §5 · §7.7에 추가</h3>
+  <div class="scroll"><table>
+    <tr><th style="width:42%">주장</th><th>근거</th></tr>
+    <tr><td>α=0이 §6.5의 붕괴 수치를 <b>소수점까지 재현</b></td>
+      <td><span class="tag t-fact">시뮬 실측</span> 18.71 / 27.91 / 12.84%</td></tr>
+    <tr><td>α 0→0.5가 <b>이득의 8할</b></td>
+      <td><span class="tag t-fact">시뮬 실측</span> 20,000판/구성 · ±0.5pp</td></tr>
+    <tr><td>「있음」이 가장 값싼 단일 신호(−3.5pp)</td>
+      <td><span class="tag t-fact">시뮬 실측</span> §7.5.5와 <b>독립적으로 같은 방향</b></td></tr>
+    <tr class="hi"><td><b>「이 화면이 α를 올린다」</b></td>
+      <td><span class="tag t-pol">미확인 · 측정하지 않았다</span>
+        잰 것은 <b>「α가 낮으면 무슨 일이 나는가」</b>뿐이다.
+        <b class="no">UI 품질을 숫자로 쟀다고 주장하지 않는다</b></td></tr>
+    <tr class="hi"><td><b>「드로어가 닫혀 있으면 α≈0」</b> 등 화면 → α 대응</td>
+      <td><span class="tag t-pol">전부 설계 판단</span> 대응을 잰 코드는 없다</td></tr>
+    <tr><td>누적 이력의 값</td>
+      <td><span class="tag t-mid">부분 실측</span> 10인 −10.0pp · 8인 −0.7pp(<b>해상도 이하 · 분리 불가</b>).
+        <code>claimDecay</code>가 포교 지목과 <b>공유</b>돼 격리 실험이 아니고,
+        D2 · D4가 모델에 거의 없어 <b>과소평가 쪽으로 치우칠 가능성</b></td></tr>
+    <tr><td>인용 <code>파일:줄</code>(<code>index.html</code> · <code>main.ts</code> ·
+      <code>gate*.mjs</code> · <code>ui-copy</code> · <code>view-contract-spec</code>)</td>
+      <td><span class="tag t-fact">직접 읽음</span> 2026-07-29</td></tr>
+    <tr><td>「행 본문 141px · 배지 62px」 등 390px 배분</td>
+      <td><span class="tag t-est">산술 배분</span> 렌더 실측이 아니다.
+        <b class="no">실기 촬영 0건 · 게이트 미실행</b>(이 라운드는 <code>apps/**</code> 무접촉)</td></tr>
+    <tr><td>「10인 L1이 6~7행으로 줄어 예산에 든다」</td>
+      <td><span class="tag t-est">추정</span> 시뮬 라운드 중앙 4(§7.5.1)에서 유도.
+        <b>생존자 수 분포를 따로 재지 않았다</b></td></tr>
+    <tr><td>증거 노트 일반화 비용</td><td><span class="tag t-est">미측정</span></td></tr>
+    <tr><td>L3 격자가 390px에서 «읽히는가»</td>
+      <td><span class="tag t-pol">미확인</span> 축을 뒤집는 대안을 적었을 뿐 <b>어느 쪽이 읽히는지 재지 않았다</b></td></tr>
+    <tr><td><code>showBanner</code>의 <code>bottom: 240px</code>(D패드 회피)를 마피아에서 얼마로 둘지</td>
+      <td><span class="tag t-est">미정</span> D패드가 없어지면 재계산이 필요하다는 <b>사실만 확인</b></td></tr>
+  </table></div>
+
+  <!-- ─────── 8.11 ─────── -->
+  <h3 id="s811">8.11 정정 «요구» — §3 · §4 · 타 문서</h3>
+  <div class="scroll"><table>
+    <tr><th style="width:22%">대상</th><th>무엇이 바뀌나</th></tr>
+    <tr><td><a href="#fix">§3</a> <b>L0-④ 신설</b></td>
+      <td><code>buildEvidence</code>를 <code>renderPrivateGrid(groups, states)</code>로 일반화.
+        클루는 (3그룹, 3상태) 특수 케이스라 <b class="ok">런타임 무영향</b>. 비용 미측정</td></tr>
+    <tr><td><a href="#fix">§3</a> <b>L1-⑧ 신설</b></td>
+      <td>「누적 기록 패널」의 <b>행 정의를 콘텐츠로 이관</b> — <code>renderLedger(rows, cols)</code>.
+        <b>제안 기록표가 재사용 불가한 이유</b>(<a href="#s85">§8.5</a>)가 이 항목의 근거</td></tr>
+    <tr><td>§4.3</td>
+      <td>비밀 등급표에 <b><code>watchLedger</code></b>(공개 · <b>누적 포함</b>) 추가.
+        <code>onSeatRestored</code> 재전송 목록에 <b>누적 장부</b> 포함 —
+        없으면 <b class="no">재접속 · 관전자의 α가 0</b>이 된다</td></tr>
+    <tr><td><a href="#view46">§4.6</a> 뷰</td>
+      <td>계약 추가는 <b><code>setTag(actorId, tag)</code> 1개</b>로 족하다.
+        판정 UI를 <code>ViewContract</code>에 넣지 <b>않는</b> 이유는 <b>게이트 S4</b>(뷰 간 HUD 차 ≤2px)</td></tr>
+    <tr><td><a href="#split47">§4.7</a></td>
+      <td><b>T21 — 누적 집계값</b>(서버 소유 · <b>클라 계산 금지</b>) 추가</td></tr>
+    <tr><td><a href="#s77">§7.7</a></td>
+      <td>「사람이 D1 판정을 읽고 쓸 것」 행에 <b>α 곡선</b>(0→0.5가 8할)과
+        <b>「있음이 가장 싼 신호」</b>를 각주로</td></tr>
+    <tr><td><code>20260727-ui-copy.md</code></td>
+      <td>§2 어휘표에 <b><code>제거</code></b>(←<code>탈락</code>) · <b><code>신고</code></b> 추가 ·
+        느낌표 허용 <b>목록</b>을 주제별로 분리(<b>축은 유지</b>) · §4에 <b>야경 장부 문안절</b> 신설.
+        <b class="no">이 문서를 먼저 고쳐야 §8.8 문안을 코드에 넣을 수 있다</b>(<code>ui-copy §0</code> 사용 규칙 2)</td></tr>
+    <tr><td><code>20260727-view-contract-spec.md</code></td>
+      <td><code>setTag</code> 추가 시 §5 매트릭스에 행 1개.
+        <b>「15메서드 vs 실측 16」 불일치는 여전히 미해결</b>(<a href="#unknown">§5.1</a>)</td></tr>
+  </table></div>
+
+  <div class="lead">
+    <b>§8의 쓰임</b> — 「이 화면이면 사람이 판정을 읽는다」가 아니라 —<br />
+    <b>「무엇을 접고 무엇을 펼칠지를 «정보 부피»와 «실측 곡선»으로 정했고,
+    읽히지 않았을 때 «얼마를 잃는지»를 숫자로 적었다」</b>이다.<br /><br />
+    <a href="#s77">§7.7</a>이 「정보의 «존재»는 보장하되 «사용»은 보장하지 못한다」고 적은 자리에,
+    §8은 <b>사용의 «가격표»</b>를 붙였을 뿐 <b class="no">사용 자체를 보장하지 못한다.</b>
+    그것을 확인하는 방법은 하나뿐이다 — <b class="ok">사람이 플레이하는 것.</b>
+    사람 플레이 데이터는 여전히 <b>0건</b>이다.
+  </div>
+
   <hr />
   <p class="note" style="margin:0">
     <b>이 문서의 성격</b> — 「분리가 안 돼 있다」는 <b>비난이 아니라 좌표</b>다.
@@ -2781,6 +3635,24 @@
     이 문서는 그 보류를 재개할 때 <b>어디부터 손대야 하는지</b>를 비용 순으로 적어 둔 것이다.
     §3의 <span class="lvl l0">L0</span> 3건은 <b>클루가 도는 채로</b> 오늘 넣을 수 있다.<br /><br />
     <b>변경 이력</b> —
+    <b>2026-07-29 (5차 · 야경 장부 화면)</b>: <a href="#screen">§8</a> 신설.
+    <a href="#s77">§7.7</a>이 남긴 최우선 과제(「사람이 D1 판정을 읽고 쓰는가」)를 <b>화면 설계 문제로 규정</b>하고,
+    <b>접기 규칙 3개</b>(F1 판정은 펼치고 원본은 접는다 · F2 세로는 항상 · 가로는 좌석 1개만
+    → <code>N×R×2 → N+R</code> · F3 접혀도 신호 1개는 남기고 <b>그 1개는 «무죄»</b>)와
+    <b>4층 화면</b>(L0 원탁 점 · L1 판정 스트립 · L2 행 인라인 확장 · L3 좌석×라운드 격자)을 설계.
+    <b>좌석 행 목록만으로는 표현 불가한 판정 2종</b>(충돌의 귀속 = 신고자 «양쪽» ·
+    카운트 모순 = 「둘 중 하나」)을 발견해 <b>요약줄</b>을 신설.
+    <code>run-ui.mjs</code>(스크래치패드 · 저장소 미포함)로 <b>«사용»을 α로 모델링</b> —
+    α=0이 <a href="#b65">§6.5</a> 붕괴 수치를 <b>소수점까지 재현</b>(18.71 / 27.91 / 12.84%),
+    <b>α 0→0.5가 이득의 8할</b>, <b>「있음」이 가장 값싼 단일 신호</b>(−3.5pp),
+    <code>leak</code>=0.35에서는 실패 대가가 −4.3pp로 축소.
+    <b>UI 품질을 잰 것이 아니라 「가중이 낮으면 무슨 일이 나는가」만 쟀다</b>고
+    <a href="#s89">§8.9</a> · <a href="#s810">§8.10</a>에 명시.
+    기존 자산 판정: <code>.rp-col</code> · <code>.rp-fold</code> · 오버레이 버스 · 게이트 ·
+    조사 회피 규약 = <b>엔진</b> / 증거 노트 = <b>개념 엔진 · 구현 클루 전용</b> /
+    제안 기록표 = <b>재사용 불가</b>(축이 1차원 vs 2차원).
+    <b class="ok">오버레이 우선순위 표에 값을 하나도 추가하지 않았고 접두 기호도 늘리지 않았다.</b>
+    정정 요구는 <a href="#s811">§8.11</a>. ·
     <b>2026-07-29 (4차 · 구조화 발언 스키마)</b>: <a href="#speech">§7</a> 신설.
     <a href="#b65">§6.5</a>의 「<code>leak</code>=0이면 어떤 규칙으로도 못 건진다」에 답해
     <code>leak</code>을 <b>연역형</b>(엔진이 타입 있는 진술 레코드에서 모순을 계산)으로 재규정하고
