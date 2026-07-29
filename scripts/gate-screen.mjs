@@ -30,6 +30,10 @@
  *                  캔버스 픽셀은 재지 않는다 — 헤드리스 WebGL은 실기 GPU가 아니다.
  *   S5 글자 크기   손가락 뷰포트에서 실제로 그려진 `font-size` ≥ `SCREEN.minFontPx`.
  *   S6 명암비      글자색 ↔ **합성된 실제 배경색**의 명암비 ≥ WCAG 2.1 AA(4.5 / 큰 글자 3.0).
+ *   S7 목록 배지   랜딩 공개방 목록 한 줄이 **방 상태를 옳게 적는가**(ui-copy §8.5).
+ *                  «요소가 있는가»로는 절대 안 잡힌다 — 요소는 늘 있고 틀리는 것은 글자다.
+ *                  판을 새로 돌리지 않는다: 아래 6탭 실판에 **관측 탭 하나**를 붙여
+ *                  같은 세션의 세 시점(대기 중 / 정원 초과 / 종료됨)에서 목록을 읽는다.
  *
  *   ⚠️ S5·S6은 §사람 확인 «읽히는가»에서 **기계가 잴 수 있는 두 조각만** 떼어낸 것이다.
  *      줄바꿈·서체·행간, 그리고 :hover/:active/:focus 상태의 색은 **여전히 사람 몫**이고
@@ -41,17 +45,25 @@
  *   랜딩 · 대기실 · 게임 뷰1 · **게임 뷰2·3·4(HUD만)** · 안내 카드 · 고발 모달
  *   · **결과 화면 4행**(❌ 고발 실패 / 🏅 최후의 1인 / 🎉 사건 해결 / 🔍 사건 종결)
  *
+ *   · **공개방 목록 3행**(대기 중 / 정원 초과 / 종료됨 — ui-copy §8.5, `SCREEN.roomList`)
+ *
  *   결과 화면은 **6개 탭으로 실판을 돌려** 도달한다(gate.config.mjs `SCREEN.result`).
  *   좌석을 전부 사람으로 채우면 손패 합집합이 «정답 아닌 카드 전부»가 되어
  *   «반드시 오답»(남의 패)과 «반드시 정답»(소거의 여집합)이 **규칙상** 정해진다 —
  *   확률이 아니라 **실패가 불가능**하다. 서버에는 아무것도 추가하지 않았다.
  *
+ *   목록 배지(S7)는 그 세션에 **관측 탭 하나**를 얹어 «대기 중»·«정원 초과»를 공짜로 읽고,
+ *   «종료됨»만 3막(사람 5 + NPC 1)을 더 돈다 — 6인 방은 좌석이 차는 순간 Colyseus가
+ *   잠가(`locked`) 목록에서 사라지고, 그 잠금은 120초 재접속 창 뒤에야 풀리기 때문이다.
+ *   3막의 종료도 확률이 아니다: 다섯 탭이 **남의 손패**로 고발해 전원 탈락하면 남는 것은
+ *   NPC 하나뿐이라 서버가 그 자리에서 판을 끝낸다(고발 5회 상한이 규칙으로 확정).
+ *
  * ⚠️ 이 게이트는 **화면이 좋다고 증명하지 않는다.** 미(美)·정렬·읽힘은 기계가 못 잰다.
  *    마지막에 §사람 확인을 항상 인쇄한다(verify-print.mjs와 같은 규약). 그 목록을 지우지 마라.
  *
  * 실행
- *   node scripts/gate-screen.mjs                    # 기본 대상(실측 ≈40s)
- *   node scripts/gate-screen.mjs --full             # 기본에서 뺀 것까지 전부(실측 ≈53s)
+ *   node scripts/gate-screen.mjs                    # 기본 대상(실측 ≈49s)
+ *   node scripts/gate-screen.mjs --full             # 기본에서 뺀 것까지 전부(실측 ≈62s)
  *   node scripts/gate-screen.mjs --json
  *   node scripts/gate-screen.mjs --only=game,landing
  *   node scripts/gate-screen.mjs --only=result      # 결과 화면 6인 실판만(≈18s)
@@ -1207,38 +1219,172 @@ const clickJs = (sel) => `(() => {
   return true;
 })()`;
 
+// ── S7 공개방 목록 상태 배지(ui-copy §8.5) ─────────────────────────────
+//
+// 재는 대상은 **글자**다. 배지·버튼 라벨·부가 문구는 전부 DOM에 있고 늘 «존재»하므로
+// 존재 검사로는 회귀가 잡히지 않는다. 그래서 확정 문안과 **문자 그대로** 대조한다.
+
+/** 랜딩 `#roomList`의 각 줄을 문안 단위로 읽는다(내부 상태에 손대지 않는다). */
+const READ_ROOM_LIST_JS = `(() => {
+  const list = document.getElementById('roomList');
+  if (!list) return { err: '#roomList 가 없다(랜딩이 아니다)' };
+  const txt = (e) => (e ? (e.textContent || '').trim() : null);
+  const empty = list.querySelector('.room-empty');
+  const items = Array.prototype.map.call(list.querySelectorAll('.room-item'), (li) => {
+    const btn = li.querySelector('button');
+    const sub = li.querySelector('.ri-sub');
+    return {
+      badge: txt(li.querySelector('.ri-badge')),
+      button: txt(btn),
+      // \`disabled\`는 «만석»의 절반이다 — 라벨만 맞고 눌리면 문안이 거짓말을 한다.
+      disabled: btn ? !!btn.disabled : null,
+      // 부가 문구는 \`· \` 구분자와 함께 그려진다. 구분자는 문안이 아니므로 벗긴다.
+      sub: sub ? (sub.textContent || '').replace(/^[\\s·]+/, '').trim() : null,
+      title: txt(li.querySelector('.ri-body')),
+    };
+  });
+  return { items: items, empty: empty ? (empty.textContent || '').trim() : null };
+})()`;
+
+/**
+ * 목록이 `want`개로 갱신되기를 기다린 뒤 읽는다.
+ * `#refreshRooms`를 눌러 **사람이 하는 것과 같은 경로**로 갱신한다(내부 함수 호출이 아니다).
+ * 기다리다 못 채워도 **읽어서 그대로 돌려준다** — 판정은 호출부가 한다(조용히 넘기지 않는다).
+ */
+const readRoomList = async (sid, want) => {
+  await evalIn(sid, clickJs("#refreshRooms")).catch(() => false);
+  // 기다림이 시간을 넘겨도 **읽는다.** 「몇 개였는지」는 아래 판정이 실제 내용으로 인쇄한다 —
+  // 여기서 되돌아가면 «왜 못 쟀는지»가 사라진다.
+  await waitFor(
+    sid,
+    `document.querySelectorAll('#roomList .room-item').length === ${want}`,
+    SCREEN.roomList.waitMs,
+  );
+  return evalIn(sid, READ_ROOM_LIST_JS);
+};
+
+/**
+ * 한 시점의 목록을 §8.5 확정 문안과 대조한다. 반환은 다른 검사와 같은 모양의 체크 1건.
+ * **판정 불가는 FAIL이 아니라 SKIP + 사유**다(목록에 방이 1개가 아니면 우리 방을 지목할 수 없다).
+ */
+const judgeRoomList = (caseDef, snap, ctx) => {
+  const id = "S7";
+  const dump = (snap.items ?? [])
+    .map((i) => `«${i.title}» 배지«${i.badge ?? "-"}» 버튼«${i.button ?? "-"}»${i.disabled ? "(비활성)" : ""} 부가«${i.sub ?? "-"}»`)
+    .join(" / ");
+  if (snap.err) return { id, status: "SKIP", detail: `${caseDef.label} — ${snap.err}`, lines: [] };
+  const items = snap.items ?? [];
+  if (items.length !== SCREEN.roomList.expectRooms) {
+    // 「없다」가 **예상된 사실**인 경우(정원 초과 행)는 그 사유를 그대로 인쇄한다.
+    const why =
+      items.length === 0 && caseDef.unreachableWhy
+        ? caseDef.unreachableWhy
+        : `목록에 방이 ${items.length}개다(1개여야 우리 방을 지목할 수 있다). ` +
+          `실제: ${dump || snap.empty || "(빈 목록)"}`;
+    return { id, status: "SKIP", detail: `${caseDef.label} — ${why}`, lines: [] };
+  }
+  const got = items[0];
+  const want = {
+    badge: caseDef.badge,
+    button: caseDef.button,
+    sub:
+      typeof caseDef.sub === "string"
+        ? caseDef.sub.replace("{clients}", String(ctx.clients)).replace("{maxClients}", String(ctx.maxClients))
+        : caseDef.sub,
+  };
+  const lines = [];
+  const cmpText = (name, w, g) => {
+    if (w === null || w === undefined) return; // 문서가 규정하지 않은 칸은 재지 않는다
+    if (g === w) return;
+    lines.push(`✗ ${name} — 기대 «${w}» · 실제 «${g ?? "(없음)"}»`);
+  };
+  cmpText("배지", want.badge, got.badge);
+  cmpText("버튼", want.button, got.button);
+  cmpText("부가 문구", want.sub, got.sub);
+  if (caseDef.disabled !== null && caseDef.disabled !== undefined && got.disabled !== caseDef.disabled)
+    lines.push(
+      `✗ 버튼 활성 — 기대 «${caseDef.disabled ? "비활성" : "활성"}» · 실제 «${got.disabled ? "비활성" : "활성"}»`,
+    );
+  return {
+    id,
+    status: lines.length ? "FAIL" : "PASS",
+    detail: lines.length
+      ? `${caseDef.label} — 확정 문안과 어긋난 칸 ${lines.length}개`
+      : `${caseDef.label} — 배지·버튼·부가 문구가 §8.5 확정 문안과 일치`,
+    lines,
+  };
+};
+
 /** 결과 흐름 전체. 실패는 전부 `{ skip: 사유 }`로 돌려준다(FAIL이 아니다). */
 const runResultFlow = async () => {
   const R = SCREEN.result;
   const vpOf = (id) => (id ? SCREEN.viewports.find((v) => v.id === id) ?? null : null);
   const tabs = [];
   const notes = [];
+  /** S7(§8.5) 판정 결과. 실판을 재사용할 뿐 **판을 새로 돌리지 않는다.** */
+  const roomChecks = [];
   const t0 = Date.now();
   const bail = async (why) => {
     for (const t of tabs) await t.close();
-    return { skip: why, ms: Date.now() - t0, notes };
+    await observer.close();
+    return { skip: why, ms: Date.now() - t0, notes, roomChecks };
   };
 
   for (const spec of R.tabs) {
     const t = await newTab(vpOf(spec.vp));
     tabs.push({ ...t, id: spec.id, role: spec.role, vpId: spec.vp });
   }
+  /**
+   * S7 관측 탭 — **방에 들어가지 않는다.** 랜딩만 열고 공개방 목록을 읽는다
+   * (좌석에 앉지 않으므로 «전원 사람 6인» 전제를 건드리지 않는다).
+   * 뷰포트 에뮬레이션도 걸지 않는다 — 재는 것은 레이아웃이 아니라 **글자**다.
+   */
+  const observer = await newTab(null);
   const byId = (id) => tabs.find((t) => t.id === id);
   const host = tabs[0];
 
-  // ① 방장 탭이 **비공개 방**을 만든다(기존 랜딩 UI 그대로).
+  /** 관측 탭에서 한 시점을 재고 결과를 모은다. 실패는 SKIP + 사유로만 남는다. */
+  const grabRoomList = async (caseKey, ctx) => {
+    const c = SCREEN.roomList.cases[caseKey];
+    const g0 = Date.now();
+    const snap = await readRoomList(observer.sid, ctx.want).catch((e) => ({
+      err: `목록을 읽지 못했다 — ${e.message}`,
+    }));
+    const check = judgeRoomList(c, snap, ctx);
+    roomChecks.push({ id: c.id, label: c.label, ms: Date.now() - g0, check });
+    return check;
+  };
+
+  // ① 방장 탭이 **공개 방**을 만든다(기존 랜딩 UI 그대로 — 라디오가 아니라 `.seg-btn` 버튼이다).
+  //    비공개로 만들면 `setListed()`가 «비공개로 만든 방은 계속 비공개»로 되돌려
+  //    §8.5가 재는 목록에 **애초에 나타나지 않는다.** 공개방이어야 판정 대상이 생긴다.
+  //    (공개라고 판이 달라지지 않는다 — 좌석 6개를 우리가 다 채우므로 난입 여지도 없고,
+  //     판이 도는 동안은 서버가 `setListed(false)`로 목록에서 빼 둔다.)
   step("결과 흐름 · 방 만들기");
   await cmd("Page.navigate", { url: `${BASE}/?demo=1` }, host.sid);
   // `readyState === 'complete'` 까지 기다린다 — 버튼 **DOM**은 정적 HTML에 이미 있지만
   // `onclick`은 모듈 스크립트가 실행돼야 붙는다. 그 전에 누르면 **아무 일도 일어나지 않는다**.
   if (!(await waitFor(host.sid, "document.readyState === 'complete' && !!document.getElementById('createBtn')", SCREEN.readyTimeoutMs)))
     return bail("랜딩이 뜨지 않았다");
-  await evalIn(host.sid, clickJs('#visSeg .seg-btn[data-pub="0"]'));
+  if (!(await evalIn(host.sid, clickJs('#visSeg .seg-btn[data-pub="1"]'))))
+    return bail("공개/비공개 선택 버튼(`#visSeg .seg-btn[data-pub=\"1\"]`)을 찾지 못했다");
   await evalIn(host.sid, clickJs("#createBtn"));
   if (!(await waitFor(host.sid, "!document.getElementById('lobby').classList.contains('hidden')", SCREEN.readyTimeoutMs)))
     return bail("대기실에 들어가지 못했다(방 생성 실패)");
   const code = String(await evalIn(host.sid, "(location.pathname.match(/\\/room\\/([^/?]+)/) || [])[1] || ''"));
   if (!code) return bail("초대 코드를 읽지 못했다");
+
+  // ①′ S7 «대기 중» — 방 하나 · 사람 1명 · 판 시작 전. 여기가 §8.5 1행의 정의 그대로다.
+  step("결과 흐름 · S7 목록 «대기 중»");
+  await cmd("Page.navigate", { url: `${BASE}/?demo=1` }, observer.sid);
+  if (!(await waitFor(observer.sid, "document.readyState === 'complete' && !!document.getElementById('refreshRooms')", SCREEN.readyTimeoutMs)))
+    roomChecks.push({
+      id: SCREEN.roomList.cases.lobby.id,
+      label: SCREEN.roomList.cases.lobby.label,
+      ms: 0,
+      check: { id: "S7", status: "SKIP", detail: "관측 탭에 랜딩이 뜨지 않았다", lines: [] },
+    });
+  else await grabRoomList("lobby", { want: 1, clients: 1, maxClients: R.seats });
 
   // ② 나머지 5탭이 **초대 코드**로 참가한다.
   step(`결과 흐름 · 5탭 참가 (${code})`);
@@ -1252,6 +1398,11 @@ const runResultFlow = async () => {
   }
   if (!(await waitFor(host.sid, `document.getElementById('playerCount').textContent === '${R.seats}'`, SCREEN.readyTimeoutMs)))
     return bail(`좌석 ${R.seats}개가 사람으로 차지 않았다 — 서버가 NPC를 채우면 «전원 사람» 전제가 깨진다`);
+
+  // ②′ S7 «정원 초과» — 좌석이 다 찼다. 다만 **목록에는 나타나지 않는다**(설정의 `unreachableWhy`).
+  //     기대 개수를 0으로 주고, 0이면 그 사실을 SKIP + 사유로 인쇄한다(통과로 세지 않는다).
+  step("결과 흐름 · S7 목록 «만석»");
+  await grabRoomList("full", { want: 0, clients: R.seats, maxClients: R.seats });
 
   // ③ 잔치 시작. 이 시점에 빈 자리가 없으므로 **NPC는 한 명도 들어오지 않는다.**
   step("결과 흐름 · 잔치 시작");
@@ -1444,8 +1595,140 @@ const runResultFlow = async () => {
   if (e2) return bail(e2);
   await grab(2);
 
+  // ── 3막: S7 «종료됨» ───────────────────────────────────────────────
+  //
+  // **왜 위 6탭 방을 그대로 못 쓰는가**(실측으로 두 번 확인했다 — 같은 함정에 다시 빠지지 마라):
+  //   위 방은 판이 끝나 `setListed(true)`로 «공개»로 되돌아온다. 그런데 목록에 안 뜬다.
+  //   `getAvailableRooms()`는 `{ locked:false, private:false }`로 거르는데, 좌석이 6/6이 되는
+  //   순간 Colyseus가 방을 **잠근다**(`Room._incrementClientCount` → `lock()`).
+  //   잠금은 접속 수가 줄어야 풀리는데, 접속 수를 줄이는 `_decrementClientCount()`는
+  //   `Room._onLeave`에서 **`await this.onLeave()` 뒤에** 있고, 이 저장소의 `onLeave`는
+  //   `phase !== "lobby"`면 `allowReconnection(120초)`를 **await** 한다(결과 화면 새로고침 복구).
+  //   → 탭을 닫아도 120초 동안 `clients`는 6, `locked`는 true다. 게이트 예산 안에서는
+  //     **6인 방이 목록에 되돌아오는 일 자체가 없다.**
+  //
+  // **그래서 이 막은 좌석 하나를 NPC에게 준다**(사람 5 + NPC 1).
+  //   접속 수가 5라 방은 **한 번도 잠기지 않고**, 판이 끝나면 그대로 목록에 뜬다.
+  //   끝내는 방법은 위와 같은 «규칙상 실패 불가» 장치다 — 각 탭은 **남의 손패 카드**로
+  //   고발한다(정의상 오답 → 탈락). 사람 5명이 전부 탈락하면 남는 것은 NPC 하나뿐이라
+  //   서버가 그 자리에서 `survivor`로 판을 끝낸다. 고발 횟수 상한이 5로 **확정**돼 있다.
+  //   (NPC가 먼저 오답으로 탈락하면 4번이면 끝난다 — 어느 쪽이든 끝난다.)
+  //   ⚠️ 정답 봉투는 **모르고, 알 필요도 없다.** NPC 손패 3장이 미지라 소거가 안 되지만
+  //      이 막이 필요한 것은 «판이 끝났다»뿐이다.
+  //
+  // ⚠️ 위 결과 화면 계측(`grab(2)`)이 **끝난 뒤**에만 온다 — 탭을 먼저 돌리면 §7.1 4행을 잃는다.
+  const L = SCREEN.roomList;
+  step("결과 흐름 · S7 종료된 방 만들기(사람 5 + NPC 1)");
+  // ⚠️ **탭을 재사용하지 않는다.** 재접속 토큰은 `sessionStorage`(탭 단위)에 남고,
+  //    `init()`이 랜딩에서 그 토큰으로 **이전 방에 재접속**해 버린다(실측: 새 방을 만들어도
+  //    `room`이 옛 방으로 덮여 [잔치 시작]이 옛 방으로 날아갔다). 새 탭은 토큰이 없다.
+  //    뷰포트 에뮬레이션도 걸지 않는다 — 이 막이 재는 것은 레이아웃이 아니라 목록의 글자다.
   for (const t of tabs) await t.close();
-  return { measured, ms: Date.now() - t0, notes };
+  tabs.length = 0;
+  for (let i = 0; i < L.endedRoom.humans; i++) {
+    const t = await newTab(null);
+    tabs.push({ ...t, id: `X${i + 1}`, role: "loser", vpId: null });
+  }
+  const host3 = tabs[0];
+
+  await cmd("Page.navigate", { url: `${BASE}/?demo=1` }, host3.sid);
+  if (!(await waitFor(host3.sid, "document.readyState === 'complete' && !!document.getElementById('createBtn')", SCREEN.readyTimeoutMs)))
+    return bail("3막: 랜딩이 뜨지 않았다");
+  await evalIn(host3.sid, clickJs('#visSeg .seg-btn[data-pub="1"]'));
+  await evalIn(host3.sid, clickJs("#createBtn"));
+  if (!(await waitFor(host3.sid, "!document.getElementById('lobby').classList.contains('hidden')", SCREEN.readyTimeoutMs)))
+    return bail("3막: 공개방을 만들지 못했다");
+  const code3 = String(await evalIn(host3.sid, "(location.pathname.match(/\\/room\\/([^/?]+)/) || [])[1] || ''"));
+  if (!code3) return bail("3막: 초대 코드를 읽지 못했다");
+  for (const t of tabs.slice(1)) {
+    await cmd("Page.navigate", { url: `${BASE}/?room=${encodeURIComponent(code3)}&demo=1` }, t.sid);
+    if (!(await waitFor(t.sid, "document.readyState === 'complete' && !!document.getElementById('joinBtn')", SCREEN.readyTimeoutMs)))
+      return bail(`3막: 탭 ${t.id} 랜딩이 뜨지 않았다`);
+    await evalIn(t.sid, clickJs("#joinBtn"));
+    if (!(await waitFor(t.sid, "!document.getElementById('lobby').classList.contains('hidden')", SCREEN.readyTimeoutMs)))
+      return bail(`3막: 탭 ${t.id} 대기실 참가 실패`);
+  }
+  if (!(await waitFor(host3.sid, `document.getElementById('playerCount').textContent === '${L.endedRoom.humans}'`, SCREEN.readyTimeoutMs)))
+    return bail(`3막: 사람 ${L.endedRoom.humans}명이 모이지 않았다`);
+  await evalIn(host3.sid, clickJs("#startBtn"));
+  for (const t of tabs)
+    if (!(await waitFor(t.sid, "!document.getElementById('gameScreen').classList.contains('hidden') && !document.getElementById('turnInfo').classList.contains('hidden')", SCREEN.readyTimeoutMs)))
+      return bail(`3막: 탭 ${t.id}가 게임 화면에 들어가지 못했다`);
+
+  /**
+   * 남의 손패 카드 하나로 «반드시 오답»인 조합을 만든다.
+   * - 한 칸이라도 남의 손에 있으면 그 고발은 **정의상 틀린다** — 세 칸을 다 알 필요가 없다.
+   * - 나머지 두 칸은 **잠기지 않은(=내 패가 아닌)** 아무 값. 잠긴 옵션을 고르면
+   *   `accuseJs`가 스스로 실패하므로 «UI 잠금을 우회하지 않았다»가 계속 보증된다.
+   */
+  const wrongWithDonor = (myCats, donorHand) => {
+    const pick = [];
+    let used = false;
+    for (let i = 0; i < 3; i++) {
+      const mine = new Set(myCats[i].mine);
+      const donor = donorHand[i].find((v) => !mine.has(v));
+      if (!used && donor) {
+        pick.push(donor);
+        used = true;
+        continue;
+      }
+      const any = myCats[i].all.find((v) => !mine.has(v));
+      if (!any) return null;
+      pick.push(any);
+    }
+    return used ? { suspect: pick[0], weapon: pick[1], room: pick[2] } : null;
+  };
+
+  step("결과 흐름 · S7 사람 5명 오답 탈락");
+  /** 탭별 손패(카테고리 3개). 자기 차례에 고발 모달을 열면 그 자리에서 읽힌다. */
+  const hands3 = new Map();
+  let ended3 = false;
+  for (let i = 0; i < R.maxTurns && !ended3; i++) {
+    const a = await activeTab();
+    if (a.ended) {
+      ended3 = true;
+      break;
+    }
+    if (!a.tab) {
+      await sleep(120);
+      continue;
+    }
+    const t = a.tab;
+    await evalIn(t.sid, clickJs("#accuse"));
+    if (!(await waitFor(t.sid, "!!document.querySelector('.overlay .modal select')", 8000)))
+      return bail(`3막: 탭 ${t.id}의 고발 모달이 열리지 않았다`);
+    const cats = await evalIn(t.sid, READ_PICKER_JS);
+    if (!cats) return bail(`3막: 탭 ${t.id}의 고발 모달 select 3개를 읽지 못했다`);
+    hands3.set(t.id, cats.map((c) => c.mine));
+    const donorId = [...hands3.keys()].find((id) => id !== t.id && hands3.get(id).some((m) => m.length));
+    const triple = donorId ? wrongWithDonor(cats, hands3.get(donorId)) : null;
+    if (!triple) {
+      // 아직 남의 패를 하나도 모른다(첫 탭) — 판을 건드리지 않고 [취소] 후 턴만 넘긴다.
+      await evalIn(t.sid, CANCEL_JS);
+      await evalIn(t.sid, clickJs("#endTurn"));
+      if (!(await waitTurnLeft(t))) return bail(`3막: 탭 ${t.id}의 [턴 종료]가 반영되지 않았다`);
+      continue;
+    }
+    const r = await evalIn(t.sid, accuseJs(triple));
+    if (!r?.ok) return bail(`3막: 탭 ${t.id} 고발 실행 실패 — ${r?.why ?? "?"}`);
+    notes.push(`3막 ${t.id} 고발 [${triple.suspect} · ${triple.weapon} · ${triple.room}] — 남의 손패 = 정답 불가`);
+    if (!(await waitTurnLeft(t))) {
+      const st = await evalIn(t.sid, TAB_STATE_JS).catch(() => null);
+      if (!st?.ended) return bail(`3막: 탭 ${t.id}의 고발이 반영되지 않았다`);
+      ended3 = true;
+    }
+  }
+  if (!ended3 && !(await activeTab()).ended)
+    return bail(`3막: ${R.maxTurns}턴 안에 판이 끝나지 않았다`);
+
+  step("결과 흐름 · S7 목록 «종료됨»");
+  // 종료 처리(`setListed(true)` → `setPrivate(false)`)가 매치메이커에 반영될 틈.
+  await sleep(SCREEN.settleMs);
+  await grabRoomList("ended", { want: 1, clients: L.endedRoom.humans, maxClients: R.seats });
+
+  for (const t of tabs) await t.close();
+  await observer.close();
+  return { measured, ms: Date.now() - t0, notes, roomChecks };
 };
 
 /** 뷰1 대비 HUD 상자 이동 비교용 — 보호 대상의 rect를 키로 뽑는다. */
@@ -1625,6 +1908,48 @@ const FAULTS = [
   },
 ];
 
+/**
+ * S7(공개방 목록 배지) 음성 테스트 결함.
+ *
+ * ⚠️ 이 결함들은 **게임 판이 필요 없다.** 공개방 하나(대기 중) + 랜딩 관측 탭 하나면
+ *    §8.5 1행이 성립하므로, 음성 테스트에 6탭 실판(≈18초)을 끌고 오지 않는다.
+ * ⚠️ `js`는 **문(statement)**이다 — 주입과 재독을 한 표현식으로 묶기 때문이다
+ *    (랜딩의 5초 자동 갱신이 그 사이에 끼면 결함이 지워져 «게이트가 놓쳤다»로 잘못 읽힌다).
+ */
+const ROOM_FAULTS = [
+  {
+    id: "F9-배지오표기",
+    signature: /배지 — 기대 «대기 중» · 실제 «종료됨»/,
+    why: "대기 중인 방의 배지를 «종료됨»으로 바꾼다 — 상태를 거꾸로 적은 목록 그 자체다",
+    js: `document.querySelector('#roomList .ri-badge').textContent = '종료됨';`,
+  },
+  {
+    id: "F10-버튼오표기",
+    signature: /버튼 — 기대 «참가» · 실제 «관전»/,
+    why:
+      "버튼 라벨만 «관전»으로 바꾼다(배지는 그대로 «대기 중»). " +
+      "§8.5가 막으려는 사고가 정확히 이것의 거울상이다 — 상태와 버튼이 서로 다른 말을 한다",
+    js: `document.querySelector('#roomList .room-item button').textContent = '관전';`,
+  },
+  {
+    id: "F11-버튼잠김",
+    signature: /버튼 활성 — 기대 «활성» · 실제 «비활성»/,
+    why:
+      "라벨은 «참가» 그대로 두고 버튼만 비활성으로 만든다. " +
+      "글자만 비교하면 통과해 버리는 자리다 — «만석»의 절반은 라벨이 아니라 `disabled`다",
+    js: `document.querySelector('#roomList .room-item button').disabled = true;`,
+  },
+  {
+    id: "F12-무해한변경",
+    shouldPass: true, // **오탐 방지 시험** — 이건 잡히면 안 된다
+    signature: /./,
+    why:
+      "방장 이름만 바꾼다. §8.5가 규정하는 것은 배지·버튼·부가 문구뿐이므로 " +
+      "**잡히면 안 된다** — 잡히면 이 검사는 «줄이 바뀌었다»를 재는 것이지 문안을 재는 게 아니다",
+    js: `document.querySelector('#roomList .ri-body b').textContent = 'ZZZ';`,
+  },
+];
+
 if (OPT.selfTest) {
   const vp = SCREEN.viewports.find((v) => v.id === "phone");
   const scr = (id) => SCREEN.screens.find((s) => s.id === id);
@@ -1699,13 +2024,74 @@ if (OPT.selfTest) {
     });
   }
 
+  // ── S7 음성 테스트 — 공개방 1개(대기 중) + 랜딩 관측 탭 1개.
+  //    실판을 돌리지 않는다: §8.5 1행은 «방 하나가 목록에 있다»만으로 성립한다.
+  {
+    step("음성 테스트 기준선 room-list");
+    const rlHost = await newTab(null);
+    const rlObs = await newTab(null);
+    const rlBail = async (why) => {
+      await rlHost.close();
+      await rlObs.close();
+      // 결함을 주입할 무대 자체를 못 만들었다 → **판정 불가(SKIP)**다. 통과로 세지 않는다.
+      skipOut(`S7 음성 테스트 기준선 도달 실패 — ${why}`, client.log);
+    };
+    await cmd("Page.navigate", { url: `${BASE}/?demo=1` }, rlHost.sid);
+    if (!(await waitFor(rlHost.sid, "document.readyState === 'complete' && !!document.getElementById('createBtn')", SCREEN.readyTimeoutMs)))
+      await rlBail("랜딩이 뜨지 않았다");
+    await evalIn(rlHost.sid, clickJs('#visSeg .seg-btn[data-pub="1"]'));
+    await evalIn(rlHost.sid, clickJs("#createBtn"));
+    if (!(await waitFor(rlHost.sid, "!document.getElementById('lobby').classList.contains('hidden')", SCREEN.readyTimeoutMs)))
+      await rlBail("공개방을 만들지 못했다");
+    await cmd("Page.navigate", { url: `${BASE}/?demo=1` }, rlObs.sid);
+    if (!(await waitFor(rlObs.sid, "document.readyState === 'complete' && !!document.getElementById('refreshRooms')", SCREEN.readyTimeoutMs)))
+      await rlBail("관측 탭에 랜딩이 뜨지 않았다");
+
+    const rlCase = SCREEN.roomList.cases.lobby;
+    const rlCtx = { clients: 1, maxClients: SCREEN.result.seats };
+    /** 목록을 새로 그린 뒤(결함이 있으면 주입해) 판정한다. */
+    const rlRead = async (faultJs) => {
+      const snap = await readRoomList(rlObs.sid, 1);
+      if (!faultJs) return judgeRoomList(rlCase, snap, rlCtx);
+      const after = await evalIn(rlObs.sid, `(() => { ${faultJs} return ${READ_ROOM_LIST_JS}; })()`);
+      return judgeRoomList(rlCase, after, rlCtx);
+    };
+
+    const rlBase = await rlRead(null);
+    if (rlBase.status !== "PASS")
+      await rlBail(`결함 없이도 통과하지 않는다(${rlBase.status}) — ${rlBase.detail} ${(rlBase.lines ?? []).join(" ")}`);
+    rows.push({
+      id: "기준선(room-list)",
+      expect: "-",
+      got: `S7:${rlBase.status}`,
+      ok: true,
+      note: "결함 주입 전 상태 — 대기 중인 공개방 1개가 §8.5 1행 문안대로 그려졌다",
+    });
+    for (const f of ROOM_FAULTS) {
+      step(`음성 테스트 ${f.id}`);
+      const c = await rlRead(f.js);
+      const hits = (c.status === "FAIL" ? [c.detail, ...(c.lines ?? [])] : []).filter((l) => f.signature.test(l));
+      rows.push({
+        id: f.id,
+        expect: f.shouldPass ? "S7 무반응" : "S7 신규 FAIL",
+        got: `S7:${c.status} · 지문 ${hits.length}건`,
+        ok: f.shouldPass ? c.status === "PASS" : hits.length > 0,
+        note: f.why,
+        detail: hits.slice(0, 3),
+      });
+    }
+    await rlHost.close();
+    await rlObs.close();
+  }
+
   const bad = rows.filter((r) => !r.ok);
   if (OPT.json) {
     console.log(JSON.stringify({ mode: "self-test", status: bad.length ? "FAIL" : "PASS", rows }, null, 2));
   } else {
     if (tty) process.stderr.write(`${" ".repeat(70)}\r`);
     console.log(`\n══ 화면 게이트 · 음성 테스트(일부러 깨뜨려 본다) ${"═".repeat(24)}`);
-    console.log("   대상: 게임 뷰1 · 폰 390×844 · 결함은 런타임 주입이라 앱 코드는 그대로다\n");
+    console.log("   대상: 게임 뷰1 · 폰 390×844 (S1~S6) · 랜딩 공개방 목록 1줄 (S7)");
+    console.log("   결함은 런타임 주입이라 앱 코드는 그대로다\n");
     for (const r of rows) {
       console.log(`  ${r.ok ? "OK  " : "MISS"}  ${r.id.padEnd(16)} 기대 ${String(r.expect).padEnd(14)} 실제 ${r.got}`);
       console.log(`          ↳ ${r.note}`);
@@ -1813,6 +2199,15 @@ if (!wanted("result")) {
       });
     }
   }
+  // S7 — 결과 흐름이 도중에 끊겨도(`skip`) **거기까지 잰 시점은 인쇄한다.**
+  // 못 잰 시점은 아예 행이 없는 것이 아니라, 도달한 데까지만 남는다.
+  for (const rc of resultFlow.roomChecks ?? []) {
+    if (rc.check.status === "SKIP") {
+      results.push({ screen: rc.id, label: rc.label, vp: "-", vpLabel: "관측 탭", ms: rc.ms, skip: rc.check.detail });
+      continue;
+    }
+    results.push({ screen: rc.id, label: rc.label, vp: "-", vpLabel: "관측 탭", ms: rc.ms, checks: [rc.check] });
+  }
 } else {
   results.push({
     screen: "result",
@@ -1822,6 +2217,15 @@ if (!wanted("result")) {
     ms: 0,
     skip: `기본 대상에서 제외됨(tier=${RESULT_TIER}) — \`--full\`에서 돈다`,
   });
+  for (const k of Object.keys(SCREEN.roomList.cases))
+    results.push({
+      screen: SCREEN.roomList.cases[k].id,
+      label: SCREEN.roomList.cases[k].label,
+      vp: "-",
+      vpLabel: "관측 탭",
+      ms: 0,
+      skip: `6탭 실판에 얹혀 도는 검사다 — 결과 흐름이 기본 대상에서 빠지면(tier=${RESULT_TIER}) 함께 빠진다`,
+    });
 }
 const totalMs = Date.now() - runStart;
 if (tty) process.stderr.write(`${" ".repeat(70)}\r`);
