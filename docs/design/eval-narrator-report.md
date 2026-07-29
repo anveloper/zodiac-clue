@@ -1,7 +1,7 @@
 # eval-narrator 리포트 (자동 생성)
 
 > 이 파일은 `node scripts/eval-narrator.mjs`가 매 실행마다 덮어쓴다. **직접 편집하지 마라.**
-> 생성 2026-07-29T01:27:34.639Z · 모드 **offline** · seed 20260728 · 명세 ④ §3
+> 생성 2026-07-29T04:35:59.460Z · 모드 **offline** · seed 20260728 · 명세 ④ §3
 
 ## 결과: PASS
 
@@ -32,10 +32,10 @@
   "spec": "docs/design/20260720-ai-tech-doc.md §3",
   "mode": "offline",
   "seed": 20260728,
-  "generatedAt": "2026-07-29T01:27:34.639Z",
+  "generatedAt": "2026-07-29T04:35:59.460Z",
   "source": {
     "narrator": "apps/server/src/ai/narrator.ts",
-    "cards": "packages/shared/src/cards.ts",
+    "cards": "packages/shared/src/content/clue/cards.ts",
     "LINE_MAX": 40,
     "LINE_BUDGET_SUGGEST": 25
   },
