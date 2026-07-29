@@ -30,6 +30,15 @@
  *                  캔버스 픽셀은 재지 않는다 — 헤드리스 WebGL은 실기 GPU가 아니다.
  *   S5 글자 크기   손가락 뷰포트에서 실제로 그려진 `font-size` ≥ `SCREEN.minFontPx`.
  *   S6 명암비      글자색 ↔ **합성된 실제 배경색**의 명암비 ≥ WCAG 2.1 AA(4.5 / 큰 글자 3.0).
+ *   S8 컬럼 배분   **판 중반** 우측 컬럼(AI 대사·증거 노트·제안 기록표·기록/알림)이 높이 하나를
+ *                  나눠 갖는데, 맨 아래 `📜 기록/알림`이 **몇 줄을 보여줄 수 있는가**.
+ *                  S1은 원리적으로 침묵한다 — 이건 «남에게 덮였는가»가 아니라
+ *                  **자기 몫이 0으로 수렴하는 것**이고, 덮이지 않은 요소는 S1의 관심 밖이다.
+ *                  두 수치를 갈라 잰다: 지금 **받은** 몫(회귀 감시=래칫)과 이 화면이
+ *                  **보장하는** 몫(`min-height`에서 머리글·패딩을 뺀 값 → 기능 하한).
+ *                  ⚠️ **현재 값은 결함이다**(보장 0줄). 그래서 하한으로 FAIL을 내지 않고
+ *                  번들 예산 게이트와 같은 **래칫**으로 «더 나빠지면 FAIL»만 한다 —
+ *                  대신 매 실행 «결함 확인»을 인쇄한다. 통과가 «정상»으로 읽히면 안 된다.
  *   S7 목록 배지   랜딩 공개방 목록 한 줄이 **방 상태를 옳게 적는가**(ui-copy §8.5).
  *                  «요소가 있는가»로는 절대 안 잡힌다 — 요소는 늘 있고 틀리는 것은 글자다.
  *                  판을 새로 돌리지 않는다: 아래 6탭 실판에 **관측 탭 하나**를 붙여
@@ -47,6 +56,8 @@
  *
  *   · **공개방 목록 3행**(대기 중 / 정원 초과 / 종료됨 — ui-copy §8.5, `SCREEN.roomList`)
  *
+ *   · **판 중반 우측 컬럼 배분 1건**(S8 — 위 6탭 세션의 **3판**에 얹혀 돈다, `SCREEN.rightColumn`)
+ *
  *   결과 화면은 **6개 탭으로 실판을 돌려** 도달한다(gate.config.mjs `SCREEN.result`).
  *   좌석을 전부 사람으로 채우면 손패 합집합이 «정답 아닌 카드 전부»가 되어
  *   «반드시 오답»(남의 패)과 «반드시 정답»(소거의 여집합)이 **규칙상** 정해진다 —
@@ -62,14 +73,15 @@
  *    마지막에 §사람 확인을 항상 인쇄한다(verify-print.mjs와 같은 규약). 그 목록을 지우지 마라.
  *
  * 실행
- *   node scripts/gate-screen.mjs                    # 기본 대상(실측 ≈49s)
- *   node scripts/gate-screen.mjs --full             # 기본에서 뺀 것까지 전부(실측 ≈62s)
+ *   node scripts/gate-screen.mjs                    # 기본 대상(실측 ≈54s)
+ *   node scripts/gate-screen.mjs --full             # 기본에서 뺀 것까지 전부(실측 ≈69s)
  *   node scripts/gate-screen.mjs --json
  *   node scripts/gate-screen.mjs --only=game,landing
- *   node scripts/gate-screen.mjs --only=result      # 결과 화면 6인 실판만(≈18s)
+ *   node scripts/gate-screen.mjs --only=result      # 결과 화면 6인 실판 + S8만(≈30s)
  *   node scripts/gate-screen.mjs --viewport=phone
  *   node scripts/gate-screen.mjs --keep             # 캡처 PNG를 남긴다(사람 확인용)
  *   node scripts/gate-screen.mjs --self-test        # **음성 테스트** — 일부러 깨뜨려 게이트가 잡는지 본다
+ *   node scripts/gate-screen.mjs --only=result --update-baseline --reason="…"   # S8 래칫 기준선 갱신
  *
  * ⚠️ 기본에서 뺀 것은 **항상 SKIP + 사유로 인쇄된다**(§기본 대상에서 뺀 화면).
  *    조용히 빠지는 것은 없다 — 은폐된 미측정이 회귀보다 위험하다.
@@ -93,6 +105,7 @@ import { fileURLToPath } from "node:url";
 import { tmpdir } from "node:os";
 
 import { SCREEN } from "./gate.config.mjs";
+import { readBaseline, writeBaseline, parseReason } from "./gate-baseline.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -112,6 +125,8 @@ const OPT = {
   only: (val("--only=") ?? "").split(",").map((s) => s.trim()).filter(Boolean),
   viewport: val("--viewport=") ?? "",
   out: val("--out=") ?? join(tmpdir(), "zodiac-screen-gate"),
+  /** S8(판 중반 우측 컬럼 배분) 래칫 기준선 갱신. 번들 예산 게이트와 같은 규약 — 사유 필수. */
+  update: has("--update-baseline"),
 };
 
 const CHROME =
@@ -1219,6 +1234,172 @@ const clickJs = (sel) => `(() => {
   return true;
 })()`;
 
+// ── S8 판 중반 우측 컬럼 배분 (gate.config.mjs `SCREEN.rightColumn`) ─────
+//
+// 여기 있는 것은 **관측**뿐이다. 판정(래칫 대조)은 Node 쪽 `judgeRightColumn` 한 곳에서 한다
+// — 다른 검사와 같은 규약이다.
+
+/**
+ * 우측 컬럼의 높이 배분 한 장.
+ *
+ * 재는 것:
+ *   · 컬럼 자식 각각의 실제 높이(= 나눠 가진 몫)
+ *   · `#log`(기록/알림 본문)의 **쓸 수 있는 픽셀**(clientHeight − 상하 패딩)
+ *   · 그 안에서 **온전히 보이는 줄 수** — 위/아래가 잘리지 않은 로그 줄만 센다.
+ *     잘린 줄은 «보인다»가 아니다. 사람은 반 잘린 문장을 사건으로 읽지 않는다.
+ *   · 한 줄의 최소 높이(줄바꿈 없는 줄) → 이 상자가 원리적으로 담을 수 있는 줄 수
+ *
+ * `#log`는 최신이 **위로** 쌓인다(`prepend`) → `scrollTop === 0`이 곧 «지금 보이는 것»이다.
+ * 그 사실을 확인해서 함께 돌려준다(스크롤이 내려가 있으면 «가시»의 정의가 달라진다).
+ */
+const READ_RP_COL_JS = `(() => {
+  const col = document.getElementById('rightPanel');
+  if (!col) return { err: '#rightPanel 이 없다 — 게임 화면이 아니다' };
+  if (getComputedStyle(col).display === 'none')
+    return { err: '우측 컬럼이 접혀 있다(display:none) — 나눠 가질 높이가 없다' };
+  const VH = window.innerHeight;
+  const r1 = (n) => Math.round(n * 10) / 10;
+  const visH = (el) => {
+    const r = el.getBoundingClientRect();
+    return Math.max(0, Math.min(VH, r.bottom) - Math.max(0, r.top));
+  };
+  const panels = Array.prototype.map.call(col.children, (el) => {
+    const c = getComputedStyle(el);
+    const r = el.getBoundingClientRect();
+    const cls = typeof el.className === 'string' ? el.className.trim().split(/\\s+/).join('.') : '';
+    return {
+      sel: el.id ? '#' + el.id : (cls ? '.' + cls : el.tagName.toLowerCase()),
+      h: r1(r.height),
+      visH: r1(visH(el)),
+      gone: c.display === 'none',
+      // 절대 배치(너비 손잡이)는 **흐름 밖**이라 높이를 나눠 갖지 않는다 → 몫 계산에서 뺀다.
+      outOfFlow: c.position === 'absolute' || c.position === 'fixed',
+      flex: c.flexGrow + ' ' + c.flexShrink + ' ' + c.flexBasis,
+      minH: c.minHeight,
+      maxH: c.maxHeight,
+    };
+  });
+  const logPanel = document.getElementById('logPanel');
+  const body = document.getElementById('log');
+  if (!logPanel || !body) return { err: '#logPanel / #log 이 없다' };
+  const bs = getComputedStyle(body);
+  const padT = parseFloat(bs.paddingTop) || 0;
+  const padB = parseFloat(bs.paddingBottom) || 0;
+  const usable = Math.max(0, body.clientHeight - padT - padB);
+  const br = body.getBoundingClientRect();
+  const top = br.top + padT;
+  const bot = br.bottom - padB;
+  const rows = Array.prototype.slice.call(body.children);
+  let full = 0;
+  let minRow = null;
+  let firstText = null;
+  for (const el of rows) {
+    const r = el.getBoundingClientRect();
+    const mb = parseFloat(getComputedStyle(el).marginBottom) || 0;
+    const h = r.height + mb;
+    if (minRow === null || h < minRow) minRow = h;
+    // 0.5px 여유 = 서브픽셀 반올림. 그 이상 잘린 줄은 세지 않는다.
+    if (r.top >= top - 0.5 && r.bottom <= bot + 0.5) {
+      full++;
+      if (firstText === null) firstText = (el.textContent || '').trim().slice(0, 28);
+    }
+  }
+  // ── 「자기 최소 몫」 ─────────────────────────────────────────────
+  // #logPanel 은 flex: 1 1 0 — **남는 것을 받는 쪽**이다. 그래서 지금 받은 몫은
+  // «위 패널들이 아직 안 자란 덕»이지 보장이 아니다. 이 화면이 **보장하는** 값은
+  // CSS가 적어 둔 min-height 하나뿐이다. 그 바닥에서 본문이 몇 픽셀 남는지를 잰다:
+  //   바닥 본문 = min-height − (머리글 + 패딩 + 테두리)   ← 뒤 괄호는 실측으로 뺀다
+  const lp = getComputedStyle(logPanel);
+  const logPanelH = logPanel.getBoundingClientRect().height;
+  const minH = parseFloat(lp.minHeight) || 0;
+  const chrome = Math.max(0, logPanelH - usable); // 머리글·패딩·테두리가 먹는 몫
+  const floorBody = Math.max(0, minH - chrome);
+  return {
+    vh: VH,
+    colH: r1(col.getBoundingClientRect().height),
+    panels,
+    logPanelH: r1(logPanelH),
+    logFlex: lp.flexGrow + ' ' + lp.flexShrink + ' ' + lp.flexBasis,
+    logMinH: r1(minH),
+    logChromePx: r1(chrome),
+    floorBodyPx: r1(floorBody),
+    floorLines: minRow ? Math.floor((floorBody + 0.5) / minRow) : null,
+    logBodyPx: r1(usable),
+    logRows: rows.length,
+    visibleLines: full,
+    firstVisible: firstText,
+    minRowH: minRow === null ? null : r1(minRow),
+    capacityLines: minRow ? Math.floor((usable + 0.5) / minRow) : null,
+    atTop: body.scrollTop <= 0.5,
+    scrollH: body.scrollHeight,
+    sugRows: document.querySelectorAll('#sugBody .sg-row').length,
+    sugShown: (() => {
+      const p = document.getElementById('sugPanel');
+      return !!p && getComputedStyle(p).display !== 'none';
+    })(),
+  };
+})()`;
+
+/** `#suggest`가 지금 눌러도 되는 상태인가(= 내 차례 · 방 안). 사유 문자열도 함께. */
+const SUGGEST_READY_JS = `(() => {
+  const b = document.getElementById('suggest');
+  if (!b) return { ready: false, why: '#suggest 버튼이 없다' };
+  return { ready: b.getAttribute('aria-disabled') === 'false', why: b.getAttribute('title') || '' };
+})()`;
+
+/**
+ * D-패드 ↑ 를 `n`번 누른다 — **손가락이 하는 그 이벤트**(`pointerdown`)를 그대로 보낸다.
+ * `click`이 아닌 이유: `wireDpad()`가 듣는 것은 `pointerdown`이고, 클라는 `MOVE_COOLDOWN_MS`
+ * (110ms)로 연타를 솎아낸다 → 그보다 긴 간격을 두지 않으면 **눌림이 조용히 삼켜진다.**
+ */
+const walkUpJs = (n, gapMs) => `(async () => {
+  const b = document.querySelector('#dpad .dp-u');
+  if (!b) return { ok: false, why: 'D-패드 ↑ 버튼이 없다' };
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  for (let i = 0; i < ${n}; i++) {
+    b.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
+    b.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, cancelable: true }));
+    await sleep(${gapMs});
+  }
+  return { ok: true };
+})()`;
+
+/**
+ * 소환 사슬 한 코 — **턴 순서상 다음 좌석**의 용의자를 지목해 제안한다.
+ *
+ * «다음 좌석»은 턴 배너 순서 스트립의 2번째 칩(`title`에 « (다음)»이 붙은 것)이다.
+ * 화면에 이미 적혀 있는 글자만 읽는다 — 내부 상태(`room.state`)에 손대지 않는다.
+ * 지목된 좌석은 이 방으로 **소환**되고 재진입 잠금이 풀리므로, 그 좌석은 자기 턴에
+ * 곧바로 같은 일을 할 수 있다 → 매 턴 1건씩 표가 자란다.
+ */
+const CHAIN_SUGGEST_JS = `(async () => {
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const chips = Array.prototype.slice.call(document.querySelectorAll('#turnInfo .ti-chip'));
+  if (chips.length < 2) return { ok: false, why: '턴 순서 스트립에서 «다음» 좌석을 읽지 못했다' };
+  const nameOf = (c) => (c.getAttribute('title') || '').split(' (')[0].trim();
+  const meName = nameOf(chips[0]);
+  const nextName = nameOf(chips[1]);
+  if (!nextName) return { ok: false, why: '«다음» 좌석의 이름이 비어 있다' };
+  const b = document.getElementById('suggest');
+  if (!b || b.getAttribute('aria-disabled') !== 'false')
+    return { ok: false, why: '[제안]이 비활성이다 — ' + (b ? b.getAttribute('title') : '버튼 없음') };
+  b.click();
+  for (let i = 0; i < 40 && !document.querySelector('.overlay .modal select'); i++) await sleep(50);
+  const sels = Array.prototype.slice.call(document.querySelectorAll('.overlay .modal select'));
+  // 제안 모달은 **용의자·훔친 것 2칸**이다(장소는 «현재 방 고정» 표시행).
+  if (sels.length !== 2) return { ok: false, why: '제안 모달의 select가 2개가 아니다(' + sels.length + ')' };
+  const opts = Array.prototype.slice.call(sels[0].options);
+  const want = opts.find((o) => (o.textContent || '').indexOf(nextName) >= 0);
+  if (!want) return { ok: false, why: '용의자 목록에서 «' + nextName + '»을 찾지 못했다' };
+  if (want.disabled) return { ok: false, why: '«' + nextName + '» 옵션이 잠겨 있다' };
+  sels[0].value = want.value;
+  if (sels[0].value !== want.value) return { ok: false, why: '용의자 지정 실패: ' + want.value };
+  const ok = document.querySelector('.overlay .modal .actions button:not(.ghost)');
+  if (!ok) return { ok: false, why: '[이 조합으로 제안] 버튼이 없다' };
+  ok.click();
+  return { ok: true, me: meName, next: nextName, suspect: want.value, weapon: sels[1].value };
+})()`;
+
 // ── S7 공개방 목록 상태 배지(ui-copy §8.5) ─────────────────────────────
 //
 // 재는 대상은 **글자**다. 배지·버튼 라벨·부가 문구는 전부 DOM에 있고 늘 «존재»하므로
@@ -1323,11 +1504,13 @@ const runResultFlow = async () => {
   const notes = [];
   /** S7(§8.5) 판정 결과. 실판을 재사용할 뿐 **판을 새로 돌리지 않는다.** */
   const roomChecks = [];
+  /** S8(판 중반 우측 컬럼 배분) 관측치. 같은 1판에 얹혀 돈다. */
+  let rightColumn = null;
   const t0 = Date.now();
   const bail = async (why) => {
     for (const t of tabs) await t.close();
     await observer.close();
-    return { skip: why, ms: Date.now() - t0, notes, roomChecks };
+    return { skip: why, ms: Date.now() - t0, notes, roomChecks, rightColumn };
   };
 
   for (const spec of R.tabs) {
@@ -1573,6 +1756,7 @@ const runResultFlow = async () => {
   const s1 = solve(h1.hands, 1);
   if (s1.skip) return bail(s1.skip);
   notes.push(`1판 정답 봉투(소거) — ${s1.solution.suspect} · ${s1.solution.weapon} · ${s1.solution.room}`);
+
   step("결과 흐름 · 1판 오답 고발 5회");
   const e1 = await driveToEnd(h1.hands, s1, "survivor", 1);
   if (e1) return bail(e1);
@@ -1594,6 +1778,119 @@ const runResultFlow = async () => {
   const e2 = await driveToEnd(h2.hands, s2, "win", 2);
   if (e2) return bail(e2);
   await grab(2);
+
+  // ── 3판: 판 중반 우측 컬럼 배분(S8) ────────────────────────────────
+  //
+  // **왜 1·2판에 얹지 않고 판을 하나 더 도는가.** 세 가지가 겹친다.
+  //   ① «판 중반»은 정의상 **판이 끝나기 전**이고, 1·2판은 끝나야 결과 화면 4행이 나온다.
+  //      같은 판 안에서 앞쪽에 끼우면 그 판의 종료 오버레이 계측이 **제안 기록표가 떠 있는
+  //      화면**을 재게 된다 — S1~S6이 재는 대상이 조용히 바뀐다.
+  //   ② 실제로 그렇게 해 봤더니(실측) 데스크톱 결과 화면에서 S6이 새 위반을 잡았다:
+  //      제안 기록표 순번 `.sg-n` 이 **10px `#8f8574` on `#1f2b3a` = 3.94:1**로 AA(4.5) 미달이다.
+  //      **이것은 진짜 결함이고 숨기는 것이 아니다** — 다만 «재기만 한다»는 이번 작업의 범위를
+  //      벗어나고(고치려면 CSS를 건드려야 한다) 촬영 전 화면 동결에도 걸린다.
+  //      그래서 사유를 여기와 `SCREEN.rightColumn.knownUnmeasured`에 적어 두고, 그 문장은
+  //      **실행할 때마다 S8 판정과 함께 인쇄된다.** 촬영 뒤 고칠 목록의 첫 줄이다.
+  //   ③ 3판은 1·2판과 **같은 탭·같은 서버·같은 브라우저**를 그대로 쓴다. 새로 드는 비용은
+  //      [다시 하기] 한 번과 사슬 한 바퀴뿐이다(실측 ≈+6초).
+  step("결과 흐름 · 3판(판 중반 계측용) 다시 하기");
+  await evalIn(host.sid, clickJs("#endRematch"));
+  for (const t of tabs)
+    if (!(await waitFor(t.sid, "document.getElementById('endOverlay').classList.contains('hidden') && !document.getElementById('turnInfo').classList.contains('hidden')", SCREEN.readyTimeoutMs)))
+      return bail(`탭 ${t.id}: 3판(판 중반 계측)에 들어가지 못했다`);
+  // 3판을 **끝내지 않는다.** 이 판이 존재하는 이유가 «중반»이라서다 —
+  // 사슬 한 바퀴를 돌려 제안 기록표를 규칙대로 키운 그 시점에서 재고 멈춘다.
+  // (판은 아래 3막에서 탭을 닫을 때 서버가 정리한다.)
+  // 도달 방법·근거는 gate.config.mjs `SCREEN.rightColumn` 주석에 있다(확률이 아니라 규칙이다).
+  {
+    const RC = SCREEN.rightColumn;
+    const rc0 = Date.now();
+    /** 계측 탭 — 이 결함은 «높이를 나눠 갖는» 데스크톱에서만 정의된다(설정의 `phoneSkipWhy`). */
+    const target = tabs.find((t) => t.vpId === RC.viewport);
+    const walker = tabs[0]; // = 방장 = `spawnPoint(0)` = 잔치상 (11,11)
+    const trace = [];
+    const rcSkip = (why) => {
+      rightColumn = { ms: Date.now() - rc0, skip: why, trace };
+    };
+
+    if (!target) {
+      rcSkip(`계측 뷰포트(${RC.viewport}) 탭이 이 세션에 없다 — SCREEN.result.tabs 를 확인하라`);
+    } else if (OPT.viewport && OPT.viewport !== RC.viewport) {
+      rcSkip(`--viewport=${OPT.viewport} 로 제외됨 — S8은 ${RC.viewport}에서만 정의된다. ${RC.phoneSkipWhy}`);
+    } else {
+      step("결과 흐름 · S8 판 중반(소환 사슬로 제안 기록표 키우기)");
+      let sug = 0;
+      let broke = null;
+      for (let i = 0; i < RC.maxTurns && sug < RC.suggestRows && !broke; i++) {
+        const a = await activeTab();
+        if (a.ended) {
+          broke = "판 중반을 재기 전에 판이 끝났다";
+          break;
+        }
+        if (!a.tab) {
+          await sleep(120);
+          continue;
+        }
+        const t = a.tab;
+        let ready = await evalIn(t.sid, SUGGEST_READY_JS).catch(() => ({ ready: false, why: "읽기 실패" }));
+        // 사슬의 **첫 코**는 누군가 방 안에 서야 시작된다 → 방장 탭만 걷는다.
+        if (!ready.ready && t.id === walker.id) {
+          await evalIn(t.sid, walkUpJs(RC.walkClicks, RC.walkGapMs));
+          await sleep(300);
+          ready = await evalIn(t.sid, SUGGEST_READY_JS).catch(() => ({ ready: false, why: "읽기 실패" }));
+          trace.push(
+            `${t.id} 걷기 ↑×${RC.walkClicks} (잔치상 → 대청 문) → ` +
+              (ready.ready ? "방 안 · 제안 가능" : `아직 복도 — ${ready.why}`),
+          );
+        }
+        if (ready.ready) {
+          const r = await evalIn(t.sid, CHAIN_SUGGEST_JS).catch((e) => ({ ok: false, why: e.message }));
+          if (!r?.ok) {
+            broke = `탭 ${t.id}: 제안 실패 — ${r?.why ?? "?"}`;
+            break;
+          }
+          if (
+            !(await waitFor(
+              target.sid,
+              `document.querySelectorAll('#sugBody .sg-row').length === ${sug + 1}`,
+              8000,
+            ))
+          ) {
+            broke = `탭 ${t.id}의 제안이 계측 탭의 표에 ${sug + 1}행으로 도착하지 않았다`;
+            break;
+          }
+          sug++;
+          trace.push(`${t.id} «${r.me}» → 다음 좌석 «${r.next}» 지목 → 소환 · 표 ${sug}행`);
+        }
+        await evalIn(t.sid, clickJs("#endTurn"));
+        if (!(await waitTurnLeft(t))) {
+          broke = `탭 ${t.id}의 [턴 종료]가 반영되지 않았다`;
+          break;
+        }
+      }
+      if (broke) rcSkip(broke);
+      else if (sug < RC.suggestRows)
+        rcSkip(`${RC.maxTurns}턴 안에 제안 기록표가 ${RC.suggestRows}행에 이르지 못했다(${sug}행에서 멈춤)`);
+      else {
+        await sleep(SCREEN.settleMs);
+        const data = await evalIn(target.sid, READ_RP_COL_JS).catch((e) => ({ err: e.message }));
+        if (data?.err) rcSkip(data.err);
+        else {
+          rightColumn = { ms: Date.now() - rc0, data, trace, vp: RC.viewport, tab: target.id };
+          // 캡처만 남긴다(pageProbe는 돌리지 않는다 — S8이 재는 것은 배분 하나다).
+          // 사람이 «0줄»을 눈으로 확인할 수 있어야 이 수치가 믿긴다.
+          try {
+            const shot = await cmd("Page.captureScreenshot", { format: "png", captureBeyondViewport: false }, target.sid);
+            writeFileSync(join(outDir, `right-column-${RC.viewport}.png`), Buffer.from(shot.data, "base64"));
+          } catch {
+            /* 캡처 실패는 판정에 영향 없음 */
+          }
+        }
+      }
+    }
+    for (const l of trace) notes.push(`S8 ${l}`);
+  }
+
 
   // ── 3막: S7 «종료됨» ───────────────────────────────────────────────
   //
@@ -1728,7 +2025,138 @@ const runResultFlow = async () => {
 
   for (const t of tabs) await t.close();
   await observer.close();
-  return { measured, ms: Date.now() - t0, notes, roomChecks };
+  return { measured, ms: Date.now() - t0, notes, roomChecks, rightColumn };
+};
+
+/**
+ * S8 — 판 중반 우측 컬럼 배분. **래칫**으로 판정한다(번들 예산 게이트와 같은 형태).
+ *
+ * ⚠️ **지금 이 값은 결함이다.** 그래서 기능 하한(`minVisibleLines`)으로 FAIL을 내지 않는다 —
+ *    상시 빨간불이 된 게이트는 아무도 안 돌리고, 안 도는 게이트는 아무것도 막지 못한다.
+ *    대신 실측을 기준선에 박고 **더 나빠지면 FAIL**한다. 하한 미달은 매번
+ *    «결함 확인»으로 인쇄한다 — 기준선 통과가 «정상»으로 읽히면 이 검사는 거짓말이 된다.
+ *
+ * **두 종류의 수치를 잰다 — 섞으면 안 된다.**
+ *   ⓐ 지금 **받은** 몫(`logBodyPx` · `capacityLines`).
+ *      `#logPanel`은 `flex: 1 1 0`, 즉 **남는 것을 받는 쪽**이다. 그래서 이 값은
+ *      «위 패널들이 아직 안 자란 덕»이지 약속이 아니다. 회귀 감시(=래칫)는 여기 건다.
+ *   ⓑ 이 화면이 **보장하는** 몫(`floorBodyPx` · `floorLines`).
+ *      보장은 CSS가 적어 둔 `min-height` 하나뿐이다. 거기서 머리글·패딩·테두리를 빼면
+ *      본문에 남는 픽셀이 나오고, 그것을 줄 최소 높이로 나눈 것이 **바닥 줄 수**다.
+ *      기능 하한(`minVisibleLines`)은 ⓑ에 건다 — «최악에도 이만큼은 보인다»가 아니면
+ *      기록/알림은 **언젠가 반드시** 아무 사건도 전달하지 못하는 순간을 맞는다.
+ *
+ * 래칫이 ⓐ의 두 값을 다 보는 이유: `capacityLines`는 정수라 한 줄이 통째로 사라지기
+ * 전까지 침묵한다(35px 줄 기준으로 34px이 깎여도 그대로다). 그 구간을 잡는 것이 픽셀 쪽이다.
+ */
+const judgeRightColumn = (rc, baseline) => {
+  const RC = SCREEN.rightColumn;
+  const id = "S8";
+  if (!rc)
+    return {
+      id,
+      status: "SKIP",
+      detail:
+        "결과 흐름(6탭 실판)이 3판까지 가지 못했다 — S8은 결과 화면 4행을 다 계측한 **뒤** " +
+        "[다시 하기]로 여는 3판에 얹혀 도는 검사다. 앞 단계의 SKIP 사유를 위에서 확인하라",
+      lines: [],
+    };
+  if (rc.skip) return { id, status: "SKIP", detail: `판 중반에 도달하지 못했다 — ${rc.skip}`, lines: [] };
+
+  const d = rc.data;
+  const pct = (n) => `${((n / d.colH) * 100).toFixed(1)}%`;
+  const lines = [];
+  lines.push(
+    `· 컬럼 ${d.colH}px (뷰포트 ${d.vh}px) · 제안 기록표 ${d.sugRows}행${d.sugShown ? "" : "(패널 숨김!)"}`,
+  );
+  for (const p of d.panels)
+    lines.push(
+      `  ${p.sel.padEnd(14)} ${String(p.h).padStart(7)}px  ` +
+        `${p.gone ? "display:none" : p.outOfFlow ? "(절대 배치 — 흐름 밖)" : pct(p.h)}` +
+        `  flex:${p.flex} min:${p.minH} max:${p.maxH}`,
+    );
+  lines.push(
+    `· 📜 기록/알림 — 지금 **받은** 몫: 본문 ${d.logBodyPx}px · 줄 최소 높이 ${d.minRowH ?? "?"}px ` +
+      `→ 담을 수 있는 줄 ${d.capacityLines ?? "?"} (실제 온전히 보이는 줄 ${d.visibleLines}/${d.logRows}` +
+      `${d.atTop ? "" : " · ⚠ 스크롤이 최상단이 아니다"}${d.firstVisible ? ` · 첫 줄 «${d.firstVisible}»` : ""})`,
+  );
+  lines.push(
+    `· 📜 기록/알림 — 이 화면이 **보장하는** 몫: \`flex:${d.logFlex}\`(남는 것을 받는 쪽) + ` +
+      `\`min-height:${d.logMinH}px\` − 머리글·패딩 ${d.logChromePx}px = 본문 ${d.floorBodyPx}px ` +
+      `→ **바닥 줄 수 ${d.floorLines}**`,
+  );
+
+  const floor = d.floorLines ?? 0;
+  const short = floor < RC.minVisibleLines;
+  if (short)
+    lines.push(
+      `✗ **결함 확인 — 이 패널은 자기 최소 몫을 확보하지 못한다.** ` +
+        `보장 ${floor}줄 < 기능 하한 ${RC.minVisibleLines}줄. ` +
+        `지금 ${d.capacityLines}줄이 보이는 것은 **위 패널들이 아직 안 자란 덕**이지 약속이 아니다 — ` +
+        `AI 대사 패널은 폴백 사유가 늘수록, 증거 노트는 고정 ${d.panels.find((p) => p.sel === "#eviPanel")?.h ?? "?"}px, ` +
+        `제안 기록표는 32% 상한까지 자란다. 그 합이 컬럼을 넘는 순간 로그는 \`min-height\`로 떨어지고, ` +
+        `그 바닥이 ${d.floorBodyPx}px = ${floor}줄이다. 📜 기록/알림은 반증·계략·소환이 사람에게 닿는 ` +
+        `**유일한 통로**이므로 그때 통로의 대역폭은 0이 된다. ` +
+        `(이 줄은 아래 래칫과 **무관하다** — 래칫을 통과해도 화면은 여전히 결함이다.)`,
+    );
+  lines.push(`□ 이 화면에서 봤지만 이번엔 판정하지 않는 것 — ${RC.knownUnmeasured}`);
+
+  const cap = d.capacityLines ?? 0;
+  if (!baseline)
+    return {
+      id,
+      status: "SKIP",
+      detail:
+        `기준선 미기록 — 재기만 했다. 실측: 받은 몫 ${d.logBodyPx}px/${cap}줄 · ` +
+        `보장 ${d.floorBodyPx}px/${floor}줄. ` +
+        '`node scripts/gate-screen.mjs --only=result --update-baseline --reason="…"` 로 박아라',
+      lines,
+    };
+
+  const limitPx = +(baseline.logBodyPx * (1 - RC.ratchetSlackPct / 100)).toFixed(1);
+  const pxBad = d.logBodyPx < limitPx;
+  const lineBad = cap < baseline.capacityLines;
+  const floorPxBad = d.floorBodyPx < baseline.floorBodyPx - 0.5;
+  const floorLineBad = floor < baseline.floorLines;
+  if (pxBad)
+    lines.push(
+      `✗ 래칫 위반(받은 몫·픽셀) — 로그 본문 ${d.logBodyPx}px < ${limitPx}px ` +
+        `(기준선 ${baseline.logBodyPx}px −${RC.ratchetSlackPct}%)`,
+    );
+  if (lineBad)
+    lines.push(`✗ 래칫 위반(받은 몫·줄) — 담을 수 있는 줄 ${cap} < 기준선 ${baseline.capacityLines}줄`);
+  if (floorPxBad)
+    lines.push(`✗ 래칫 위반(보장·픽셀) — 바닥 본문 ${d.floorBodyPx}px < 기준선 ${baseline.floorBodyPx}px`);
+  if (floorLineBad)
+    lines.push(`✗ 래칫 위반(보장·줄) — 바닥 줄 수 ${floor} < 기준선 ${baseline.floorLines}줄`);
+
+  const dPx = d.logBodyPx - baseline.logBodyPx;
+  const gainPct = (dPx / Math.max(1, baseline.logBodyPx)) * 100;
+  const bad = pxBad || lineBad || floorPxBad || floorLineBad;
+  if (!bad && (gainPct >= RC.ratchetTightenPct || floor > baseline.floorLines))
+    lines.push(
+      `· 기준선보다 좋아졌다(받은 몫 ${gainPct >= 0 ? "+" : ""}${gainPct.toFixed(1)}% · 보장 ${baseline.floorLines}→${floor}줄). ` +
+        "**기준선을 조여라** — " +
+        'node scripts/gate-screen.mjs --only=result --update-baseline --reason="…" ' +
+        "(조이지 않으면 다음 커밋이 되돌려놔도 통과한다)",
+    );
+
+  return {
+    id,
+    status: bad ? "FAIL" : "PASS",
+    // ⚠️ 통과해도 **인쇄한다.** 기본 출력은 PASS 항목을 접는데, 이 검사는 통과가
+    //    «정상»이 아니라 «안 나빠졌다»는 뜻이라 접히는 순간 게이트가 거짓말을 시작한다.
+    always: short,
+    detail:
+      `받은 몫 ${d.logBodyPx}px/${cap}줄(컬럼의 ${pct(d.logPanelH)}) · **보장 ${d.floorBodyPx}px/${floor}줄**` +
+      ` (기준선 ${baseline.logBodyPx}px·${baseline.capacityLines}줄 / 보장 ${baseline.floorBodyPx}px·${baseline.floorLines}줄, 기록 ${baseline.recordedAt})` +
+      (bad
+        ? " — **더 나빠졌다**"
+        : short
+          ? " — 회귀는 없다. **다만 현재 값 자체가 결함이다**(위 ✗ 참조 — 이 PASS는 «정상»이 아니라 «안 나빠졌다»는 뜻이다)"
+          : ""),
+    lines,
+  };
 };
 
 /** 뷰1 대비 HUD 상자 이동 비교용 — 보호 대상의 rect를 키로 뽑는다. */
@@ -2084,6 +2512,120 @@ if (OPT.selfTest) {
     await rlObs.close();
   }
 
+  // ── S8 음성 테스트 — 데스크톱 게임 화면 **1탭**만 쓴다 ─────────────────
+  //
+  // ⚠️ 여기서 묻는 것은 «이 판정기가 배분 악화에 반응하는가»다. 그 질문에는 **판 중반이
+  //    필요 없다** — 제안 기록표를 6행까지 키우는 것은 본 실행에서 «어떤 값을 재는가»를
+  //    고정하려는 장치이지, 판정기가 도는 조건이 아니다. 그래서 음성 테스트에
+  //    6탭 실판(≈35초)을 끌고 오지 않는다(S7 음성 테스트와 같은 규약).
+  // 기준선은 **이 실행의 무결함 상태 그 자체**로 만든다. 파일 기준선을 쓰면
+  // «내가 주입한 결함 때문에 FAIL인가, 원래 파일 값과 달라서인가»가 구분되지 않는다.
+  {
+    step("음성 테스트 기준선 right-column");
+    const rcVp = SCREEN.viewports.find((v) => v.id === SCREEN.rightColumn.viewport);
+    const rcTab = await newTab(rcVp);
+    const rcBail = async (why) => {
+      await rcTab.close();
+      skipOut(`S8 음성 테스트 기준선 도달 실패 — ${why}`, client.log);
+    };
+    const gameScreen = scr("game");
+    await cmd("Page.navigate", { url: BASE + gameScreen.url }, rcTab.sid);
+    if (!(await waitFor(rcTab.sid, gameScreen.ready, SCREEN.readyTimeoutMs)))
+      await rcBail("솔로 게임 화면에 도달하지 못했다");
+    await sleep(SCREEN.settleMs);
+    /** 결함을 넣고(있으면) 읽고, 곧바로 되돌린다 — 결함이 다음 사례로 새면 판정이 뒤섞인다. */
+    const rcRead = async (f) => {
+      if (f) await evalIn(rcTab.sid, `(() => { ${f.js} return true; })()`);
+      await sleep(250);
+      const snap = await evalIn(rcTab.sid, READ_RP_COL_JS);
+      if (f) await evalIn(rcTab.sid, `(() => { ${f.undo} return true; })()`);
+      return snap;
+    };
+    const clean = await rcRead(null);
+    if (clean?.err) await rcBail(clean.err);
+    /** 이 실행의 무결함 상태 = 기준선. 파일(`gate.baseline.json`)은 쓰지 않는다. */
+    const synth = {
+      recordedAt: "음성 테스트(이 실행의 무결함 상태)",
+      logBodyPx: clean.logBodyPx,
+      capacityLines: clean.capacityLines,
+      floorBodyPx: clean.floorBodyPx,
+      floorLines: clean.floorLines,
+    };
+    /** 래칫이 낸 위반만 센다 — 항상 인쇄되는 «결함 확인» 줄은 결함의 지문이 아니다. */
+    const rcHits = (c, sig) =>
+      (c.status === "FAIL" ? (c.lines ?? []) : []).filter((l) => l.startsWith("✗ 래칫") && sig.test(l));
+
+    const rcBase = judgeRightColumn({ data: clean }, synth);
+    if (rcBase.status !== "PASS")
+      await rcBail(`결함 없이도 통과하지 않는다(${rcBase.status}) — ${rcBase.detail}`);
+    rows.push({
+      id: "기준선(right-column)",
+      expect: "-",
+      got: `S8:${rcBase.status}`,
+      ok: true,
+      note:
+        `결함 주입 전 상태 — 받은 몫 ${clean.logBodyPx}px/${clean.capacityLines}줄 · ` +
+        `보장 ${clean.floorBodyPx}px/${clean.floorLines}줄. ` +
+        "**보장이 이미 0줄이라 PASS가 «정상»을 뜻하지 않는다**(그 사실은 판정문의 «결함 확인» 줄이 말한다).",
+    });
+
+    const RC_FAULTS = [
+      {
+        id: "F13-로그몫잠식",
+        signature: /래칫 위반\(받은 몫·픽셀\)/,
+        why:
+          "증거 노트 높이를 600px으로 늘려 컬럼을 넘치게 만든다 — 위 패널이 자라 " +
+          "로그가 `min-height` 바닥으로 밀리는 **바로 그 사고**의 축소판이다. " +
+          "S1은 침묵한다(아무도 로그를 덮지 않았다). 이 검사가 잡아야 한다",
+        js: "document.getElementById('eviPanel').style.height = '600px';",
+        undo: "document.getElementById('eviPanel').style.height = '';",
+      },
+      {
+        id: "F14-바닥삭감",
+        signature: /래칫 위반\(보장·픽셀\)/,
+        why:
+          "`#logPanel`의 `min-height`를 0으로 지운다. 화면은 **지금 이 순간 아무것도 달라지지 " +
+          "않는다**(받은 몫 그대로) — 사라지는 것은 «최악에도 이만큼»이라는 약속뿐이다. " +
+          "받은 몫만 재는 검사기는 이 회귀를 영원히 못 본다",
+        js: "document.getElementById('logPanel').style.minHeight = '0px';",
+        undo: "document.getElementById('logPanel').style.minHeight = '';",
+      },
+      {
+        id: "F15-줄만늘림",
+        shouldPass: true, // **오탐 방지 시험** — 이건 잡히면 안 된다
+        signature: /./,
+        why:
+          "로그에 줄 20개를 더 넣는다(배분은 한 픽셀도 안 바뀐다). " +
+          "S8이 재는 것은 **몫**이지 내용이 아니므로 **잡히면 안 된다** — " +
+          "잡히면 이 검사는 «로그가 길어졌다»를 재는 것이지 배분을 재는 게 아니다",
+        js:
+          "const h = document.getElementById('log');" +
+          "for (let i = 0; i < 20; i++) { const d = document.createElement('div');" +
+          "d.className = 'log-info zc-fault-line'; d.textContent = '음성 테스트 줄 ' + i; h.prepend(d); }",
+        undo: "for (const e of Array.from(document.querySelectorAll('.zc-fault-line'))) e.remove();",
+      },
+    ];
+    for (const f of RC_FAULTS) {
+      step(`음성 테스트 ${f.id}`);
+      const snap = await rcRead(f);
+      const c = snap?.err
+        ? { status: "SKIP", detail: snap.err, lines: [] }
+        : judgeRightColumn({ data: snap }, synth);
+      const hits = rcHits(c, f.signature);
+      rows.push({
+        id: f.id,
+        expect: f.shouldPass ? "S8 무반응" : "S8 신규 FAIL",
+        got:
+          `S8:${c.status} · 지문 ${hits.length}건` +
+          (snap?.err ? "" : ` · 받은 몫 ${snap.logBodyPx}px/${snap.capacityLines}줄 · 보장 ${snap.floorBodyPx}px`),
+        ok: f.shouldPass ? c.status === "PASS" && hits.length === 0 : hits.length > 0,
+        note: f.why,
+        detail: hits.slice(0, 3),
+      });
+    }
+    await rcTab.close();
+  }
+
   const bad = rows.filter((r) => !r.ok);
   if (OPT.json) {
     console.log(JSON.stringify({ mode: "self-test", status: bad.length ? "FAIL" : "PASS", rows }, null, 2));
@@ -2173,6 +2715,8 @@ for (const vp of viewports) {
 // ── 결과 화면(6인 실판) ──
 const RESULT_TIER = SCREEN.result.tier ?? "default";
 let resultFlow = null;
+/** S8 관측치(래칫 기준선 갱신용). 못 쟀으면 null. */
+let rightColumnRun = null;
 if (!wanted("result")) {
   /* `--only=`가 결과 화면을 부르지 않았다 — 아무것도 인쇄하지 않는다 */
 } else if (inTier(RESULT_TIER) || OPT.only.includes("result")) {
@@ -2208,6 +2752,30 @@ if (!wanted("result")) {
     }
     results.push({ screen: rc.id, label: rc.label, vp: "-", vpLabel: "관측 탭", ms: rc.ms, checks: [rc.check] });
   }
+  // S8 — 판 중반 우측 컬럼 배분. 위 1판에 얹혀 돌았다(새 판·새 브라우저 없음).
+  {
+    const rc = resultFlow.rightColumn;
+    const check = judgeRightColumn(rc, readBaseline().screenRightColumn ?? null);
+    const base = {
+      screen: SCREEN.rightColumn.id,
+      label: SCREEN.rightColumn.label,
+      vp: SCREEN.rightColumn.viewport,
+      vpLabel: `${SCREEN.rightColumn.viewport} · 판 중반(제안 ${SCREEN.rightColumn.suggestRows}행)`,
+      ms: rc?.ms ?? 0,
+    };
+    if (check.status === "SKIP") results.push({ ...base, skip: check.detail, skipLines: check.lines });
+    else results.push({ ...base, checks: [check], shot: join(outDir, `right-column-${SCREEN.rightColumn.viewport}.png`) });
+    rightColumnRun = rc;
+  }
+  // 폰은 원리적으로 같은 수치가 정의되지 않는다 — **조용히 빼지 않는다.**
+  results.push({
+    screen: `${SCREEN.rightColumn.id}-phone`,
+    label: `${SCREEN.rightColumn.label} · 폰`,
+    vp: "phone",
+    vpLabel: "폰 390×844",
+    ms: 0,
+    skip: SCREEN.rightColumn.phoneSkipWhy,
+  });
 } else {
   results.push({
     screen: "result",
@@ -2226,6 +2794,14 @@ if (!wanted("result")) {
       ms: 0,
       skip: `6탭 실판에 얹혀 도는 검사다 — 결과 흐름이 기본 대상에서 빠지면(tier=${RESULT_TIER}) 함께 빠진다`,
     });
+  results.push({
+    screen: SCREEN.rightColumn.id,
+    label: SCREEN.rightColumn.label,
+    vp: SCREEN.rightColumn.viewport,
+    vpLabel: "6탭 세션",
+    ms: 0,
+    skip: `6탭 실판 1판에 얹혀 도는 검사다 — 결과 흐름이 빠지면(tier=${RESULT_TIER}) 함께 빠진다`,
+  });
 }
 const totalMs = Date.now() - runStart;
 if (tty) process.stderr.write(`${" ".repeat(70)}\r`);
@@ -2243,6 +2819,56 @@ try {
   await cmd("Browser.close");
 } catch {
   /* 강제 종료는 cleanup이 한다 */
+}
+
+// ── S8 래칫 기준선 갱신 ─────────────────────────────────────────────
+// 번들 예산 게이트와 **같은 규약**이다: 값은 `gate.baseline.json`에, 갱신에는 사람이 쓴 사유.
+// 못 잰 실행으로는 절대 갱신하지 않는다 — 미측정을 기준선으로 승격시키는 것이 가장 위험하다.
+if (OPT.update) {
+  if (!rightColumnRun?.data) {
+    console.log(
+      "기준선 갱신 불가 — S8을 재지 못했다" +
+        `${rightColumnRun?.skip ? ` (${rightColumnRun.skip})` : " (결과 흐름이 돌지 않았다)"}.\n` +
+        "  `node scripts/gate-screen.mjs --only=result --update-baseline --reason=\"…\"` 로 다시 시도하라.",
+    );
+    process.exit(3);
+  }
+  const d = rightColumnRun.data;
+  const rec = writeBaseline(
+    "screenRightColumn",
+    {
+      viewport: SCREEN.rightColumn.viewport,
+      vh: d.vh,
+      suggestRows: d.sugRows,
+      logBodyPx: d.logBodyPx,
+      visibleLines: d.visibleLines,
+      capacityLines: d.capacityLines,
+      minRowH: d.minRowH,
+      logPanelH: d.logPanelH,
+      colH: d.colH,
+      /** «이 화면이 보장하는 몫» — 기능 하한이 걸리는 쪽. 지금은 0줄(= 결함). */
+      logFlex: d.logFlex,
+      logMinH: d.logMinH,
+      logChromePx: d.logChromePx,
+      floorBodyPx: d.floorBodyPx,
+      floorLines: d.floorLines,
+      panels: d.panels.filter((p) => !p.outOfFlow).map((p) => ({ sel: p.sel, h: p.h })),
+      defect:
+        (d.floorLines ?? 0) < SCREEN.rightColumn.minVisibleLines
+          ? `⚠ 이 기준선은 **결함 상태의 실측**이다 — 이 화면이 보장하는 로그 몫이 ` +
+            `${d.floorBodyPx}px = ${d.floorLines}줄로, 기능 하한 ${SCREEN.rightColumn.minVisibleLines}줄에 미달한다. ` +
+            `지금 ${d.capacityLines}줄이 보이는 것은 위 패널이 아직 안 자란 덕이다. ` +
+            "래칫 통과는 «회귀 없음»일 뿐 «정상»이 아니다. 고친 뒤에는 반드시 이 기준선을 조여라."
+          : null,
+      note:
+        `판 중반(제안 ${d.sugRows}행) · ${SCREEN.rightColumn.viewport} · ` +
+        `받은 몫 ${d.logBodyPx}px/${d.capacityLines}줄 · 보장 ${d.floorBodyPx}px/${d.floorLines}줄`,
+    },
+    parseReason(argv),
+  );
+  console.log(`기준선 갱신 완료 → scripts/gate.baseline.json\n  ${rec.note}\n  사유: ${rec.reason}`);
+  if (rec.defect) console.log(`  ${rec.defect}`);
+  process.exit(0);
 }
 
 const allChecks = results.flatMap((r) => r.checks ?? []);
@@ -2300,6 +2926,8 @@ for (const r of results) {
   if (r.unreachable || r.skip) {
     console.log(`  SKIP  ${r.label} · ${r.vpLabel}  (${secs(r.ms)})`);
     console.log(`         ↳ ${r.unreachable ? `도달 실패 — ${r.unreachable}` : r.skip}`);
+    // 「못 쟀다」와 「쟀는데 기준선이 없다」는 다르다 — 후자는 잰 값을 그대로 인쇄한다.
+    for (const l of r.skipLines ?? []) console.log(`             ${l}`);
     continue;
   }
   const bad = r.checks.filter((c) => c.status === "FAIL");
@@ -2308,10 +2936,13 @@ for (const r of results) {
   );
   if (r.endTitle) console.log(`         · 화면 «${r.endTitle}» / ${r.endSub}`);
   for (const c of r.checks) {
-    if (c.status === "PASS" && !OPT.verbose) continue;
+    // `always` = 「통과했지만 접으면 안 되는 판정」. 지금은 S8이 그렇다 —
+    // 그 PASS는 «정상»이 아니라 «안 나빠졌다»는 뜻이라, 접히면 게이트가 거짓말이 된다.
+    if (c.status === "PASS" && !OPT.verbose && !c.always) continue;
     console.log(`         ${c.status === "FAIL" ? "✗" : c.status === "SKIP" ? "-" : "·"} ${c.id}  ${c.detail}`);
     for (const l of c.lines ?? []) {
-      if (!OPT.verbose && !l.startsWith("✗")) continue;
+      // `□` = «봤지만 이번엔 판정하지 않는 것». 은폐하지 않으려 넣은 줄이므로 접지 않는다.
+      if (!OPT.verbose && !l.startsWith("✗") && !l.startsWith("□")) continue;
       console.log(`             ${l}`);
     }
   }
