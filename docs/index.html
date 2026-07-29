@@ -37,6 +37,23 @@
   nav#tree a.doc:hover { background:#221c15; color:var(--ink); }
   nav#tree a.doc.active { background:#2c2317; color:var(--gold); border-left-color:var(--accent); }
 
+  /* ── 내부 전용 표기 ──
+     이 스타일이 그려지는 것은 **로컬뿐**이다(manifest.local.json이 배포본에 없다).
+     그래도 «공개된 문서»로 오해하지 않도록 파선·자물쇠·별도 섹션으로 분명히 가른다. */
+  nav#tree a.doc.priv { color:#c9a06a; border-left:2px dashed #7a5c30; }
+  nav#tree a.doc.priv:hover { color:#f0c48a; background:#261d12; }
+  nav#tree a.doc.priv.active { background:#2f2415; color:#f0c48a; border-left-color:#c9793a; }
+  nav#tree a.doc.priv::before { content:"🔒 "; font-size:11px; }
+  .priv-badge { display:inline-block; font-size:11px; color:#f0c48a; background:#3a2a15;
+    border:1px dashed #8a6a3a; border-radius:5px; padding:0 6px; margin-right:7px; }
+  .privbox { margin-top:26px; padding:14px 16px; border:1px dashed #8a6a3a; border-radius:12px;
+    background:#241a10; }
+  .privbox h2 { margin:0 0 5px !important; color:#f0c48a !important; border:0 !important; padding:0 !important; }
+  .privbox .why { font-size:12px; color:var(--dim); margin:0 0 11px; }
+  .privbox .feat a { background:#1e1710; border-style:dashed; border-left:3px dashed #8a6a3a; }
+  .privbox .feat a:hover { border-color:#c9793a; border-left-color:#e0a35a; }
+  .privbox .feat .k { color:#f0c48a; }
+
   /* ── 본문 ── */
   .main { flex:1; min-width:0; display:flex; flex-direction:column; }
   .topbar { flex:none; display:flex; align-items:center; gap:12px; padding:10px 18px;
@@ -228,8 +245,9 @@
       const d=document.createElement("details"); d.open=true;
       const s=document.createElement("summary"); s.textContent=g.label; d.appendChild(s);
       for(const it of g.items){
-        const a=document.createElement("a"); a.className="doc"; a.href="#"+it.path;
+        const a=document.createElement("a"); a.className=it.private?"doc priv":"doc"; a.href="#"+it.path;
         a.dataset.path=it.path; a.textContent=it.title;
+        if(it.private) a.title="내부 전용 — 배포본에 포함되지 않는다";
         d.appendChild(a);
       }
       tree.appendChild(d);
@@ -255,10 +273,19 @@
   function showHome(){
     setActive(null); $("crumb").textContent="문서 대시보드"; $("rawLink").style.display="none";
     const paths=new Set(flat().map(x=>x.path));
-    const total=paths.size;
+    const priv=flat().filter(x=>x.private);
+    const total=paths.size-priv.length;
     const feat=FEATURED.filter(f=>paths.has(f.path))
       .map(f=>`<a href="#${f.path}"><span class="k">${f.k}</span><span class="d">${f.d}</span></a>`).join("");
     const groups=manifest.map(g=>`<a href="#" data-g="${g.dir}">${g.label} <b>${g.items.length}</b></a>`).join("");
+    // 내부 문서 카드 — **로컬에서만 데이터가 존재**하므로 배포본에서는 이 블록이 통째로 비어 있다.
+    const privbox=priv.length?`<div class="privbox">
+      <h2>🔒 내부 전용 — 로컬에서만 보임 <b>${priv.length}</b></h2>
+      <p class="why">진행 중 작업 목록 · 보류 · 상류 리서치 · 자기 결함 목록. <b>공개 사이트에는 이 문서들이 복사되지 않는다</b>
+        (<code>scripts/docs-private.mjs</code>). 지금 보이는 이유는 <b>로컬에서 열었기 때문</b>이며, 목록 자체가
+        <code>manifest.local.json</code>에만 있고 그 파일은 배포 산출물에서 제외된다.</p>
+      <div class="feat">${priv.map(f=>`<a href="#${f.path}"><span class="k">🔒 ${esc(f.title)}</span><span class="d">${esc(f.path)}</span></a>`).join("")}</div>
+    </div>`:"";
     $("content").innerHTML=`<div class="home-card">
       <h1>🐯 zodiac-clue 문서</h1>
       <p>호랑이 생신 잔치 · 십이지 손님 중 도둑을 찾는 웹 멀티 추리 게임. 빈자리는 AI NPC가 채웁니다.</p>
@@ -268,8 +295,9 @@
       <h2>먼저 볼 것</h2>
       <div class="feat">${feat}</div>
 
-      <h2>전체 ${total}개</h2>
+      <h2>전체 ${total}개${priv.length?` <span style="color:#c9a06a">+ 내부 ${priv.length}</span>`:""}</h2>
       <div class="groups">${groups}</div>
+      ${privbox}
 
       <div class="home-note">
         <p><b>문서 규칙</b> — <code>plans/</code>는 AI용 압축 <code>.md</code>, 그 밖의 문서는 사람용 <code>.md</code> + 수기 디자인 <code>.html</code> 2중이다.
@@ -296,7 +324,9 @@
   async function openDoc(path){
     const item=flat().find(x=>x.path===path);
     if(!item){ showHome(); return; }
-    setActive(path); $("crumb").textContent=item.title;
+    setActive(path);
+    // 내부 문서를 열면 상단에도 «내부»를 남긴다 — 트리를 접고 보는 사람이 오해하지 않도록.
+    $("crumb").innerHTML=(item.private?'<span class="priv-badge">🔒 내부 · 배포 제외</span>':"")+esc(item.title);
     $("rawLink").href="./"+path; $("rawLink").style.display="";
     const content=$("content");
     if(path.endsWith(".html")){
@@ -331,9 +361,37 @@
   $("backdrop").onclick=closeSidebar;
   $("backList").onclick=()=>{ if(window.innerWidth<=760){ openSidebar(); } location.hash=""; showHome(); };
 
+  /* ── 로컬 / 배포 판정 ──────────────────────────────────────────────
+     내부 문서는 **로컬에서만** 보여야 하고, 공개 사이트에서는 지금과 똑같이 안 보여야 한다.
+     방어선을 두 겹으로 둔다.
+
+     ① **데이터** (이게 진짜 방어선) — 내부 문서 목록은 `manifest.local.json`에만 있고,
+        `scripts/docs-private.mjs`의 `LOCAL_MANIFEST`가 그 파일을 비공개로 판정하므로
+        `copy-public-docs.mjs`가 **배포 산출물(apps/client/dist/docs)에 복사하지 않는다.**
+        내부 문서 본문 파일도 마찬가지로 복사되지 않는다. 즉 배포본에는 **보여줄 데이터도,
+        열어볼 문서도 없다** — 이 스크립트가 어떻게 동작하든 카드는 생기지 않는다.
+     ② **요청** — 그럼에도 배포본에서 404 요청이 나가지 않도록, 호스트가 로컬일 때만 읽는다.
+        아래 판정은 **로컬 화이트리스트**다. 배포 도메인(zodiac-clue.vercel.app · *.vercel.app ·
+        프리뷰 URL)은 어느 항목에도 해당하지 않으므로 **반드시 «배포»로 떨어진다.**
+        LAN IP(192.168.x.x 등)로 띄운 경우도 «배포»로 떨어진다 — 남에게 보여주는 상황이라
+        가리는 쪽이 안전하다(fail-closed). */
+  const LOCAL_HOSTS=["localhost","127.0.0.1","0.0.0.0","::1","[::1]",""];
+  const IS_LOCAL = location.protocol==="file:" ||
+    LOCAL_HOSTS.includes(location.hostname) ||
+    /\.localhost$|\.local$/i.test(location.hostname);
+
+  const loadJson=async(f)=>{
+    try{ const r=await fetch(f,{cache:"no-cache"}); return r.ok?await r.json():null; }
+    catch{ return null; }
+  };
+
   (async()=>{
-    try{ manifest=await (await fetch("./manifest.json",{cache:"no-cache"})).json(); }
-    catch{ manifest=[]; }
+    manifest=await loadJson("./manifest.json") ?? [];
+    if(IS_LOCAL){
+      // 전체 목록(내부 포함). 없으면(= 배포본, 또는 마니페스트 미생성) 공개본 그대로 간다.
+      const local=await loadJson("./manifest.local.json");
+      if(Array.isArray(local)&&local.length) manifest=local;
+    }
     buildTree(); route();
     window.addEventListener("hashchange",route);
   })();

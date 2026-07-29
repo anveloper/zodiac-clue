@@ -24,9 +24,20 @@ export const PRIVATE_FILES = [
   "design/20260728-agent-loop-workflow", // 내부 작업 절차(런북) — 산출물이 아니다
 ];
 
+/**
+ * 로컬 전용 마니페스트 — 내부 문서까지 포함한 **전체** 트리.
+ * `docs/index.html`이 «로컬일 때만» 이 파일을 읽어 내부 문서를 보여준다.
+ *
+ * 배포 산출물에 이 파일이 **없다**는 것이 비공개의 1차 방어선이다(요청 차단은 2차).
+ * 그래서 아래 `isPrivateDocPath`가 이 이름을 항상 비공개로 판정한다 —
+ * `copy-public-docs.mjs`가 같은 함수로 거르므로 복사에서 자동 제외된다.
+ */
+export const LOCAL_MANIFEST = "manifest.local.json";
+
 /** docs/ 기준 상대 경로가 비공개 대상인지 */
 export const isPrivateDocPath = (rel) => {
   const p = rel.replace(/\\/g, "/");
+  if (p === LOCAL_MANIFEST) return true;
   if (PRIVATE_DIRS.some((d) => p === d || p.startsWith(`${d}/`))) return true;
   const noExt = p.replace(/\.(md|html)$/i, "");
   return PRIVATE_FILES.includes(noExt);

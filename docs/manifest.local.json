@@ -4,8 +4,23 @@
     "dir": "submission",
     "items": [
       {
+        "path": "submission/20260728-team-roles.md",
+        "title": "제출물 ⑤ — 팀원 롤 기술서 (초안)",
+        "private": true
+      },
+      {
+        "path": "submission/20260728-video-storyboard.html",
+        "title": "제출물 ② 플레이 영상 촬영 콘티",
+        "private": true
+      },
+      {
         "path": "submission/game-intro.html",
         "title": "제출물 ③ 게임 소개"
+      },
+      {
+        "path": "submission/submission-checklist.md",
+        "title": "제출물 체크리스트 (NHN NAN 2026 사전과제, 마감 2026-08-10)",
+        "private": true
       }
     ]
   },
@@ -14,12 +29,32 @@
     "dir": "design",
     "items": [
       {
+        "path": "design/20260729-mafia-content-design.html",
+        "title": "마피아 콘텐츠 설계 + 엔진/콘텐츠 경계 실측",
+        "private": true
+      },
+      {
+        "path": "design/20260728-agent-loop-workflow.html",
+        "title": "에이전트 루프 워크플로",
+        "private": true
+      },
+      {
         "path": "design/20260727-view-contract-spec.html",
         "title": "4뷰 표기 계약 명세"
       },
       {
         "path": "design/20260727-ui-copy.html",
         "title": "UI 문안(카피) 명세 — 호랑이 생신 잔치"
+      },
+      {
+        "path": "design/20260727-improvement-roadmap.html",
+        "title": "기획 개선 로드맵",
+        "private": true
+      },
+      {
+        "path": "design/20260727-execution-plan.html",
+        "title": "통합 실행 계획서 D-14",
+        "private": true
       },
       {
         "path": "design/20260720-engine-and-workflow-plan.html",
@@ -62,6 +97,43 @@
     ]
   },
   {
+    "label": "🗂 플랜 · 진행",
+    "dir": "plans/active",
+    "items": [
+      {
+        "path": "plans/active/16-loop-rounds-0729-engine-content.md",
+        "title": "plan: 에이전트 루프 07-29 — 엔진/콘텐츠 분리 실증 · 측정 전환 · 첫 페인트",
+        "private": true
+      },
+      {
+        "path": "plans/active/12-view-evolution-stages.md",
+        "title": "plan: 뷰 진화 단계 선택기 (개발 진화를 기능으로)",
+        "private": true
+      },
+      {
+        "path": "plans/active/11-asset-concept-pipeline.md",
+        "title": "plan: 에셋 파이프라인 + 12지신 컨셉 + 이미지 프롬프트",
+        "private": true
+      },
+      {
+        "path": "plans/active/09-helper-npcs.md",
+        "title": "plan: 고정 NPC(계략) + 보너스 능력",
+        "private": true
+      }
+    ]
+  },
+  {
+    "label": "⏸ 플랜 · 보류",
+    "dir": "plans/hold",
+    "items": [
+      {
+        "path": "plans/hold/02-engine-content-separation.md",
+        "title": "plan: 게임 엔진 / 콘텐츠 분리",
+        "private": true
+      }
+    ]
+  },
+  {
     "label": "✅ 플랜 · 완료",
     "dir": "plans/done",
     "items": [
@@ -72,6 +144,11 @@
       {
         "path": "plans/done/14-planning-refresh-and-llm-fix.md",
         "title": "plan: 기획 개선 문서 세트 + 배포 + LLM 폴백 장애 해결"
+      },
+      {
+        "path": "plans/done/13-execution-plan-merge.md",
+        "title": "13 — 4개 일정표 병합 → 단일 실행 계획서",
+        "private": true
       },
       {
         "path": "plans/done/10-view-2.5d-toggle.md",
