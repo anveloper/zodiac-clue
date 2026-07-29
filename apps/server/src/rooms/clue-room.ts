@@ -39,7 +39,15 @@ import {
 } from "../ai/narrator";
 import { AiCounter, logAi, recordAi } from "../ai/telemetry";
 import { gambleAccusation } from "../rules/bot-accuse";
-import { SEED_ENV, mintGameSeed, seededUnit } from "../rules/rng";
+import {
+  SEED_ENV,
+  digest,
+  mintGameSeed,
+  seededDie,
+  seededPick,
+  seededShuffle,
+  seededUnit,
+} from "../rules/rng";
 
 type JoinOptions = { character?: string };
 type CreateOptions = { isPublic?: boolean };
@@ -136,16 +144,6 @@ const HELPER_MIDS = [
 ];
 const CENTER = { x: 11, y: 11 };
 
-const pick = <T>(arr: readonly T[]): T =>
-  arr[Math.floor(Math.random() * arr.length)];
-
-const shuffle = <T>(arr: T[]): void => {
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-};
-
 /** 취소 가능한 타이머 핸들(colyseus `Delayed`와 구조적으로 호환). */
 type Cancelable = { clear: () => void };
 
@@ -231,11 +229,24 @@ export class ClueRoom extends Room<GameState> {
   private disposed = false;
 
   /**
-   * 이번 판의 시드(`rules/rng.ts`). 봇의 확률적 도박 고발이 쓰는 **유일한 난수원**이며
-   * 판이 시작될 때 한 번 정해지고 그동안 불변이다. 시드는 진실값이 아니라 판단의
-   * 입력이므로 동기화 상태에 넣지 않는다(비밀 정보는 아니지만 클라가 쓸 일도 없다).
+   * 이번 판의 시드(`rules/rng.ts`) — 이 판 **모든 무작위의 유일한 난수원**이다.
+   * 정답 봉투·덱 셔플과 딜·공통 단서·계략 배치·주사위·봇의 방/제안 선택·도박 고발이
+   * 전부 여기서 파생된다. 판이 시작될 때 한 번 정해지고 그동안 불변이다.
+   * 시드는 진실값이 아니라 판단의 입력이므로 동기화 상태에 넣지 않는다
+   * (비밀 정보는 아니지만 클라가 쓸 일도 없다).
+   *
+   * ⚠️ `startGame()`에서 **가장 먼저** 정해야 한다 — 아래 어떤 뽑기보다 앞서야 한다.
    */
   private gameSeed = 0;
+  /**
+   * 이번 판의 턴 일련번호(0부터). **주사위·봇 선택의 결정 좌표**다.
+   *
+   * 스트림 대신 이 값을 좌표로 쓰는 이유: 주사위는 `advanceTurn`마다 굴러가는데,
+   * 서버에서 턴이 넘어가는 경로는 5가지(제안 후 창 만료·턴 종료·턴 클럭 만료·고발 실패·
+   * 좌석 제거)이고 재접속·대리 인계가 그 사이에 끼어든다. "몇 번째로 소비된 난수인가"가
+   * 아니라 "몇 번째 턴인가"를 좌표로 쓰면 그 경로들이 어떻게 섞여도 같은 턴은 같은 눈이다.
+   */
+  private turnSeq = 0;
 
   /**
    * 방 생성 시의 공개 여부. 판이 끝나 목록에 되돌릴 때(`setPrivate(false)`)
@@ -256,7 +267,9 @@ export class ClueRoom extends Room<GameState> {
     const isPublic = options.isPublic !== false;
     this.createdPublic = isPublic;
     if (!isPublic) void this.setPrivate(true);
-    void this.setMetadata({ hostName: "", count: 0, isPublic });
+    // 메타데이터를 쓰는 곳은 `syncMeta()` **하나뿐이다** — 예전처럼 여기서 따로 쓰면
+    // 첫 `syncMeta()`가 그 객체를 통째로 덮어써 `isPublic`이 조용히 사라진다(실제로 그랬다).
+    this.syncMeta();
 
     this.onMessage("move", (client, msg: { dx: number; dy: number }) =>
       this.handleMove(client, msg),
@@ -352,14 +365,36 @@ export class ClueRoom extends Room<GameState> {
     this.state.players.forEach((_p, id) => this.markSeen(id, value));
   }
 
-  // 공개방 목록(getAvailableRooms) 표시용 메타데이터 갱신 — 방장명·인원.
+  /**
+   * 공개방 목록(`getAvailableRooms` → `RoomAvailable.metadata`) 표시용 메타데이터.
+   * **이 방에서 `setMetadata`를 부르는 유일한 함수다** — 갈라지면 필드가 서로를 덮어쓴다.
+   *
+   * 왜 `phase`가 필요한가: 판이 끝나면 방은 목록으로 되돌아오는데(`setListed(true)`),
+   * 거기 들어가면 다음 판이 시작될 때까지 **관전**이다(§8.3 c). 목록에 상태가 없으면
+   * 클라는 «참가»라고 써 놓고 실제로는 관전으로 떨어뜨리거나, 상태를 스스로 **추정**해야
+   * 한다 — 추정은 클라가 진실값을 만드는 것이라 금지다. 서버가 사실을 실어 보낸다.
+   *
+   * ⚠️ **여기 담기는 것은 전부 공개 정보다.** 이 객체는 로비의 **아무나** 읽는다
+   * (인증도 방 참가도 필요 없다). 손패·정답 봉투·좌석 배정·시드는 어떤 형태로도 넣지 않는다.
+   * 담아도 되는 것은 "지금 대기 중인가/진행 중인가/끝났는가"와 인원수뿐이다.
+   */
   private syncMeta(): void {
     const host = this.state.host
       ? this.state.players.get(this.state.host)
       : undefined;
     void this.setMetadata({
       hostName: host?.name ?? "",
+      /** 좌석 총원(사람 + NPC). 판이 도는 동안은 항상 MAX_PLAYERS다. */
       count: this.state.players.size,
+      /**
+       * 그중 **사람** 좌석 수. `count`만 보면 종료된 방이 늘 "6/6 만석"이라 목록이
+       * "들어갈 자리가 없다"고 거짓말한다 — 실제로는 다음 판에 NPC를 밀어내고 앉는다.
+       * 대리 NPC(`awayBot`)로 넘어간 자리는 사람으로 세지 않는다(`isBot`가 켜져 있다).
+       */
+      humans: [...this.state.players.values()].filter((p) => !p.isBot).length,
+      isPublic: this.createdPublic,
+      /** `"lobby" | "playing" | "ended"` — `state.phase`와 **같은 값**이다. */
+      phase: this.state.phase,
     });
   }
 
@@ -433,7 +468,9 @@ export class ClueRoom extends Room<GameState> {
         (this.hands.get(id) ?? []).forEach((c) => pool.push(c));
       }
     });
-    shuffle(pool);
+    // 좌표는 **헬퍼의 십이지 값**이다 — 헬퍼는 판마다 하나씩이고 `used`로 1회만 쓰이므로
+    // 좌표가 유일하다. 세션 id를 좌표로 쓰면 재생마다 값이 달라져 재생이 깨진다.
+    seededShuffle(pool, this.gameSeed, "peek", helper.value);
     const seen = pool.slice(0, n);
     // 엿본 카드는 사용자 본인만 본 정보 → 본인 시야에만 기록.
     seen.forEach((c) => this.markSeen(client.sessionId, c.value));
@@ -702,6 +739,8 @@ export class ClueRoom extends Room<GameState> {
     // 판이 이미 끝난 뒤의 새로고침 — 결과 오버레이가 봉투 없이 뜨지 않게 다시 보낸다.
     // 진행 중이면 `sendSolutionTo`가 첫 줄에서 스스로 막는다.
     this.sendSolutionTo(client);
+    // 대리 NPC가 좌석을 돌려줬다면 **사람 수가 늘었다** → 목록의 인원 표기를 맞춘다.
+    this.syncMeta();
     this.broadcast("log", { text: `🙋 재접속 — ${p.name} 님` });
     // 8초(끊김) 클럭으로 돌던 턴을 사람 기준(45초)으로 다시 건다.
     if (this.state.currentTurn === p.id) this.armTurnClock();
@@ -862,6 +901,14 @@ export class ClueRoom extends Room<GameState> {
 
   // ── 판 시작 코어(최초 시작·리매치 공용): 위치/상태 리셋 + 딜 + 턴 개시 ──
   private startGame(): void {
+    // ── 판 시드 — **이 함수의 첫 줄이어야 한다.** 아래 모든 뽑기(정답 봉투·계략 배치·
+    //    덱 셔플·딜·첫 주사위)가 이 값에서 파생되므로, 하나라도 앞서면 그 하나가 재생되지 않는다.
+    //    **반드시 로그로 남긴다**: 이 값을 `ZODIAC_SEED`로 되먹이면 같은 판이 재생된다.
+    this.gameSeed = mintGameSeed();
+    this.turnSeq = 0; // 주사위·봇 선택의 결정 좌표 — 판마다 0부터
+    console.log(
+      `[rng] game seed ${this.gameSeed} (replay: ${SEED_ENV}=${this.gameSeed})`,
+    );
     // 판이 도는 동안 공개방 목록에서 감춘다(최초 시작·리매치 공용 — 위 `setListed` 주석).
     this.setListed(false);
     // 관전자를 먼저 좌석에 앉힌다(§8.3 (c)) — NPC 충원보다 **앞**이어야 사람이 우선된다.
@@ -918,9 +965,9 @@ export class ClueRoom extends Room<GameState> {
       (z) => !suspectPool.includes(z),
     );
     const corners = [...HELPER_CORNERS];
-    shuffle(corners);
+    seededShuffle(corners, this.gameSeed, "helperCorners");
     const mids = [...HELPER_MIDS];
-    shuffle(mids);
+    seededShuffle(mids, this.gameSeed, "helperMids");
     const nCorner = Math.min(2, leftover.length);
     const spots = [
       ...corners.slice(0, nCorner).map((s) => ({ ...s, strong: true })),
@@ -939,10 +986,17 @@ export class ClueRoom extends Room<GameState> {
       this.state.helpers.set(z, h);
     });
 
+    // 정답 봉투 — 세 장을 **서로 다른 좌표**로 뽑는다(같은 좌표를 재사용하면 세 값이
+    // 같은 난수로 묶여 카테고리 간 상관이 생긴다).
     const solution: Solution = {
-      suspect: pick(suspectPool) as Solution["suspect"],
-      weapon: pick(WEAPONS),
-      room: pick(ROOMS),
+      suspect: seededPick(
+        suspectPool,
+        this.gameSeed,
+        "solution",
+        "suspect",
+      ) as Solution["suspect"],
+      weapon: seededPick(WEAPONS, this.gameSeed, "solution", "weapon"),
+      room: seededPick(ROOMS, this.gameSeed, "solution", "room"),
     };
     this.solution = solution;
 
@@ -957,7 +1011,7 @@ export class ClueRoom extends Room<GameState> {
         (v): Card => ({ kind: "room", value: v }),
       ),
     ];
-    shuffle(deck);
+    seededShuffle(deck, this.gameSeed, "deck");
 
     // 공통 단서: 솔로(사람1 + 봇들)일 때 추리 보조로 2장 앞면 공개(정답 아님).
     // 근거: 6인 꽉차면 딜이 딱 나눠떨어져 남는 카드가 없음 → 솔로 난이도 완화용 변형 룰.
@@ -972,10 +1026,6 @@ export class ClueRoom extends Room<GameState> {
     // 다음 판 결과 화면에 섞인다.
     this.endReason = null;
     this.failedAccusations.clear();
-    // 판 시드 — 봇의 확률적 도박 고발(§7.5.3)이 쓰는 유일한 난수원. 판마다 새로 뽑고
-    // **반드시 로그로 남긴다**: 이 값을 `ZODIAC_SEED`로 되먹이면 같은 판이 재생된다.
-    this.gameSeed = mintGameSeed();
-    console.log(`[rng] game seed ${this.gameSeed} (replay: ${SEED_ENV}=${this.gameSeed})`);
     // AI 계측도 판 단위로 센다 — 칩이 말하는 "이번 판 LLM n건"의 n이 이것이다.
     this.ai.reset();
     this.aiSent = "";
@@ -1014,6 +1064,25 @@ export class ClueRoom extends Room<GameState> {
       (this.hands.get(id) ?? []).forEach((c) => this.markSeen(id, c.value));
     });
 
+    // ── 재생 지문 ────────────────────────────────────────────────────
+    // "같은 시드로 두 번 띄우면 같은 판인가"를 사람이 눈으로 확인할 수 있어야 한다.
+    // 값을 찍으면 서버 콘솔이 손패 유출 경로가 되므로 **해시만** 남긴다(`digest`).
+    // 좌표에 세션 id를 쓰지 않고 **턴 순서 인덱스**를 쓴다 — 세션 id는 접속마다 새로
+    // 발급되므로 그대로 넣으면 같은 시드의 두 실행이 항상 다른 지문을 낸다.
+    const dealFp = digest(
+      [
+        `sol:${solution.suspect}/${solution.weapon}/${solution.room}`,
+        `common:${([...this.state.commonCards] as string[]).join(",")}`,
+        ...ids.map(
+          (id, i) =>
+            `${i}:${(this.hands.get(id) ?? []).map((c) => c.value).join(",")}`,
+        ),
+      ].join("|"),
+    );
+    console.log(
+      `[rng] deal ${dealFp} · seats ${ids.length} · seed ${this.gameSeed}`,
+    );
+
     // 사람에게만 손패 private 전송, 봇은 추리 노트 초기화
     this.botKnowledge.clear();
     for (const id of ids) {
@@ -1031,6 +1100,8 @@ export class ClueRoom extends Room<GameState> {
     this.state.stepsLeft = this.rollSteps();
     this.state.phase = "playing";
     this.turnStartedAt = this.clock.currentTime;
+    // 공개 목록에 「진행 중」을 싣는다. NPC 충원·관전자 착석으로 인원도 바뀌었다.
+    this.syncMeta();
 
     const botCount = [...this.state.players.values()].filter(
       (p) => p.isBot,
@@ -1105,10 +1176,16 @@ export class ClueRoom extends Room<GameState> {
     return roomCenter(name);
   }
 
-  /** 이번 턴 이동 한도(주사위 2d6) — 2~12칸. 방 안 이동은 무료라 실효 이동은 더 큼. */
+  /**
+   * 이번 턴 이동 한도(주사위 2d6) — 2~12칸. 방 안 이동은 무료라 실효 이동은 더 큼.
+   * 좌표는 **턴 번호**다(`turnSeq`) → 같은 시드면 n번째 턴의 눈은 항상 같다.
+   * 두 주사위에 서로 다른 좌표를 주지 않으면 둘이 같은 값으로 묶여 2d6이 아니라 2×1d6이 된다.
+   */
   private rollSteps(): number {
-    const d = (): number => 1 + Math.floor(Math.random() * 6);
-    return d() + d();
+    return (
+      seededDie(this.gameSeed, "roll", this.turnSeq, "a") +
+      seededDie(this.gameSeed, "roll", this.turnSeq, "b")
+    );
   }
 
   private initBotKnowledge(id: string): void {
@@ -1362,6 +1439,7 @@ export class ClueRoom extends Room<GameState> {
     this.endReason = "draw";
     this.cancelAllTimers();
     this.setListed(true); // 판이 끝났다 → 공개방 목록으로 복귀
+    this.syncMeta(); // 종료 3경로 중 하나 — 목록에 「끝남」을 싣는다(위 `syncMeta` 주석)
     this.logAiSummary();
     this.broadcast("log", {
       // 확정 문안(UI 문안 명세 §8.1 · 07-28 확정). 실측 발생률 0.0%지만 백스톱이라 남긴다.
@@ -1463,6 +1541,10 @@ export class ClueRoom extends Room<GameState> {
       this.endReason = "accuse";
       this.cancelAllTimers();
       this.setListed(true); // 판이 끝났다 → 공개방 목록으로 복귀
+      // 목록으로 돌아가는 **바로 그 순간** 상태도 갱신한다 — 종료 3경로(고발 성공 ·
+      // 무승부 · 최후 생존) 중 하나라도 빠지면 목록이 「진행 중」인 방을 「참가 가능」이라
+      // 표시하거나 그 반대가 된다.
+      this.syncMeta();
       this.logAiSummary();
       this.broadcast("log", {
         text: `🎉 사건 해결 — ${player.name} 님`,
@@ -1527,14 +1609,20 @@ export class ClueRoom extends Room<GameState> {
     const anyRoom = (ROOMS as readonly string[]).filter(
       (r) => r !== blocked && r !== bot.room,
     );
+    // 봇의 방 선택 좌표 = (좌석, 턴 번호). 세 갈래는 **서로 배타적**이라 같은 좌표를
+    // 나눠 써도 충돌하지 않는다(한 턴에 한 번만 뽑는다).
+    const roomAt_ = <T>(a: readonly T[]): T =>
+      seededPick(a, this.gameSeed, "botRoom", id, this.turnSeq);
     const targetRoom = stay
       ? bot.room
       : others.length > 0
-        ? pick(others)
+        ? roomAt_(others)
         : anyRoom.length > 0
-          ? pick(anyRoom)
-          : pick(ROOMS);
-    const region = regionOf(targetRoom) ?? pick(ROOM_REGIONS);
+          ? roomAt_(anyRoom)
+          : roomAt_(ROOMS);
+    const region =
+      regionOf(targetRoom) ??
+      seededPick(ROOM_REGIONS, this.gameSeed, "botRegion", id, this.turnSeq);
     const cell = this.freeCellIn(region.name, id);
     bot.x = cell.x;
     bot.y = cell.y;
@@ -1590,9 +1678,26 @@ export class ClueRoom extends Room<GameState> {
     };
     const es = eff(k.suspects);
     const ew = eff(k.weapons);
+    // 제안 좌표 = (좌석, 턴 번호) + 카테고리 태그. 봇은 한 턴에 한 번 제안한다.
+    const s0 = seededPick(es, this.gameSeed, "botSuspect", id, this.turnSeq);
+    const w0 = seededPick(ew, this.gameSeed, "botWeapon", id, this.turnSeq);
     const suggestion: Suggestion = {
-      suspect: (pick(es) ?? pick(this.suspectPool)) as Suggestion["suspect"],
-      weapon: (pick(ew) ?? pick(WEAPONS)) as Suggestion["weapon"],
+      suspect: (s0 ??
+        seededPick(
+          this.suspectPool,
+          this.gameSeed,
+          "botSuspectFb",
+          id,
+          this.turnSeq,
+        )) as Suggestion["suspect"],
+      weapon: (w0 ??
+        seededPick(
+          WEAPONS,
+          this.gameSeed,
+          "botWeaponFb",
+          id,
+          this.turnSeq,
+        )) as Suggestion["weapon"],
       room: roomName as Suggestion["room"],
     };
     const result = this.doSuggestion(id, suggestion);
@@ -1920,6 +2025,10 @@ export class ClueRoom extends Room<GameState> {
       this.endReason = "survivor";
       this.cancelAllTimers();
       this.setListed(true); // 판이 끝났다 → 공개방 목록으로 복귀
+      // 목록으로 돌아가는 **바로 그 순간** 상태도 갱신한다 — 종료 3경로(고발 성공 ·
+      // 무승부 · 최후 생존) 중 하나라도 빠지면 목록이 「진행 중」인 방을 「참가 가능」이라
+      // 표시하거나 그 반대가 된다.
+      this.syncMeta();
       this.logAiSummary();
       const w = this.state.players.get(order[0]);
       this.broadcast("log", {
@@ -1942,6 +2051,8 @@ export class ClueRoom extends Room<GameState> {
     const cur = order.indexOf(this.state.currentTurn);
     const next = order[(cur + 1) % order.length];
     this.state.currentTurn = next;
+    // 주사위·봇 선택의 결정 좌표를 한 칸 민다. **주사위를 굴리기 전**이어야 한다.
+    this.turnSeq += 1;
     this.state.stepsLeft = this.rollSteps();
     this.turnStartedAt = this.clock.currentTime;
     const np = this.state.players.get(next);
