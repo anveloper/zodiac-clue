@@ -2061,6 +2061,27 @@
           <span class="no"><b>그러나 무료티어 쿼터 여유는 여전히 미확인</b></span>(분모를 재지 않았다)</td></tr>
       <tr><td>「<code>main.ts</code>는 분해보다 새로 짜기가 싸다」</td>
         <td><span class="tag t-est">판단</span> 모듈 27블록은 실측 · 「새로 짜기가 싸다」는 판단</td></tr>
+      <tr><td><b><a href="#s752">§7.5.2</a> 「3차(발언 무효)」 행의 <code>leak</code>=0 값</b>
+        <span class="note">(24.9 / 21.9 / 18.0)</span></td>
+        <td><span class="tag t-eng">해소</span> <b>모순이 아니라 라벨 문제였다.</b>
+          재현 결과 <b>24.88 / 21.91 / 18.00</b>으로 소수점까지 맞는다 — 이 행은 «3차 구성»이 아니라
+          <b>«§7 다이얼 · D1 제거»</b>다(<a href="#clash">§6.5 끝 노트</a>)</td></tr>
+      <tr><td><b><a href="#b65">§6.5</a> 위 표의 <code>leak</code>=0 열</b>
+        <span class="note">(29.1 / <b>27.9</b> / 25.4)이 어느 노브 조합인가</span></td>
+        <td><span class="tag t-eng">8차 해소</span> <b>29.09 / 27.91 / 25.38</b>로 소수점까지 재현 —
+          <code>counterClaimP</code> <b>0.35 / 0.70 / 0.35</b>(다이얼 확정 «전»의 후보안).
+          갈랐던 노브는 <b>맞포교 다이얼 하나</b>이고 나머지는 전부 기본값이다(<a href="#fix8">§6.5 8차 노트</a>)</td></tr>
+      <tr><td><b>§6.5 위 표가 라벨한 다이얼(0.50 / 0.90 / 0.55)이 그 표 «전체»에 적용됐다는 것</b></td>
+        <td><span class="tag t-pol">반증됨</span> 다섯 열 중 <b>굵은 <code>0.35</code> 열만</b> 확정 다이얼이고
+          나머지 네 열은 후보 다이얼이다 — <b class="no">두 실행의 이어붙임</b>.
+          확정 다이얼의 <code>leak</code>=0 바닥은 <b>24.9 / 21.9 / 18.0</b></td></tr>
+      <tr><td>§6.5 「가로로 세 안이 <b>5pp 안에</b> 모인다」</td>
+        <td><span class="tag t-pol">산술 오류</span> 표 자신의 0.55 · 0.8 열이 <b>11.4pp</b>다.
+          다이얼 적용 밴드로도 <b>5.8~12.9pp</b></td></tr>
+      <tr><td><b>§6.6 확정안 3종 · §7.5.1 재측정 · §7.5.2 §7(D1) 밴드 · §7.5.1 시드 4개 · §8.9 U1~U5</b></td>
+        <td><span class="tag t-fact">8차 전량 재현</span> 시드 고정 결정론 —
+          49.63 / 57.06 / 50.23 · 50.77 / 50.95 / 50.39 · 27.2 / 30.9 / 31.9pp ·
+          50.95 / 50.09 / 50.27 / 50.67 · U1~U5 전 칸. <b class="ok">어긋난 칸 0건</b></td></tr>
     </tbody>
   </table>
   </div>
@@ -2349,15 +2370,21 @@
     </tbody>
   </table>
   </div>
+  <p style="font-size:13px;margin:8px 0 0">🔴 <b>이 표는 두 실행을 이어 붙인 것이다</b> — 행 라벨의 다이얼이
+    <b>굵은 <code>0.35</code> 열에만</b> 적용돼 있다(8차 재현으로 특정 · <a href="#fix8">아래 노트</a>).
+    다이얼을 실제로 적용한 밴드는 <b>24.9 / 21.9 / 18.0 → 77.4 / 90.3 / 86.3</b>이다.</p>
   <div class="split">
     <div class="sd brk">
       <h5>세로로 읽으면</h5>
-      <p style="margin:0">「튜닝했다」는 말이 무색하다 — <b>가정 하나가 50pp 이상을 움직인다.</b></p>
+      <p style="margin:0">「튜닝했다」는 말이 무색하다 — <b>가정 하나가 50pp 이상을 움직인다.</b>
+        <span class="note">다이얼을 실제로 적용하면 52.5 / 68.4 / 68.3pp라 <b>오히려 더 크다</b>.</span></p>
     </div>
     <div class="sd hld">
       <h5>가로로 읽으면</h5>
-      <p style="margin:0">같은 <code>leak</code>에서 세 안이 <b>서로 5pp 안에 모여 있다</b> —
-        <b>튜닝은 «가정을 고정한 뒤에만» 의미가 있다.</b></p>
+      <p style="margin:0">같은 <code>leak</code>에서 세 안이 <b>서로 가까이 모인다</b> —
+        <b>튜닝은 «가정을 고정한 뒤에만» 의미가 있다.</b><br />
+        <span class="note">⚠️ 초판의 「5pp 안에」는 <b class="no">위 표에서도 성립하지 않는다</b>
+        (0.35 열 7.5pp · 0.55 · 0.8 열 11.4pp). 다이얼 적용 밴드에서는 5.8~12.9pp.</span></p>
     </div>
   </div>
 
@@ -2405,9 +2432,10 @@
         <tr><td><b>18.7 / 27.9 / 12.8</b></td>
           <td>「§7 확정 구성인데 <b>사람이 판정을 전혀 안 읽으면</b>」(α=0)</td>
           <td><b class="good">18.71 / 27.91 / 12.84</b><span class="note"> (§8.9 U1의 α=0 행)</span></td></tr>
-        <tr><td>29.1 / 27.9 / 25.4</td>
-          <td>§6.5 확정안 3종 표의 <code>leak</code>=0 열</td>
-          <td><b class="part">위 둘과 다른 노브 조합</b><span class="note"> — 무엇이 다른지는 특정하지 못했다</span></td></tr>
+        <tr><td><b>29.1 / 27.9 / 25.4</b></td>
+          <td>「<b>다이얼 확정 «전»의 후보안</b>에서 <code>leak</code>=0이면」</td>
+          <td><b class="good">29.09 / 27.91 / 25.38</b> 소수점까지 재현<span class="note"> — <code>counterClaimP</code>
+            <b>0.35 / 0.70 / 0.35</b>(§6.5 표가 라벨한 0.50 / 0.90 / 0.55가 <b>아니다</b> · 8차)</span></td></tr>
       </tbody>
     </table>
     </div>
@@ -2418,7 +2446,54 @@
         그 행은 <b class="no">「3차 구성」이 아니라 「§7 구성 − D1」</b>이다.</li>
       <li><b>처리</b> — §7.5.2 3차 행은 <b>재현됐으므로 신뢰할 수 있다.</b> 다만 라벨을 그대로 읽지 말 것.
         인용은 질문에 맞춰: <b>«장치가 없으면» 24.9 / 21.9 / 18.0 · «안 읽으면» 18.7 / 27.9 / 12.8.</b></li>
-      <li><b class="part">남은 미확인 1건</b> — §6.5 위 표의 29.1 / 25.4가 어느 노브 조합인지.</li>
+    </ul>
+  </div>
+
+  <div class="box good" id="fix8">
+    <h3 style="margin-top:0">✅ 8차 감사 — 마지막 한 갈래(29.1 / 27.9 / 25.4)도 해소.
+      <b>갈랐던 노브는 <code>counterClaimP</code>(맞포교 다이얼) 하나다</b></h3>
+    <p style="margin:0 0 8px;font-size:13.5px">
+      §6 시뮬(<code>mafia-sim.mjs</code>)을 좌석 · <code>leak</code> · 다이얼만 바꿔 돌린 결과,
+      <b class="no">위 표의 다섯 열이 같은 실행에서 나온 값이 아니다.</b>
+      굵은 칸이 §6.5 위 표에 실린 값이다.
+    </p>
+    <div class="scroll">
+    <table class="num">
+      <thead><tr><th style="width:16%">구성</th><th style="width:20%">다이얼</th>
+        <th>leak 0</th><th>0.15</th><th>0.35</th><th>0.55</th><th>0.8</th></tr></thead>
+      <tbody>
+        <tr><td>6인 · 밤2</td><td><code>cc</code>=<b class="part">0.35</b> <span class="note">후보</span></td>
+          <td><b class="part">29.09</b></td><td><b class="part">39.91</b></td><td class="dim">54.74</td><td><b class="part">67.97</b></td><td><b class="part">80.63</b></td></tr>
+        <tr><td>6인 · 밤2</td><td><code>cc</code>=0.50 <span class="note">확정</span></td>
+          <td class="dim">24.88</td><td class="dim">34.80</td><td class="hi"><b>49.63</b></td><td class="dim">63.39</td><td class="dim">77.39</td></tr>
+        <tr><td>8인 · 밤2</td><td><code>cc</code>=<b class="part">0.70</b> <span class="note">후보</span></td>
+          <td><b class="part">27.91</b></td><td><b class="part">42.28</b></td><td class="dim">62.48</td><td><b class="part">79.40</b></td><td><b class="part">91.98</b></td></tr>
+        <tr><td>8인 · 밤2</td><td><code>cc</code>=0.90 <span class="note">확정</span></td>
+          <td class="dim">21.91</td><td class="dim">36.01</td><td class="hi"><b>57.06</b></td><td class="dim">75.93</td><td class="dim">90.30</td></tr>
+        <tr><td>10인 · 밤3</td><td><code>cc</code>=<b class="part">0.35</b> <span class="note">후보</span></td>
+          <td><b class="part">25.38</b></td><td><b class="part">39.13</b></td><td class="dim">59.23</td><td><b class="part">76.36</b></td><td><b class="part">89.86</b></td></tr>
+        <tr><td>10인 · 밤3</td><td><code>cc</code>=0.55 <span class="note">확정</span></td>
+          <td class="dim">18.00</td><td class="dim">30.18</td><td class="hi"><b>50.23</b></td><td class="dim">69.55</td><td class="dim">86.30</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <ul class="tight" style="margin:10px 0 0">
+      <li><b><code>leak</code> 0 · 0.15 · 0.55 · 0.8 네 열은 «후보» 행에서, 굵은 0.35 열만 «확정» 행(=<a href="#b66">§6.6</a>)에서 왔다.</b>
+        즉 §6.5 표는 <b class="no">다이얼 확정 «전»의 스윕에 확정 후의 0.35 열을 갈아 끼운 이어붙임</b>이고,
+        행 라벨(「다이얼 0.50 / 0.90 / 0.55」)은 <b>그 0.35 열에만</b> 맞는다.</li>
+      <li><b><code>counterClaimP</code> 말고는 아무것도 안 바꿨다</b> — 위 6행 전부
+        <code>mafia-sim.mjs</code> 기본값 + <code>humans:1</code> + <code>seats/mafiaN/leak/counterClaimP</code>만 지정한
+        <b>20,000판 · seed 20260729</b> 실행이다.
+        <code>speech</code> · <code>skill</code> · <code>sharedNoise</code> · <code>privNoise</code> ·
+        <code>claimW</code> · <code>claimDecay</code> · <code>blocTell</code> · <code>tieRule</code> ·
+        <code>adaptiveTalk</code>는 손대지 않았고, 그래도 <b>12칸이 소수점까지 맞는다.</b></li>
+      <li><b>처리</b> — §6.5 표의 <code>leak</code>=0 열은
+        <b class="no">「확정안의 바닥」이 아니라 「후보안의 바닥」</b>이다.
+        확정 다이얼을 적용한 진짜 바닥은 <b>24.9 / 21.9 / 18.0</b>(= <a href="#s752">§7.5.2</a> 「3차」 행).
+        <b>§6의 숫자는 정정하지 않는다</b>(<a href="#b610">§6.10</a>의 규약) — 인용할 때 <b>계열을 밝힌다.</b></li>
+      <li><b class="good">결론은 바뀌지 않는다.</b> 확정 다이얼로 다시 세면 밴드는 <b>52.5 / 68.4 / 68.3pp</b>로
+        이어붙임 표(51.5 / 64.1 / 64.5pp)보다 <b>넓다</b> — 「가정 하나가 50pp 이상을 움직인다」는 <b>더 강해진다.</b></li>
+      <li><b class="good">미확인 잔여 0건.</b> 세 갈래가 모두 노브 조합까지 특정됐다.</li>
     </ul>
   </div>
 
@@ -4658,7 +4733,11 @@
         <td><a href="#clash">§6.5</a> · <a href="#s752">§7.5.2</a></td>
         <td><b class="no">판정하지 않았다.</b> 시뮬레이터가 저장소에 없어(§6.9) 재현 불가.
           §6.5 끝에 <b>세 갈래를 표로</b> 적고 §5 · §7.5.2에 미확인 표시.
-          인용은 <b>18.7 / 27.9 / 12.8 계열</b>을 쓰라고만 적었다</td></tr>
+          인용은 <b>18.7 / 27.9 / 12.8 계열</b>을 쓰라고만 적었다<br />
+          <b class="ok">✅ 8차에서 전량 해소</b> — 스크래치패드에 시뮬레이터가 남아 있어 세 갈래를 전부 재현했다:
+          24.9계열 = 「§7 다이얼 − D1」 · 18.7계열 = 「§7 구성 · α=0」 ·
+          <b>29.1계열 = 「다이얼 확정 전 후보안」(<code>counterClaimP</code> 0.35 / 0.70 / 0.35)</b>.
+          §6.5 위 표는 <b class="no">두 실행의 이어붙임</b>이었다(<a href="#fix8">§6.5 8차 노트</a>)</td></tr>
       <tr><td>A8</td>
         <td><b><code>w*</code> 진폭 상한 「12.4pp」의 출처가 문서에 없다.</b>
           §7.5.4가 적은 값은 10.5pp · 8.6pp</td>
@@ -4904,6 +4983,22 @@
     (<a href="#a101">§10.1 A1 · A3</a>).
     <code>hold/02</code>의 <b>재개 판단은 「계속 보류」</b>이고, <b>보류 사유는 07-29에 갱신</b>됐다(<a href="#a105">§10.5</a>).<br /><br />
     <b>변경 이력</b> —
+    <b>2026-07-29 (8차 · 재현 감사)</b>: <b class="ok">「미확인 1건」을 0건으로.</b>
+    7차가 판정을 미룬 <a href="#clash">§6.5 「<code>leak</code>=0의 세 갈래」</a> 중 마지막 하나
+    (<b>29.1 / 27.9 / 25.4</b>)를 시뮬레이터로 재현해 특정했다.
+    <b>갈랐던 노브는 <code>counterClaimP</code>(맞포교 다이얼) 하나</b> — 그 열은
+    <b>다이얼 확정 «전»의 후보안</b>(0.35 / 0.70 / 0.35)에서 나온 값이고
+    <b>29.09 / 27.91 / 25.38</b>로 소수점까지 맞는다.
+    그 결과 <b class="no">§6.5 위 표가 두 실행의 이어붙임</b>임이 드러났다 —
+    <code>leak</code> 0 · 0.15 · 0.55 · 0.8 네 열은 후보 다이얼, 굵은 0.35 열만 확정 다이얼(=<a href="#b66">§6.6</a>).
+    <b>확정 다이얼의 진짜 <code>leak</code>=0 바닥은 24.9 / 21.9 / 18.0</b>(= <a href="#s752">§7.5.2</a> 「3차」 행)이다.
+    부수 발견 — <b>§6.5 「가로로 5pp 안에 모인다」는 산술이 안 맞는다</b>(표 자신의 0.55 · 0.8 열이 11.4pp).
+    <b class="ok">§6의 숫자는 정정하지 않았다</b>(<a href="#b610">§6.10</a> 규약) — 라벨과 인용 계열만 밝혔다.
+    <b>회귀 확인 전량 통과</b>: §6.6 확정안(49.63 / 57.06 / 50.23) ·
+    <a href="#s751">§7.5.1</a>(50.77 / 50.95 / 50.39 · 시드 4개 50.95 / 50.09 / 50.27 / 50.67) ·
+    §7.5.2 §7(D1) 밴드(27.2 / 30.9 / 31.9pp) · <a href="#s73">§7.3</a> <code>w*</code>=0(27.91) ·
+    <a href="#s89">§8.9</a> U1~U5 전 칸 — <b class="ok">어긋난 칸 0건.</b>
+    코드 · 게이트 무접촉(문서 2파일만 수정). ·
     <b>2026-07-29 (7차 · 정합 감사)</b>: <a href="#audit">§10</a> 신설.
     §0~§9를 통독해 <b>자기 모순 12건</b>(<a href="#a101">§10.1</a>)과
     <b>틀린 인용 좌표 15군</b>(<a href="#a102">§10.2</a>)을 잡았다.
