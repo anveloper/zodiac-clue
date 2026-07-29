@@ -1,5 +1,8 @@
 // 클루 카드·프로토콜 타입 — **콘텐츠(주제) 층.**
 // `ClientMessages`/`ServerMessages`가 곧 클루 규칙이다
+// ⚠️ 다만 **이 타입은 어디에서도 강제되지 않는다** — `send`/`onMessage`가 이 타입을 참조하지
+//    않으므로 서버가 보내고 클라가 듣는데 여기에만 없는 메시지가 조용히 생긴다(07-29에 `solution`이
+//    실제로 그랬다). 「곧 규칙이다」라고 부르려면 언젠가 송수신부가 이 타입을 통과해야 한다.
 // (docs/design/20260729-mafia-content-design.md §1.2-④).
 // AI 계측 타입(`AiSource`/`SayAi`/`AiStats`)은 주제 무관이라 `engine/ai.ts`로 갈라 두고
 // 여기서는 **타입으로만** 참조한다 — 의존 방향은 content → engine 한 방향뿐이다.
@@ -103,6 +106,20 @@ export type ServerMessages = {
    * `ms` 안에 `accuse` 또는 `endTurn`을 보내지 않으면 서버가 자동으로 턴을 넘긴다.
    */
   canAccuse: { ms: number; suggestion: Suggestion };
+  /**
+   * 정답 봉투 공개 — **판이 끝난 뒤에만**, 대상에게 개별 전송(`sendSolutionTo`가 유일한 관문).
+   * 진행 중에는 어떤 경로로도 나가지 않으므로 동기화 상태에는 넣지 않는다.
+   * `mine`은 그 사람이 한 오답 고발(있으면) — 결과 오버레이 6종이 이 값을 쓴다.
+   */
+  solution: {
+    reason: "accuse" | "survivor" | "draw";
+    suspect: Suspect;
+    weapon: Weapon;
+    room: RoomName;
+    /** 무승부 부제의 상한값 — 클라가 서버 상수를 베끼지 않게 실어 보낸다. */
+    suggestCap: number;
+    mine: { suspect: string; weapon: string; room: string } | null;
+  };
 };
 
 export type MessageType = keyof ClientMessages | keyof ServerMessages;
