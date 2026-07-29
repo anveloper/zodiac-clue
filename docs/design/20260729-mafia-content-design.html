@@ -208,6 +208,36 @@
 
   .two{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;margin:12px 0}
 
+  /* ══ §6 밸런스 — «실측 / 규칙 / 가정»을 한눈에 가르는 배지 ══ */
+  .t-fact{background:#12303a;color:#8fd6ec;border-color:#2c5566}  /* 실측 */
+  .t-rul {background:#1d2f22;color:#7ee29a;border-color:#31573d}  /* 규칙이 만든 값 */
+  .t-asm {background:#3a1f1a;color:#f0a096;border-color:#7a3f36}  /* 순수 가정 */
+  .t-mid {background:#38290f;color:#efc76c;border-color:#6e5522}  /* 가정 매개 */
+
+  /* 지배 변수 막대 */
+  .barc{white-space:nowrap;font-variant-numeric:tabular-nums;font-weight:700}
+  .bar{display:inline-block;height:9px;width:var(--w);border-radius:3px;margin-right:8px;vertical-align:middle;
+    min-width:3px;background:linear-gradient(90deg,#4d7a5c,#7ee29a)}
+  .bar.a{background:linear-gradient(90deg,#7a3f36,#f0a096)}
+  .bar.m{background:linear-gradient(90deg,#6e5522,#efc76c)}
+
+  /* 숫자표 — 수치 열은 등폭·우정렬 */
+  table.num td:not(:first-child),table.num th:not(:first-child){text-align:right;
+    font-variant-numeric:tabular-nums;white-space:nowrap}
+  table.num td b{color:var(--gold)}
+  td.hi,table.num td.hi,tr.hi>td{background:rgba(240,217,168,.10)}
+  tr.hi>td:first-child{box-shadow:inset 3px 0 0 var(--gold)}
+
+  /* leak 밴드 — 가정 하나가 만든 폭 */
+  .band{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:9px;margin:14px 0}
+  .band .b{background:#191510;border:1px solid var(--edge);border-radius:9px;padding:11px 13px;text-align:center}
+  .band .b .l{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);font-weight:800}
+  .band .b .v{font-size:23px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.25;margin-top:3px}
+  .band .b.lo{border-top:3px solid var(--red)}    .band .b.lo .v{color:#f0a096}
+  .band .b.mid{border-top:3px solid var(--gold)}  .band .b.mid .v{color:var(--gold)}
+  .band .b.hi2{border-top:3px solid var(--green)} .band .b.hi2 .v{color:#8fe9ac}
+  .band .b small{display:block;font-size:11px;color:var(--dim);font-weight:400;margin-top:2px}
+
   *{scrollbar-width:thin;scrollbar-color:#4a3d2b #16130f}
   ::-webkit-scrollbar{width:9px;height:9px}
   ::-webkit-scrollbar-track{background:#16130f}
@@ -258,6 +288,20 @@
   .t-pol{background:#fae2df!important;color:#8c1f16!important;border-color:#c98d86!important}
   .t-new{background:#dfeef6!important;color:#0f4256!important;border-color:#8ab4c6!important}
   .t-est{background:#eeeae2!important;color:#4a4238!important;border-color:#b3aa99!important}
+  .t-fact{background:#dfeef6!important;color:#0f4256!important;border-color:#8ab4c6!important}
+  .t-rul{background:#e2f2e6!important;color:#14562c!important;border-color:#83b795!important}
+  .t-asm{background:#fae2df!important;color:#8c1f16!important;border-color:#c98d86!important}
+  .t-mid{background:#faefd6!important;color:#6f4805!important;border-color:#c9a85c!important}
+  .bar{background:#1d6b3a!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+  .bar.a{background:#a1281e!important} .bar.m{background:#8a5b0a!important}
+  .band .b{background:#f7f4ec!important;border-color:var(--edge)!important}
+  .band .b .l{color:var(--dim)!important} .band .b small{color:var(--dim)!important}
+  .band .b.lo{border-top-color:#a1281e!important} .band .b.lo .v{color:#a1281e!important}
+  .band .b.mid{border-top-color:#8a5b0a!important} .band .b.mid .v{color:#5b430f!important}
+  .band .b.hi2{border-top-color:#1d6b3a!important} .band .b.hi2 .v{color:#1d6b3a!important}
+  td.hi,table.num td.hi,tr.hi>td{background:#f6f0e0!important}
+  tr.hi>td:first-child{box-shadow:inset 3px 0 0 #8a5b0a!important}
+  table.num td b{color:#5b430f!important}
   .v-break{background:#fae2df!important;color:#8c1f16!important;border-color:#c98d86!important}
   .v-part{background:#faefd6!important;color:#6f4805!important;border-color:#c9a85c!important}
   .v-hold{background:#e2f2e6!important;color:#14562c!important;border-color:#83b795!important}
@@ -364,16 +408,29 @@
     </div>
   </div>
 
+  <div class="lead" style="background:#131f27;border-color:#3a6070">
+    <b>2026-07-29 (3차) — 밸런스를 실제로 쟀다.</b><br />
+    초판은 「마피아 밸런스 수치는 <b>전부 추정</b>」이라고 정직하게 적어 두었다.
+    이번에 <b>구성당 20,000판</b>을 돌려 <b><a href="#spec">§4.0 1차 판 스펙</a></b>을 확정형으로 고정하고
+    <b><a href="#balance">§6 밸런스 실측</a></b>을 신설했다.
+    <b>초판 §4의 결정은 하나도 뒤집지 않았다</b> — 채운 것은 빈칸이다.
+    다만 <b class="no">§6의 숫자는 «실측된 진실»이 아니라 «가정 위의 숫자»</b>이며,
+    그 구분을 유지하는 것이 <a href="#b62">§6.2</a> · <a href="#b65">§6.5</a> · <a href="#b610">§6.10</a>의 일이다.
+  </div>
+
   <div class="toc">
     <a href="#verdict">§0 결론</a>
     <a href="#layers">§1.1 3층 분류</a>
     <a href="#pollution" class="hot">§1.2 오염 11건</a>
     <a href="#breaks">§2 무엇이 부러지는가</a>
     <a href="#fix">§3 최소 변경</a>
+    <a href="#spec">§4.0 1차 판 스펙</a>
     <a href="#mafia">§4 마피아 설계</a>
     <a href="#lie" class="hot2">§4.5 거짓말 × 진실값</a>
+    <a href="#split47">§4.7 진실값/표현</a>
     <a href="#view46">§4.6 뷰</a>
     <a href="#unknown">§5 확인·미확인</a>
+    <a href="#balance" class="hot2">§6 밸런스 실측</a>
   </div>
 
   <!-- ═══════════ §0 ═══════════ -->
@@ -1184,6 +1241,65 @@
   <!-- ═══════════ §4 ═══════════ -->
   <h2 id="mafia"><span class="n">§4</span>마피아 콘텐츠 설계</h2>
 
+  <h3 id="spec">4.0 1차 판 스펙 — <b class="ok">확정</b>
+    <span class="tag t-fact">시뮬 20,000판/구성</span></h3>
+  <div class="box info">
+    <p style="margin:0">초판은 §4를 「설계안」으로 적고 밸런스를 전부 추정으로 남겼다.
+      <b><a href="#balance">§6</a>에서 실측해 아래를 확정형으로 고정한다.</b>
+      초판 §4의 결정 중 <b class="ok">뒤집은 것은 없다</b> — 채운 것은
+      ① 인원표의 10인 확장 ② 밸런스 다이얼의 값 ③ 동점·교착 규칙 ④ <code>talk</code> 길이 공식
+      ⑤ 진실값/표현 분리표(<a href="#split47">§4.7</a>)다.</p>
+  </div>
+  <div class="scroll">
+  <table>
+    <thead><tr><th style="width:16%">항목</th><th style="width:52%">확정값</th><th>근거</th></tr></thead>
+    <tbody>
+      <tr><td><b>좌석</b></td>
+        <td><b>6 · 8 · 10</b><span class="note">(표준 8)</span> · 사람 1~N + <b>빈자리 AI NPC 충원</b>
+          <span class="note">(클루와 동일)</span></td><td class="dim"><a href="#b63">§6.3</a></td></tr>
+      <tr><td><b>역할 구성</b></td>
+        <td>6 → 밤2·의1·포1·집2 &nbsp;/&nbsp; 8 → 밤2·의1·포1·집4 &nbsp;/&nbsp;
+          <span class="tag t-new">확장</span> <b>10 → 밤3</b>·의1·포1·집5</td>
+        <td class="dim">6·8은 초판 그대로</td></tr>
+      <tr><td><b>밸런스 다이얼</b></td>
+        <td><b>NPC 밤손님의 «맞포교» 확률</b> — 6인 <b>0.50</b> · 8인 <b>0.90</b> · 10인 <b>0.55</b><br />
+          <span class="note">좌석·역할은 전부 정수라 승률이 계단으로 뛴다. <b>연속 다이얼은 이것 하나뿐이었다.</b></span></td>
+        <td class="dim"><a href="#b64">§6.4</a></td></tr>
+      <tr><td><b>페이즈</b></td>
+        <td><code>night 30</code> → <code>dawn 6</code> → <code>talk T</code> → <code>vote 30</code> → <code>dusk 6</code> (초) ·
+          <b>밤 선행</b></td>
+        <td class="dim">초판 유지 · 낮 선행과 차 <b>0.8pp</b></td></tr>
+      <tr><td><b><code>talk</code> 길이 T</b></td>
+        <td><code>clamp(20 + 8×사람수, 20, 60)</code>초 — 초판의 「사람 수로 가변」을 <b>식으로 확정</b></td>
+        <td class="dim">고정 60s 대비 판 길이 <b class="ok">-24%</b></td></tr>
+      <tr><td><b>투표</b></td>
+        <td>생존자 전원 동시 · <b>단순 다수결</b> · 개별 투표 비공개, <b>집계만</b> 공개</td>
+        <td class="dim">초판 유지</td></tr>
+      <tr><td><b>동점</b></td>
+        <td><b>처형 없음</b>(교착 유지). 라운드의 <b>11%</b>가 여기 걸리지만 승률 영향은
+          최대 1.6pp이고 <b>부호가 일관되지 않는다</b></td>
+        <td class="dim"><a href="#b64">§6.4</a> — 밸런스가 아니라 «느낌» 항목</td></tr>
+      <tr><td><b>과반 요구</b></td>
+        <td class="no"><b>채택하지 않는다.</b> 승률 +1.4pp에 미처형 라운드 11% → <b>23%</b>(판이 늘어진다)</td>
+        <td class="dim"><a href="#b64">§6.4</a></td></tr>
+      <tr><td><b>승리</b></td>
+        <td>밤손님 = 생존 밤손님 ≥ 생존 집안 · 집안 = 생존 밤손님 0</td>
+        <td class="dim">초판 유지</td></tr>
+      <tr><td><b>무승부</b></td>
+        <td><b>라운드 상한 30</b>. 20,000판 × 전 구성에서 <b class="ok">도달 0건</b> — 무한 지연 백스톱일 뿐</td>
+        <td class="dim"><a href="#b66">§6.6</a></td></tr>
+      <tr><td><b>판 길이</b></td>
+        <td>중앙값 <b>3.3 / 5.0 / 6.7분</b> · p95 <b>6.7 / 8.3 / 10.6분</b> <span class="note">(6·8·10인)</span></td>
+        <td class="dim"><a href="#b67">§6.7</a></td></tr>
+      <tr><td><b>봇 발화 예산</b></td>
+        <td>라운드당 <b>생존 봇 수 이하 1회</b>. 판당 중앙값 <b>8 / 16 / 26</b> · p95 <b>15 / 26 / 40</b></td>
+        <td class="dim"><a href="#b67">§6.7</a> — 초판의 「최대 80콜/판」은 <b class="no">과대</b>였다</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="note"><b>확정 못 한 것</b> — 7·9인의 다이얼 값(보간 추정 0.72 · 0.55 <span class="tag t-est">미측정</span>) ·
+    <code>leak</code> 값 자체(<a href="#b610">§6.10</a>).</p>
+
   <h3>4.1 세계관 — 십이지를 이어간다</h3>
   <div class="box good">
     <p style="margin:0 0 7px"><b>근거</b> — <code>cards.ts</code>의 12캐릭터 · CIEDE2000 검증 12색
@@ -1211,22 +1327,43 @@
     </div>
     <div>
       <div class="scroll">
-      <table>
-        <thead><tr><th>좌석</th><th>밤손님</th><th>의원</th><th>포교</th><th>집안사람</th></tr></thead>
+      <table class="num">
+        <thead><tr><th>좌석</th><th>밤손님</th><th>의원</th><th>포교</th><th>집안사람</th><th>다이얼</th>
+          <th>집안 승률<br /><span class="note" style="font-weight:400">leak .2 / .35 / .5</span></th></tr></thead>
         <tbody>
-          <tr><td><b>6</b></td><td>2</td><td>1</td><td>1</td><td>2</td></tr>
-          <tr><td><b>7</b></td><td>2</td><td>1</td><td>1</td><td>3</td></tr>
-          <tr><td><b>8</b></td><td>2</td><td>1</td><td>1</td><td>4</td></tr>
+          <tr><td><b>6</b></td><td>2</td><td>1</td><td>1</td><td>2</td><td class="hi"><b>0.50</b></td>
+            <td>38.2 / <b>49.6</b> / 60.2</td></tr>
+          <tr><td><b>7</b></td><td>2</td><td>1</td><td>1</td><td>3</td>
+            <td class="dim">~0.72 <span class="tag t-est">보간</span></td><td class="dim">미측정</td></tr>
+          <tr><td><b>8</b></td><td>2</td><td>1</td><td>1</td><td>4</td><td class="hi"><b>0.90</b></td>
+            <td>41.3 / <b>57.1</b> / 71.5</td></tr>
+          <tr><td><b>9</b></td><td>3</td><td>1</td><td>1</td><td>4</td>
+            <td class="dim">미측정</td><td class="dim">미측정</td></tr>
+          <tr><td><b>10</b></td><td>3</td><td>1</td><td>1</td><td>5</td><td class="hi"><b>0.55</b></td>
+            <td>34.9 / <b>50.2</b> / 65.0</td></tr>
         </tbody>
       </table>
       </div>
       <div class="box warn" style="margin:0">
         <p style="margin:0 0 6px"><b>승리 조건</b><br />
           밤손님 = 생존 밤손님 ≥ 생존 집안 · 집안 = 생존 밤손님 0</p>
-        <p class="note" style="margin:0"><span class="tag t-est">전부 추정</span>
-          밸런스 수치는 <b>시뮬레이션 미실시</b>다.</p>
+        <p style="margin:0"><span class="tag t-fact">실측 후 확정</span>
+          초판의 6·7·8 배분은 <b class="ok">그대로 둔다</b> — 뒤집을 근거가 나오지 않았다.</p>
       </div>
     </div>
+  </div>
+
+  <div class="box warn">
+    <h3 style="margin-top:0">그 표가 만드는 승률은 <b class="no">평평하지 않다</b></h3>
+    <p style="margin:0 0 8px">밤손님 2를 6·7·8에 그대로 쓰면 집안 승률이
+      <b>41.7 → 51.7 → 62.5%</b>로 <b class="no">21pp 벌어진다</b>
+      <span class="note">(leak 0.35 · 다이얼 미적용)</span>. 7인에서만 균형이다.
+      <b>정수 좌석·역할로는 이 계단을 없앨 수 없으므로</b> 다이얼(맞포교 확률)로 좌석별 보정한다.</p>
+    <p style="margin:0"><b class="part">해결하지 않고 기록하는 것</b> —
+      8인은 다이얼을 1.0까지 올려도 집안 <b>54.2%</b>라
+      <b>끝까지 집안 쪽으로 5~7pp 기운다.</b>
+      대안이던 「의원 제거」는 46.0%로 균형에 가깝지만
+      <b>「밤에 살릴 수 있다」는 긴장을 없애므로 기각</b>했다.</p>
   </div>
 
   <h3>4.2 페이즈 구조</h3>
@@ -1239,7 +1376,7 @@
     <tbody>
       <tr><td><b>night</b></td><td>30s</td><td>밤손님(합의 지목) · 의원(보호) · 포교(조사)</td><td><b>동시</b></td><td>팀 / 개인</td></tr>
       <tr><td><b>dawn</b></td><td>6s</td><td class="dim">없음(결과 연출)</td><td class="dim">—</td><td>공개</td></tr>
-      <tr><td><b>talk</b></td><td>60s <span class="note">(사람 수로 가변)</span></td><td>생존자 전원</td><td><b>동시</b></td><td>공개</td></tr>
+      <tr><td><b>talk</b></td><td><code>clamp(20+8×사람수,&nbsp;20,&nbsp;60)</code>s</td><td>생존자 전원</td><td><b>동시</b></td><td>공개</td></tr>
       <tr><td><b>vote</b></td><td>30s</td><td>생존자 전원</td><td><b>동시</b></td><td>개인 → <b>집계만</b> 공개</td></tr>
       <tr><td><b>dusk</b></td><td>6s</td><td class="dim">없음</td><td class="dim">—</td><td>공개</td></tr>
     </tbody>
@@ -1253,6 +1390,21 @@
     <li><b>재현성</b> — 모든 무작위는 <code>seededUnit(seed, seat, round, tag)</code>.
       판 재생이 클루와 동일하게 성립한다.</li>
   </ul>
+
+  <div class="box info">
+    <h4 style="margin-top:0">시간 예산 확정 <span class="tag t-fact">실측</span></h4>
+    <p style="margin:0 0 8px">초판의 「60s(사람 수로 가변)」를 <b>식으로 못박았다.</b>
+      고정 60s면 판 길이 중앙값 <b>4.4 / 6.6 / 8.8분</b> · p95 <b>8.8 / 11.0 / 13.8분</b>(6·8·10인)인데,
+      <b>NPC만 앉은 자리는 토론할 사람이 없으므로 60초를 기다릴 이유가 없다.</b>
+      가변식을 쓰면 <b class="ok">3.3 / 5.0 / 6.7분</b> · p95 <b class="ok">6.7 / 8.3 / 10.6분</b>으로 <b>-24%</b>.
+      이 저장소가 판 길이에 민감하다는 근거는 클루의 <b>봇 1턴 3.8초 압축</b>(<a href="#c11">§1.2-⑪</a>)이며,
+      <b>같은 압력을 페이즈형에 적용한 결과</b>다.</p>
+    <p style="margin:0" class="note">⚠️ <b>NPC 딜레이 규약(평균의 절반 · 상한 1600ms)은 이 스펙에 그대로 오지 않는다.</b>
+      그 규약은 「봇 1턴 = <code>npcDelay</code> + gap + <code>bubbleLifeMs</code> ≤ 4000ms」라는
+      <b>순차 턴 예산</b>에서 유도된 것이고, 여기서는 봇 전원이 <b>같은 페이즈 안에서 동시에</b> 움직인다.
+      페이즈형의 대응 규약은 「봇 발화가 <code>talk</code> 길이 T 안에 균등 분산 · 라운드당 좌석별 1회 이하」다.
+      <b>규약의 이식이 아니라 재유도</b>이며, 재유도의 근거는 <a href="#b67">§6.7</a>의 발화 수 실측이다.</p>
+  </div>
 
   <h3>4.3 비밀 전송 계약 — <b>전부 기존 원형이 있다</b></h3>
   <div class="scroll">
@@ -1414,10 +1566,18 @@
       <div class="t"><b>무료티어 예산.</b> 클루는 판당 <b>≈30발화</b>
         <span class="note">(<code>ai-tech-doc</code> §2.5의 <b>기준값</b> — 캐시 키 공간 15,552 대비 기대 충돌 0.03건을 계산할 때 쓴 수치다.
         <b>라이브 실측치는 §4의 「24발화/판」</b>이므로 30은 실측이 아니라 설계 기준값이다)</span>.
-        마피아는 봇 5명 × 라운드당 1~2발화 × 8라운드 ≈ <b>최대 80콜/판</b><span class="tag t-est">추정</span>.
-        캐시는 <code>claim</code> 조합이 키라 여전히 안 맞는다
-        <span class="note">(같은 이유로 클루 적중률도 0% — <b>설계 예측값</b>)</span>.
-        → <b>규칙으로 발화 예산 상한</b>을 걸어야 한다(라운드당 봇 발화 ≤ 생존 봇 수, 낮 1회).</div>
+        초판은 마피아를 「봇 5명 × 라운드당 1~2발화 × 8라운드 ≈ <b>최대 80콜/판</b>」<span class="tag t-est">추정</span>으로 적었다.
+        <div class="box info" style="margin:9px 0 0">
+          <p style="margin:0 0 6px"><span class="tag t-fact">시뮬로 갱신</span>
+            <b class="no">8라운드라는 전제가 틀렸다.</b> 실측 라운드 중앙값은 <b>2~4</b>(p95 4~7)라서,
+            「라운드당 봇 발화 ≤ 생존 봇 수」 상한을 걸면 판당 발화는
+            <b class="ok">중앙값 8 / 16 / 26 · p95 15 / 26 / 40</b>(6·8·10인)이다.
+            <b>80은 과대 추정</b>이며 10인 판의 p95도 그 절반이다. 상한 자체는 그대로 채택한다(<a href="#spec">§4.0</a>).</p>
+          <p style="margin:0" class="note">캐시는 <code>claim</code> 조합이 키라 여전히 안 맞는다
+            <span class="note">(같은 이유로 클루 적중률도 0% — <b>설계 예측값</b>)</span>.
+            <b class="part">무료티어 쿼터 여유는 여전히 미확인</b> — 줄어든 것은 «분자»뿐이고 «분모»는 재보지 않았다.</p>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1444,6 +1604,66 @@
   <p class="note">밤 = 조명 소등(뷰2·3의 <code>PointLight</code>는 <code>setOutcome</code> 구현에 <b>이미 있다</b>) ·
     제거 = <code>ELIM_ALPHA</code> + <b>2중 표기 계약</b>(view-consts.ts:29,38) 그대로.</p>
 
+  <!-- ═══════════ §4.7 ═══════════ -->
+  <h2 id="split47"><span class="n">§4.7</span>진실값(규칙 엔진 전용) vs 표현(LLM 전용)
+    <span style="font-size:13px;color:var(--dim);font-weight:400">— 항목 단위 분리</span></h2>
+
+  <p>이 저장소의 불변 규약(<code>CLAUDE.md</code>: 「진실값은 결정론적 규칙 엔진에서만, LLM은 표현 전용」)을
+    1차 판 스펙의 <b>모든 항목</b>에 대해 갈라 적는다.
+    <a href="#lie">§4.5</a>가 「거짓말은 진실값이 아니다 / <b>거짓말의 내용</b>이 진실값이다」로 원리를 세웠고,
+    아래는 그 원리의 <b>완전 목록</b>이다.</p>
+
+  <div class="scroll">
+  <table class="ledger">
+    <thead><tr><th style="width:52px">#</th><th style="width:44%">진실값 — <b>결정론 규칙 엔진이 확정</b></th><th>생성 좌표</th></tr></thead>
+    <tbody>
+      <tr class="eng"><td class="who">T1</td><td>좌석 → 역할 배정</td><td><span class="fld">seededUnit(seed,"role",seat) 셔플</span></td></tr>
+      <tr class="eng"><td class="who">T2</td><td><code>roundPhase</code> 전이 시각 · <code>turnEndsAt</code></td><td><span class="fld">서버 타이머(armTimer)</span></td></tr>
+      <tr class="eng"><td class="who">T3</td><td>밤 지목 대상(팀 합의 결과)</td><td><span class="fld">사람 선택 우선 · 만료 시 seededUnit(seed,"nightPick",round)</span></td></tr>
+      <tr class="eng"><td class="who">T4</td><td>의원 보호 대상 · <b>자기보호 소진 플래그</b></td><td><span class="fld">동상</span></td></tr>
+      <tr class="eng"><td class="who">T5</td><td>포교 조사 대상 <b>및 그 결과(진영값)</b></td><td><span class="fld">규칙 조회 — 결코 LLM에 묻지 않는다</span></td></tr>
+      <tr class="eng"><td class="who">T6</td><td>밤 결과 판정(지목 == 보호 → 생존)</td><td><span class="fld">순수 함수</span></td></tr>
+      <tr class="eng"><td class="who">T7</td><td>각 좌석의 투표 대상</td><td><span class="fld">사람 입력 / NPC는 rules/mafia-vote.ts</span></td></tr>
+      <tr class="eng"><td class="who">T8</td><td>집계 · <b>동점 판정</b> · 처형 좌석</td><td><span class="fld">순수 함수</span></td></tr>
+      <tr class="eng"><td class="who">T9</td><td>생존 상태 · <b>승패 판정 · 종료 사유</b></td><td><span class="fld">§3-⑦의 endGame()</span></td></tr>
+      <tr class="eng"><td class="who">T10</td><td>발언 예산 소진(라운드당 좌석별 1회 이하)</td><td><span class="fld">카운터</span></td></tr>
+      <tr class="eng"><td class="who">T11</td><td><b>발화의 <code>claim</code> 내용</b>(<code>kind</code>/<code>subject</code>/<code>value</code>)</td>
+        <td><span class="fld">후보 집합에서 seededUnit 선택 — §4.5</span></td></tr>
+      <tr class="eng"><td class="who">T12</td><td><b><code>deceptive</code> 플래그</b></td><td><span class="fld">페르소나 상수 + 시드</span></td></tr>
+      <tr class="eng"><td class="who">T13</td><td><b>맞포교 발동 여부</b> — 1차 판의 <b>밸런스 다이얼</b>(<a href="#spec">§4.0</a>)</td>
+        <td><span class="fld">좌석수별 상수 + seededUnit(seed,"counter",round)</span></td></tr>
+      <tr class="eng"><td class="who">T14</td><td>비밀 전송의 <b>대상 좌석 집합</b></td>
+        <td><span class="fld">팀 명단 조회 — M3가 문자열이 아니라 «전송 대조»로 검사</span></td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="scroll">
+  <table class="ledger">
+    <thead><tr><th style="width:52px">#</th><th style="width:44%">표현 — <b>LLM이 연기</b></th><th>제약</th></tr></thead>
+    <tbody>
+      <tr class="llm"><td class="who">E1</td><td>확정된 <code>claim</code>의 문장화(말투 · 페르소나 · 직업 용어)</td>
+        <td>M1: 등장 라벨이 <code>claim</code> 값 집합의 <b>부분집합</b></td></tr>
+      <tr class="llm"><td class="who">E2</td><td><code>deceptive=true</code>일 때의 「확신에 찬 태도」</td>
+        <td><b>내용 불변</b> — 태도 지시일 뿐</td></tr>
+      <tr class="llm"><td class="who">E3</td><td>밤 채널 속삭임 문안</td><td>대상 집합은 <b>T14</b>가 확정</td></tr>
+      <tr class="llm"><td class="who">E4</td><td><code>dawn</code>/<code>dusk</code> 연출 내레이션</td>
+        <td>사망 · 처형 <b>사실</b>은 T6 · T8이 확정</td></tr>
+      <tr class="llm"><td class="who">E5</td><td>페르소나 인트로/아웃트로</td><td><code>cards.ts</code> VOICE 그대로</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="box hero">
+    <h3 style="margin-top:0">이번 시뮬의 부산물 — <b>경계 준수는 «밸런스의 전제»이기도 하다</b></h3>
+    <p style="margin:0">T11~T13이 규칙 엔진에 있으므로 §4.5의 M1~M4가 전부 판정 가능하다.
+      그런데 여기에 하나가 더 붙는다 —
+      <b>T13(맞포교 발동)을 LLM에 넘기면</b>(=「NPC가 알아서 맞포교할지 정한다」)
+      <b class="no">1차 판의 유일한 밸런스 다이얼이 진실값 밖으로 새어나가 §6의 숫자가 전부 무효가 된다.</b>
+      「LLM은 표현 전용」이 <b>검증뿐 아니라 튜닝 가능성</b>까지 지탱하고 있었다는 것은
+      설계할 때 예상하지 못한 것이다.</p>
+  </div>
+
   <!-- ═══════════ §5 ═══════════ -->
   <h2 id="unknown"><span class="n">§5</span>확인 / 미확인 구분</h2>
   <p>이 문서에서 <b>어디까지가 코드를 읽은 것이고 어디부터가 판단인지</b>를 분리한다.
@@ -1469,10 +1689,28 @@
         <td><span class="tag t-est">철회</span> 세지 않은 수치였다 → 수를 빼고 적었다</td></tr>
       <tr><td>Colyseus 스키마 상속의 <b>와이어 호환성</b></td>
         <td><span class="tag t-pol">미확인</span> 실험 필요(§3-⑨)</td></tr>
-      <tr><td>마피아 밸런스 수치(역할 배분 · 페이즈 길이)</td>
-        <td><span class="tag t-est">전부 추정</span> 시뮬레이션 미실시</td></tr>
-      <tr><td>판당 LLM 콜 80건이 무료티어에 들어오는지</td>
-        <td><span class="tag t-pol">미확인</span> 현 쿼터 여유 실측치 없음</td></tr>
+      <tr><td>마피아 밸런스 수치(역할 배분 · 페이즈 길이 · 판 길이)</td>
+        <td><span class="tag t-fact">시뮬 실측</span> 20,000판/구성 · seed 20260729 · 해상도 ±1pp
+          <span class="note">(<a href="#balance">§6</a>) — <b class="part">단 «가정 위의 숫자»</b>이지 실측된 진실이 아니다</span></td></tr>
+      <tr><td>그 시뮬의 <b>NPC 행동 모델</b></td>
+        <td><span class="tag t-asm">가정</span> 특히 <code>leak</code>(「거짓말은 새어나온다」의 세기)은
+          <b>어떤 코드로도 재지 않았다</b> — <a href="#b62">§6.2</a></td></tr>
+      <tr><td>「집안 승률 49.6 / 57.1 / 50.2%」가 <b>사람 플레이에서도 그렇다</b>는 것</td>
+        <td><span class="tag t-pol">미확인</span> 사람 플레이 데이터 <b>0건</b>.
+          <a href="#b65">§6.5</a>가 보이듯 가정 하나로 <b>28 → 92%</b>가 움직인다</td></tr>
+      <tr><td>사람이 밤손님일 때의 <b>맞포교 선택</b></td>
+        <td><span class="tag t-pol">모델 밖</span> 규칙이 아니라 <b>사람의 선택</b>이라
+          다이얼(T13)의 장악력이 사람 밤손님 비중만큼 떨어진다 — <b>얼마나인지는 미측정</b></td></tr>
+      <tr><td>「개별 투표 공개가 집안에 +30pp」</td>
+        <td><span class="tag t-mid">가정 매개</span> 담합 흔적(<code>blocTell</code>)을 <b>상수로 넣어</b> 잰 값이라
+          <b class="no">규칙이 만든 값이 아니다</b></td></tr>
+      <tr><td>역할 사망공개(reveal-on-death)</td>
+        <td><span class="tag t-est">부분 모델링</span> 포교 주장의 «검증» 경로만 넣었고(+0.9pp) 나머지 효과는 모델에 없다</td></tr>
+      <tr><td>7 · 9인 좌석의 다이얼 값</td>
+        <td><span class="tag t-est">미측정</span> 보간 추정치만 적었다</td></tr>
+      <tr><td>판당 LLM 콜 수</td>
+        <td><span class="tag t-fact">시뮬 실측</span> p95 15 / 26 / 40 — 초판 추정 80은 <b>과대</b>.
+          <span class="no"><b>그러나 무료티어 쿼터 여유는 여전히 미확인</b></span>(분모를 재지 않았다)</td></tr>
       <tr><td>「<code>main.ts</code>는 분해보다 새로 짜기가 싸다」</td>
         <td><span class="tag t-est">판단</span> 모듈 27블록은 실측 · 「새로 짜기가 싸다」는 판단</td></tr>
     </tbody>
@@ -1527,12 +1765,412 @@
       <span class="note">근거가 부족하면 결론을 바꾸는 대신 «미확인»으로 둔다.</span></p>
   </div>
 
+  <!-- ═══════════ §6 밸런스 실측 ═══════════ -->
+  <h2 id="balance"><span class="n">§6</span>밸런스 실측
+    <span style="font-size:13px;color:var(--dim);font-weight:400">— 시뮬레이션 2026-07-29</span></h2>
+
+  <div class="box crit">
+    <h3 style="margin-top:0">⚠ 이 절의 모든 숫자는 <b>«가정 위의 숫자»</b>다</h3>
+    <p style="margin:0">클루의 <code>sim-balance.mjs</code>는 <b>서버 규칙부의 미러</b>라
+      「규칙이 무엇을 만드는가」를 잰다. 마피아 시뮬은 <b>규칙 + NPC 행동 모델</b>을 함께 돌린다 —
+      마피아에는 <b>「봇이 무엇을 믿는가」 없이는 판이 진행되지 않기</b> 때문이다.
+      그래서 이 절은 <b>숫자 하나마다 「가정이 만들었나 · 규칙이 만들었나」를 배지로 표시</b>한다.
+      <b class="no">표시가 없는 숫자는 쓰지 말 것.</b></p>
+  </div>
+
+  <div class="stats">
+    <div class="stat s-info">
+      <div class="big">20,000</div>
+      <b>판 / 구성</b>
+      <span>seed 20260729 · 시드 간 편차 ±0.5pp</span>
+      <span class="dim">1pp 미만은 읽지 않는다 → §6.9</span>
+    </div>
+    <div class="stat s-bad">
+      <div class="big">64<span style="font-size:17px">pp</span></div>
+      <b>가정 하나가 만든 폭</b>
+      <span><code>leak</code> 0 → 0.8에서 집안 승률<br />27.9% → 92.0%</span>
+      <span class="dim">→ <a href="#b65">§6.5</a></span>
+    </div>
+    <div class="stat s-ok">
+      <div class="big">49.6<span style="font-size:15px">/</span>57.1<span style="font-size:15px">/</span>50.2</div>
+      <b>확정안 집안 승률 %</b>
+      <span>6인 / 8인 / 10인 · leak 0.35</span>
+      <span class="dim">→ <a href="#b66">§6.6</a></span>
+    </div>
+    <div class="stat s-warn">
+      <div class="big">1</div>
+      <b>연속 다이얼</b>
+      <span>좌석·역할·페이즈는 전부 정수라 계단으로 뛴다.<br />연속값은 <b>맞포교 확률</b>뿐이었다</span>
+      <span class="dim">→ <a href="#b64">§6.4</a></span>
+    </div>
+  </div>
+
+  <h3 id="b61">6.1 무엇을 모델링했고 무엇을 안 했나</h3>
+  <div class="split">
+    <div class="sd hld">
+      <h5>모델 안</h5>
+      <ul class="tight">
+        <li>역할 배정 · 밤(지목 / 보호 / 조사) 해결</li>
+        <li>낮 <b>구조화 발언</b> — 포교 공개 지목 · 밤손님 맞포교</li>
+        <li>동시 투표와 집계 · 동점 / 과반 규칙</li>
+        <li>승패 판정 · 페이즈 시간 예산 · 좌석별 발화 카운트</li>
+      </ul>
+    </div>
+    <div class="sd brk">
+      <h5>모델 밖 <span class="note" style="font-weight:400">(결과 해석에 필요)</span></h5>
+      <ul class="tight">
+        <li><b>자유 자연어 토론</b> — 1차 판 스코프에 없다(<a href="#lie">§4.5</a> 한계 2)</li>
+        <li><b>사람의 실제 추리</b> — 사람 좌석도 NPC와 같은 결정 모델을 쓰고 <code>skill</code> 값만 다르다</li>
+        <li>재접속 · 대리 NPC · AFK 백스톱 — 전 좌석이 매 페이즈 행동한다고 본다</li>
+        <li><b>LLM 문장 품질</b> — 발화 «수»만 세고 «설득력»은 세지 않는다.
+          <b>이것이 <code>leak</code>이 가정으로 남는 이유다</b></li>
+      </ul>
+    </div>
+  </div>
+
+  <h3 id="b62">6.2 NPC 행동 모델 — <b>가정 전량 공개</b></h3>
+  <p>라운드마다 <b>공용 의심도</b> <code>sus[i]</code>를 만들고,
+    투표자는 거기에 자기 <b>사적 잡음</b>을 얹어 argmax를 찍는다.</p>
+  <pre><code>sus[i] = sharedNoise·U(seed,"sus",round,i)        // 라운드 여론 잡음
+       + (i가 밤손님이면 leak·(1-skill[i]))        // ★ 핵심 가정
+       + claimB[i]                                 // 공개 지목 누적(라운드마다 ×0.7 감쇠)
+
+투표자 j의 지각 = sus[i] + privNoise·(1-skill[j])·U(seed,"pv",round,j,i)</code></pre>
+
+  <div class="scroll">
+  <table>
+    <thead><tr><th style="width:16%">노브</th><th style="width:11%">기본값</th><th>뜻</th><th style="width:24%">성격</th></tr></thead>
+    <tbody>
+      <tr><td><code>leak</code></td><td><b>0.35</b></td>
+        <td>「거짓말은 새어나온다」의 세기. 밤손님이 <b>상시로</b> 얻는 의심도 가산</td>
+        <td><span class="tag t-asm">순수 가정</span> <b class="no">이 값을 재는 코드는 없다</b></td></tr>
+      <tr><td><code>skill</code></td><td>0.35</td>
+        <td>신호 충실도. 투표자에겐 사적 잡음 ↓, 밤손님에겐 <code>leak</code> ↓</td>
+        <td><span class="tag t-asm">가정</span> 사람 / NPC 별도 지정</td></tr>
+      <tr><td><code>claimW</code></td><td>1.6</td><td>포교 공개 지목 1회의 무게</td>
+        <td><span class="tag t-asm">가정</span></td></tr>
+      <tr><td><code>counterClaimP</code></td><td class="hi"><b>좌석별</b></td>
+        <td>밤손님이 <b>맞포교</b>로 진실 주장을 희석할 확률</td>
+        <td><span class="tag t-rul">규칙 상수</span> <b>T13 — 다이얼</b></td></tr>
+      <tr><td><code>mafiaCoord</code></td><td>1.0</td><td>밤손님 투표 담합률</td>
+        <td><span class="tag t-rul">규칙</span> 팀 합의 결정론화(§4.4)</td></tr>
+      <tr><td><code>blocTell</code></td><td><b>0</b></td>
+        <td>개별 투표가 공개될 때 담합이 남기는 흔적</td>
+        <td><span class="tag t-mid">가정 매개</span> <b>기본 0으로 끄고 잰다</b></td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p><b>NPC 정책</b><span class="note">(전부 결정론 · 시드 좌표)</span> —
+    밤손님은 <b>의심도 최소인 집안사람</b>(= 가장 신뢰받는 자)을 지목하고, 포교가 공개 선언하면 그를 우선 제거한다.
+    의원은 <b>공개 포교 &gt; 자기</b>(1회 · 확률 0.25) <b>&gt; 의심도 최소</b> 순으로 보호.
+    포교는 미조사자 중 <b>의심도 최대</b>를 조사하고, 밤손님을 찾으면 즉시 공개 지목한다.</p>
+
+  <div class="box warn">
+    <h4 style="margin-top:0">모델의 자기 진단 지표 — <b>「이 가정이 만든 세계가 어떤 세계인지」를 숫자로 보여준다</b></h4>
+    <p style="margin:0">「집안 표 중 밤손님에게 간 비율」(<code>voteAcc</code>)을 <b>무작위 기준선과 함께</b> 항상 출력했다.
+      기본 가정(<code>leak</code> 0.35 · 8인)에서 <b>0.619 vs 무작위 0.311 = 배율 1.99</b> —
+      「집안의 투표가 무작위의 <b>2배</b> 정확하다」는 세계다.
+      <b class="part">이 배율이 타당한지는 판단이지 실측이 아니다.</b></p>
+  </div>
+
+  <h3 id="b63">6.3 진영 승률 — 인원 × 밤손님 수</h3>
+  <p class="note">20,000판 · seed 20260729 · 사람 1 + NPC 충원 · <code>leak</code> 0.35 · <b>다이얼 미적용(0.70)</b></p>
+  <div class="scroll">
+  <table class="num">
+    <thead><tr><th>좌석</th><th>밤손님</th><th>비율</th><th>집안 승률</th><th>밤손님 승률</th>
+      <th>사람 좌석 승률</th><th>중앙 라운드</th></tr></thead>
+    <tbody>
+      <tr><td><b>6</b></td><td>1</td><td>16.7%</td><td class="ok"><b>85.6%</b></td><td>14.4%</td><td>73.8%</td><td>2</td></tr>
+      <tr><td><b>6</b></td><td class="hi"><b>2</b></td><td>33.3%</td><td class="no"><b>41.7%</b></td><td>58.3%</td><td>46.9%</td><td>2</td></tr>
+      <tr><td><b>7</b></td><td>2</td><td>28.6%</td><td><b>51.7%</b></td><td>48.3%</td><td>50.7%</td><td>3</td></tr>
+      <tr><td><b>8</b></td><td>1</td><td>12.5%</td><td class="ok"><b>91.6%</b></td><td>8.4%</td><td>81.2%</td><td>2</td></tr>
+      <tr><td><b>8</b></td><td class="hi"><b>2</b></td><td>25.0%</td><td class="ok"><b>62.5%</b></td><td>37.5%</td><td>56.4%</td><td>3</td></tr>
+      <tr><td><b>8</b></td><td>3</td><td>37.5%</td><td class="no"><b>25.4%</b></td><td>74.6%</td><td>43.4%</td><td>2</td></tr>
+      <tr><td><b>10</b></td><td>2</td><td>20.0%</td><td class="ok"><b>75.7%</b></td><td>24.3%</td><td>65.5%</td><td>4</td></tr>
+      <tr><td><b>10</b></td><td class="hi"><b>3</b></td><td>30.0%</td><td><b>42.8%</b></td><td>57.2%</td><td>47.1%</td><td>4</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="box good">
+    <h4 style="margin-top:0">규칙이 만든 결론 <span class="tag t-rul">규칙</span>
+      <span class="note" style="font-weight:400">— 가정에 덜 민감하다(§6.5에서 확인)</span></h4>
+    <div class="lim"><div class="k">1</div><div class="t">
+      <b>정수 인원표로는 50%를 맞출 수 없다.</b> 6인은 밤손님 1이면 85.6%, 2면 41.7%로
+      <b class="no">44pp를 건너뛴다.</b> 중간값이 없다.</div></div>
+    <div class="lim"><div class="k">2</div><div class="t">
+      <b>같은 비율이라도 밤손님 «수»가 많을수록 집안이 불리하다</b> —
+      비율 33.3%에서 <b>6/2는 41.7%인데 9/3은 33.9%</b>다. <b>비율만 보면 안 된다.</b></div></div>
+    <div class="lim"><div class="k">3</div><div class="t">
+      §4.1 초판의 「6·7·8 전부 밤손님 2」는 <b>41.7 / 51.7 / 62.5%의 계단</b>을 만든다.
+      <b>7인에서만 균형</b>이다.</div></div>
+  </div>
+
+  <h3 id="b64">6.4 밸런스를 지배한 변수 — <b>순위</b></h3>
+  <p class="note">8인 2밤손님 · <code>leak</code> 0.35 기준선(집안 62.5%)에서 <b>변수 하나씩</b> 흔든 폭</p>
+  <div class="scroll">
+  <table>
+    <thead><tr><th style="width:44px">#</th><th style="width:25%">변수</th><th style="width:20%">집안 승률 폭</th>
+      <th style="width:19%">진폭</th><th>성격</th></tr></thead>
+    <tbody>
+      <tr><td><b>1</b></td><td><b>밤손님 수</b> (1 / 2 / 3)</td><td>91.6 → 62.5 → 25.4%</td>
+        <td class="barc"><span class="bar" style="--w:100%"></span>66pp</td><td><span class="tag t-rul">규칙</span></td></tr>
+      <tr><td><b>2</b></td><td><b><code>leak</code></b> (0 → 0.8)</td><td>27.9 → 92.0%</td>
+        <td class="barc"><span class="bar a" style="--w:97%"></span>64pp</td><td><span class="tag t-asm">가정</span></td></tr>
+      <tr><td><b>3</b></td><td>개별 투표 공개(<code>blocTell</code> 0→0.3)</td><td>62.5 → 92.4%</td>
+        <td class="barc"><span class="bar m" style="--w:45%"></span>30pp</td><td><span class="tag t-mid">가정 매개</span></td></tr>
+      <tr><td><b>4</b></td><td>권능역 유무(포교+의원 / 없음)</td><td>62.5 → 36.6%</td>
+        <td class="barc"><span class="bar" style="--w:39%"></span>26pp</td><td><span class="tag t-rul">규칙</span></td></tr>
+      <tr class="hi"><td><b>5</b></td><td><b>맞포교 확률</b> (0 → 1.0)</td><td>78.8 → 54.2%</td>
+        <td class="barc"><span class="bar" style="--w:37%"></span>25pp</td>
+        <td><span class="tag t-rul">규칙</span> <b>다이얼로 채택</b></td></tr>
+      <tr><td><b>6</b></td><td>전역 <code>skill</code> (0 → 0.9)</td><td>67.7 → 47.7%</td>
+        <td class="barc"><span class="bar a" style="--w:30%"></span>20pp</td><td><span class="tag t-asm">가정</span></td></tr>
+      <tr><td><b>7</b></td><td>포교만 제거</td><td>62.5 → 44.6%</td>
+        <td class="barc"><span class="bar" style="--w:27%"></span>18pp</td><td><span class="tag t-rul">규칙</span></td></tr>
+      <tr><td><b>8</b></td><td>의원만 제거</td><td>62.5 → 46.0%</td>
+        <td class="barc"><span class="bar" style="--w:25%"></span>17pp</td><td><span class="tag t-rul">규칙</span></td></tr>
+      <tr><td><b>9</b></td><td>밤손님 담합 (1.0 → 0)</td><td>62.5 → 70.7%</td>
+        <td class="barc"><span class="bar" style="--w:12%"></span>8pp</td><td><span class="tag t-rul">규칙</span></td></tr>
+      <tr><td><b>10</b></td><td>과반 요구</td><td>62.5 → 63.9%</td>
+        <td class="barc"><span class="bar" style="--w:2%"></span>1.4pp</td>
+        <td><span class="tag t-rul">규칙</span> <b class="no">기각</b>(미처형 11→23%)</td></tr>
+      <tr><td><b>11</b></td><td>첫 라운드 낮 선행</td><td>62.5 → 63.3%</td>
+        <td class="barc"><span class="bar" style="--w:1%"></span>0.8pp</td><td><span class="tag t-rul">규칙</span></td></tr>
+      <tr><td><b>12</b></td><td>동점 → 시드 처형</td><td>62.5 → 62.6%</td>
+        <td class="barc"><span class="bar" style="--w:1%"></span>0.2pp</td>
+        <td><span class="tag t-rul">규칙</span> <span class="dim">해상도 이하</span></td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="two">
+    <div class="box warn">
+      <h4 style="margin-top:0">놀란 것 ① — <b>동점 규칙이 밸런스 손잡이가 아니다</b></h4>
+      <p style="margin:0 0 7px">라운드의 <b>11%</b>가 미처형으로 끝나는데도 8인 기준 <b>0.2pp</b>다.
+        직관과 반대라 <b>확정안 3종 × <code>leak</code> 3점 = 9구성</b>을 다시 쟀다:
+        <b>최대 |Δ| 1.6pp이고 부호가 구성마다 뒤집힌다</b>
+        <span class="note">(6인은 「처형 없음」이 집안에 +0.8~1.6pp, 8인 <code>leak</code> 0.2에서는 -1.6pp, 10인은 ±0.2pp)</span>.</p>
+      <p style="margin:0"><b class="part">방향이 일관되지 않으면 손잡이가 아니다.</b>
+        → 동점 처리는 밸런스가 아니라 «느낌»으로 정할 수 있는 항목이므로
+        <a href="#spec">§4.0</a>에서 <b>「처형 없음」</b>을 채택했다(규칙이 사람을 죽이지 않는다).</p>
+    </div>
+    <div class="box hero">
+      <h4 style="margin-top:0">놀란 것 ② — <b>연속 다이얼이 하나뿐이다</b></h4>
+      <p style="margin:0">좌석 수 · 역할 수 · 페이즈 초는 전부 <b>정수/이산</b>이라 승률이 <b>계단으로 뛴다</b>.
+        <b>맞포교 확률만 0~1의 연속값</b>이라 좌석별 미세 보정이 가능했다.
+        「밸런스를 인원표로 잡는다」는 통념이 이 게임에서는 <b>성립하지 않는다.</b></p>
+    </div>
+  </div>
+
+  <h4>다이얼 응답 곡선 <span class="note" style="font-weight:400">(집안 승률 · <code>leak</code> 0.35)</span></h4>
+  <div class="scroll">
+  <table class="num">
+    <thead><tr><th style="width:22%">맞포교 확률</th><th>0.3</th><th>0.4</th><th>0.5</th><th>0.6</th><th>0.7</th><th>0.85</th><th>1.0</th></tr></thead>
+    <tbody>
+      <tr><td><b>6인 · 밤2</b></td><td>56.5</td><td>53.0</td><td class="hi"><b>49.6</b></td><td>45.7</td><td>41.7</td><td>35.5</td><td>28.6</td></tr>
+      <tr><td><b>8인 · 밤2</b></td><td>72.1</td><td>69.9</td><td>67.6</td><td>65.0</td><td>62.5</td><td>58.5</td><td class="hi"><b>54.2</b></td></tr>
+      <tr><td><b>10인 · 밤3</b></td><td>61.4</td><td>57.1</td><td>52.7</td><td class="hi"><b>47.7</b></td><td>42.8</td><td>35.5</td><td>27.9</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="note">→ 6인 <b>0.50</b>, 10인 <b>0.55</b>로 50%에 붙는다.
+    <b class="no">8인은 1.0에서도 54.2%</b> — 다이얼이 닿지 않는다(<a href="#mafia">§4.1</a>에 기록).</p>
+
+  <h3 id="b65">6.5 가정이 결과를 만든 폭 — <code>leak</code> 밴드</h3>
+
+  <p>같은 규칙, 같은 좌석표, 같은 다이얼. <b>바꾼 것은 «거짓말이 얼마나 새어나오는가»라는 가정 하나뿐</b>이다
+    <span class="note">(8인 · 밤손님 2 · 다이얼 0.90)</span>.</p>
+  <div class="band">
+    <div class="b lo"><div class="l">leak 0</div><div class="v">27.9%</div><small>토론이 무의미한 세계</small></div>
+    <div class="b lo"><div class="l">leak 0.15</div><div class="v">42.3%</div><small>거의 안 새어나온다</small></div>
+    <div class="b mid"><div class="l">leak 0.35 <b>(기본)</b></div><div class="v">57.1%</div><small>투표 정확도 무작위의 2배</small></div>
+    <div class="b hi2"><div class="l">leak 0.55</div><div class="v">79.4%</div><small>말하면 티가 난다</small></div>
+    <div class="b hi2"><div class="l">leak 0.8</div><div class="v">92.0%</div><small>거짓말이 거의 안 통한다</small></div>
+  </div>
+
+  <p><b>§4.0의 확정안 3종을 <code>leak</code>만 흔들어 다시 쟀다.</b></p>
+  <div class="scroll">
+  <table class="num">
+    <thead><tr><th style="width:30%">확정안</th><th>leak 0</th><th>0.15</th><th>0.35</th><th>0.55</th><th>0.8</th></tr></thead>
+    <tbody>
+      <tr><td><b>6인 · 밤2 · 다이얼 0.50</b></td><td class="no">29.1</td><td>39.9</td><td class="hi"><b>49.6</b></td><td>68.0</td><td class="ok">80.6</td></tr>
+      <tr><td><b>8인 · 밤2 · 다이얼 0.90</b></td><td class="no">27.9</td><td>42.3</td><td class="hi"><b>57.1</b></td><td>79.4</td><td class="ok">92.0</td></tr>
+      <tr><td><b>10인 · 밤3 · 다이얼 0.55</b></td><td class="no">25.4</td><td>39.1</td><td class="hi"><b>50.2</b></td><td>76.4</td><td class="ok">89.9</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="split">
+    <div class="sd brk">
+      <h5>세로로 읽으면</h5>
+      <p style="margin:0">「튜닝했다」는 말이 무색하다 — <b>가정 하나가 50pp 이상을 움직인다.</b></p>
+    </div>
+    <div class="sd hld">
+      <h5>가로로 읽으면</h5>
+      <p style="margin:0">같은 <code>leak</code>에서 세 안이 <b>서로 5pp 안에 모여 있다</b> —
+        <b>튜닝은 «가정을 고정한 뒤에만» 의미가 있다.</b></p>
+    </div>
+  </div>
+
+  <div class="box crit">
+    <h3 style="margin-top:0"><code>leak</code> = 0 의 붕괴 — <b>이 시뮬의 가장 중요한 산출물</b></h3>
+    <div class="scroll">
+    <table class="num">
+      <thead><tr><th style="width:44%">구성 <span class="note" style="font-weight:400">(leak 0)</span></th>
+        <th>집안 승률</th><th>투표 정확도 (무작위)</th></tr></thead>
+      <tbody>
+        <tr><td>6인 밤2 · 포교 · 의원 <b>有</b></td><td class="no"><b>18.7%</b></td><td>0.508 (0.453)</td></tr>
+        <tr><td>8인 밤2 · 포교 · 의원 <b>有</b></td><td class="no"><b>27.9%</b></td><td>0.426 (0.347)</td></tr>
+        <tr><td>10인 밤3 · 포교 · 의원 <b>有</b></td><td class="no"><b>12.8%</b></td><td>0.441 (0.388)</td></tr>
+        <tr><td>8인 밤2 · <b>권능역 없음</b></td><td class="no"><b>10.2%</b></td><td>0.365 (0.385)</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p style="margin:10px 0 8px"><b>토론이 아무 정보도 만들지 못하면(<code>leak</code>=0)
+      어떤 좌석표 · 역할표 · 투표 규칙도 집안을 10~28%에서 못 건진다.</b>
+      포교 · 의원이 주는 «확정 정보»만으로는 부족하다.</p>
+    <p style="margin:0">이것이 <a href="#lie">§4.5</a> 한계 2
+      <span class="note">(「1차 판은 자유 채팅 대신 구조화 발언으로 시작해야 한다 — 재미의 상당 부분이 깎인다」)</span>에
+      <b>밸런스 가격표를 붙인 것</b>이다:
+      구조화 발언이 실제로 신호를 만들지 못하면 <b class="no">재미만 깎이는 게 아니라 게임이 성립하지 않는다.</b><br />
+      <b>1차 판의 최우선 검증 항목은 인원표가 아니라
+        「구조화 발언이 <code>leak</code> &gt; 0을 만드는가」다.</b></p>
+  </div>
+
+  <h3 id="b66">6.6 확정안 최종 측정</h3>
+  <p class="note">20,000판 · 사람 1 · 가변 <code>talk</code></p>
+  <div class="scroll">
+  <table class="num">
+    <thead><tr><th style="width:27%">확정안</th><th>집안 / 밤손님<br /><span class="note" style="font-weight:400">leak 0.35</span></th>
+      <th>사람 좌석 승률</th><th>중앙 / p95 라운드</th><th>무승부</th><th>미처형 라운드</th></tr></thead>
+    <tbody>
+      <tr><td><b>6인 · 밤2 · 다이얼 0.50</b></td><td><b>49.6 / 50.4%</b></td><td>49.8%</td><td>2 / 4</td><td class="ok">0%</td><td>11.4%</td></tr>
+      <tr><td><b>8인 · 밤2 · 다이얼 0.90</b></td><td><b>57.1 / 42.9%</b></td><td>53.5%</td><td>3 / 5</td><td class="ok">0%</td><td>11.5%</td></tr>
+      <tr><td><b>10인 · 밤3 · 다이얼 0.55</b></td><td><b>50.2 / 49.8%</b></td><td>49.9%</td><td>4 / 7</td><td class="ok">0%</td><td>10.9%</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="box info">
+    <h4 style="margin-top:0">클루와의 대비 — <b>같은 「사람 승률」이라는 말이 다른 양을 가리킨다</b></h4>
+    <p style="margin:0">클루는 사람 승률 <b>21.6%</b>
+      <span class="note">(문서 전반의 인용값 · 게이트 기준선 <code>gate.baseline.json</code>은 <b>21.45%</b>)</span> —
+      6인 중 1명이 사람 — 로
+      <b>진영이 없고 1/6이 기대값</b>인 게임이라 사람 승률이 곧 밸런스였다.
+      마피아는 <b>진영 게임</b>이라 사람 좌석 승률이 <b>진영 승률에 붙는다</b>(49.8 / 53.5 / 49.9%).
+      <b class="part">게이트를 만든다면 지표를 분리해야 한다.</b></p>
+  </div>
+
+  <h3 id="b67">6.7 판 길이 · LLM 발화 예산</h3>
+  <div class="scroll">
+  <table class="num">
+    <thead><tr><th style="width:16%">확정안</th><th>고정 60s talk</th><th>가변 talk <b>(채택)</b></th>
+      <th>단축안 90s/라운드</th><th>봇 발화 중앙 / p95</th></tr></thead>
+    <tbody>
+      <tr><td><b>6인</b></td><td class="dim">4.4 / 8.8분</td><td class="hi"><b>3.3 / 6.7분</b></td><td class="dim">3.0 / 6.0분</td><td>8 / 15</td></tr>
+      <tr><td><b>8인</b></td><td class="dim">6.6 / 11.0분</td><td class="hi"><b>5.0 / 8.3분</b></td><td class="dim">4.5 / 7.5분</td><td>16 / 26</td></tr>
+      <tr><td><b>10인</b></td><td class="dim">8.8 / 13.8분</td><td class="hi"><b>6.7 / 10.6분</b></td><td class="dim">6.0 / 9.4분</td><td>26 / 40</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="note">중앙 / p95, 분. 봇 발화는 「라운드당 생존 봇 1회」 상한 하 · 사람 1명 기준.</p>
+  <div class="box good">
+    <p style="margin:0">단축안(20/5/40/20/5)은 가변 <code>talk</code> 대비 이득이 <b>0.3~0.7분뿐</b>이라 채택하지 않았다 —
+      밤 30초를 20초로 줄이면 <b>팀 합의 시간이 사라지는데 얻는 게 없다.</b>
+      <b class="ok">판 길이를 지배하는 것은 페이즈 «초 수»가 아니라 «라운드 수»</b>이고,
+      라운드 수는 <a href="#b64">§6.4</a>의 <b>밤손님 수</b>가 지배한다.</p>
+  </div>
+
+  <h3 id="b68">6.8 AI NPC 비중의 영향 — <b class="ok">비중 자체는 영향이 없다</b></h3>
+  <p class="note">8인 2밤손님 · <code>leak</code> 0.35 · 사람 좌석 승률(<b>좌석 단위</b> 집계)</p>
+  <div class="scroll">
+  <table class="num">
+    <thead><tr><th style="width:26%">사람 수</th><th>1</th><th>2</th><th>3</th><th>4</th><th>6</th><th>8</th></tr></thead>
+    <tbody>
+      <tr><td class="dim">NPC 비중</td><td class="dim">88%</td><td class="dim">75%</td><td class="dim">63%</td>
+        <td class="dim">50%</td><td class="dim">25%</td><td class="dim">0%</td></tr>
+      <tr><td><b>실력 동일</b> (0.35/0.35)</td><td>56.4</td><td>56.5</td><td>56.2</td><td>56.3</td><td>56.3</td><td>56.2</td></tr>
+      <tr><td><b>사람 우위</b> (0.60/0.30)</td><td class="hi"><b>59.9</b></td><td>58.9</td><td>57.9</td><td>57.0</td><td>55.4</td><td class="hi"><b>53.9</b></td></tr>
+      <tr><td><b>사람 열위</b> (0.20/0.40)</td><td class="hi"><b>54.5</b></td><td>54.9</td><td>55.1</td><td>55.6</td><td>56.7</td><td class="hi"><b>57.6</b></td></tr>
+    </tbody>
+  </table>
+  </div>
+  <ul class="tight">
+    <li><b>실력이 같으면 NPC를 몇 명 채우든 승률이 안 움직인다</b>
+      <span class="note">(변동 ±0.3pp = 시뮬 노이즈)</span>. <b>클루와 다른 점</b>이다 —
+      클루는 사람이 1명이라 공통 단서 2장이 따로 필요했지만, 마피아는
+      <b>모든 좌석이 같은 규칙을 받으므로 좌석의 주인이 누구인지가 규칙에 들어가지 않는다.</b>
+      <span class="tag t-rul">규칙이 만든 결과</span></li>
+    <li>움직이는 것은 <b>실력 격차뿐</b>이다. 잘하는 사람이 NPC 사이에 «혼자» 있으면 <b>59.9%</b>,
+      전원이 잘하면 <b>53.9%</b>로 내려간다.</li>
+  </ul>
+  <div class="box crit">
+    <p style="margin:0 0 8px">⚠ <b>모델 대칭성 주의.</b> 이 모델에서 <code>skill</code>은
+      <b>투표자의 판독력과 밤손님의 은폐력을 동시에</b> 올린다.
+      그래서 「전원이 잘하면 밤손님이 이득」(전역 skill 0→0.9에서 집안 67.7 → 47.7%)이라는 결과가 나온다.
+      현실의 마피아에서도 흔히 하는 주장이지만,
+      <b class="no">여기서는 모델이 그렇게 만들어졌기 때문에 나온 값이다. 근거로 쓰지 말 것.</b></p>
+    <p style="margin:0">⚠ 사람이 밤손님일 때의 <b>맞포교 선택은 모델 밖</b>이다(사람의 선택이지 규칙이 아니다).
+      사람 밤손님 비중이 커질수록 <a href="#spec">§4.0</a> 다이얼의 장악력이 떨어진다 —
+      <b class="part">얼마나 떨어지는지는 미측정.</b></p>
+  </div>
+
+  <h3 id="b69">6.9 재현 방법 · 통계적 해상도</h3>
+  <div class="box info">
+    <p style="margin:0 0 8px">시뮬레이터는 <b>저장소에 넣지 않았다</b>
+      <span class="note">(이번 라운드 조건: 클루 쪽 코드 · 게이트 무접촉)</span>.
+      재작성에 필요한 것은 <a href="#b62">§6.2</a>의 의사코드와 아래 설정 전부다.</p>
+    <ul class="tight" style="margin:0">
+      <li>시드 해시 — <code>apps/server/src/rules/rng.ts</code>의 <code>seededUnit</code>(46-49) 형태 그대로
+        (fnv1a → unit32). <b><code>Math.random</code> · <code>Date.now</code> 0회.</b></li>
+      <li>판 시드 = <code>20260729 × 1000003 + 판번호</code>. 구성당 <b>20,000판</b>.</li>
+      <li><b>해상도 실측</b> — 같은 구성(8/2 · leak 0.35)을 시드 4개로 돌려
+        <b>62.5 / 63.3 / 62.9 / 63.3%</b> = <b>시드 간 편차 ±0.5pp</b>.
+        판수 1,000 → 60,000에서 64.0 → 62.9%.</li>
+      <li>라운드 상한 30 · 전 구성 20,000판에서 <b class="ok">도달 0건</b>(무승부 0%).</li>
+    </ul>
+  </div>
+  <p><b class="no">1pp 미만의 차이는 읽지 말 것.</b>
+    §6.4의 10~12위(과반 요구 1.4pp · 첫 페이즈 0.8pp · 동점 0.2pp)는 전부 이 해상도 근처이거나 아래다 —
+    「효과가 없다」가 아니라 <b>「이 시뮬로는 효과를 분리할 수 없다」</b>가 정확한 표현이다.</p>
+
+  <h3 id="b610">6.10 이 절이 «실측된 진실»이 아닌 이유 — <b>세 줄</b></h3>
+  <div class="box crit">
+    <div class="lim"><div class="k">1</div><div class="t">
+      <b><code>leak</code>은 어떤 코드로도 재지 않았다.</b> 구조화 발언이 실제로 얼마나 정보를 흘리는지는
+      <b>사람이 플레이해야 나온다.</b> <a href="#b65">§6.5</a>의 밴드는 <b>그 무지의 크기</b>다.</div></div>
+    <div class="lim"><div class="k">2</div><div class="t">
+      <b>사람 좌석도 NPC와 같은 결정 모델을 쓴다.</b> 「사람은 다르게 논다」는 것을 모델이 표현하지 못한다 —
+      <code>skill</code> 스칼라 하나로 압축돼 있다.</div></div>
+    <div class="lim"><div class="k">3</div><div class="t">
+      <b>자유 토론이 모델에 없다.</b> 1차 판 스코프와 일치하지만(<a href="#lie">§4.5</a> 한계 2),
+      <b>마피아의 본체가 빠진 채 잰 숫자</b>라는 뜻이기도 하다.</div></div>
+  </div>
+  <div class="lead">
+    <b>따라서 §6의 쓰임은 「밸런스가 이렇다」가 아니라 「밸런스가 <i>무엇에 달려 있는지</i> 알아냈다」다.</b><br />
+    알아낸 것은 세 가지 —
+    ① <b>정수 인원표로는 균형이 안 잡히고 연속 다이얼이 필요하다</b>
+    ② <b>그 다이얼은 맞포교 확률뿐이다</b>
+    ③ <b>토론이 신호를 만들지 못하면 다이얼이 아무 소용 없다.</b>
+  </div>
+
   <hr />
   <p class="note" style="margin:0">
     <b>이 문서의 성격</b> — 「분리가 안 돼 있다」는 <b>비난이 아니라 좌표</b>다.
     <code>hold/02</code>가 보류된 것은 판단 착오가 아니라 <b>제출 우선순위의 결과</b>이며,
     이 문서는 그 보류를 재개할 때 <b>어디부터 손대야 하는지</b>를 비용 순으로 적어 둔 것이다.
-    §3의 <span class="lvl l0">L0</span> 3건은 <b>클루가 도는 채로</b> 오늘 넣을 수 있다.
+    §3의 <span class="lvl l0">L0</span> 3건은 <b>클루가 도는 채로</b> 오늘 넣을 수 있다.<br /><br />
+    <b>변경 이력</b> —
+    <b>2026-07-29 (3차 · 밸런스 실측)</b>: 스크래치패드 시뮬레이터로 구성당 20,000판(seed 20260729)을 돌려
+    <a href="#balance">§6</a> 신설. <a href="#spec">§4.0</a>에 1차 판 스펙을 확정형으로,
+    <a href="#split47">§4.7</a>에 진실값/표현 항목 분리표(T1-T14 / E1-E5)를 신설.
+    §4.1 좌석표에 10인 확장 + 좌석별 밸런스 다이얼, §4.2 <code>talk</code> 길이를 식으로 확정,
+    §4.5 한계 3의 「최대 80콜/판」을 실측으로 갱신, §5의 「밸런스 전부 추정」 행을 실측 + <b>새 미확인 6건</b>으로 교체.
+    <b>초판 §4의 결정은 하나도 뒤집지 않았다.</b>
+    시뮬레이터는 저장소에 넣지 않았다(클루 게이트 무접촉 — 재현 정보는 <a href="#b69">§6.9</a>). ·
+    <b>2026-07-29 (2차)</b>: 사람용 <code>.html</code> 동봉 · 인용 <code>파일:줄</code> 전량 재검증(30여 건 갱신 · §5.1) ·
+    내부 모순 3건 정정. <b>결론 · 판정은 바꾸지 않았다.</b> ·
+    <b>2026-07-29 (초판)</b>: 경계 실측 + 마피아 콘텐츠 설계.
   </p>
 
 </div>
