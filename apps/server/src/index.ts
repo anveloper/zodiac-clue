@@ -48,7 +48,18 @@ const gameServer = new Server({
   transport: new WebSocketTransport({ server: httpServer }),
 });
 
-gameServer.define("clue", ClueRoom);
+/**
+ * 룸 타입 레지스트리 — **주제(콘텐츠) 하나당 한 줄.**
+ * 클라 `network.ts`의 `RoomType`과 같은 문자열 집합이어야 한다(두 곳이 갈라지면 방이 안 열린다).
+ *
+ * ⚠️ 지금 등록된 주제는 클루 하나뿐이다. 표를 만든 것은 `define` 호출을 한 곳으로 모아
+ * 두 번째 주제를 여기 한 줄로 붙이게 하려는 것일 뿐, **없는 주제를 있는 것처럼 세지 않는다.**
+ */
+const ROOM_TYPES = { clue: ClueRoom } as const;
+
+for (const [type, room] of Object.entries(ROOM_TYPES)) {
+  gameServer.define(type, room);
+}
 
 gameServer
   .listen(port)
