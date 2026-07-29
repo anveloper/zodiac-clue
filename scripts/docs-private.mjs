@@ -18,6 +18,7 @@ export const PRIVATE_FILES = [
   "submission/20260728-team-roles", // ⑤ 초안(미확정·[확인 필요] 포함)
   "submission/20260728-video-storyboard", // 미구현 기능 표시가 드러남
   "design/20260727-improvement-roadmap", // 자기 결함 목록
+  "design/20260729-mafia-content-design", // 오염 지점 11건 = 자기 결함 목록. 표제도 «분리는 성립하지 않는다»다
   "design/20260727-execution-plan", // 남은 일정·컷라인
   "plans/done/13-execution-plan-merge", // 위 두 문서를 경로로 지목하는 작업 기록
   "design/20260728-agent-loop-workflow", // 내부 작업 절차(런북) — 산출물이 아니다
