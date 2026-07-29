@@ -1086,8 +1086,16 @@
     <tr><th>방 상태 (<code>metadata.phase</code>)</th><th>배지</th><th>버튼</th><th>부가</th></tr>
     <tr><td><code>lobby</code> — 아직 시작 전</td><td class="q good">대기 중</td><td class="q good">참가</td><td class="q">${인원}/${정원}인 <span class="note">현행 유지</span></td></tr>
     <tr><td><code>ended</code> — 판이 끝나 목록 복귀</td><td class="q good">종료됨</td><td class="q good">관전</td><td class="q good">다시 하기를 기다리는 중</td></tr>
-    <tr><td>정원 초과</td><td>—</td><td class="q">만석 <span class="note">비활성</span></td><td>—</td></tr>
+    <tr><td class="dim"><s>정원 초과</s></td><td>—</td><td class="dim"><s>만석</s> <span class="tag t-bug">도달 불가</span></td><td>—</td></tr>
   </table></div>
+  <div class="box warn">
+    <b><code>만석</code>은 목록에 원리적으로 나타나지 않는다</b>(07-29 실측 · 화면 게이트 S7).
+    Colyseus <code>getAvailableRooms()</code>는 <code>{locked:false, private:false}</code>인 방만 돌려주는데,
+    좌석이 차는 순간 <code>_incrementClientCount()</code>가 방을 <b>잠근다</b>. 즉 정원이 찬 방은
+    <b>목록에서 사라진다</b> — 목록 안에서 «만석»으로 보이는 상태가 존재하지 않는다.
+    클라의 <code>full</code> 분기는 <b>도달 불가 코드</b>다. 목록이 비어 있는 것이 곧 이 사실의 실측이라,
+    게이트는 이 행을 <b>FAIL이 아니라 SKIP</b>으로 사유와 함께 인쇄한다.
+  </div>
   <p class="note"><b>«진행 중»은 목록에 원리적으로 나타나지 않는다</b> — 판이 도는 동안 방은 목록에서 빠진다. 그래서 상태는 2종이다.</p>
   <div class="pv">
     <div class="pv-h">미리보기 · 랜딩 <b>공개방 목록</b> — 배지는 «지금», 버튼은 «다음»을 말한다</div>
@@ -1251,6 +1259,11 @@
 
   <footer>
     <b>변경 이력</b><br>
+    <b>2026-07-29 (4) — §8.5 3행 «만석»을 도달 불가로 정정.</b> 화면 게이트에 S7(공개방 목록 배지)을
+    넣으면서 실측으로 드러났다 — Colyseus가 정원이 찬 방을 잠그고 <code>getAvailableRooms()</code>가
+    잠긴 방을 거르므로 <b>목록 안에 «만석»인 방이 존재할 수 없다</b>. 문안을 확정해 코드에 붙여둔 채
+    «있다»고 믿고 있었다. <b>게이트를 만들지 않았으면 계속 몰랐을 종류의 오류다.</b>
+    <code>대기 중</code>·<code>종료됨</code> 2행은 이제 기계가 매 커밋 잰다.<br><br>
     <b>2026-07-29 (3) — §8.5 선행 해제 → 적용 완료.</b> 서버 <code>syncMeta()</code>가 <code>phase</code>를
     싣게 되면서 선행 조건이 풀렸고, 클라 <code>PublicRoomMeta</code>가 서버 필드와 1:1로 맞춰져 확정 문안 3행이
     그대로 붙었다. <b><code>phase</code>가 없으면 배지를 그리지 않는다</b>는 규칙을 코드와 문안 양쪽에 명시 —
