@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>제출물 ③ 게임 소개 — zodiac-clue</title>
+<title>제출물 ③ 게임 소개: zodiac-clue</title>
 <style>
   :root { --bg:#16130f; --card:#211c16; --edge:#3a3126; --ink:#f0e9dc; --dim:#a89778; --gold:#f0d9a8; --accent:#b4622b; }
   * { box-sizing: border-box; }
@@ -109,9 +109,9 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>🐯 zodiac-clue — 호랑이 생신 잔치</h1>
+  <h1>🐯 zodiac-clue: 호랑이 생신 잔치</h1>
   <p class="one">십이지 손님 중 <b>잔치 음식과 선물을 훔친 도둑</b>을 추리하는 <b>웹 멀티플레이 추리 게임</b>입니다. 빈자리는 <b>AI NPC</b>가 채워 함께 플레이합니다.</p>
-  <p class="sub">NHN NAN 2026 사전과제 · 제출물 ③ 게임 소개 · 갱신 2026-07-29 · <span class="pill">사람용 .html</span></p>
+  <p class="sub">NHN NAN 2026 사전과제 · 제출물 ③ 게임 소개 · 갱신 2026-07-30 ·<span class="pill">사람용 .html</span></p>
 
   <p>
     <a class="cta" href="https://zodiac-clue.vercel.app">🎮 지금 플레이</a>
@@ -124,7 +124,7 @@
     <div class="qh">⏱ 심사자 60초 요약</div>
     <div class="qrow"><div class="qk">한 판 하려면</div>
       <div><span class="steps"><span class="step"><a href="https://zodiac-clue.vercel.app">zodiac-clue.vercel.app</a></span><span class="arw">▸</span><span class="step">[방 만들기]</span><span class="arw">▸</span><span class="step">캐릭터 선택</span><span class="arw">▸</span><span class="step">[잔치 시작]</span></span>
-        <br><span class="qk">계정과 설치 없이 3번의 클릭으로 시작합니다 — <code>?solo=1</code>을 붙이면 한 번에 솔로 플레이로 진입합니다</span></div></div>
+        <br><span class="qk">계정과 설치 없이 3번의 클릭으로 시작합니다. <code>?solo=1</code>을 붙이면 한 번에 솔로 플레이로 진입합니다</span></div></div>
     <div class="qrow"><div class="qk">혼자서도 가능한가</div>
       <div><b>가능합니다.</b> 6인 미만이면 AI NPC가 남은 좌석을 자동으로 채워, <b>1인 접속만으로도 정식 규칙의 판이 성립</b>합니다.</div></div>
     <div class="qrow hi"><div class="qk">AI 경계</div>
@@ -145,11 +145,11 @@
     <div class="wi ai"><b class="t">판정과 표현을 분리했습니다</b>
       <p>정답·반증·승패·주사위는 결정론 규칙엔진만 처리하고, LLM은 대사 한 줄만 작성합니다.
         정답과 손패 정보는 애초에 LLM에 전달되지 않습니다.</p></div>
-    <div class="wi ai"><b class="t">환각 검증까지 전수로 했습니다</b>
+    <div class="wi ai"><b class="t">폴백 문장을 전수 검증했습니다</b>
       <p>폴백 문장 <b>112,752건</b>을 전부 검사해 진실값 치환·누출 등 위반 <b>0건</b>을 확인했고,
         검증기 자체도 알려진 위반 11건이 실제로 FAIL로 잡히는지 매 실행 자기검사합니다.</p></div>
-    <div class="wi ai"><b class="t">주장을 스스로 검증하고, 틀린 주장은 직접 반박했습니다</b>
-      <p>지연·폴백 사유를 계측해 투명하게 기록했고, 그 계측으로 “LLM 왕복 ~1.2초”, “캐시 히트 시 사라진다”는
+    <div class="wi ai"><b class="t">틀린 주장은 계측으로 찾아 고쳤습니다</b>
+      <p>지연·폴백 사유를 계측해 기록했고, 그 계측으로 “LLM 왕복 ~1.2초”, “캐시 히트 시 사라진다”는
         기존 문서의 주장 2건이 실측과 다름을 확인해 정정했습니다.</p></div>
     <div class="wi ai"><b class="t">못한 것은 못했다고 밝혔습니다</b>
       <p>실호출 경로 분포(C7)는 무료 쿼터 제약으로 검증하지 못했고, 추정치로 채우지 않았습니다.</p></div>
@@ -158,19 +158,19 @@
   <h2>왜 이 게임인가</h2>
   <div class="why">
     <div class="wi"><b class="t">장르</b>
-      <p>소규모 퍼즐과 불완전정보 소거 추리를 결합했습니다. 이미 검증된 보드게임 규칙 위에 올려 짧은 개발 기간 안에서도 완성도를 확보했습니다.</p></div>
-    <div class="wi"><b class="t">AI가 게임 성립의 조건입니다</b>
+      <p>소규모 퍼즐과 불완전정보 소거 추리를 결합했습니다. 이미 검증된 보드게임 규칙 위에 올려, 짧은 개발 기간에도 완성할 수 있는 규모입니다.</p></div>
+    <div class="wi"><b class="t">AI가 있어야 게임이 성립합니다</b>
       <p>이 장르는 3~6인 불완전정보 게임이라 상대가 없으면 반증 자체가 성립하지 않습니다.
         AI NPC의 좌석 충원은 연출이 아니라 혼자서도 게임이 성립하게 하는 핵심 장치입니다.</p></div>
     <div class="wi"><b class="t">주최사 포트폴리오와의 정합성</b>
       <p>웹보드와 퍼즐·캐주얼 장르가 매출의 상당 부분을 차지하는 만큼, 보드게임 규칙과 짧은 세션, 리플레이 구조를 갖춘 이 게임의 형태는 같은 결을 갖습니다.
         다만 베팅이나 게임머니 같은 사행성 요소는 배제했습니다.</p></div>
-    <div class="wi"><b class="t">테마 — 십이지 “호랑이 생신 잔치”</b>
+    <div class="wi"><b class="t">테마: 십이지 “호랑이 생신 잔치”</b>
       <p>십이지는 별도 설명 없이 12명을 즉시 식별할 수 있는 공용 기호이고, 12라는 숫자가 플레이어 좌석 6과 고정 NPC 6을 정확히 채웁니다.
         낯선 서양 인명을 외워야 하는 기존 추리 게임의 학습 비용을 제거했습니다.</p></div>
   </div>
 
-  <h2>코어 룰 <span class="h2sub">— 10단계</span></h2>
+  <h2>코어 룰 <span class="h2sub">(10단계)</span></h2>
   <div class="card">
     <p style="margin:0 0 8px;">게임을 시작하기 전 이 10단계만 알면 바로 플레이할 수 있습니다.</p>
     <ol style="margin:0 0 8px; padding-left:1.3em;">
@@ -188,7 +188,7 @@
     <p class="sub" style="margin:0;">첫 진입 시 목표 3줄 카드가 나타나고, 언제든 <code>[?]</code>로 다시 볼 수 있습니다. 손패에는 “내 손패 3장은 정답이 아님”이 항상 표시됩니다.</p>
   </div>
 
-  <h2>특수 룰 <span class="h2sub">— 더 재미있게 만드는 요소</span></h2>
+  <h2>특수 룰 <span class="h2sub">(더 재미있게 만드는 요소)</span></h2>
   <div class="card">
     <p style="margin:0 0 8px;">코어 룰만으로도 플레이할 수 있지만, 아래 요소를 알아두면 판이 더 풍성해집니다.</p>
     <ul>
@@ -219,7 +219,7 @@
   </ul>
 
   <details class="srcbox">
-    <summary>수치의 출처 — 펼쳐서 보기 (추정치는 사용하지 않았습니다 · 인쇄하면 항상 펼쳐집니다)</summary>
+    <summary>수치의 출처: 펼쳐서 보기 (추정치는 사용하지 않았습니다 · 인쇄하면 항상 펼쳐집니다)</summary>
     <div class="scroll">
     <table class="srcs">
       <thead><tr><th>수치</th><th>출처</th></tr></thead>
@@ -239,7 +239,7 @@
         <tr><td>판 전체 <b>시드 재생</b></td>
             <td>같은 시드 2회 = 정답·손패·주사위 53회·제안 로그 전부 동일(<code>459a51f</code>) · 서버 로그의 <code>[rng] game seed</code> 줄을 <code>SEED</code>로 되먹인다</td></tr>
         <tr><td>회귀 방어 <b>8종 게이트</b></td>
-            <td><code>pnpm verify</code> — 타입·문서정합·GPU·밸런스·환각검증·빌드·번들예산·화면게이트. 건너뛴 항목은 사유와 함께 출력된다</td></tr>
+            <td><code>pnpm verify</code>: 타입·문서정합·GPU·밸런스·환각검증·빌드·번들예산·화면게이트. 건너뛴 항목은 사유와 함께 출력된다</td></tr>
       </tbody>
     </table>
     </div>
@@ -250,7 +250,7 @@
     <li>플레이: <a href="https://zodiac-clue.vercel.app">https://zodiac-clue.vercel.app</a></li>
     <li>소스: <a href="https://github.com/anveloper/zodiac-clue">https://github.com/anveloper/zodiac-clue</a></li>
     <li>AI 기술문서(④): <a href="https://zodiac-clue.vercel.app/docs/design/20260720-ai-tech-doc.html">https://zodiac-clue.vercel.app/docs/design/20260720-ai-tech-doc.html</a></li>
-    <li>플레이 영상: <b>(제출물 ② 촬영·업로드 후 이 자리에 링크)</b> — 아직 준비되지 않은 링크는 남겨두지 않았습니다</li>
+    <li>플레이 영상: <b>(제출물 ② 촬영·업로드 후 이 자리에 링크)</b>. 아직 준비되지 않은 링크는 남겨두지 않았습니다</li>
   </ul>
 </div>
 </body>
