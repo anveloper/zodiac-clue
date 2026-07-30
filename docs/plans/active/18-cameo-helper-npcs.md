@@ -22,6 +22,7 @@ owner(anveloper) 지시 · **동결 예외 승인**(촬영 08-01 영상에 카�
 - [ ] `pixel-glyphs.ts`: ZODIAC_BADGE(+2) — 뷰4 도트 배지(없어도 렌더되나 식별용).
 - [ ] `clue-room.ts`: `HELPER_CAMEOS` 상수 + startGame 배치 재작성(카메오 고정 → 십이지 나머지).
 - [ ] `game-intro.{md,html}`: 계략 설명 정확화("십이지 6명" → "NPC 6명, 2명은 팀 카메오").
+- [x] `character-concepts.{md,html}`: 카메오 2종 컨셉(한줄·배경·외형·성격·상관관계) — 쿼카=아씨 칭호, 안드로=칭호 없이 위트. cards.ts JOB(quokka)·PERSONA 확장.
 - [ ] 개발일지.
 - [ ] `verify`(전체 — 빌드·화면게이트 포함, 배포 전).
 
