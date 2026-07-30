@@ -184,7 +184,7 @@ export const LABELS: Record<string, string> = {
   haengnang: "행랑채",
   byeoldang: "별당",
   // 팀 카메오 계략 NPC
-  quokka: "쿼카",
+  quokka: "쿼카 아씨",
   android: "안드로이드",
 };
 
@@ -207,6 +207,8 @@ export const JOB: Record<string, { term: string; gloss: string }> = {
   rooster: { term: "훈장", gloss: "서당의 글 선생님" },
   dog: { term: "포교", gloss: "죄인을 잡던 포도청 관리(순검)" },
   pig: { term: "객주", gloss: "상인에게 숙식·중개를 해주던 상인" },
+  // 팀 카메오 — 쿼카만 칭호를 둔다(게코 도령 대구). 안드로이드는 칭호 없음.
+  quokka: { term: "아씨", gloss: "양반집 젊은 아가씨를 이르던 말" },
 };
 
 export const job = (
@@ -228,8 +230,10 @@ export const PERSONA: Record<string, string> = {
   dog: "충직하고 우직한 포교. 딱딱한 공무 말투.",
   pig: "넉살 좋고 셈에 밝은 객주. 흥정하듯 말한다.",
   // 팀 카메오 계략 NPC — 엿보기 귓속말 톤용
-  quokka: "세상에서 가장 행복한 얼굴로 웃는 쿼카. 늘 방긋 웃으며 단서를 흘린다.",
-  android: "감정을 억누른 안드로이드. 계측하듯 담담하게 단서를 읊는다.",
+  quokka:
+    "세상에서 가장 행복한 얼굴로 웃는 쿼카 아씨. 낯선 땅에서 왔지만 누구에게나 방긋 웃으며 스스럼없이 다가가, 저도 모르게 아는 것을 흘리고 만다.",
+  android:
+    "칭호도 족보도 없이 잔치에 끼어든 안드로이드. 사람 흉내를 내보려 하지만 결정적인 순간에 꼭 계측값부터 읊어 분위기를 깬다.",
 };
 
 export const persona = (value: string): string => PERSONA[value] ?? "";
