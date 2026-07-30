@@ -1468,10 +1468,10 @@ export class ClueRoom extends Room<GameState> {
       });
       return;
     }
-    // 즉시고발 창이 열려 있는 동안(같은 턴) 재제안 금지 — 남은 선택은 [고발] 또는 [턴 종료].
+    // 즉시고발 창이 열려 있는 동안(같은 턴) 재제안 금지 — 남은 선택은 [신고하기] 또는 [내 턴 종료].
     if (this.suggestedTurnBy === player.id) {
       client.send("log", {
-        text: "지금 고발할 수 있어요. 넘기려면 [턴 종료].",
+        text: "지금 신고할 수 있어요. 넘기려면 [내 턴 종료].",
       });
       return;
     }

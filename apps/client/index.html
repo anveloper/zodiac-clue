@@ -33,7 +33,7 @@
       .hidden { display: none !important; }
       /* 강조색 #ad5e28 — 흰 글자 대비 4.76:1(AA 4.5 충족).
          이전 값 #b4622b는 4.45:1로 **간발의 차이로 미달**이었고, 그 색을 쓰는 것이
-         [방 만들기]·[잔치 시작]·[고발] 같은 1차 버튼 전부였다. 화면 게이트 S6이 잡는다.
+         [방 만들기]·[잔치 시작]·[신고하기] 같은 1차 버튼 전부였다. 화면 게이트 S6이 잡는다.
          (§7.13이 `#6b6355`→`#8f8574`로 올린 것과 같은 기준·같은 이유.) */
       button {
         background: #ad5e28; color: #fff; border: 0; border-radius: 6px;
@@ -736,7 +736,7 @@
         .hud { font-size: 11px; padding: 8px 10px; }
         /* ── 하단 컨트롤 데크 ──────────────────────────────────────
            액션 바를 상단 좌측에 두면 6개 버튼이 폭을 거의 다 먹어 상단 중앙 턴 배너와
-           겹쳤다(실측: [제안]만 보이고 나머지 5개가 가려짐). 하단으로 내리되,
+           겹쳤다(실측: [추리하기]만 보이고 나머지 5개가 가려짐). 하단으로 내리되,
            **2줄로 접히는 덩어리**로 두면 우측 D-패드와 크기·정렬이 어긋나 화면이 갈라진다.
            → 화면 폭을 꽉 채운 **한 줄 6등분 바** 하나로 만든다. 정렬 축이 하나가 되고,
              앱 하단 탭바처럼 읽혀 처음 보는 사람도 "여기가 조작부"임을 안다. */
@@ -1029,11 +1029,11 @@
 
       <!-- 액션 버튼은 disabled 대신 aria-disabled + .is-off — 클릭하면 사유를 안내한다 -->
       <div class="hud hud-ctrl">
-        <button id="suggest">제안</button>
-        <button id="accuse">고발</button>
-        <button id="passage" class="is-off" aria-disabled="true">통로</button>
-        <button id="bonus" class="is-off" aria-disabled="true">계략</button>
-        <button id="endTurn">턴 종료</button>
+        <button id="suggest">추리하기</button>
+        <button id="accuse">신고하기</button>
+        <button id="passage" class="is-off" aria-disabled="true">지름길로 가기</button>
+        <button id="bonus" class="is-off" aria-disabled="true">엿보기</button>
+        <button id="endTurn">내 턴 종료</button>
         <button id="helpBtn" title="게임 목표와 조작을 다시 봅니다.">?</button>
       </div>
 
@@ -1081,7 +1081,7 @@
           <div class="goal-lines">
             <div>① 목표 — 도둑 1명 · 훔친 것 1개 · 장소 1곳을 맞히면 승리.</div>
             <div>② 출발점 — 내 손패 3장은 정답이 아닙니다. 여기서부터 지워 나가세요.</div>
-            <div>③ 방법 — 방에 들어가 [제안]. 아무도 반증 못 한 조합이 정답 후보예요.</div>
+            <div>③ 방법 — 방에 들어가 [추리하기]. 아무도 반증 못 한 조합이 정답 후보예요.</div>
           </div>
           <div class="goal-actions">
             <button id="goalOk">알겠어요, 시작할게요</button>
@@ -1199,9 +1199,9 @@
       </div>
 
       <div class="hud hud-help">
-        <span id="helpKeys">이동 <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> · 줌 <kbd>휠</kbd> · 화면이동 <kbd>우클릭</kbd>드래그 / <kbd>Space</kbd>(꾹) · 방 <kbd>입구</kbd>로 진입 후 [제안]</span>
+        <span id="helpKeys">이동 <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> · 줌 <kbd>휠</kbd> · 화면이동 <kbd>우클릭</kbd>드래그 / <kbd>Space</kbd>(꾹) · 방 <kbd>입구</kbd>로 진입 후 [추리하기]</span>
         <!-- 터치에는 휠·우클릭·Space가 없다 → 확정본에서 그 절만 덜어낸 문장. -->
-        <span id="helpTouch">이동 <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> · 방 <kbd>입구</kbd>로 진입 후 [제안]</span>
+        <span id="helpTouch">이동 <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> · 방 <kbd>입구</kbd>로 진입 후 [추리하기]</span>
       </div>
 
       <!-- 터치 이동 패드(§7.12 T1) — 손가락이 주 포인터일 때만 렌더된다.
