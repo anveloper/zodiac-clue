@@ -309,7 +309,7 @@
     <div class="voice b">
       <div class="who">UI 안내 · 시스템</div>
       <div class="st">해요체</div>
-      <div class="sam">방 안에서만 제안할 수 있어요. 입구(🚪)로 들어가세요.</div>
+      <div class="sam">방 안에서만 추리할 수 있어요. 입구(🚪)로 들어가세요.</div>
       <p class="note" style="margin:8px 0 0">버튼 툴팁·모달·오버레이·랜딩·대기실. 규칙을 알려주는 <b>유일한 통로</b>다.</p>
     </div>
     <div class="voice c">
@@ -368,7 +368,7 @@
   <h3>1.3 문장 규칙</h3>
   <ul>
     <li><b>1문장 = 1행동.</b> 안내문이 두 가지를 시키지 않는다.</li>
-    <li><b>금지 상태에는 반드시 "그래서 뭘 하면 되는지"를 붙인다.</b> <span class="bad">방 안에서만 가능해요.</span> → <span class="good">방 안에서만 제안할 수 있어요. 입구(🚪)로 들어가세요.</span></li>
+    <li><b>금지 상태에는 반드시 "그래서 뭘 하면 되는지"를 붙인다.</b> <span class="bad">방 안에서만 가능해요.</span> → <span class="good">방 안에서만 추리할 수 있어요. 입구(🚪)로 들어가세요.</span></li>
     <li>느낌표는 판 전체에서 <b>3종만</b> — 승리 · 최후 생존 · 미반증(정답 후보). 그 외는 마침표.</li>
     <li>이모지는 <b>줄 앞 1개</b>. 연속 배치 금지(<code>🎉🎉</code>, <code>❌ ⚠</code>).</li>
     <li>사용자 지칭은 <b>내 / 나</b>. "유저"·"플레이어"는 UI에 쓰지 않는다(문서 전용).</li>
@@ -426,6 +426,24 @@
     <tr><td>대사 생성 경로 3종 <span class="tag t-new">신규</span></td><td><b>LLM · 캐시 · 폴백</b></td><td class="dim">AI · fallback · hit · 규칙 대사</td></tr>
     <tr><td>폴백 사유 <span class="tag t-new">신규</span></td><td><b>한글 표기 6종</b> <span class="note">(§4.4)</span></td><td class="dim">영문 토큰(<code>timeout</code>·<code>http</code>…) 화면 노출</td></tr>
   </table></div>
+
+  <h4>액션 버튼 라벨 5종 <span class="tag t-new">07-30 교체</span> <span class="note">— 동사형 통일</span></h4>
+  <p class="note">버튼에 찍히는 글자와, 문장 안에서 그 버튼을 가리키는 대괄호 표기는 <b>글자 그대로 같아야 한다.</b>
+    개념어는 그대로 둔다 — 바꾸면 로그·기록표·시뮬레이터·문서로 번진다.</p>
+  <div class="scroll"><table>
+    <tr><th>버튼</th><th>확정 라벨</th><th>개념어 <span class="note">(그대로 유지)</span></th></tr>
+    <tr><td><code>#suggest</code></td><td><b class="good">추리하기</b></td><td class="dim">개념·로그·기록표는 <b>제안</b> — <code>🔍 제안</code>, <code>제안 기록표</code>, <code>제안 상한 75</code>는 바꾸지 않는다</td></tr>
+    <tr><td><code>#accuse</code></td><td><b class="good">신고하기</b></td><td class="dim">개념은 <b>고발</b> — 모달 제목 <code>고발 — 진범을 지목하라</code>(§6.2)와 <code>❌ 고발 실패</code>는 유지</td></tr>
+    <tr><td><code>#passage</code></td><td><b class="good">지름길로 가기</b></td><td class="dim">개념은 <b>비밀 통로</b></td></tr>
+    <tr><td><code>#bonus</code></td><td><b class="good">엿보기</b></td><td class="dim">개념은 <b>계략</b>(위 표 「고정 NPC 능력」) — 로그 <code>🃏 … 계략(엿보기 2·이동 +5)</code>은 유지</td></tr>
+    <tr><td><code>#endTurn</code></td><td><b class="good">내 턴 종료</b></td><td class="dim">개념은 <b>턴 종료</b></td></tr>
+  </table></div>
+  <div class="box warn">
+    <span class="tag t-warn">주의</span> <b>비활성 사유 공용 문안이 버튼 4종에 재사용된다.</b> 교체 전 문구가
+    <code>잔치가 시작되면 고발할 수 있어요.</code>여서 <b>[지름길로 가기]를 눌러도 「고발할 수 있어요」</b>라고
+    답했다(라벨 교체 전부터 있던 결함). 07-30에 공용 문안을 <b>행위 중립</b>으로 바꾸고
+    <code>#accuse</code>만 자기 동사를 따로 갖게 했다 — 이제 어떤 버튼도 남의 동사를 말하지 않는다.
+  </div>
 
   <h4>표기 접두 기호 (고정)</h4>
   <dl class="kv">
@@ -618,29 +636,29 @@
     <div class="pv-h">미리보기 · <b>.hud-ctrl</b> 좌상단 — 비활성 상태에서 커서를 올렸을 때</div>
     <div class="pv-b col">
       <div class="g-hud g-ctrl" style="align-self:flex-start">
-        <button class="g-btn off">제안</button>
-        <button class="g-btn off">고발</button>
-        <button class="g-btn off">통로</button>
-        <button class="g-btn off">계략</button>
-        <button class="g-btn off">턴 종료</button>
+        <button class="g-btn off">추리하기</button>
+        <button class="g-btn off">신고하기</button>
+        <button class="g-btn off">지름길로 가기</button>
+        <button class="g-btn off">엿보기</button>
+        <button class="g-btn off">내 턴 종료</button>
         <button class="g-btn ghost">?</button>
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:14px;width:100%">
         <div class="tipwrap">
           <div class="why">[제안] · 복도에 서 있을 때</div>
-          <div class="tip">방 안에서만 제안할 수 있어요. 입구(🚪)로 들어가세요.</div>
+          <div class="tip">방 안에서만 추리할 수 있어요. 입구(🚪)로 들어가세요.</div>
           <div class="why">[제안] · 활성</div>
           <div class="tip on">이 방에서 용의자와 훔친 것을 지목해요. 장소는 현재 방으로 고정.</div>
         </div>
         <div class="tipwrap">
           <div class="why">[통로] · 통로 없는 방</div>
-          <div class="tip">이 방에는 비밀 통로가 없어요. (통로는 3쌍)</div>
+          <div class="tip">이 방에는 지름길이 없어요. (지름길은 3쌍)</div>
           <div class="why">[통로] · 활성 <span class="dim">— 목적지를 넣어 동적 생성</span></div>
           <div class="tip on">비밀 통로 — 서재 → 정지(부엌). 주사위 없이 즉시.</div>
         </div>
         <div class="tipwrap">
           <div class="why">[계략] · 근처에 없음</div>
-          <div class="tip">계략을 줄 이가 근처에 없어요. 보드 가장자리의 NPC 곁으로.</div>
+          <div class="tip">엿볼 수 있는 이가 근처에 없어요. 보드 가장자리의 NPC 곁으로.</div>
           <div class="why">[고발] · 활성</div>
           <div class="tip on">정답 3장을 지목해요. 틀리면 즉시 탈락합니다.</div>
         </div>
@@ -649,54 +667,54 @@
     <p class="pv-cap" style="padding:0 18px 16px">활성 툴팁을 비워 두지 말 것 — <b>툴팁 없는 버튼은 "고장 난 버튼"으로 읽힌다.</b></p>
   </div>
 
-  <h3>5.1 [제안] <code>#suggest</code></h3>
+  <h3>5.1 [추리하기] <code>#suggest</code></h3>
   <div class="scroll"><table>
     <tr><th>순</th><th>조건 (판정식)</th><th>문안 <span class="note">— 툴팁 = 클릭 피드백 공용</span></th></tr>
-    <tr><td>1</td><td class="q">phase !== "playing"</td><td class="q">잔치가 시작되면 제안할 수 있어요.</td></tr>
-    <tr><td>2</td><td class="q">me.eliminated</td><td class="q">탈락한 뒤에는 제안할 수 없어요. 반증만 이어집니다.</td></tr>
+    <tr><td>1</td><td class="q">phase !== "playing"</td><td class="q">잔치가 시작되면 추리할 수 있어요.</td></tr>
+    <tr><td>2</td><td class="q">me.eliminated</td><td class="q">탈락한 뒤에는 추리할 수 없어요. 반증만 이어집니다.</td></tr>
     <tr><td>3</td><td class="q">currentTurn !== me</td><td class="q">지금은 내 차례가 아니에요. 차례가 오면 켜집니다.</td></tr>
-    <tr><td>4</td><td class="q">!me.room</td><td class="q">방 안에서만 제안할 수 있어요. 입구(🚪)로 들어가세요.</td></tr>
-    <tr><td>5</td><td class="q">같은 방 재제안 <span class="tag t-soon">선행</span></td><td class="q">이 방에서는 이미 제안했어요. 다른 방으로 옮기세요.</td></tr>
+    <tr><td>4</td><td class="q">!me.room</td><td class="q">방 안에서만 추리할 수 있어요. 입구(🚪)로 들어가세요.</td></tr>
+    <tr><td>5</td><td class="q">같은 방 재제안 <span class="tag t-soon">선행</span></td><td class="q">이 방에서는 이미 추리했어요. 다른 방으로 옮기세요.</td></tr>
     <tr><td>—</td><td><b class="good">활성</b></td><td class="q">이 방에서 용의자와 훔친 것을 지목해요. 장소는 현재 방으로 고정.</td></tr>
   </table></div>
   <p class="note"><b>판정 순서를 지킬 것.</b> "탈락"과 "내 턴 아님"이 동시 성립할 때 <code>지금은 내 차례가 아니에요</code>를 보여주면 사용자는 오지 않을 차례를 기다린다.</p>
 
-  <h3>5.2 [고발] <code>#accuse</code></h3>
+  <h3>5.2 [신고하기] <code>#accuse</code></h3>
   <div class="scroll"><table>
     <tr><th>순</th><th>조건</th><th>문안</th></tr>
-    <tr><td>1</td><td class="q">phase !== "playing"</td><td class="q">잔치가 시작되면 고발할 수 있어요.</td></tr>
-    <tr><td>2</td><td class="q">me.eliminated</td><td class="q">이미 고발에 실패했어요. 남은 역할은 반증입니다.</td></tr>
+    <tr><td>1</td><td class="q">phase !== "playing"</td><td class="q">잔치가 시작되면 신고할 수 있어요.</td></tr>
+    <tr><td>2</td><td class="q">me.eliminated</td><td class="q">이미 신고에 실패했어요. 남은 역할은 반증입니다.</td></tr>
     <tr><td>3</td><td class="q">currentTurn !== me</td><td class="q">지금은 내 차례가 아니에요. 차례가 오면 켜집니다.</td></tr>
     <tr><td>—</td><td><b class="good">활성</b></td><td class="q">정답 3장을 지목해요. 틀리면 즉시 탈락합니다.</td></tr>
-    <tr><td>—</td><td>제안 직후 활성 <span class="tag t-soon">선행</span></td><td class="q">지금 고발할 수 있어요. 넘기려면 [턴 종료].</td></tr>
+    <tr><td>—</td><td>추리 직후 활성 <span class="tag t-soon">선행</span></td><td class="q">지금 신고할 수 있어요. 넘기려면 [내 턴 종료].</td></tr>
   </table></div>
 
-  <h3>5.3 [통로] <code>#passage</code></h3>
+  <h3>5.3 [지름길로 가기] <code>#passage</code></h3>
   <div class="scroll"><table>
     <tr><th>순</th><th>조건</th><th>문안</th></tr>
-    <tr><td>1</td><td class="q">phase !== "playing" · me.eliminated</td><td class="dim">5.2와 동일 문안 재사용</td></tr>
+    <tr><td>1</td><td class="q">phase !== "playing" · me.eliminated</td><td class="dim"><b>행위 중립 공용 문안</b> — 잔치가 시작되면 쓸 수 있어요. / 탈락한 뒤에는 쓸 수 없어요. 반증만 이어집니다.</td></tr>
     <tr><td>2</td><td class="q">currentTurn !== me</td><td class="q">지금은 내 차례가 아니에요. 차례가 오면 켜집니다.</td></tr>
-    <tr><td>3</td><td class="q">!me.room</td><td class="q">비밀 통로는 방 안에서만 쓸 수 있어요.</td></tr>
-    <tr><td>4</td><td class="q">!passageOf(me.room)</td><td class="q">이 방에는 비밀 통로가 없어요. (통로는 3쌍)</td></tr>
-    <tr><td>—</td><td><b class="good">활성</b></td><td class="q">비밀 통로 — ${현재 방} → ${목적지}. 주사위 없이 즉시.</td></tr>
+    <tr><td>3</td><td class="q">!me.room</td><td class="q">지름길은 방 안에서만 쓸 수 있어요.</td></tr>
+    <tr><td>4</td><td class="q">!passageOf(me.room)</td><td class="q">이 방에는 지름길이 없어요. (지름길은 3쌍)</td></tr>
+    <tr><td>—</td><td><b class="good">활성</b></td><td class="q">지름길 — ${현재 방} → ${목적지}. 주사위 없이 즉시.</td></tr>
   </table></div>
   <p class="note">활성 툴팁은 목적지 이름을 넣어 <b>동적 생성</b>한다. 화살표(R3)를 쓰므로 조사가 개입하지 않는다.</p>
 
-  <h3>5.4 [계략] <code>#bonus</code></h3>
+  <h3>5.4 [엿보기] <code>#bonus</code></h3>
   <div class="scroll"><table>
     <tr><th>순</th><th>조건</th><th>문안</th></tr>
-    <tr><td>1</td><td class="q">phase !== "playing" · me.eliminated</td><td class="dim">5.2와 동일 문안 재사용</td></tr>
+    <tr><td>1</td><td class="q">phase !== "playing" · me.eliminated</td><td class="dim"><b>행위 중립 공용 문안</b> — 잔치가 시작되면 쓸 수 있어요. / 탈락한 뒤에는 쓸 수 없어요. 반증만 이어집니다.</td></tr>
     <tr><td>2</td><td class="q">currentTurn !== me</td><td class="q">지금은 내 차례가 아니에요. 차례가 오면 켜집니다.</td></tr>
-    <tr><td>3</td><td class="q">인접 헬퍼 있으나 used <span class="tag t-soon">선행</span></td><td class="q">이 NPC의 계략은 이미 썼어요. 다른 NPC를 찾아보세요.</td></tr>
-    <tr><td>4</td><td class="q">인접 헬퍼 없음</td><td class="q">계략을 줄 이가 근처에 없어요. 보드 가장자리의 NPC 곁으로.</td></tr>
-    <tr><td>—</td><td><b class="good">활성</b></td><td class="q">계략 — 상대 카드 엿보기 + 이동 보너스. NPC마다 1회.</td></tr>
+    <tr><td>3</td><td class="q">인접 헬퍼 있으나 used <span class="tag t-soon">선행</span></td><td class="q">이 NPC는 이미 엿봤어요. 다른 NPC를 찾아보세요.</td></tr>
+    <tr><td>4</td><td class="q">인접 헬퍼 없음</td><td class="q">엿볼 수 있는 이가 근처에 없어요. 보드 가장자리의 NPC 곁으로.</td></tr>
+    <tr><td>—</td><td><b class="good">활성</b></td><td class="q">엿보기 — 상대 카드 확인 + 이동 보너스. NPC마다 1회.</td></tr>
   </table></div>
   <div class="box warn">
     <span class="tag t-warn">주의</span> 현재 활성 판정은 <code>!h.used &amp;&amp; 인접</code>을 한 번에 검사하므로 <b>3번과 4번을 구분하지 못한다</b> — 이미 쓴 NPC 옆에 서 있어도 "근처에 없어요"가 뜬다. 두 조건을 분리해야 이 문안이 성립한다.<br>
     <span class="tag t-warn">주의</span> <code>CLAUDE.md</code>는 계략을 <b>"판당 1회"</b>로 규정하지만 코드는 <code>helper.used</code>로 <b>토큰(NPC)마다 1회</b>다. 문안은 코드 실동작(<code>NPC마다 1회</code>)을 따르고, 규약 문구 정정은 로드맵 소관.
   </div>
 
-  <h3>5.5 [턴 종료] <code>#endTurn</code> <span class="note">— 4종 외, 참고</span></h3>
+  <h3>5.5 [내 턴 종료] <code>#endTurn</code> <span class="note">— 4종 외, 참고</span></h3>
   <ul>
     <li>활성 툴팁 — <code>이번 차례를 마치고 다음 사람에게 넘겨요.</code></li>
     <li>이동 남았을 때 <span class="tag t-soon">선행</span> — <code>아직 ${n}칸 남았어요. 그래도 넘길까요?</code> · 확인 다이얼로그는 만들지 않고 툴팁으로만 경고</li>
@@ -948,9 +966,9 @@
     <tr><td>312</td><td class="q dim">${이름} 재접속!</td><td class="q good">🙋 재접속 — ${이름} 님</td><td>느낌표 3종 규칙</td></tr>
     <tr><td>434</td><td class="q dim">🔄 ${이름} 님이 다시 하기 — 새 판을 시작합니다.</td><td class="q good">🔄 다시 하기 — ${이름} 님 · 새 판을 시작합니다</td><td>—</td></tr>
     <tr><td>151·176<br>745·803</td><td class="q dim">당신의 턴이 아닙니다.</td><td class="q good">지금은 내 차례가 아니에요.</td><td>§5와 <b>글자 그대로 동일</b></td></tr>
-    <tr><td>156</td><td class="q dim">이 방엔 비밀 통로가 없습니다.</td><td class="q good">이 방에는 비밀 통로가 없어요. (통로는 3쌍)</td><td>§5.3과 동일</td></tr>
-    <tr><td>189</td><td class="q dim">가까이에 계략을 줄 이가 없습니다.</td><td class="q good">계략을 줄 이가 근처에 없어요. 보드 가장자리의 NPC 곁으로.</td><td>§5.4와 동일</td></tr>
-    <tr><td>749</td><td class="q dim">방 안에서만 제안할 수 있습니다.</td><td class="q good">방 안에서만 제안할 수 있어요. 입구(🚪)로 들어가세요.</td><td>§5.1과 동일</td></tr>
+    <tr><td>156</td><td class="q dim">이 방엔 비밀 통로가 없습니다.</td><td class="q good">이 방에는 지름길이 없어요. (지름길은 3쌍)</td><td>§5.3과 동일</td></tr>
+    <tr><td>189</td><td class="q dim">가까이에 계략을 줄 이가 없습니다.</td><td class="q good">엿볼 수 있는 이가 근처에 없어요. 보드 가장자리의 NPC 곁으로.</td><td>§5.4와 동일</td></tr>
+    <tr><td>749</td><td class="q dim">방 안에서만 제안할 수 있습니다.</td><td class="q good">방 안에서만 추리할 수 있어요. 입구(🚪)로 들어가세요.</td><td>§5.1과 동일</td></tr>
     <tr><td>417</td><td class="q dim">방장만 잔치를 시작할 수 있습니다.</td><td class="q good">방장만 잔치를 시작할 수 있어요.</td><td>사용자 대상 = 해요체</td></tr>
     <tr><td>268</td><td class="q dim">이미 진행 중인 게임입니다 (관전).</td><td class="q good">이미 진행 중인 판이에요. 관전으로 들어갑니다. <span class="tag t-new">적용됨</span></td><td><s class="dim">관전 좌석 미구현 = 도달 불가 죽은 코드</s> → <b>07-28 관전 좌석 구현으로 도달 가능</b>(<code>lock()</code> → <code>setPrivate/setListed</code>). <b>07-29부터 §7.2 관전 배너가 이 문자열을 그대로 재사용</b> — 고치려면 두 곳이 같이 움직인다</td></tr>
   </table></div>
@@ -1203,7 +1221,7 @@
     <tr><td>10초 이하</td><td class="q">⏳ 10초 — 시간이 지나면 자동으로 넘어가요</td><td>부제 (강조색)</td></tr>
     <tr><td>만료</td><td class="q">⌛ 시간 초과 — 다음 사람에게 넘어갔어요</td><td>로그</td></tr>
     <tr><td>이탈자 대기</td><td class="q">⏳ 접속 대기 8초 — 토끼 낭자 님</td><td>로그</td></tr>
-    <tr><td>제안 후 고발 대기</td><td class="q">⏳ 지금 고발할 수 있어요 (30초). 넘기려면 [턴 종료]</td><td>부제</td></tr>
+    <tr><td>추리 후 신고 대기</td><td class="q">⏳ 지금 신고할 수 있어요 (30초). 넘기려면 [내 턴 종료]</td><td>부제</td></tr>
     <tr><td><b>솔로(사람 1명)</b></td><td colspan="2"><b class="good">타이머 문안을 전부 표시하지 않는다</b> — 심사 경험을 재촉하지 않는다</td></tr>
   </table></div>
 
