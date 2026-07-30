@@ -184,8 +184,8 @@ export const LABELS: Record<string, string> = {
   haengnang: "행랑채",
   byeoldang: "별당",
   // 팀 카메오 계략 NPC
-  quokka: "쿼카 다희",
-  android: "안드로 성진",
+  quokka: "쿼카",
+  android: "안드로이드",
 };
 
 export const label = (value: string): string => LABELS[value] ?? value;

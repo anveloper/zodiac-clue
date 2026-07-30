@@ -143,12 +143,12 @@ const HELPER_MIDS = [
   { x: 16, y: 20 }, // 행랑 ↔ 별당
 ];
 
-// 팀 카메오 계략 NPC — 고정 위치·엿보기 1장(peek). owner 지시(다희=쿼카·성진=안드로).
+// 팀 카메오 계략 NPC — 고정 위치·엿보기 1장(peek). owner 지시.
 // 값이 비-십이지라 덱·밸런스와 무관: 엿보기 내용은 헬퍼 정체성과 독립(handleUseBonus).
 // 좌표는 HELPER_MIDS의 두 칸을 «고정 예약» — 십이지 배치에서 제외된다.
 const HELPER_CAMEOS = [
-  { value: "quokka", x: 3, y: 7 }, //  다희 — 정지 ↔ 사랑방(좌)
-  { value: "android", x: 20, y: 13 }, // 성진 — 사랑채 ↔ 서재(우)
+  { value: "quokka", x: 3, y: 7 }, //  정지 ↔ 사랑방(좌)
+  { value: "android", x: 20, y: 13 }, // 사랑채 ↔ 서재(우)
 ] as const;
 const CENTER = { x: 11, y: 11 };
 
