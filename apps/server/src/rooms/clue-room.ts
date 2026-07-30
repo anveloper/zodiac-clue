@@ -142,6 +142,14 @@ const HELPER_MIDS = [
   { x: 7, y: 20 }, //  안방 ↔ 행랑
   { x: 16, y: 20 }, // 행랑 ↔ 별당
 ];
+
+// 팀 카메오 계략 NPC — 고정 위치·엿보기 1장(peek). owner 지시(다희=쿼카·성진=안드로).
+// 값이 비-십이지라 덱·밸런스와 무관: 엿보기 내용은 헬퍼 정체성과 독립(handleUseBonus).
+// 좌표는 HELPER_MIDS의 두 칸을 «고정 예약» — 십이지 배치에서 제외된다.
+const HELPER_CAMEOS = [
+  { value: "quokka", x: 3, y: 7 }, //  다희 — 정지 ↔ 사랑방(좌)
+  { value: "android", x: 20, y: 13 }, // 성진 — 사랑채 ↔ 서재(우)
+] as const;
 const CENTER = { x: 11, y: 11 };
 
 /** 취소 가능한 타이머 핸들(colyseus `Delayed`와 구조적으로 호환). */
@@ -959,23 +967,33 @@ export class ClueRoom extends Room<GameState> {
     );
     this.suspectPool = suspectPool;
 
-    // 고정 NPC(계략): 선택 안 된 십이지(12−참여6) 배치. 모서리 강함 + 중앙근처 랜덤.
+    // 고정 NPC(계략): 팀 카메오 2 + 남은 십이지. 총수·엿보기 횟수는 기존과 동일(교체).
     this.state.helpers.clear();
+    // (1) 카메오 2명 — 고정 좌표·peek1. 상수라 시드 재생에도 위치 불변.
+    for (const cam of HELPER_CAMEOS) {
+      const h = new HelperToken();
+      h.value = cam.value;
+      h.x = cam.x;
+      h.y = cam.y;
+      h.bonus = "peek";
+      this.state.helpers.set(cam.value, h);
+    }
+    // (2) 남은 자리 = 남은 십이지. 카메오가 2칸을 차지했으니 (leftover−2)명만 배치.
     const leftover = (SUSPECTS as readonly string[]).filter(
       (z) => !suspectPool.includes(z),
     );
+    const zCount = Math.max(0, leftover.length - HELPER_CAMEOS.length);
+    const camSpots = new Set(HELPER_CAMEOS.map((c) => `${c.x},${c.y}`));
     const corners = [...HELPER_CORNERS];
     seededShuffle(corners, this.gameSeed, "helperCorners");
-    const mids = [...HELPER_MIDS];
+    const mids = HELPER_MIDS.filter((m) => !camSpots.has(`${m.x},${m.y}`));
     seededShuffle(mids, this.gameSeed, "helperMids");
-    const nCorner = Math.min(2, leftover.length);
+    const nCorner = Math.min(2, zCount);
     const spots = [
       ...corners.slice(0, nCorner).map((s) => ({ ...s, strong: true })),
-      ...mids
-        .slice(0, leftover.length - nCorner)
-        .map((s) => ({ ...s, strong: false })),
+      ...mids.slice(0, zCount - nCorner).map((s) => ({ ...s, strong: false })),
     ];
-    leftover.forEach((z, i) => {
+    leftover.slice(0, zCount).forEach((z, i) => {
       const spot = spots[i];
       if (!spot) return;
       const h = new HelperToken();

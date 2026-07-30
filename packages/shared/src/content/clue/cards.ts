@@ -144,6 +144,9 @@ export const EMOJI: Record<string, string> = {
   chopstick: "🥢",
   liquor: "🍶",
   tteok: "🍡",
+  // 팀 카메오 계략 NPC (비-십이지) — 보드 토큰 표시용
+  quokka: "🦫",
+  android: "🤖",
 };
 
 export const emoji = (value: string): string => EMOJI[value] ?? "";
@@ -180,6 +183,9 @@ export const LABELS: Record<string, string> = {
   anbang: "안방",
   haengnang: "행랑채",
   byeoldang: "별당",
+  // 팀 카메오 계략 NPC
+  quokka: "쿼카 다희",
+  android: "안드로 성진",
 };
 
 export const label = (value: string): string => LABELS[value] ?? value;
@@ -221,6 +227,9 @@ export const PERSONA: Record<string, string> = {
   rooster: "깐깐하고 원칙주의 훈장. 훈계조로 말한다.",
   dog: "충직하고 우직한 포교. 딱딱한 공무 말투.",
   pig: "넉살 좋고 셈에 밝은 객주. 흥정하듯 말한다.",
+  // 팀 카메오 계략 NPC — 엿보기 귓속말 톤용
+  quokka: "세상에서 가장 행복한 얼굴로 웃는 쿼카. 늘 방긋 웃으며 단서를 흘린다.",
+  android: "감정을 억누른 안드로이드. 계측하듯 담담하게 단서를 읊는다.",
 };
 
 export const persona = (value: string): string => PERSONA[value] ?? "";
@@ -245,6 +254,9 @@ export const VOICE: Record<string, Voice> = {
   rooster: { tone: "훈계조로 꾸짖듯", intro: "쯧쯧, ", outro: " 마땅히 그러하렷다." },
   dog: { tone: "딱딱한 공무 말투로", intro: "고하오— ", outro: " 지체 없이 밝히겠소." },
   pig: { tone: "넉살 좋게 흥정하듯", intro: "어이구, ", outro: " 밑질 거래는 아니지 않소?" },
+  // 팀 카메오 계략 NPC
+  quokka: { tone: "해맑게 방긋 웃으며", intro: "히힛, ", outro: " 도움이 됐으면 좋겠다!" },
+  android: { tone: "기계처럼 담담하게", intro: "삐빅, ", outro: " 연산 완료." },
 };
 
 export const voice = (value: string): Voice =>
