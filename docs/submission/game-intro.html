@@ -45,7 +45,7 @@
   .wi.ai { border-left-color:var(--gold); }
   .src { color:var(--dim); font-size:12px; margin:0 0 10px; }
 
-  /* 수치 출처 표 */
+  /* 수치 출처 표 — 화면에서는 접어 둔다(스킴하는 심사자를 방해하지 않기 위해) */
   .scroll { overflow-x:auto; }
   table.srcs { width:100%; border-collapse:collapse; margin:8px 0 0; font-size:13px; }
   table.srcs th, table.srcs td { border:1px solid var(--edge); padding:7px 10px; text-align:left; vertical-align:top; }
@@ -53,6 +53,13 @@
   table.srcs td:first-child { width:42%; }
   table.srcs td:last-child { color:var(--dim); }
   table.srcs b { color:var(--ink); }
+  details.srcbox { margin:18px 0 0; border:1px solid var(--edge); border-radius:8px; background:#1c1811; }
+  details.srcbox > summary { cursor:pointer; padding:10px 14px; color:var(--gold); font-size:13.5px;
+    list-style:none; user-select:none; }
+  details.srcbox > summary::-webkit-details-marker { display:none; }
+  details.srcbox > summary::before { content:"▸ "; color:var(--dim); }
+  details.srcbox[open] > summary::before { content:"▾ "; }
+  details.srcbox > .scroll { padding:0 14px 14px; }
 
 /* ══════ PDF 인쇄(브라우저 인쇄 → PDF 저장) ══════ */
 @media print {
@@ -87,6 +94,13 @@
   table.srcs td:last-child { color:#4f4738 !important; }
   table.srcs b { color:#1a1712 !important; }
   .scroll { overflow:visible !important; }
+  /* 🔴 닫힌 <details>는 인쇄에서 «통째로 빠진다» — 실측: PDF 26.0 kB(표 없음과 바이트 동일) vs 49.3 kB(펼침).
+     제출물 ③의 PDF는 이 파일을 인쇄해 만들므로, 화면은 접힌 채로 두고 인쇄에서만 강제로 펼친다. */
+  details.srcbox > summary ~ * { display: revert !important; }
+  details.srcbox::details-content { content-visibility: visible !important; }
+  details.srcbox { background:var(--card) !important; border-color:var(--edge) !important; break-inside:avoid; }
+  details.srcbox > summary { color:var(--gold) !important; }
+  details.srcbox > summary::before { content:"" !important; }
   h1,h2,h3,h4 { break-after:avoid; page-break-after:avoid; }
   .card, .quick, .qrow, .wi, ul, li, pre, table, tr { break-inside:avoid; page-break-inside:avoid; }
   ::-webkit-scrollbar { display:none; }
@@ -96,8 +110,8 @@
 <body>
 <div class="wrap">
   <h1>🐯 zodiac-clue — 호랑이 생신 잔치</h1>
-  <p class="one">십이지 손님 중 <b>잔치 음식·선물을 훔친 도둑</b>을 추리하는 <b>웹 멀티플레이 추리 게임</b>. 빈자리는 <b>AI NPC</b>가 채운다.</p>
-  <p class="sub">NHN NAN 2026 사전과제 · 제출물 ③ 게임 소개 · 갱신 2026-07-28 · <span class="pill">사람용 .html</span></p>
+  <p class="one">십이지 손님 중 <b>잔치 음식과 선물을 훔친 도둑</b>을 추리하는 <b>웹 멀티플레이 추리 게임</b>입니다. 빈자리는 <b>AI NPC</b>가 채워 함께 플레이합니다.</p>
+  <p class="sub">NHN NAN 2026 사전과제 · 제출물 ③ 게임 소개 · 갱신 2026-07-29 · <span class="pill">사람용 .html</span></p>
 
   <p>
     <a class="cta" href="https://zodiac-clue.vercel.app">🎮 지금 플레이</a>
@@ -109,159 +123,134 @@
   <div class="quick">
     <div class="qh">⏱ 심사자 60초 요약</div>
     <div class="qrow"><div class="qk">한 판 하려면</div>
-      <div><span class="steps"><span class="step"><a href="https://zodiac-clue.vercel.app">zodiac-clue.vercel.app</a></span><span class="arw">▸</span><span class="step">[방 만들기]</span><span class="arw">▸</span><span class="step">캐릭터 클릭</span><span class="arw">▸</span><span class="step">[잔치 시작]</span></span>
-        <br><span class="qk">3클릭 · 계정 없음 · 설치 없음 · 무료 — 더 빠르게는 <code>?solo=1</code> 한 번에 판 시작</span></div></div>
-    <div class="qrow"><div class="qk">혼자 되나</div>
-      <div><b>된다.</b> 6인 미만이면 AI NPC가 좌석을 자동 충원 — <b>1인 접속으로도 정식 규칙 판이 성립</b>한다.</div></div>
-    <div class="qrow"><div class="qk">승리 조건</div>
-      <div>봉인된 정답 <b>누가 · 무엇을 · 어디서</b>를 가장 먼저 정확히 <b>고발</b>.</div></div>
+      <div><span class="steps"><span class="step"><a href="https://zodiac-clue.vercel.app">zodiac-clue.vercel.app</a></span><span class="arw">▸</span><span class="step">[방 만들기]</span><span class="arw">▸</span><span class="step">캐릭터 선택</span><span class="arw">▸</span><span class="step">[잔치 시작]</span></span>
+        <br><span class="qk">계정과 설치 없이 3번의 클릭으로 시작합니다 — <code>?solo=1</code>을 붙이면 한 번에 솔로 플레이로 진입합니다</span></div></div>
+    <div class="qrow"><div class="qk">혼자서도 가능한가</div>
+      <div><b>가능합니다.</b> 6인 미만이면 AI NPC가 남은 좌석을 자동으로 채워, <b>1인 접속만으로도 정식 규칙의 판이 성립</b>합니다.</div></div>
     <div class="qrow hi"><div class="qk">AI 경계</div>
-      <div><b>정답·반증·승패 판정 = 결정론 규칙엔진</b> / <b>LLM(Gemini) = NPC 대사(표현)만.</b>
-        정답 봉투는 어떤 경로로도 LLM에 넘기지 않는다. →
+      <div>정답·반증·승패 판정은 <b>결정론 규칙엔진</b>이 맡고, <b>LLM(Gemini)은 NPC 대사 표현만</b> 담당합니다.
+        정답 데이터는 어떤 경로로도 LLM에 전달되지 않습니다. →
         <a href="https://zodiac-clue.vercel.app/docs/design/20260720-ai-tech-doc.html">제출물 ④ AI 기술문서</a></div></div>
-    <div class="qrow hi"><div class="qk">AI가 돌았다는 증거</div>
-      <div>화면 우측 <b>AI 칩</b>(<code>✨LLM · ♻캐시 · ⚙폴백</code>) + 대사 줄마다 경로·지연 배지(<code>✨ 0.9s</code>) + <code>GET /health</code>.
-        <b>실측 1판 = LLM 19 · 폴백 4 · 캐시 0</b>(④ §4).</div></div>
-    <div class="qrow hi"><div class="qk">환각 검증</div>
-      <div>폴백 <b>전수 112,752문장</b>에서 진실값 치환·누출 등 <b>C1~C6 위반 0건</b> — <code>pnpm eval:narrator</code>(오프라인·Gemini 호출 0).
-        <b>C7(실호출 경로 분포)은 미판정</b>이라고 적어 둔다.</div></div>
-    <div class="qrow"><div class="qk">한 판 길이</div>
-      <div>평균 <b>7.2라운드</b> · 봇 1턴 <b>3.8초</b>(실측 80표본). 결과 화면에서 <b>[다시 하기]</b> 1클릭 리매치.</div></div>
-    <div class="qrow"><div class="qk">게임이 성립하는가</div>
-      <div>사람 승률 <b>2.3% → 21.6%</b>(6인 공정 몫 16.7%) · 봇도 <b>7.0%의 판에서 오답 고발로 탈락</b>한다.</div></div>
-    <div class="qrow"><div class="qk">원작 대비</div>
-      <div>AI NPC 충원 · 고정 NPC <b>[계략]</b>(엿보기+귓속말) · 비밀 통로 · 증거 노트 · 4단계 개발 진화 뷰.</div></div>
+    <div class="qrow hi"><div class="qk">AI 작동 증거</div>
+      <div>화면 우측 <b>AI 칩</b>(<code>✨LLM · ♻캐시 · ⚙폴백</code>)과 대사별 경로·지연 배지로 확인할 수 있습니다.
+        <b>실측 1판 기준 LLM 19회 · 폴백 4회 · 캐시 0회</b>입니다(④ §4).</div></div>
+    <div class="qrow"><div class="qk">게임 밸런스</div>
+      <div>사람 승률은 <b>2.3%에서 21.6%로</b> 개선됐고(6인 공정 몫 16.7%), 봇도 <b>7.0%의 판에서 오답 고발로 탈락</b>합니다.</div></div>
+  </div>
+  <p class="sub" style="margin:6px 2px 0;">위 수치는 모두 재현 가능한 스크립트와 실측에서 나왔습니다. 추정치는 사용하지 않았습니다.</p>
+
+  <h2>AI를 어떻게 썼는가</h2>
+  <p class="src">상세: <a href="https://zodiac-clue.vercel.app/docs/design/20260720-ai-tech-doc.html">제출물 ④ AI 기술문서</a></p>
+  <div class="why">
+    <div class="wi ai"><b class="t">판정과 표현을 분리했습니다</b>
+      <p>정답·반증·승패·주사위는 결정론 규칙엔진만 처리하고, LLM은 대사 한 줄만 작성합니다.
+        정답과 손패 정보는 애초에 LLM에 전달되지 않습니다.</p></div>
+    <div class="wi ai"><b class="t">환각 검증까지 전수로 했습니다</b>
+      <p>폴백 문장 <b>112,752건</b>을 전부 검사해 진실값 치환·누출 등 위반 <b>0건</b>을 확인했고,
+        검증기 자체도 알려진 위반 11건이 실제로 FAIL로 잡히는지 매 실행 자기검사합니다.</p></div>
+    <div class="wi ai"><b class="t">주장을 스스로 검증하고, 틀린 주장은 직접 반박했습니다</b>
+      <p>지연·폴백 사유를 계측해 투명하게 기록했고, 그 계측으로 “LLM 왕복 ~1.2초”, “캐시 히트 시 사라진다”는
+        기존 문서의 주장 2건이 실측과 다름을 확인해 정정했습니다.</p></div>
+    <div class="wi ai"><b class="t">못한 것은 못했다고 밝혔습니다</b>
+      <p>실호출 경로 분포(C7)는 무료 쿼터 제약으로 검증하지 못했고, 추정치로 채우지 않았습니다.</p></div>
   </div>
 
-  <h2>AI를 어떻게 썼는가 <span class="h2sub">— 그리고 그 증거</span></h2>
-  <p class="src">상세: <a href="https://zodiac-clue.vercel.app/docs/design/20260720-ai-tech-doc.html">제출물 ④ AI 기술문서</a> ·
-    검증 스크립트 <code>scripts/eval-narrator.mjs</code> · 계측 <code>apps/server/src/ai/telemetry.ts</code></p>
+  <h2>왜 이 게임인가</h2>
   <div class="why">
-    <div class="wi ai"><b class="t">경계가 먼저다</b>
-      <p>정답 봉투·반증·승패·주사위는 <b>결정론 규칙엔진</b>만 만든다. LLM은 <b>대사 한 줄</b>만 쓴다.
-        검증기가 <code>NarrationInput</code> 필드를 정적으로 파싱해 <b>정답·손패 필드가 존재하지 않음</b>을 매 실행 증명한다(eval S1).</p></div>
-    <div class="wi ai"><b class="t">페르소나가 대사에만 있지 않다</b>
-      <p>봇의 고발 판단에 <code>BOT_NERVE</code> 12값(캐릭터 성격 한 줄에서 유도)이 들어가 <code>p = nerve × (1/조합수)</code>로 지른다.
-        호랑이는 성급히 고발하고 양 목동은 안 한다 — 최상/최하 <b>14배</b> 차이가 실측으로 나온다.
-        <b>임의 마법상수 0개</b>이고 <code>Math.random()</code>은 판 시드 발행 1회뿐이라 <b>결정론은 그대로</b>다(시드를 되먹이면 같은 판이 재생된다).</p></div>
-    <div class="wi ai"><b class="t">계측을 붙였다</b>
-      <p><code>narrate()</code>가 <b>경로·지연·모델·폴백사유</b>를 돌려주고, 폴백 사유를 6종(응답 지연·HTTP 오류·빈 응답·길이 초과·키 없음·비활성)으로 구분한다.
-        <b>전부 폴백이어도 숨기지 않고 사유와 함께 표시</b>한다 — 값을 감추는 칩은 계측이 없는 것과 같다.</p></div>
-    <div class="wi ai"><b class="t">그 계측이 우리 문서의 주장 2건을 반증했다</b>
-      <p>④ §6.2가 적었던 “LLM 왕복 ~1.2초”는 실측 <b>평균 926ms</b>였고, “캐시 히트 시엔 사라진다”던 완충 논리는
-        <b>실제로 발동하지 않았다(히트 0/24)</b>. 캐시 키가 제안 조합이라 한 판에서 재현되지 않는다 —
-        <b>왕복은 상시 비용</b>이라고 문서를 고쳤다.</p></div>
-    <div class="wi ai"><b class="t">주장에는 스크립트를 붙였다</b>
-      <p>환각 검증은 데이터를 미러링하지 않고 실소스를 그대로 import하며, <b>판정기 자기검사</b>(알려진 위반 11건이 실제로 FAIL로 잡히는지 매 실행 확인)를 함께 돌린다.
-        전건 PASS 리포트는 “검사기가 아무것도 안 잡는다”와 구분되지 않기 때문이다.</p></div>
-    <div class="wi ai"><b class="t">못 한 것은 못 했다고 쓴다</b>
-      <p>C7(실호출 경로·지연 분포)은 무료 쿼터를 소모하므로 <b>미판정</b>으로 남겼다. 추정치로 채우지 않았다.</p></div>
-  </div>
-
-  <h2>왜 이 게임인가 <span class="h2sub">기획 근거</span></h2>
-  <p class="src">근거 문서: <code>docs/planning/brainstorming/20260714-nhn-analysis.md</code> ·
-    <code>20260715-nhn-revenue-genre.md</code> · <code>docs/planning/meetings/20260718-meeting-notes.md</code></p>
-  <div class="why">
-    <div class="wi"><b class="t">장르 — 소규모 퍼즐 추리</b>
-      <p>07-18 2차 회의에서 “소규모 퍼즐게임 + 클루(Cluedo) 형식의 불완전정보 소거 추리 + 플레이어 외 AI NPC 별도 존재”를 확정했다.
-        D-23 스코프에서 완성 가능한 규모이면서, 규칙이 이미 검증된 보드게임 위에 올라간다.</p></div>
-    <div class="wi"><b class="t">AI가 없으면 규칙이 작동하지 않는다</b>
-      <p>같은 회의에 <b>“심사자는 링크를 눌러 <u>혼자</u> 플레이한다”</b>는 제약이 기록돼 있다. 클루는 3~6인 불완전정보 게임이라
-        상대가 0명이면 반증 자체가 성립하지 않는다. 그래서 AI NPC의 좌석 충원은 연출이 아니라 <b>게임 성립 조건(load-bearing)</b>이다.</p></div>
-    <div class="wi"><b class="t">주최사 포트폴리오 정합</b>
-      <p>NHN 게임 매출은 웹보드(카드·보드)가 40%+, 퍼즐·캐주얼이 그 다음 축으로 <b>합계 약 70%</b>다(07-15 리서치).
-        보드게임 규칙 + 짧은 세션 + 리플레이라는 이 게임의 형태는 그 두 축과 같은 결이다.</p></div>
-    <div class="wi"><b class="t">다만 사행성 소재는 취하지 않았다</b>
-      <p>웹보드의 “정통 룰 + 테이블 감각”만 가져오고 베팅·게임머니·환전 요소는 넣지 않았다.
-        07-15 리서치가 짚은 “웹보드에서 사행성을 떼고 정통 룰로 격을 올리는 흐름 × AI”에 해당하는 지점이다.</p></div>
-    <div class="wi"><b class="t">AI를 ‘쓴 것’이 아니라 ‘지휘한 것’을 보여주는 형태</b>
-      <p>07-14 리서치 기준 주최사는 “AI를 활용하는 사람”이 아니라 <b>“AI의 다음 단계를 설계할 디렉터”</b>를 찾는다고 밝혔다.
-        그래서 LLM을 판정에 쓰지 않고 표현에만 가둔 <b>경계 설계</b>와 그 검수 방법을 제출물 ④의 본론으로 잡았다.</p></div>
+    <div class="wi"><b class="t">장르</b>
+      <p>소규모 퍼즐과 불완전정보 소거 추리를 결합했습니다. 이미 검증된 보드게임 규칙 위에 올려 짧은 개발 기간 안에서도 완성도를 확보했습니다.</p></div>
+    <div class="wi"><b class="t">AI가 게임 성립의 조건입니다</b>
+      <p>이 장르는 3~6인 불완전정보 게임이라 상대가 없으면 반증 자체가 성립하지 않습니다.
+        AI NPC의 좌석 충원은 연출이 아니라 혼자서도 게임이 성립하게 하는 핵심 장치입니다.</p></div>
+    <div class="wi"><b class="t">주최사 포트폴리오와의 정합성</b>
+      <p>웹보드와 퍼즐·캐주얼 장르가 매출의 상당 부분을 차지하는 만큼, 보드게임 규칙과 짧은 세션, 리플레이 구조를 갖춘 이 게임의 형태는 같은 결을 갖습니다.
+        다만 베팅이나 게임머니 같은 사행성 요소는 배제했습니다.</p></div>
     <div class="wi"><b class="t">테마 — 십이지 “호랑이 생신 잔치”</b>
-      <p>07-18 회의에서 정한 배경이다. 십이지는 별도 세계관 설명 없이 <b>12명을 즉시 식별</b>할 수 있는 공용 기호이고,
-        12라는 수가 이 게임의 슬롯(플레이어 좌석 6 + 고정 NPC 6)과 정확히 맞는다.
-        낯선 서양 인명 6종을 외우게 하는 원작의 학습 비용을 그대로 제거한다.</p></div>
-    <div class="wi"><b class="t">주제는 교체 가능하도록 만들었다</b>
-      <p>카드 ID는 로마자로 두고 화면 표기만 한글 라벨로 매핑해, 테마 교체 시 라벨만 갈아끼우면 된다(<code>packages/shared</code>).
-        재사용 가능한 <b>엔진</b>과 교체 가능한 <b>콘텐츠(주제)</b>를 분리한다는 프로젝트 원칙의 첫 검증판이 십이지 테마다.</p></div>
+      <p>십이지는 별도 설명 없이 12명을 즉시 식별할 수 있는 공용 기호이고, 12라는 숫자가 플레이어 좌석 6과 고정 NPC 6을 정확히 채웁니다.
+        낯선 서양 인명을 외워야 하는 기존 추리 게임의 학습 비용을 제거했습니다.</p></div>
   </div>
 
-  <h2>목표</h2>
+  <h2>코어 룰 <span class="h2sub">— 10단계</span></h2>
   <div class="card">
-    <p>봉인된 정답 <b>누가(도둑) · 무엇을(훔친 것) · 어디서(장소)</b>를 추리해 <b>가장 먼저 정확히 고발</b>하면 승리.</p>
-    <p class="sub" style="margin:0 0 6px;">예) "게코 도령이 사랑방에서 잡채를 훔쳤다."</p>
-    <p style="margin:0;">첫 진입 시 <b>목표 3줄 카드</b>가 뜨고(<code>[?]</code>로 재열람), 손패에는 <b>“내 손패 3장은 정답이 아님”</b>이 상시 표시된다.</p>
+    <p style="margin:0 0 8px;">게임을 시작하기 전 이 10단계만 알면 바로 플레이할 수 있습니다.</p>
+    <ol style="margin:0 0 8px; padding-left:1.3em;">
+      <li>방에 입장하면 카드 3장을 받습니다. 이 3장은 정답이 아니므로 추리에서 제외합니다.</li>
+      <li>목표는 하나입니다. 남은 카드 속 <b>도둑·훔친 것·장소</b>를 가장 먼저 알아내면 승리합니다.</li>
+      <li>차례가 되면 주사위를 굴려 이동합니다.</li>
+      <li>방 안에서는 자유롭게 움직일 수 있습니다.</li>
+      <li>방에서 <b>[추리하기]</b>를 눌러 도둑과 훔친 것을 지목합니다.</li>
+      <li>겹치는 카드를 가진 참가자가 있으면 나에게만 살짝 보여줍니다.</li>
+      <li>확인한 카드는 "정답 아님"으로 기록하고 범위를 좁혀갑니다.</li>
+      <li>확신이 서면 <b>[신고하기]</b>로 도둑·훔친 것·장소를 한 번에 지목합니다.</li>
+      <li>정답이면 승리하고, 오답이면 탈락합니다. 탈락 후에도 관전은 계속할 수 있습니다.</li>
+      <li>누군가 정답을 맞히거나 한 명만 남을 때까지 반복합니다.</li>
+    </ol>
+    <p class="sub" style="margin:0;">첫 진입 시 목표 3줄 카드가 나타나고, 언제든 <code>[?]</code>로 다시 볼 수 있습니다. 손패에는 “내 손패 3장은 정답이 아님”이 항상 표시됩니다.</p>
   </div>
 
-  <h2>조작</h2>
-  <ul>
-    <li><b>이동</b>: 방향키/WASD/ㅈㅁㄴㅇ — 턴 시작 시 <b>주사위(2d6)</b>만큼 복도 이동(방 안·잔치상 무료). 방은 <b>입구(🚪)</b>로만 출입, <b>들어간 턴엔 못 나감</b>(다음 턴에 나감).</li>
-    <li><b>줌</b> 마우스 휠 · <b>화면 이동</b> <code>우클릭</code> 드래그(또는 <code>Space</code> 꾹) · <b>시점(개발 진화 뷰)</b> 좌하단 <b>위로 열리는 드롭다운</b>으로 뷰1(2D)·뷰2(2.5D)·뷰3(2.5D+에셋)·<b>뷰4(도트풍)</b> 직접 선택, 항상 뷰1 시작(Three.js는 필요할 때 지연 로드).</li>
-    <li>방에서 <b>[제안]</b> → 도둑·훔친 것 지목 → 용의자·장물이 방의 <b>소환 앵커 칸</b>(4뷰 모두 표시)으로 끌려오고 시계방향 <b>반증</b>. <b>[고발]·[통로]·[계략]·[턴 종료]</b> — 비활성 버튼은 <b>왜 못 누르는지</b>를 툴팁·클릭 피드백으로 알려준다.</li>
-    <li><b>제안한 턴에 바로 고발할 수 있다</b>(30초 창, 배너 카운트다운). <b>같은 방 연속 제안은 불가</b> — 방을 벗어났다 들어와야 한다.</li>
-    <li><b>턴 순서</b>: 상단 배너에 현재→다음 순서, <b>클릭하면 원형으로 전체 순서</b>(시계방향·현재/다음). <b>직업 풀이</b>: 대기실에서 캐릭터에 올리면 사극 직업(서생·낭자·도령·객주 등)의 뜻·성격 표시.</li>
-  </ul>
-
-  <h2>주요 특징</h2>
+  <h2>특수 룰 <span class="h2sub">— 더 재미있게 만드는 요소</span></h2>
   <div class="card">
+    <p style="margin:0 0 8px;">코어 룰만으로도 플레이할 수 있지만, 아래 요소를 알아두면 판이 더 풍성해집니다.</p>
     <ul>
-      <li><b>방 공개/비공개 + 공개방 목록</b>: 방 생성 시 공개/비공개 선택. 메인에서 <b>시작 전 공개방</b>(방장·인원)을 보고 바로 참여, 또는 초대 코드로 참가.</li>
-      <li><b>AI NPC 자동 충원</b>: 6인 미만이면 봇이 채워 1인도 플레이. 봇은 <b>규칙기반 추리 + LLM 대사</b>이고, 확신이 좁혀지면 <b>성격에 따라 도박 고발을 해서 탈락하기도 한다</b>.</li>
-      <li><b>비밀 통로</b>: 대각 방 3쌍 연결 — 주사위 없이 순간이동. 선은 평소 흐리게 두고 <b>커서를 가져가면 드러난다</b>(보드 가독성 우선).</li>
-      <li><b>고정 NPC(계략)</b>: 선택 안 된 십이지 6명이 <b>모서리 2 + 방↔방 벽면 4</b>에 고정. 다가가 <b>[계략]</b> → 상대 카드(정답 아님) 1~2장 엿보기 + 이동 보너스(멀수록 큼) + <b>귓속말 대사(당사자만 전문·타인은 「귓속말」)</b>. 판당 각 1회.</li>
-      <li><b>공통 단서</b>: 솔로(사람1+봇) 시 정답 아닌 카드 2장 공개.</li>
-      <li><b>증거 노트 · 제안 기록표</b>: 개인 메모 체크(내 패·엿본 카드 자동 제외) + 흩어진 제안·반증을 한 행으로 모은 기록표.</li>
-      <li><b>혼자 두어도 판이 멈추지 않는다</b>: 턴 클럭(접속 45초/끊김 8초, <b>사람 1명이면 끔</b>) · 이탈 좌석은 손패·시야를 그대로 이어받은 봇이 인계 · 재접속 시 손패·제안 기록 복구.</li>
-      <li><b>접근성·모바일</b>: <code>?cvd=1</code> 색각 대체 표기 4뷰 공통, 색 단독 식별 금지(이름 첫 글자·이모지·글리프 병기), <code>:focus-visible</code> 링, 터치 대응(<code>100dvh</code>·당겨서 새로고침 차단), 680px 미만 우측 컬럼 접기.</li>
-      <li><b>리매치</b>: 종료 후 [다시 하기]로 즉시 새 판.</li>
+      <li><b>비밀 통로</b>: 방 3쌍이 대각선으로 연결돼 있어 주사위 없이 순간이동할 수 있습니다. 평소엔 흐리게 표시되고 커서를 올리면 드러납니다.</li>
+      <li><b>계략(고정 NPC)</b>: 선택되지 않은 십이지 6명이 곳곳에 고정 배치됩니다. 다가가 [엿보기]를 누르면 상대 카드를 몰래 확인하고 이동 보너스도 받습니다(판당 1회).</li>
+      <li><b>AI NPC 자동 충원</b>: 6인이 모이지 않아도 빈자리를 AI가 채워 혼자서도 정식 판이 진행됩니다. AI도 성격에 따라 성급하게 오답을 고발하기도 합니다.</li>
+      <li><b>공통 단서</b>: 혼자 플레이할 때는 정답이 아닌 카드 2장을 미리 공개해 추리를 돕습니다.</li>
+      <li><b>증거 노트</b>: 용의자·훔친 것·장소를 개인 메모로 체크하고, 제안·반증 기록을 한눈에 모아 볼 수 있습니다.</li>
+      <li><b>방 공개/비공개</b>: 공개방은 메인 화면에 노출돼 누구나 바로 참여할 수 있고, 비공개방은 초대 코드로만 참가할 수 있습니다.</li>
+      <li><b>접속 끊김 대응</b>: 자리를 비우면 봇이 손패와 시야를 그대로 이어받고, 재접속하면 그대로 복구됩니다.</li>
+      <li><b>접근성</b>: <code>?cvd=1</code>로 색각 대체 표기를 켤 수 있고, 색상 외에 이름과 이모지로도 구분할 수 있습니다. 모바일 터치도 지원합니다.</li>
+      <li><b>리매치</b>: 판이 끝나면 같은 방에서 [다시 하기] 한 번으로 새 판을 시작합니다.</li>
+    </ul>
+    <p style="margin:8px 0 0;"><b>게임이 끝나는 경우</b></p>
+    <ul>
+      <li>정답을 맞히면 승리, 오답이면 탈락합니다(관전은 계속 가능).</li>
+      <li>제안이 75회를 넘으면 무승부로 종료합니다(도달률 0.1%로 드문 경우입니다).</li>
+      <li>어떤 방식으로 끝나든 정답은 항상 공개됩니다.</li>
     </ul>
   </div>
 
-  <h2>종료 조건</h2>
-  <ul>
-    <li><b>정답 고발 성공 → 승리</b>(결과 화면 + 다시 하기/메인으로).</li>
-    <li><b>오답 고발 → 탈락</b>(관전, 반증만 가능). 최후 1인 생존 시 승리.</li>
-    <li><b>제안 75회 도달 → 무승부 종료</b>(백스톱). 도달률 0.1%로 정상 게임을 자르지 않는다.</li>
-    <li><b>어떤 경로로 끝나든 정답 봉투를 공개</b>한다 — 답을 모른 채 끝나는 판은 없다.</li>
-  </ul>
-
   <h2>실행 방법</h2>
   <ul>
-    <li><b>웹 즉시 플레이(설치 불필요·무료)</b>: <a href="https://zodiac-clue.vercel.app">zodiac-clue.vercel.app</a>. 초기 로드 <b>115.66 kB</b>(JS, 8청크 분할)라 링크를 누른 뒤 바로 시작된다.</li>
-    <li>방 만들기 → 초대 링크(<code>/room/&lt;코드&gt;</code>) 공유. <b>6인 미만이면 NPC 자동 충원</b> — 1인도 시작 가능.</li>
-    <li>파라미터: <code>?solo=1</code> 원클릭 솔로 진입 · <code>?cvd=1</code> 색각 대체 표기. <b>없어도 동일한 판</b>이 돌아간다.</li>
-    <li>로컬: <code>pnpm install &amp;&amp; pnpm dev</code> → <code>localhost:5173</code></li>
+    <li><b>웹에서 바로 플레이</b>: <a href="https://zodiac-clue.vercel.app">zodiac-clue.vercel.app</a>. 설치가 필요 없고 무료이며, 초기 로드가 가벼워 링크를 열면 바로 시작됩니다.</li>
+    <li>방을 만들고 초대 링크(<code>/room/&lt;코드&gt;</code>)를 공유합니다. 6인 미만이면 NPC가 자동으로 채워져 1인도 시작할 수 있습니다.</li>
+    <li>파라미터: <code>?solo=1</code>은 원클릭 솔로 진입, <code>?cvd=1</code>은 색각 대체 표기입니다. 파라미터 없이도 동일한 판이 진행됩니다.</li>
+    <li>로컬 실행: <code>pnpm install &amp;&amp; pnpm dev</code> → <code>localhost:5173</code></li>
   </ul>
 
-  <h2>수치의 출처 <span class="h2sub">추정치는 쓰지 않는다</span></h2>
-  <div class="scroll">
-  <table class="srcs">
-    <thead><tr><th>수치</th><th>출처</th></tr></thead>
-    <tbody>
-      <tr><td>사람 승률 2.3% → <b>21.6%</b> · 봇 탈락 판 0.2% → <b>7.0%</b></td>
-          <td>규칙 시뮬레이터 <code>scripts/sim-balance.mjs</code>(시드 고정) · 로드맵 §7.5. 회귀 기준선은 2만 판 21.45%(<code>scripts/gate.baseline.json</code>)</td></tr>
-      <tr><td>방문 방 2.41 → <b>5.11/9</b> · 제안 상한 60 → <b>75</b>(도달 17.0% → 0.1%)</td>
-          <td>동 시뮬 2·3차 실측 · 로드맵 §7.5</td></tr>
-      <tr><td>봇 1턴 7.6초 → <b>3.8초</b></td>
-          <td>실측 80표본 평균 3,784ms · 로드맵 §7.5 3차</td></tr>
-      <tr><td>환각 검증 <b>112,752문장 C1~C6 위반 0</b> · C7 미판정</td>
-          <td><code>pnpm eval:narrator</code>(오프라인, Gemini 호출 0) · ④ §3.4</td></tr>
-      <tr><td>LLM 왕복 평균 <b>926ms</b> · 캐시 히트 <b>0/24</b></td>
-          <td>서버 계측(<code>apps/server/src/ai/telemetry.ts</code>) · ④ §6.2 계측 정정</td></tr>
-      <tr><td>초기 로드 2,172 kB → <b>115.66 kB</b>(8청크)</td>
-          <td><code>pnpm gate:bundle</code> · <code>scripts/gate.baseline.json</code></td></tr>
-      <tr><td>회귀 방어 <b>7종 게이트</b></td>
-          <td><code>pnpm verify</code> — 타입·빌드·번들예산·밸런스·환각검증·GPU·문서정합. 건너뛴 항목은 사유와 함께 출력된다</td></tr>
-    </tbody>
-  </table>
-  </div>
+  <details class="srcbox">
+    <summary>수치의 출처 — 펼쳐서 보기 (추정치는 사용하지 않았습니다 · 인쇄하면 항상 펼쳐집니다)</summary>
+    <div class="scroll">
+    <table class="srcs">
+      <thead><tr><th>수치</th><th>출처</th></tr></thead>
+      <tbody>
+        <tr><td>사람 승률 2.3% → <b>21.6%</b> · 봇 탈락 판 0.2% → <b>7.0%</b></td>
+            <td>규칙 시뮬레이터 <code>scripts/sim-balance.mjs</code>(시드 고정) · 로드맵 §7.5. 회귀 기준선은 2만 판 21.45%(<code>scripts/gate.baseline.json</code>)</td></tr>
+        <tr><td>방문 방 2.41 → <b>5.11/9</b> · 제안 상한 60 → <b>75</b>(도달 17.0% → 0.1%)</td>
+            <td>동 시뮬 2·3차 실측 · 로드맵 §7.5</td></tr>
+        <tr><td>봇 1턴 7.6초 → <b>3.8초</b></td>
+            <td>실측 80표본 평균 3,784ms · 로드맵 §7.5 3차</td></tr>
+        <tr><td>환각 검증 <b>112,752문장 C1~C6 위반 0</b> · C7 미판정</td>
+            <td><code>pnpm eval:narrator</code>(오프라인, Gemini 호출 0) · ④ §3.4</td></tr>
+        <tr><td>LLM 왕복 평균 <b>926ms</b> · 캐시 히트 <b>0/24</b></td>
+            <td>서버 계측(<code>apps/server/src/ai/telemetry.ts</code>) · ④ §6.2 계측 정정</td></tr>
+        <tr><td>초기 로드 2,175 kB → <b>42.38 kB</b>(gzip 17.93 kB · 9청크)</td>
+            <td><code>pnpm gate:bundle</code> · <code>scripts/gate.baseline.json</code>. 07-29에 네트워크 계층(colyseus)을 동적 import로 떼어 115.66 → 42.38 kB</td></tr>
+        <tr><td>판 전체 <b>시드 재생</b></td>
+            <td>같은 시드 2회 = 정답·손패·주사위 53회·제안 로그 전부 동일(<code>459a51f</code>) · 서버 로그의 <code>[rng] game seed</code> 줄을 <code>SEED</code>로 되먹인다</td></tr>
+        <tr><td>회귀 방어 <b>8종 게이트</b></td>
+            <td><code>pnpm verify</code> — 타입·문서정합·GPU·밸런스·환각검증·빌드·번들예산·화면게이트. 건너뛴 항목은 사유와 함께 출력된다</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </details>
 
   <h2>링크</h2>
   <ul>
     <li>플레이: <a href="https://zodiac-clue.vercel.app">https://zodiac-clue.vercel.app</a></li>
     <li>소스: <a href="https://github.com/anveloper/zodiac-clue">https://github.com/anveloper/zodiac-clue</a></li>
     <li>AI 기술문서(④): <a href="https://zodiac-clue.vercel.app/docs/design/20260720-ai-tech-doc.html">https://zodiac-clue.vercel.app/docs/design/20260720-ai-tech-doc.html</a></li>
-    <li>플레이 영상: <b>(제출물 ② 촬영·업로드 후 이 자리에 링크)</b> — 아직 없는 링크를 적지 않는다</li>
+    <li>플레이 영상: <b>(제출물 ② 촬영·업로드 후 이 자리에 링크)</b> — 아직 준비되지 않은 링크는 남겨두지 않았습니다</li>
   </ul>
 </div>
 </body>
