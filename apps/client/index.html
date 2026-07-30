@@ -472,6 +472,9 @@
       }
       .rp-head .rp-sub { color: #a89778; font-weight: 400; }
       .rp-body { flex: 1; min-height: 0; overflow-y: auto; padding: 8px 12px; }
+      /* 마우스 드래그 스크롤(요청 ①) — 데스크톱에서 잡고 끌어 이전 내역 확인. */
+      .rp-body, #log { cursor: grab; }
+      .drag-scrolling { cursor: grabbing !important; user-select: none; }
       /* 패널이 4개가 되면서(§7.9) 고정 높이만 두면 짧은 화면에서 컬럼이 넘친다.
          드래그로 정한 높이는 유지하되 공간이 모자라면 줄어들도록 shrink를 연다. */
       .rp-evi { flex: 0 1 auto; height: 260px; min-height: 72px; } /* 높이 드래그로 조절 */

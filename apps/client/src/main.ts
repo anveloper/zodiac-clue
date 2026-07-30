@@ -2470,6 +2470,45 @@ const enterGame = async (): Promise<void> => {
     rightCol.style.width = `${w}px`;
   });
 
+  // 우측 패널 마우스 드래그 스크롤 — 데스크톱에서 «드래그로 이전 내역 확인»(요청 ①).
+  // 터치는 이미 `touch-action:pan-y`로 네이티브 스크롤되므로 마우스에만 건다.
+  const enableDragScroll = (el: HTMLElement): void => {
+    el.addEventListener("pointerdown", (e) => {
+      if (e.pointerType !== "mouse" || e.button !== 0) return;
+      const startY = e.clientY;
+      const startTop = el.scrollTop;
+      let moved = false;
+      const move = (ev: PointerEvent): void => {
+        const dy = ev.clientY - startY;
+        if (Math.abs(dy) > 3) {
+          moved = true;
+          el.classList.add("drag-scrolling");
+        }
+        el.scrollTop = startTop - dy;
+      };
+      const up = (): void => {
+        window.removeEventListener("pointermove", move);
+        window.removeEventListener("pointerup", up);
+        el.classList.remove("drag-scrolling");
+        if (moved) {
+          // 드래그였다면 뒤따르는 click 1회 삼킴(증거노트 항목 삭제 등 오작동 방지).
+          const swallow = (ce: Event): void => {
+            ce.stopPropagation();
+            ce.preventDefault();
+          };
+          el.addEventListener("click", swallow, { capture: true, once: true });
+          setTimeout(() => el.removeEventListener("click", swallow, true), 0);
+        }
+      };
+      window.addEventListener("pointermove", move);
+      window.addEventListener("pointerup", up);
+    });
+  };
+  for (const id of ["sugBody", "evidence", "log"]) {
+    const el = document.getElementById(id);
+    if (el) enableDragScroll(el);
+  }
+
   // ── 좁은 화면에서 우측 컬럼 접기 (로드맵 §7.8 부수 · §7.9) ──────────
   // 390×844 실측에서 260px 고정 컬럼이 화면 폭의 2/3를 덮어 보드·턴 배너를 가렸다.
   //
