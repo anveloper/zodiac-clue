@@ -101,11 +101,6 @@
     "dir": "plans/active",
     "items": [
       {
-        "path": "plans/active/16-loop-rounds-0729-engine-content.md",
-        "title": "plan: 에이전트 루프 07-29 — 엔진/콘텐츠 분리 실증 · 측정 전환 · 첫 페인트",
-        "private": true
-      },
-      {
         "path": "plans/active/12-view-evolution-stages.md",
         "title": "plan: 뷰 진화 단계 선택기 (개발 진화를 기능으로)",
         "private": true
@@ -137,6 +132,14 @@
     "label": "✅ 플랜 · 완료",
     "dir": "plans/done",
     "items": [
+      {
+        "path": "plans/done/17-button-labels-and-intro-rebalance.md",
+        "title": "17 — 액션 버튼 라벨 교체 + 제출물 ③ 분량 재배분 (07-30)"
+      },
+      {
+        "path": "plans/done/16-loop-rounds-0729-engine-content.md",
+        "title": "plan: 에이전트 루프 07-29 — 엔진/콘텐츠 분리 실증 · 측정 전환 · 첫 페인트"
+      },
       {
         "path": "plans/done/15-loop-rounds-balance-ai-perf.md",
         "title": "plan: 에이전트 루프 개발 라운드 — 밸런스·AI 계측·성능·4뷰 계약"
@@ -188,6 +191,10 @@
     "label": "📓 개발일지",
     "dir": "logs",
     "items": [
+      {
+        "path": "logs/20260730-button-labels-and-intro-rebalance.md",
+        "title": "2026-07-30 — 기획 지시 2건 반영: 버튼 라벨 교체 · 제출물 ③ 재배분"
+      },
       {
         "path": "logs/20260729-engine-content-split-and-measurement.md",
         "title": "20260729 — 두 번째 주제로 경계를 재고, 주장을 측정으로 바꾼 날"
