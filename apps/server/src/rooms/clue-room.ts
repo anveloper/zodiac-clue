@@ -468,29 +468,17 @@ export class ClueRoom extends Room<GameState> {
     const refund = Math.max(2, Math.round(dist / 2));
     this.state.stepsLeft += refund;
 
-    // 엿보기: 상대들이 가진(정답 아닌) 카드 중 랜덤 공개 (모서리=2장)
-    const n = helper.bonus === "peek2" ? 2 : 1;
-    const pool: Card[] = [];
-    this.state.players.forEach((_p, id) => {
-      if (id !== client.sessionId) {
-        (this.hands.get(id) ?? []).forEach((c) => pool.push(c));
-      }
-    });
-    // 좌표는 **헬퍼의 십이지 값**이다 — 헬퍼는 판마다 하나씩이고 `used`로 1회만 쓰이므로
-    // 좌표가 유일하다. 세션 id를 좌표로 쓰면 재생마다 값이 달라져 재생이 깨진다.
-    seededShuffle(pool, this.gameSeed, "peek", helper.value);
-    const seen = pool.slice(0, n);
-    // 엿본 카드는 사용자 본인만 본 정보 → 본인 시야에만 기록.
-    seen.forEach((c) => this.markSeen(client.sessionId, c.value));
-    client.send("peek", { from: label(helper.value), cards: seen });
+    // 엿보기(정보열람) 효과는 제거했다 — 코어(불완전정보 추리)와 정반대라 다이어트(다희 스펙).
+    // 이동 보너스만 남긴다. 카드를 아예 만들지 않으므로 `peek`/`markSeen`도 없다.
     this.broadcast("log", {
       text: `🃏 계략 — ${player.name} · ${label(
         helper.value,
-      )}에게서 엿보기 ${n} · 이동 +${refund}`,
+      )}에게 다가가 이동 +${refund}`,
       kind: "info",
     });
     // 계략 NPC의 귓속말: 당사자에게만 전문, 타인에겐 "(귓속말)"만 보인다.
-    void this.helperWhisper(client, helper.value, seen);
+    // 엿본 카드가 없으므로 단서 없이 성격 대사만 흘린다.
+    void this.helperWhisper(client, helper.value, []);
   }
 
   /**
