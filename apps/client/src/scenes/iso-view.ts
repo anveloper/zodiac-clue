@@ -285,6 +285,7 @@ export class IsoView implements ViewContract {
   private myId: string;
   private tokens = new Map<string, Token>();
   private weapons = new Map<string, LootToken>();
+  private readonly raycaster = new THREE.Raycaster();
   private helpers = new Map<string, THREE.Group>();
   private bubbles = new Map<string, Bubble>();
   private fx: Fx[] = [];
@@ -1169,6 +1170,7 @@ export class IsoView implements ViewContract {
       let lt = this.weapons.get(key);
       if (!lt) {
         const sprite = this.lootSprite(w.value, 0.8);
+        sprite.userData.lootValue = w.value; // 클릭 식별용(요청 ③)
         sprite.position.set(worldX(w.x), 0.55, worldZ(w.y));
         this.scene.add(sprite);
         lt = {
@@ -1670,12 +1672,35 @@ export class IsoView implements ViewContract {
   }
 
   private onPointerDown(e: PointerEvent): void {
+    // 좌클릭으로 '훔친 것' 토큰을 집으면 이름 표시(요청 ③). 히트 없으면 아래 팬 로직으로.
+    if (e.button === 0) {
+      const v = this.pickLoot(e.clientX, e.clientY);
+      if (v) {
+        window.dispatchEvent(new CustomEvent("zc-loot", { detail: v }));
+        return;
+      }
+    }
     // 우클릭/휠클릭 드래그 = 화면 팬(자유시점 아니어도). 좌클릭은 자유시점(Space) 중에만.
     const rightOrMid = e.button === 1 || e.button === 2;
     if (!this.freeLook && !rightOrMid) return;
     this.dragging = true;
     this.lastPointer.set(e.clientX, e.clientY);
     if (rightOrMid) e.preventDefault();
+  }
+
+  /** 화면 좌표에서 장물 스프라이트를 레이캐스트로 집는다. 히트 없으면 null. */
+  private pickLoot(clientX: number, clientY: number): string | null {
+    const r = this.canvas.getBoundingClientRect();
+    if (r.width === 0 || r.height === 0) return null;
+    const ndc = new THREE.Vector2(
+      ((clientX - r.left) / r.width) * 2 - 1,
+      -((clientY - r.top) / r.height) * 2 + 1,
+    );
+    this.raycaster.setFromCamera(ndc, this.camera);
+    const sprites = [...this.weapons.values()].map((lt) => lt.sprite);
+    const hits = this.raycaster.intersectObjects(sprites, false);
+    const v = hits[0]?.object.userData?.lootValue;
+    return typeof v === "string" ? v : null;
   }
 
   private onPointerMove(e: PointerEvent): void {

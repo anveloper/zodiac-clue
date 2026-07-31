@@ -1245,6 +1245,12 @@ const showBanner = (text: string, ms = 2800): void => {
   }, ms);
 };
 
+// 보드의 '훔친 것' 토큰 클릭 → 이름 표시(요청 ③, 4뷰 공통). 렌더러가 CustomEvent로 알린다.
+window.addEventListener("zc-loot", (e) => {
+  const v = (e as CustomEvent<string>).detail;
+  if (v) showBanner(`🎁 훔친 것: ${label(v)}`);
+});
+
 /**
  * 뷰 청크 로딩 화면 — **`interstitial`(60) 슬롯**을 통해 전면을 점유한다(§7.10).
  * 버스 밖에서 새 전면 오버레이를 만들지 않는다 → 결과(100)·목표(90)·주사위(80)가

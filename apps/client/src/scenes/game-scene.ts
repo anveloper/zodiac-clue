@@ -738,6 +738,15 @@ export class GameScene extends Phaser.Scene implements ViewContract {
           .setOrigin(0.5)
           .setDepth(2);
         s.setStroke(hexString(BOARD.corridor), 4);
+        // 클릭 → 이름 표시(요청 ③). 좌클릭만; 우/휠클릭은 팬이라 무시.
+        s.setInteractive({ useHandCursor: true });
+        s.on("pointerdown", (p: Phaser.Input.Pointer) => {
+          if (p.leftButtonDown()) {
+            window.dispatchEvent(
+              new CustomEvent("zc-loot", { detail: w.value }),
+            );
+          }
+        });
         this.weaponSprites.set(key, s);
       } else if (s.x !== cx || s.y !== cy) {
         this.tweens.killTweensOf(s);

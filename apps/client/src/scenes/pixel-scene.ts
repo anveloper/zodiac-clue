@@ -750,11 +750,25 @@ export class PixelScene extends Phaser.Scene implements ViewContract {
       const cy = w.y * CELL + CELL / 2;
       const s = this.loot.get(key);
       if (!s) {
-        this.loot.set(key, {
-          c: this.makeLootBox(cx, cy, w.value),
-          tx: cx,
-          ty: cy,
+        const box = this.makeLootBox(cx, cy, w.value);
+        // 클릭 → 이름 표시(요청 ③). 컨테이너에 중앙 기준 히트영역 지정.
+        box.setInteractive(
+          new Phaser.Geom.Rectangle(
+            -CELL * 0.35,
+            -CELL * 0.35,
+            CELL * 0.7,
+            CELL * 0.7,
+          ),
+          Phaser.Geom.Rectangle.Contains,
+        );
+        box.on("pointerdown", (p: Phaser.Input.Pointer) => {
+          if (p.leftButtonDown()) {
+            window.dispatchEvent(
+              new CustomEvent("zc-loot", { detail: w.value }),
+            );
+          }
         });
+        this.loot.set(key, { c: box, tx: cx, ty: cy });
       } else if (s.tx !== cx || s.ty !== cy) {
         // 말과 같은 이유로 **목표 좌표**와 비교한다 — `syncActor`의 긴 주석 참고.
         // (`s.c.x`와 비교하면 매 프레임 트윈이 재시작돼 장물이 그 자리에 얼어붙는다.)
