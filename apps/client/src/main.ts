@@ -2044,10 +2044,28 @@ const saveEvi = (roomId: string, data: Record<string, EviState>): void => {
   }
 };
 
+// 항목별 간단 메모(요청 ②) — 상태(제외/의심)와 별도 키로 저장해 기존 데이터와 호환.
+const eviMemoKey = (roomId: string): string => `zc_evimemo_${roomId}`;
+const loadEviMemo = (roomId: string): Record<string, string> => {
+  try {
+    return JSON.parse(localStorage.getItem(eviMemoKey(roomId)) ?? "{}");
+  } catch {
+    return {};
+  }
+};
+const saveEviMemo = (roomId: string, data: Record<string, string>): void => {
+  try {
+    localStorage.setItem(eviMemoKey(roomId), JSON.stringify(data));
+  } catch {
+    /* localStorage 불가 시 무시 */
+  }
+};
+
 const buildEvidence = (roomId: string): void => {
   const host = $("evidence");
   host.innerHTML = "";
   const data = loadEvi(roomId);
+  const memos = loadEviMemo(roomId);
   // 공통 단서(모두 공개·정답 아님) — 증거노트에 자동 제외 표시
   const commonSet = new Set<string>(
     room ? ([...((room.state.commonCards as string[]) ?? [])] as string[]) : [],
@@ -2075,26 +2093,48 @@ const buildEvidence = (roomId: string): void => {
       // `base`는 아래 apply()가 className을 다시 조립할 때도 스트라이프 여백을 지키기 위함.
       const base = "evi-chip" + (colored ? " zc" : "");
       if (colored) chip.style.boxShadow = colorStripe(v);
-      // 장소는 EMOJI 맵에 없어 아이콘 칸이 비었다 → cardIcon()이 📍로 채운다(§2)
-      chip.innerHTML =
+
+      // 상단 줄: 아이콘 + 이름 + 메모 버튼(✎). 장소는 이모지 없어 cardIcon()이 📍(§2).
+      const row = document.createElement("div");
+      row.className = "evi-row";
+      row.innerHTML =
         `<span>${cardIcon(v)}</span>` +
         `<span class="evi-name">${label(v)}${colored ? cvdTag(v) : ""}</span>`;
-      // 내 패 또는 공통 단서 → 정답 아님, 자동 제외·잠금
+      const memoBtn = document.createElement("button");
+      memoBtn.type = "button";
+      memoBtn.className = "evi-memo-btn";
+      memoBtn.textContent = "✎";
+      memoBtn.title = "메모";
+      row.appendChild(memoBtn);
+      chip.appendChild(row);
+
+      // 메모 줄(요청 ② — 항목별 간단 메모, 서버 전송 X·로컬 저장).
+      const memoLine = document.createElement("div");
+      memoLine.className = "evi-memo";
+      chip.appendChild(memoLine);
+      const renderMemo = (): void => {
+        const m = memos[v] ?? "";
+        memoLine.textContent = m;
+        memoLine.classList.toggle("hidden", m === "");
+        memoBtn.classList.toggle("has", m !== "");
+      };
+
+      // 내 패 또는 공통 단서 → 정답 아님, 자동 제외·잠금(상태 순환 없음).
       const own = myCards.has(v) || commonSet.has(v);
       if (own) {
         chip.className = base + " cleared own";
         // 확정 문안(§4.3). `(자동 제외)`가 빠지면 **클릭에 반응하지 않는 유일한 칩**의
         // 이유가 화면에서 사라진다.
-        chip.title = commonSet.has(v)
+        row.title = commonSet.has(v)
           ? "공통 단서 — 모두 공개 · 정답 아님 (자동 제외)"
           : "내 손패 — 정답 아님 (자동 제외)";
       } else {
-        chip.title = "클릭: 없음(제외) → 의심 → 초기화";
+        row.title = "클릭: 없음(제외) → 의심 → 초기화";
         const apply = (): void => {
           const st = data[v] ?? "";
           chip.className = base + (st ? " " + st : "");
         };
-        chip.onclick = () => {
+        row.onclick = () => {
           const next = EVI_NEXT[data[v] ?? ""];
           if (next) data[v] = next;
           else delete data[v];
@@ -2103,6 +2143,37 @@ const buildEvidence = (roomId: string): void => {
         };
         apply();
       }
+
+      // ✎ 클릭 → 인라인 입력. 상태 순환 클릭과 독립(stopPropagation).
+      memoBtn.onclick = (e) => {
+        e.stopPropagation();
+        const input = document.createElement("input");
+        input.className = "evi-memo-input";
+        input.value = memos[v] ?? "";
+        input.maxLength = 40;
+        input.placeholder = "간단 메모";
+        memoLine.textContent = "";
+        memoLine.classList.remove("hidden");
+        memoLine.appendChild(input);
+        input.focus();
+        input.select();
+        input.onclick = (ce) => ce.stopPropagation();
+        input.onkeydown = (ke) => {
+          if (ke.key === "Enter") input.blur();
+          else if (ke.key === "Escape") {
+            input.value = memos[v] ?? "";
+            input.blur();
+          }
+        };
+        input.onblur = () => {
+          const m = input.value.trim();
+          if (m) memos[v] = m;
+          else delete memos[v];
+          saveEviMemo(roomId, memos);
+          renderMemo();
+        };
+      };
+      renderMemo();
       chips.appendChild(chip);
     }
     g.appendChild(chips);

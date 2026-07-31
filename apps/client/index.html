@@ -601,13 +601,24 @@
       /* 규칙적인 그리드 배치 (탐정 수첩 느낌) */
       .evi-chips { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; }
       .evi-chip {
-        display: flex; align-items: center; gap: 4px; min-width: 0;
+        display: flex; flex-direction: column; gap: 2px; min-width: 0;
         padding: 4px 7px; border-radius: 6px; cursor: pointer;
         background: #16130f; border: 1px solid #3a3126;
         font-size: 11px; color: #cbbfa8; user-select: none;
-        white-space: nowrap; overflow: hidden;
+        overflow: hidden;
       }
-      .evi-chip > .evi-name { overflow: hidden; text-overflow: ellipsis; }
+      .evi-row { display: flex; align-items: center; gap: 4px; min-width: 0; white-space: nowrap; }
+      .evi-row > .evi-name { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+      /* 항목별 메모(요청 ②) — ✎ 버튼 + 메모 줄. 상태 순환 클릭과 독립. */
+      .evi-memo-btn { flex: none; margin-left: auto; background: none; border: 0;
+        color: #6b6252; cursor: pointer; font-size: 11px; line-height: 1; padding: 0 1px; }
+      .evi-memo-btn:hover { color: #ad5e28; }
+      .evi-memo-btn.has { color: #e0a35a; }
+      .evi-memo { font-size: 10px; color: #a89778; white-space: normal;
+        word-break: break-all; line-height: 1.3; cursor: default; text-decoration: none; }
+      .evi-memo.hidden { display: none; }
+      .evi-memo-input { width: 100%; box-sizing: border-box; font-size: 10px;
+        background: #16130f; color: #f0e9dc; border: 1px solid #ad5e28; border-radius: 3px; padding: 1px 4px; }
       /* 12색(spec §4.2) — 용의자 칩 좌측 3px 스트라이프(inline box-shadow)의 여백. */
       .evi-chip.zc { padding-left: 10px; }
       .evi-chip:hover { border-color: #ad5e28; }
