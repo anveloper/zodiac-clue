@@ -35,6 +35,11 @@
         /* Montage 구조값(Figma 추출·다희) — 색은 코티지코어, 구조만 채택. Large 기준을 HUD 스케일로 축소.
            원본: 버튼 radius 12px · padding 28/12 · Primary SemiBold/Assistive Medium · hover ×1.5 / press ×0.75 */
         --wds-radius-button: 8px;
+        --wds-radius-chip: 8px;   /* Montage Chip 10px → 소형 배지 스케일. 배지/AI칩/상태칩 공용 */
+        --wds-radius-card: 10px;  /* Montage Card 12px → 대기실 카드 스케일 */
+        /* Montage 필수 컴포넌트 값(다희 Figma): Avatar 40px 완전원형·1px테두리 / Card 썸네일 r12·gap8·제목SemiBold16
+           / List Cell 세로padding12·gap8·구분선1px / Chip padding12/9 r10 / Toast·Snackbar 335×54 / Tooltip 171×44 / Loading 28×28
+           — 색은 코티지코어. 새 컴포넌트 스타일 build-out은 통합 스펙 후속(Popup은 Alert 대안). */
         /* 로그·상태 배경 틴트(라이트 · 4카테고리 구분 유지) */
         --wds-tint-primary: #F3E1D6;
         --wds-tint-cautionary: #F7EBCF;
@@ -117,7 +122,7 @@
       .char {
         display: flex; flex-direction: column; align-items: center; gap: 3px;
         padding: 8px 2px; background: var(--wds-bg-normal); border: 1px solid var(--wds-line-normal);
-        border-radius: 8px; cursor: pointer; font-size: 10px; color: var(--wds-label-normal);
+        border-radius: var(--wds-radius-card); cursor: pointer; font-size: 10px; color: var(--wds-label-normal);
         text-align: center;
       }
       .char .em { font-size: 20px; line-height: 1; }
@@ -583,7 +588,7 @@
       .log-move { background: var(--wds-bg-alternative); border-left-color: var(--wds-label-alternative) !important; }
       .log-info { background: transparent; }
       .log-badge {
-        display: inline-block; margin-left: 6px; padding: 0 5px; border-radius: 8px;
+        display: inline-block; margin-left: 6px; padding: 0 5px; border-radius: var(--wds-radius-chip);
         font-size: 10px; background: var(--wds-status-cautionary); color: var(--wds-bg-normal); font-weight: 600;
       }
       .log-badge.none { background: var(--wds-accent); }
@@ -716,7 +721,7 @@
         flex: none; margin-left: auto; white-space: nowrap;
         font-size: 11px; color: var(--wds-label-normal);
         background: var(--wds-bg-normal); border: 1px solid var(--wds-line-normal);
-        border-radius: 8px; padding: 2px 7px;
+        border-radius: var(--wds-radius-chip); padding: 2px 7px;
       }
       .ai-chip .ai-n { color: var(--wds-label-strong); font-weight: 700; }
       /* 전 대사가 폴백일 때 — 숨기지 않고 테두리로 상태를 알린다(§4.1 장애 재발 방지). */
