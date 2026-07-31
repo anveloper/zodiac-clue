@@ -1339,8 +1339,11 @@ export class IsoView implements ViewContract {
     const aBot = CAM_PITCH + halfFov;
     const visFar = aTop > 1e-3 ? ground - h / Math.tan(aTop) : -1e6;
     const visNear = ground - h / Math.tan(aBot);
-    const bx = GRID_WIDTH / 2;
-    const bz = GRID_HEIGHT / 2;
+    // 보드 경계에 여백(칸)을 둬 카메라가 조금 더 나가 숨통을 튼다(요청 ④ — 2.5D 이동 반경).
+    // 기존엔 보드 변을 화면 변에 딱 맞춰 «여백 0»이라 이동이 제한된 느낌이었다.
+    const PAN_MARGIN = 4;
+    const bx = GRID_WIDTH / 2 + PAN_MARGIN;
+    const bz = GRID_HEIGHT / 2 + PAN_MARGIN;
     this.look.x = fitRange(this.look.x, -bx - visL, bx - visR);
     this.look.z = fitRange(this.look.z, -bz - visFar, bz - visNear);
   }
