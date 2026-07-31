@@ -1437,7 +1437,6 @@ const applyFx = (state: Room["state"]): void => {
 };
 
 // 게임 중 현재 턴 배너 (내 턴이면 주사위 굴림 + 남은 이동 표시)
-const DICE_FACES = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
 let lastTurn = "";
 
 const myTurnText = (steps: number): string =>
@@ -1454,10 +1453,31 @@ const splitDice = (steps: number): [number, number] => {
 const showDiceRoll = (): void => {
   const ov = $("diceOverlay");
   const turnAtRequest = lastTurn;
-  const render = (faces: string, text: string): void => {
+  // 3D 큐브 주사위(다희 스펙) — 유니코드 글자 대신 CSS transform 큐브를 굴린다.
+  const pipsHtml = (n: number): string =>
+    '<span class="pip"></span>'.repeat(n);
+  const cubeHtml = (id: string): string =>
+    `<div class="die" id="${id}"><div class="die-cube">` +
+    [1, 2, 3, 4, 5, 6]
+      .map((n) => `<div class="face face-${n}">${pipsHtml(n)}</div>`)
+      .join("") +
+    "</div></div>";
+  const ensureCubes = (): void => {
+    if (ov.querySelector(".die")) return; // 매 틱마다 다시 만들지 않는다(리플로우 방지)
     ov.innerHTML =
-      `<div class="dice-card"><div class="dice-faces">${faces}</div>` +
-      `<div class="dice-label">${text}</div></div>`;
+      `<div class="dice-card">${cubeHtml("die1")}${cubeHtml("die2")}` +
+      '<div class="dice-label" id="diceLabel"></div></div>';
+  };
+  const setFace = (dieId: string, value: number, settling: boolean): void => {
+    const cube = ov.querySelector(`#${dieId} .die-cube`) as HTMLElement | null;
+    if (cube) cube.className = `die-cube show-${value}${settling ? " settling" : ""}`;
+  };
+  const render = (a: number, b: number, text: string, settling = false): void => {
+    ensureCubes();
+    setFace("die1", a, settling);
+    setFace("die2", b, settling);
+    const lbl = document.getElementById("diceLabel");
+    if (lbl) lbl.textContent = text;
   };
   showOverlay({
     id: "dice",
@@ -1468,20 +1488,21 @@ const showDiceRoll = (): void => {
       room?.state.phase === "playing" && room?.state.currentTurn === turnAtRequest,
     run: (h) => {
       ov.classList.remove("done");
+      ov.innerHTML = ""; // 새 굴림마다 큐브를 새로 세운다(이전 잔상 제거)
       let t = 0;
-      // 굴리는 단계: 느린 간격으로 6프레임(~0.9s)
+      // 굴리는 단계: 느린 간격으로 6프레임(~0.9s) — 매 틱 show-N 클래스 교체로 회전감.
       const tick = (): void => {
         t += 1;
-        const a = DICE_FACES[Math.floor(Math.random() * 6)];
-        const b = DICE_FACES[Math.floor(Math.random() * 6)];
-        render(`${a} ${b}`, "주사위");
+        const a = 1 + Math.floor(Math.random() * 6);
+        const b = 1 + Math.floor(Math.random() * 6);
+        render(a, b, "주사위");
         if (t < 6) {
           h.after(150, tick);
           return;
         }
         const steps = (room?.state as { stepsLeft?: number })?.stepsLeft ?? 0;
         const [d1, d2] = splitDice(steps);
-        render(`${DICE_FACES[d1 - 1]} ${DICE_FACES[d2 - 1]}`, `이동 ${steps}칸`);
+        render(d1, d2, `이동 ${steps}칸`, true); // settling → 느슨한 트랜지션으로 착지
         ov.classList.add("done"); // 강조(살짝 커짐)
         h.after(1900, h.close); // 결과를 충분히 보여주고 해제
       };

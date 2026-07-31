@@ -388,6 +388,35 @@
       .dice-overlay .dice-faces { font-size: 76px; line-height: 1.1; letter-spacing: 6px; }
       .dice-overlay .dice-label { font-size: 24px; color: var(--wds-label-strong); margin-top: 12px; font-weight: 700; letter-spacing: 1px; }
       .dice-overlay.done .dice-label { color: var(--wds-accent); }
+      /* 주사위 3D 큐브(다희 스펙) — 순수 CSS transform. ⚠ show-N 회전값은 실측 확정 필요. */
+      .dice-overlay .dice-card { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 18px; }
+      .dice-overlay .dice-label { flex-basis: 100%; text-align: center; }
+      .die { width: 64px; height: 64px; perspective: 400px; }
+      .die-cube { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.15s linear; }
+      .die-cube.settling { transition: transform 0.5s cubic-bezier(.2,.8,.2,1); }
+      .die .face { position: absolute; width: 64px; height: 64px; box-sizing: border-box;
+        background: var(--wds-bg-elevated); border: 2px solid var(--wds-label-strong); border-radius: 8px;
+        display: grid; grid-template: repeat(3, 1fr) / repeat(3, 1fr); padding: 8px; }
+      .die .pip { width: 10px; height: 10px; border-radius: 50%; background: var(--wds-label-strong); align-self: center; justify-self: center; }
+      .face-1 { transform: translateZ(32px); }
+      .face-6 { transform: rotateY(180deg) translateZ(32px); }
+      .face-3 { transform: rotateY(90deg) translateZ(32px); }
+      .face-4 { transform: rotateY(-90deg) translateZ(32px); }
+      .face-5 { transform: rotateX(90deg) translateZ(32px); }
+      .face-2 { transform: rotateX(-90deg) translateZ(32px); }
+      .show-1 { transform: rotateX(0deg) rotateY(0deg); }
+      .show-2 { transform: rotateX(90deg) rotateY(0deg); }
+      .show-3 { transform: rotateX(0deg) rotateY(-90deg); }
+      .show-4 { transform: rotateX(0deg) rotateY(90deg); }
+      .show-5 { transform: rotateX(-90deg) rotateY(0deg); }
+      .show-6 { transform: rotateX(0deg) rotateY(180deg); }
+      .face-1 .pip { grid-area: 2 / 2; }
+      .face-2 .pip:nth-child(1) { grid-area: 1 / 1; } .face-2 .pip:nth-child(2) { grid-area: 3 / 3; }
+      .face-3 .pip:nth-child(1) { grid-area: 1 / 1; } .face-3 .pip:nth-child(2) { grid-area: 2 / 2; } .face-3 .pip:nth-child(3) { grid-area: 3 / 3; }
+      .face-4 .pip:nth-child(1) { grid-area: 1 / 1; } .face-4 .pip:nth-child(2) { grid-area: 1 / 3; } .face-4 .pip:nth-child(3) { grid-area: 3 / 1; } .face-4 .pip:nth-child(4) { grid-area: 3 / 3; }
+      .face-5 .pip:nth-child(1) { grid-area: 1 / 1; } .face-5 .pip:nth-child(2) { grid-area: 1 / 3; } .face-5 .pip:nth-child(3) { grid-area: 2 / 2; } .face-5 .pip:nth-child(4) { grid-area: 3 / 1; } .face-5 .pip:nth-child(5) { grid-area: 3 / 3; }
+      .face-6 .pip:nth-child(1) { grid-area: 1 / 1; } .face-6 .pip:nth-child(2) { grid-area: 1 / 3; } .face-6 .pip:nth-child(3) { grid-area: 2 / 1; } .face-6 .pip:nth-child(4) { grid-area: 2 / 3; } .face-6 .pip:nth-child(5) { grid-area: 3 / 1; } .face-6 .pip:nth-child(6) { grid-area: 3 / 3; }
+      @media (prefers-reduced-motion: reduce) { .die-cube { transition: none !important; } }
       /* 뷰 청크 로딩 화면 — 주사위(80)보다 아래, 배너(40)보다 위(§7.10 우선순위) */
       .vl-overlay {
         position: fixed; inset: 0; z-index: 28;
