@@ -432,6 +432,9 @@
         padding: 6px 8px; position: fixed;
       }
       .hud-view #viewToggle { min-width: 110px; }
+      /* 제출용 빌드 — 뷰 선택기 숨김(뷰1 단일 고정). 코드·자산은 그대로 둔다.
+         되돌리려면 이 규칙만 지우면 된다. 근거: docs/design/20260730-view-selector-hide.md */
+      .hud-view { display: none !important; }
       /* 위로 열리는 뷰 선택 드롭다운 */
       .view-list {
         position: absolute; left: 8px; right: 8px; bottom: calc(100% + 4px);
