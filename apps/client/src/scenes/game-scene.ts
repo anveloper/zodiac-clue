@@ -257,6 +257,14 @@ export class GameScene extends Phaser.Scene implements ViewContract {
     super("game");
   }
 
+  preload(): void {
+    // 복도 바닥 잔디 텍스처(다희 에셋). public/ 절대 URL — 임포트 불필요.
+    // 실패해도 drawBoard의 단색 갈색 언더레이가 남아 깨지지 않는다.
+    if (!this.textures.exists("grass-field")) {
+      this.load.image("grass-field", "/assets/bg/grass-field.png");
+    }
+  }
+
   create(): void {
     this.room = this.registry.get("room") as Room;
     this.myId = this.room.sessionId;
@@ -549,10 +557,10 @@ export class GameScene extends Phaser.Scene implements ViewContract {
     }
   }
 
-  // ── 봄 파티클(나뭇잎·벚꽃 꽃잎) : 보드 바닥 위, 말·UI 뒤(depth 0.5) ──
-  // 다희 요청 "보드에도 넣되 뒤로 날리도록". 보드 배경은 불투명이라 depth<0이면
-  // 완전히 가려 «파티클 안 보임»이 재발한다 → 바닥(0) 위·토큰(≥1) 뒤에 얹고
-  // alpha를 낮춰 가독성을 지킨다. 새 의존성 없음(Phaser 내장 파티클, 스펙 B안).
+  // ── 봄 파티클(나뭇잎·벚꽃 꽃잎) : 잔디(복도) 위, 보드 구조물 아래(depth -10) ──
+  // 다희 확정 z-order: 잔디(-20) < 꽃잎(-10) < 보드(0) < 그외(≥1).
+  // 방·잔치상 등 보드 구조물이 depth 0 불투명 필로 덮으므로 꽃잎은 «복도(잔디)에만»
+  // 노출된다(보드·어사이드엔 안 보임). 새 의존성 없음(Phaser 내장 파티클, 스펙 B안).
   private setupPetals(): void {
     // 접근성: 모션 최소화 선호 시 배경 장식은 끈다.
     if (typeof window !== "undefined" &&
@@ -579,15 +587,28 @@ export class GameScene extends Phaser.Scene implements ViewContract {
         speedX: { min: -14, max: 14 },
         rotate: { min: 0, max: 360 },
         scale: { min: 0.5, max: 0.95 },
-        alpha: { start: 0.5, end: 0.12 }, // 낮게 유지 — 말·글자 가독성 보호
+        alpha: { start: 0.85, end: 0.35 }, // 잔디 위 장식 — 보드 아래라 가독성 무관
         tint: [0x8fbf6a, 0x7fb05a, 0xf3b8c8, 0xfbeaf0],
       })
-      .setDepth(0.5);
+      .setDepth(-10);
   }
 
   // ── 보드 그리기 (복도 + 방 + 중앙 잔치상) ──
   private drawBoard(): void {
-    this.add.rectangle(0, 0, BOARD_W, BOARD_H, BOARD.corridor).setOrigin(0);
+    // 단색 갈색 언더레이(최하단) — 잔디 로드 실패 시의 폴백.
+    this.add
+      .rectangle(0, 0, BOARD_W, BOARD_H, BOARD.corridor)
+      .setOrigin(0)
+      .setDepth(-30);
+    // 복도 바닥 잔디(다희) — z-order: 잔디(-20) < 꽃잎(-10) < 보드(0) < 그외(≥1).
+    // 방·잔치상 등 보드 구조물이 depth 0으로 그 위를 덮어 복도에만 잔디·꽃잎이 노출된다.
+    if (this.textures.exists("grass-field")) {
+      this.add
+        .image(0, 0, "grass-field")
+        .setOrigin(0)
+        .setDisplaySize(BOARD_W, BOARD_H)
+        .setDepth(-20);
+    }
     const grid = this.add.graphics();
     grid.lineStyle(1, BOARD.grid, 0.9);
     for (let x = 0; x <= GRID_WIDTH; x++) {
