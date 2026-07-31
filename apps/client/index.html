@@ -32,6 +32,9 @@
         --wds-status-negative: #B14343;
         --wds-accent: #E3B873;
         --wds-static-white: #FFFFFF;
+        /* Montage 구조값(Figma 추출·다희) — 색은 코티지코어, 구조만 채택. Large 기준을 HUD 스케일로 축소.
+           원본: 버튼 radius 12px · padding 28/12 · Primary SemiBold/Assistive Medium · hover ×1.5 / press ×0.75 */
+        --wds-radius-button: 8px;
         /* 로그·상태 배경 틴트(라이트 · 4카테고리 구분 유지) */
         --wds-tint-primary: #F3E1D6;
         --wds-tint-cautionary: #F7EBCF;
@@ -58,10 +61,11 @@
          [방 만들기]·[잔치 시작]·[신고하기] 같은 1차 버튼 전부였다. 화면 게이트 S6이 잡는다.
          (§7.13이 `var(--wds-label-assistive)`→`var(--wds-label-alternative)`로 올린 것과 같은 기준·같은 이유.) */
       button {
-        background: var(--wds-primary-normal); color: var(--wds-static-white); border: 0; border-radius: 6px;
-        padding: 8px 12px; font-size: 13px; cursor: pointer;
+        background: var(--wds-primary-normal); color: var(--wds-static-white); border: 0;
+        border-radius: var(--wds-radius-button);
+        padding: 8px 12px; font-size: 13px; font-weight: 600; cursor: pointer; /* Primary=SemiBold(몽타주 위계) */
       }
-      button:hover { background: var(--wds-primary-normal); }
+      button:hover { background: var(--wds-primary-strong); } /* Interaction/Strong — 실제 hover 피드백 */
       button:disabled { background: var(--wds-bg-alternative); color: var(--wds-label-alternative); cursor: not-allowed; }
       /* 비활성처럼 보이지만 클릭은 살아 있는 상태(aria-disabled). 클릭하면 사유를 안내한다.
          `disabled` 속성은 title 툴팁도 click 이벤트도 죽이므로 액션 버튼엔 쓰지 않는다. */
