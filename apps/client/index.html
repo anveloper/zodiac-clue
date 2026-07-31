@@ -57,14 +57,14 @@
         position: absolute; top: -8%; width: 16px; height: 16px; opacity: 0.5;
         background: center/contain no-repeat;
         background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M10 1C4 6 3 14 10 19C17 14 16 6 10 1Z' fill='%238FBF6A'/%3E%3C/svg%3E");
-        animation: leaf-fall 13s linear infinite, leaf-sway 4s ease-in-out infinite alternate;
+        animation: leaf-fall 8s linear infinite, leaf-sway 4s ease-in-out infinite alternate;
       }
       .leaf:nth-child(3n) { width: 14px; opacity: 0.75; /* 벚꽃 꽃잎(분홍) */
         background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M10 2C6.5 4 6 11 10 18C14 11 13.5 4 10 2Z' fill='%23F3B8C8'/%3E%3C/svg%3E"); }
       .leaf:nth-child(3n+2) { width: 13px; opacity: 0.8; /* 벚꽃 꽃잎(연분홍~흰) */
         background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M10 2C6.5 4 6 11 10 18C14 11 13.5 4 10 2Z' fill='%23FBEAF0'/%3E%3C/svg%3E"); }
-      .leaf:nth-child(3n+1) { animation-duration: 16s, 5s; }
-      .leaf:nth-child(3n+2) { animation-duration: 11s, 3.2s; }
+      .leaf:nth-child(3n+1) { animation-duration: 10s, 5s; }
+      .leaf:nth-child(3n+2) { animation-duration: 7s, 3.2s; }
       @keyframes leaf-fall { from { transform: translateY(-8vh) rotate(0deg); } to { transform: translateY(112vh) rotate(320deg); } }
       @keyframes leaf-sway { from { margin-left: -18px; } to { margin-left: 18px; } }
       /* 게임 화면에서는 **문서 스크롤 자체를 없앤다.**
@@ -248,7 +248,7 @@
         touch-action: none;
         /* 최하위 배경 레이어(개념 B) — 투명 캔버스 뒤로 비친다. 보드 줌·팬과 무관하게
            100% 고정. 이미지 실패 시 단색 갈색 폴백. */
-        background: #1c1712 url("/assets/bg/grass-field.png") center / cover no-repeat;
+        background: #1c1712 url("/assets/bg/grass-field.png?v=2") center / cover no-repeat;
       }
       /* Phaser·three 캔버스 모두(뷰1~4 공통) */
       #gameScreen canvas { touch-action: none; }
@@ -1054,15 +1054,22 @@
     <!-- 자연 배경(다희 스펙) — 대기실·랜딩 뒤 낙엽. 이미지·라이브러리 없이 인라인 SVG + CSS만.
          게임화면(body.no-scroll)·모션감소에선 끈다. 순수 장식(pointer-events:none). -->
     <div id="leaf-bg" aria-hidden="true">
-      <span class="leaf" style="left:6%;animation-delay:-1s"></span>
-      <span class="leaf" style="left:17%;animation-delay:-7s"></span>
-      <span class="leaf" style="left:28%;animation-delay:-3s"></span>
-      <span class="leaf" style="left:40%;animation-delay:-10s"></span>
-      <span class="leaf" style="left:52%;animation-delay:-2s"></span>
-      <span class="leaf" style="left:63%;animation-delay:-12s"></span>
-      <span class="leaf" style="left:74%;animation-delay:-5s"></span>
-      <span class="leaf" style="left:85%;animation-delay:-8s"></span>
-      <span class="leaf" style="left:93%;animation-delay:-4s"></span>
+      <span class="leaf" style="left:4%;animation-delay:-1s"></span>
+      <span class="leaf" style="left:11%;animation-delay:-7s"></span>
+      <span class="leaf" style="left:18%;animation-delay:-3s"></span>
+      <span class="leaf" style="left:25%;animation-delay:-10s"></span>
+      <span class="leaf" style="left:32%;animation-delay:-5s"></span>
+      <span class="leaf" style="left:39%;animation-delay:-2s"></span>
+      <span class="leaf" style="left:46%;animation-delay:-8s"></span>
+      <span class="leaf" style="left:53%;animation-delay:-12s"></span>
+      <span class="leaf" style="left:60%;animation-delay:-4s"></span>
+      <span class="leaf" style="left:67%;animation-delay:-9s"></span>
+      <span class="leaf" style="left:74%;animation-delay:-6s"></span>
+      <span class="leaf" style="left:81%;animation-delay:-2.5s"></span>
+      <span class="leaf" style="left:88%;animation-delay:-11s"></span>
+      <span class="leaf" style="left:94%;animation-delay:-3.5s"></span>
+      <span class="leaf" style="left:22%;animation-delay:-6.5s"></span>
+      <span class="leaf" style="left:78%;animation-delay:-9.5s"></span>
     </div>
     <!-- ① 랜딩 -->
     <section id="landing" class="center">

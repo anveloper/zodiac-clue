@@ -568,18 +568,19 @@ export class GameScene extends Phaser.Scene implements ViewContract {
       g.destroy();
     }
     // 연녹 새순 2색 + 벚꽃 꽃잎 분홍/연분홍 — DOM 대기실 배경과 동일 팔레트.
+    // 대기실 DOM 낙엽과 통일: 연속 스핀 0→320°(수명당) · 낙하속도·밀도 상향 · 크기/색 정렬.
     this.add
       .particles(0, 0, "zc-petal", {
         x: { min: 0, max: BOARD_W },
         y: -16,
-        frequency: 650, // 0.65초마다 1개 — 배경 장식 수준으로 절제
+        frequency: 300, // 0.3초마다 1개 — 밀도 상향(구 650)
         quantity: 1,
-        lifespan: 16000, // ~70px/s × 16s > 보드 높이(960) → 화면을 가로질러 낙하
-        speedY: { min: 55, max: 90 },
-        speedX: { min: -14, max: 14 },
-        rotate: { min: 0, max: 360 },
-        scale: { min: 0.5, max: 0.95 },
-        alpha: { start: 0.85, end: 0.35 }, // 잔디 위 장식 — 보드 아래라 가독성 무관
+        lifespan: 9000, // avg ~135px/s × 9s > 보드 높이(960) → 화면을 가로질러 낙하
+        speedY: { min: 110, max: 160 }, // 낙하속도 상향(구 55~90)
+        speedX: { min: -18, max: 18 }, // DOM sway ±18px에 준하는 좌우 드리프트
+        rotate: { start: 0, end: 320 }, // DOM leaf-fall과 동일한 연속 회전(구: 랜덤 정지각)
+        scale: { min: 0.7, max: 0.9 }, // 텍스처 18px → ≈13~16px, DOM 크기(13~16)와 정렬
+        alpha: { start: 0.8, end: 0.4 }, // DOM 투명도(0.5~0.8)대와 정렬
         tint: [0x8fbf6a, 0x7fb05a, 0xf3b8c8, 0xfbeaf0],
       })
       .setDepth(-10);
