@@ -117,6 +117,7 @@ type Token = {
   ring: THREE.Mesh;
   face: THREE.Sprite;
   elimMark: THREE.Sprite; // 탈락 2차 표기(알파 단독 금지 — §1.2 ELIM_NEEDS_SECOND_CUE)
+  meBadge: THREE.Sprite; // "나" 배지 — 내 토큰에만 항상 표시(다희 스펙)
   cur: THREE.Vector2; // 현재 보간 위치(그리드 단위)
   target: THREE.Vector2; // 목표 위치
   /** 색·아트의 파생 키(§4). `identity()`가 이 키로 표기를 되맞춘다. */
@@ -856,12 +857,26 @@ export class IsoView implements ViewContract {
     elimMark.visible = false;
     group.add(elimMark);
 
+    // "나" 배지 — 턴과 무관하게 내 토큰에만 항상 표시(다희 스펙). 무채색(말풍선 배색) 재사용.
+    const meBadge = makeSprite("나", {
+      fontPx: 40,
+      color: hexString(BOARD.bubbleText),
+      bg: hexString(BOARD.bubbleBg),
+      padX: 10,
+      padY: 6,
+      worldH: 0.24,
+    });
+    meBadge.position.set(0, 1.05, 0.1); // face(0.85)보다 위, 이름표(0.35)보다 위
+    meBadge.visible = id === this.myId;
+    group.add(meBadge);
+
     this.scene.add(group);
     const token: Token = {
       group,
       ring,
       face,
       elimMark,
+      meBadge,
       cur: new THREE.Vector2(a.cell.x, a.cell.y),
       target: new THREE.Vector2(a.cell.x, a.cell.y),
       suspect: a.suspect,

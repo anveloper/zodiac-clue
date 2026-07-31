@@ -171,6 +171,8 @@ type Token = {
   stripe: Phaser.GameObjects.Rectangle;
   /** 탈락 파선 테두리(2차 표기). */
   elimDash: Phaser.GameObjects.Graphics;
+  /** "나" 배지 — 내 토큰에만 항상 표시(턴 링과 별개 · 다희 스펙). */
+  meBadge: Phaser.GameObjects.Text;
   /** 색·이모지의 파생 키(§4). `identity()`가 이 키로 표기를 되맞춘다. */
   suspect: string;
   placed: boolean;
@@ -1384,6 +1386,17 @@ export class GameScene extends Phaser.Scene implements ViewContract {
       name.height + 4,
     );
     elimDash.setVisible(false);
+    // "나" 배지 — 턴과 무관하게 내 토큰에만 항상 표시(다희 스펙). 새 색 없이 무채색(말풍선 배색) 재사용.
+    const meBadge = this.add
+      .text(0, -CELL * 0.62, "나", {
+        fontSize: "13px",
+        fontStyle: "bold",
+        color: hexString(BOARD.bubbleText),
+        backgroundColor: hexString(BOARD.bubbleBg),
+        padding: { x: 6, y: 2 },
+      })
+      .setOrigin(0.5)
+      .setVisible(id === this.myId);
     const c = this.add.container(0, 0, [
       ring,
       disc,
@@ -1391,6 +1404,7 @@ export class GameScene extends Phaser.Scene implements ViewContract {
       name,
       stripe,
       elimDash,
+      meBadge,
       ...this.makeCvdCue(a.suspect, name),
     ]);
     const token: Token = {
@@ -1401,6 +1415,7 @@ export class GameScene extends Phaser.Scene implements ViewContract {
       name,
       stripe,
       elimDash,
+      meBadge,
       suspect: a.suspect,
       placed: false,
       eliminated: a.eliminated,

@@ -178,6 +178,7 @@ export class PixelScene extends Phaser.Scene implements ViewContract {
   private timing: ViewTiming = currentTiming();
   /** 색각 대체 표기(§4.3) 활성 여부 — 색을 끄지 않고 보강한다. */
   private cvd = false;
+  private myId = ""; // "나" 배지 식별용(다희 스펙 · 이 뷰엔 원래 myId가 없었다)
 
   constructor() {
     super("pixel");
@@ -185,6 +186,7 @@ export class PixelScene extends Phaser.Scene implements ViewContract {
 
   create(): void {
     this.room = this.registry.get("room") as Room;
+    this.myId = this.room.sessionId;
     this.cvd = cvdMode();
     this.cameras.main.setRoundPixels(true);
     this.makeGrassTexture();
@@ -899,8 +901,19 @@ export class PixelScene extends Phaser.Scene implements ViewContract {
           zodiacColor(a.suspect),
         )
         .setOrigin(0.5);
+      // "나" 배지 — 턴과 무관하게 내 토큰에만 항상 표시(다희 스펙). 도트 팔레트 무채색(크림 배경·진한 글자).
+      const meBadge = this.add
+        .text(0, -CELL * 0.55, "나", {
+          fontFamily: "monospace",
+          fontSize: "11px",
+          color: hexString(PAL.ink),
+          backgroundColor: hexString(PAL.cream),
+          padding: { x: 5, y: 1 },
+        })
+        .setOrigin(0.5)
+        .setVisible(a.id === this.myId);
       const c = this.add
-        .container(cx, cy, [ring, critter.c, nameTxt, stripe])
+        .container(cx, cy, [ring, critter.c, nameTxt, stripe, meBadge])
         .setDepth(5);
       t = {
         c,
