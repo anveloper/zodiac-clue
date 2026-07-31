@@ -629,15 +629,18 @@
          노출 조건은 **주 포인터가 coarse**(= 손가락)일 때뿐이라 마우스 데스크톱에는
          아예 렌더링되지 않는다. */
       .hud-dpad { display: none; }
-      /* 첫 이동 발견용(다희 스펙) — 포인터 종류와 무관하게 노출. 첫 이동 후 JS가 이 클래스를 뗀다. */
-      .hud-dpad.dp-discover {
-        display: grid; z-index: 7;
-        right: calc(10px + var(--sa-r, 0px)); bottom: calc(10px + var(--sa-b, 0px));
-        grid-template-columns: repeat(3, 46px);
-        grid-template-rows: repeat(3, 46px);
-        gap: 4px; padding: 8px; touch-action: none;
+      /* 첫 이동 발견용(다희 스펙) — 마우스 데스크톱 전용. 터치(coarse)는 이미 상시 패드가 있어
+         dp-discover를 얹으면 액션바와 겹친다(화면게이트 S1). 발견성의 원래 목적도 마우스 사용자다. */
+      @media (pointer: fine) {
+        .hud-dpad.dp-discover {
+          display: grid; z-index: 7;
+          right: calc(10px + var(--sa-r, 0px)); bottom: calc(10px + var(--sa-b, 0px));
+          grid-template-columns: repeat(3, 46px);
+          grid-template-rows: repeat(3, 46px);
+          gap: 4px; padding: 8px; touch-action: none;
+        }
+        .hud-dpad.dp-discover.dp-off { display: none; }
       }
-      .hud-dpad.dp-discover.dp-off { display: none; }
       @media (pointer: coarse) {
         .hud-dpad {
           display: grid; z-index: 7;
