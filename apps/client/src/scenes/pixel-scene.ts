@@ -808,7 +808,7 @@ export class PixelScene extends Phaser.Scene implements ViewContract {
         const tag = this.add
           .text(0, CELL * 0.44, "계략", {
             fontFamily: "monospace",
-            fontSize: "10px",
+            fontSize: "12px",
             color: hexString(PAL.gold),
             backgroundColor: "#000000aa",
             padding: { x: 3, y: 1 },
@@ -905,7 +905,7 @@ export class PixelScene extends Phaser.Scene implements ViewContract {
       const meBadge = this.add
         .text(0, -CELL * 0.55, "나", {
           fontFamily: "monospace",
-          fontSize: "11px",
+          fontSize: "12px",
           color: hexString(PAL.ink),
           backgroundColor: hexString(PAL.cream),
           padding: { x: 5, y: 1 },

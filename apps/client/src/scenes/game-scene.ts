@@ -795,7 +795,7 @@ export class GameScene extends Phaser.Scene implements ViewContract {
           .setOrigin(0.5);
         const tag = this.add
           .text(0, CELL * 0.52, "계략", {
-            fontSize: "10px",
+            fontSize: "12px",
             color: hexString(BOARD.helperTag),
             backgroundColor: "#000000aa",
             padding: { x: 3, y: 1 },
