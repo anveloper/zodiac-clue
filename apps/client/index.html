@@ -48,6 +48,25 @@
       }
       /* 터치 T0: 당겨서 새로고침·스크롤 체이닝으로 판이 날아가는 것을 막는다. */
       html, body { overscroll-behavior: none; }
+      /* ── 자연 배경 낙엽(다희 스펙) — 정지 SVG + CSS 애니. 새 의존성·이미지 에셋 0. ── */
+      #leaf-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+      #landing, #lobby { position: relative; z-index: 1; } /* UI를 낙엽 위로 */
+      body.no-scroll #leaf-bg { display: none; } /* 게임화면에선 끈다(정보 밀도) */
+      @media (prefers-reduced-motion: reduce) { #leaf-bg { display: none; } }
+      .leaf {
+        position: absolute; top: -8%; width: 16px; height: 16px; opacity: 0.5;
+        background: center/contain no-repeat;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M10 1C4 6 3 14 10 19C17 14 16 6 10 1Z' fill='%23A85638'/%3E%3C/svg%3E");
+        animation: leaf-fall 13s linear infinite, leaf-sway 4s ease-in-out infinite alternate;
+      }
+      .leaf:nth-child(3n) { width: 13px; opacity: 0.42;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M10 1C4 6 3 14 10 19C17 14 16 6 10 1Z' fill='%23E3B873'/%3E%3C/svg%3E"); }
+      .leaf:nth-child(3n+2) { width: 15px; opacity: 0.4;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M10 1C4 6 3 14 10 19C17 14 16 6 10 1Z' fill='%234F8054'/%3E%3C/svg%3E"); }
+      .leaf:nth-child(3n+1) { animation-duration: 16s, 5s; }
+      .leaf:nth-child(3n+2) { animation-duration: 11s, 3.2s; }
+      @keyframes leaf-fall { from { transform: translateY(-8vh) rotate(0deg); } to { transform: translateY(112vh) rotate(320deg); } }
+      @keyframes leaf-sway { from { margin-left: -18px; } to { margin-left: 18px; } }
       /* 게임 화면에서는 **문서 스크롤 자체를 없앤다.**
          `overscroll-behavior`는 스크롤 연쇄만 막을 뿐, 문서가 뷰포트보다 조금이라도
          길면 화면이 통째로 밀려 올라간다(실측: 폰에서 보드가 위로 사라지고 아래에 빈 검은 띠).
@@ -1029,6 +1048,19 @@
     </style>
   </head>
   <body>
+    <!-- 자연 배경(다희 스펙) — 대기실·랜딩 뒤 낙엽. 이미지·라이브러리 없이 인라인 SVG + CSS만.
+         게임화면(body.no-scroll)·모션감소에선 끈다. 순수 장식(pointer-events:none). -->
+    <div id="leaf-bg" aria-hidden="true">
+      <span class="leaf" style="left:6%;animation-delay:-1s"></span>
+      <span class="leaf" style="left:17%;animation-delay:-7s"></span>
+      <span class="leaf" style="left:28%;animation-delay:-3s"></span>
+      <span class="leaf" style="left:40%;animation-delay:-10s"></span>
+      <span class="leaf" style="left:52%;animation-delay:-2s"></span>
+      <span class="leaf" style="left:63%;animation-delay:-12s"></span>
+      <span class="leaf" style="left:74%;animation-delay:-5s"></span>
+      <span class="leaf" style="left:85%;animation-delay:-8s"></span>
+      <span class="leaf" style="left:93%;animation-delay:-4s"></span>
+    </div>
     <!-- ① 랜딩 -->
     <section id="landing" class="center">
       <div class="card">
