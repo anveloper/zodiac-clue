@@ -267,6 +267,7 @@ export class GameScene extends Phaser.Scene implements ViewContract {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.dispose());
     this.events.once(Phaser.Scenes.Events.DESTROY, () => this.dispose());
     this.drawBoard();
+    this.setupPetals();
 
     // ── 카메라: 내 캐릭터 추적 탑뷰 ──
     // bounds는 매 프레임 `applyCamBounds()`가 **인셋·줌을 반영해** 다시 잡는다.
@@ -546,6 +547,42 @@ export class GameScene extends Phaser.Scene implements ViewContract {
       const l = this.followId === this.myId ? CAM_LERP : SLOW_LERP;
       this.cam.startFollow(this.followTarget, true, l, l);
     }
+  }
+
+  // ── 봄 파티클(나뭇잎·벚꽃 꽃잎) : 보드 바닥 위, 말·UI 뒤(depth 0.5) ──
+  // 다희 요청 "보드에도 넣되 뒤로 날리도록". 보드 배경은 불투명이라 depth<0이면
+  // 완전히 가려 «파티클 안 보임»이 재발한다 → 바닥(0) 위·토큰(≥1) 뒤에 얹고
+  // alpha를 낮춰 가독성을 지킨다. 새 의존성 없음(Phaser 내장 파티클, 스펙 B안).
+  private setupPetals(): void {
+    // 접근성: 모션 최소화 선호 시 배경 장식은 끈다.
+    if (typeof window !== "undefined" &&
+        window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+      return;
+    }
+    // 꽃잎 텍스처를 절차적으로 1회 생성(에셋 불필요, 씬 재시작에도 재사용).
+    if (!this.textures.exists("zc-petal")) {
+      const g = this.make.graphics({ x: 0, y: 0 }, false);
+      g.fillStyle(0xffffff, 1);
+      g.fillEllipse(9, 9, 14, 9); // 갸름한 꽃잎/잎 형태
+      g.generateTexture("zc-petal", 18, 18);
+      g.destroy();
+    }
+    // 연녹 새순 2색 + 벚꽃 꽃잎 분홍/연분홍 — DOM 대기실 배경과 동일 팔레트.
+    this.add
+      .particles(0, 0, "zc-petal", {
+        x: { min: 0, max: BOARD_W },
+        y: -16,
+        frequency: 650, // 0.65초마다 1개 — 배경 장식 수준으로 절제
+        quantity: 1,
+        lifespan: 16000, // ~70px/s × 16s > 보드 높이(960) → 화면을 가로질러 낙하
+        speedY: { min: 55, max: 90 },
+        speedX: { min: -14, max: 14 },
+        rotate: { min: 0, max: 360 },
+        scale: { min: 0.5, max: 0.95 },
+        alpha: { start: 0.5, end: 0.12 }, // 낮게 유지 — 말·글자 가독성 보호
+        tint: [0x8fbf6a, 0x7fb05a, 0xf3b8c8, 0xfbeaf0],
+      })
+      .setDepth(0.5);
   }
 
   // ── 보드 그리기 (복도 + 방 + 중앙 잔치상) ──
@@ -1300,6 +1337,8 @@ export class GameScene extends Phaser.Scene implements ViewContract {
     this.passageLayer = undefined;
     this.surveyMarks.clear();
     this.roomRects.clear();
+    // 절차 생성한 꽃잎 텍스처를 TextureManager에서 회수(§9.3 — generateTexture는 영구 등록).
+    if (this.textures.exists("zc-petal")) this.textures.remove("zc-petal");
     this.dropInset();
   }
 
