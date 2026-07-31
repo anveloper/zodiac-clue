@@ -45,6 +45,7 @@ import {
 } from "./hud-inset";
 import { currentTiming, cvdMode } from "./view-motion";
 import { CVD_CELL, cvdCueDots } from "./pixel-glyphs";
+import { markMovedOnce } from "./move-hint";
 import {
   OUTLINE_RING,
   TURN_RING,
@@ -1787,6 +1788,7 @@ export class IsoView implements ViewContract {
     if (now - this.lastMove < this.timing.MOVE_COOLDOWN_MS) return;
     this.lastMove = now;
     this.room.send("move", { dx, dy });
+    markMovedOnce(); // 키보드 첫 이동에도 발견용 패드 접기(다희 스펙 §3.3)
   }
 
   private onKeyUp(e: KeyboardEvent): void {

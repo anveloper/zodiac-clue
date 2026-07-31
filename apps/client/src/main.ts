@@ -29,6 +29,7 @@ import type { GameScene } from "./scenes/game-scene";
 import type { PixelScene } from "./scenes/pixel-scene";
 import type { IsoView } from "./scenes/iso-view";
 import { cvdMode, resolveMotion } from "./scenes/view-motion";
+import { showMoveHint, markMovedOnce } from "./scenes/move-hint";
 import type {
   FocusMode,
   PassageLink,
@@ -2219,6 +2220,7 @@ const sendMoveStep = (dx: number, dy: number): void => {
   if (now - lastPadMove < timing.MOVE_COOLDOWN_MS) return;
   lastPadMove = now;
   room?.send("move", { dx, dy });
+  markMovedOnce(); // 첫 이동 발견용 패드 접기(다희 스펙)
 };
 
 /** 배선 1회 보장 — `enterGame()`이 청크 실패 후 재실행될 수 있어 중복 전송을 막는다. */
@@ -2625,6 +2627,7 @@ const enterGame = async (): Promise<void> => {
   }
   applyNarrow();
   wireDpad();
+  showMoveHint(); // 첫 이동 전까지 데스크톱에도 이동 패드 노출(다희 스펙 · 발견성)
 
   // AI 계측 패널의 **자리**를 판 시작과 함께 연다(첫 45초 안에 보이도록).
   // 숫자는 아직 없다 — 칩은 첫 계측이 와야 붙는다(`renderAi()` 주석).
