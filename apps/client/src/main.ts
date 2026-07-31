@@ -2300,7 +2300,9 @@ const enterGame = async (): Promise<void> => {
   game = new P.Game({
     type: P.AUTO,
     parent: "game",
-    backgroundColor: "#1c1712",
+    // 캔버스 투명 — 잔디 배경은 카메라와 무관한 고정 DOM 레이어(#game 배경)로 비친다.
+    // (다희 «개념 A 보드 vs 개념 B 최하위 배경» 분리 — 줌·팬에 안 딸려간다.)
+    transparent: true,
     scale: {
       mode: P.Scale.RESIZE,
       autoCenter: P.Scale.NO_CENTER,
