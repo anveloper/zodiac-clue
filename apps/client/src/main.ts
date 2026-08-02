@@ -486,35 +486,43 @@ const ROOM_SET: ReadonlySet<string> = new Set<string>(ROOMS);
 const cardIcon = (v: string): string => (ROOM_SET.has(v) ? "📍" : emoji(v));
 
 /**
- * 카드 셀렉트. `mine`(내 손패)은 **표시**만 다를 수도, 선택 불가일 수도 있다.
+ * 카드 셀렉트. «정답 아님»으로 아는 카드는 **옵션 이름에 표기**한다.
+ * - **제안(`lock=false`)**: 아는 카드도 **선택 가능** — "내 카드를 지목해 반증자를 통제"가
+ *   클루 정석 전술이라(ui-copy §6.1) 막지 않고 라벨로만 알린다.
+ * - **고발(`lock=true`)**: 아는 카드는 **선택 불가** — 고발엔 전술이 없고, 확정적으로
+ *   «정답 아님»인 것을 진범으로 지목하는 건 자멸뿐이라 아예 막는다(anveloper 결정).
  *
- * - 고발(`lockMine=true`): 내 패를 고르는 것은 자멸이므로 `disabled` 유지(ui-copy §6.2).
- * - 제안(`lockMine=false`): **선택 가능**(ui-copy §6.1 · 로드맵 §7.5.2).
- *   "내 카드를 지목해 반증자를 통제"는 클루의 정석 전술인데 서버는 이미 허용하고
- *   클라만 막고 있었다. 접미 문안은 §6.1의 `— 내 패`.
+ * `mine`(내 손패) → `— 내 패 (정답 아님)`, 그 외 아는 것(`excluded`: 공통단서·엿보기·반박·수동 제외)
+ * → `— 정답 아님`. 기본 선택은 «아는 것»이 아닌 첫 옵션으로 밀어 실수를 줄인다.
  */
 const selectFrom = (
   values: readonly string[],
   mine?: Set<string>,
-  /** 내 패 옵션 접미 — 제안/고발이 다르다(ui-copy §6.1·§6.2) */
-  mySuffix = " — 내 패",
-  /** 내 패를 선택 불가로 잠글지(고발만 true) */
-  lockMine = true,
+  /** 손패 외에 «정답 아님»으로 아는 카드값(공통단서·엿보기·반박·수동 제외) — **표기**용 */
+  excluded?: Set<string>,
+  /** 선택 불가로 **잠글** 카드값(고발: 손패+확정). 없으면 잠금 없음(제안). */
+  locked?: Set<string>,
 ): HTMLSelectElement => {
   const sel = document.createElement("select");
+  const isKnown = (v: string): boolean => !!mine?.has(v) || !!excluded?.has(v);
   for (const v of values) {
     const opt = document.createElement("option");
     opt.value = v;
-    // 셀렉트 옵션 라벨: 이모지 + 라벨 (ui-copy §6 공통 규칙)
-    opt.textContent =
-      `${cardIcon(v)} ${label(v)}` + (mine?.has(v) ? mySuffix : "");
-    if (lockMine && mine?.has(v)) opt.disabled = true;
+    // 셀렉트 옵션 라벨: 이모지 + 라벨 + «정답 아님» 표기(아는 카드만).
+    const suffix = mine?.has(v)
+      ? " — 내 패 (정답 아님)"
+      : excluded?.has(v)
+        ? " — 정답 아님"
+        : "";
+    opt.textContent = `${cardIcon(v)} ${label(v)}${suffix}`;
+    if (locked?.has(v)) opt.disabled = true; // 고발: 확정 «정답 아님»(손패·공통·엿보기·반박) 잠금
     sel.appendChild(opt);
   }
-  // 내 패가 아닌 첫 옵션을 기본 선택 — 제안에서 선택은 열어 두되 기본값으로 밀지 않는다.
+  // «정답 아님»이 아닌(그리고 잠기지 않은) 첫 옵션을 기본 선택 — 아는 카드가 기본값으로 밀리지 않게.
   const first =
-    [...sel.options].find((o) => !o.disabled && !mine?.has(o.value)) ??
-    [...sel.options].find((o) => !o.disabled);
+    [...sel.options].find((o) => !o.disabled && !isKnown(o.value)) ??
+    [...sel.options].find((o) => !o.disabled) ??
+    sel.options[0];
   if (first) sel.value = first.value;
   return sel;
 };
@@ -541,9 +549,33 @@ type PickerOpts = {
   note?: string;
   okLabel: string;
   okDanger?: boolean;
-  mySuffix: string;
-  /** 내 손패를 선택 불가로 잠글지 — 고발만 true(ui-copy §6.2). */
-  lockMine: boolean;
+  /** 아는 카드(정답 아님)를 선택 불가로 잠글지 — 고발만 true(제안은 전술상 열어둠). */
+  lockKnown?: boolean;
+};
+
+/**
+ * **확정** «정답 아님»(손패 제외) = 공통단서 + 엿보기·반박(게임이 알려준 것).
+ * 고발에서 **선택 불가**로 잠글 대상이다(수동 제외는 여기 없다 — anveloper).
+ */
+const confirmedNotAnswer = (): Set<string> => {
+  const s = new Set<string>();
+  if (!room) return s;
+  for (const c of (room.state.commonCards as string[]) ?? []) s.add(c);
+  for (const v of loadDefinite(room.roomId)) s.add(v);
+  return s;
+};
+
+/**
+ * **아는** «정답 아님»(손패 제외) = 확정 + 증거노트에서 **수동 제외**(`cleared`)한 것.
+ * 제안·고발 모달이 옵션에 «정답 아님»을 **표기**할 때 쓴다(잠금과 별개 — 수동은 표기만).
+ */
+const knownNotAnswer = (): Set<string> => {
+  const s = confirmedNotAnswer();
+  if (room) {
+    const data = loadEvi(room.roomId);
+    for (const [v, st] of Object.entries(data)) if (st === "cleared") s.add(v);
+  }
+  return s;
 };
 
 const openPicker = (opts: PickerOpts): Promise<Pick | null> =>
@@ -564,20 +596,16 @@ const openPicker = (opts: PickerOpts): Promise<Pick | null> =>
       modal.appendChild(w);
     }
 
-    const suspectSel = selectFrom(
-      participantSuspects(),
-      myCards,
-      opts.mySuffix,
-      opts.lockMine,
-    );
-    const weaponSel = selectFrom(
-      WEAPONS,
-      myCards,
-      opts.mySuffix,
-      opts.lockMine,
-    );
+    // 표기용: «정답 아님»으로 아는 모든 카드(확정 + 수동). 잠금용: 고발만, 확정(손패+공통+엿보기+반박).
+    // 수동 제외는 잠그지 않아 고발에서도 선택 가능하되 라벨은 붙는다(anveloper).
+    const excluded = knownNotAnswer();
+    const locked = opts.lockKnown
+      ? new Set<string>([...myCards, ...confirmedNotAnswer()])
+      : undefined;
+    const suspectSel = selectFrom(participantSuspects(), myCards, excluded, locked);
+    const weaponSel = selectFrom(WEAPONS, myCards, excluded, locked);
     const roomSel = opts.needRoom
-      ? selectFrom(ROOMS, myCards, opts.mySuffix, opts.lockMine)
+      ? selectFrom(ROOMS, myCards, excluded, locked)
       : null;
 
     const row = (labelText: string, sel: HTMLSelectElement): HTMLDivElement => {
@@ -1004,6 +1032,12 @@ const wireRoom = (r: Room): void => {
       addLog(`🔎 ${m.by} 님이 "${label(m.card.value)}" 단서로 반증 (나만 봄)`, {
         kind: "disprove",
       });
+      // 반박받은 카드는 «확정» 정답 아님 → 증거노트 자동 제외·잠금(엿보기와 같은 처리).
+      // 이전엔 로그만 남고 수동이었다. 확정 저장이라 고발 모달에서 잠금 대상이 된다.
+      if (room) {
+        addDefinite(room.roomId, [m.card.value]);
+        buildEvidence(room.roomId);
+      }
     } else {
       addLog("🔎 아무도 반증하지 못함 — 정답 후보!", { kind: "disprove" });
     }
@@ -1079,13 +1113,12 @@ const wireRoom = (r: Room): void => {
         .join(", ")} (정답 아님·나만 봄)`,
       { kind: "info" },
     );
-    // 엿본 카드는 정답 아님 → 증거노트에 자동 '제외' 표시
+    // 엿본 카드는 «확정» 정답 아님 → 증거노트 자동 제외·잠금(수동 제외와 구분해 저장 → 고발서 잠금 대상)
     if (room) {
-      const data = loadEvi(room.roomId);
-      m.cards.forEach((c) => {
-        data[c.value] = "cleared";
-      });
-      saveEvi(room.roomId, data);
+      addDefinite(
+        room.roomId,
+        m.cards.map((c) => c.value),
+      );
       buildEvidence(room.roomId);
     }
   });
@@ -1095,6 +1128,7 @@ const wireRoom = (r: Room): void => {
     if (lastPhase === "ended" && state.phase === "playing") {
       try {
         localStorage.removeItem(eviKey(r.roomId));
+        localStorage.removeItem(eviDefKey(r.roomId)); // 확정 제외도 판 단위로 초기화
       } catch {
         /* noop */
       }
@@ -2072,6 +2106,28 @@ const saveEvi = (roomId: string, data: Record<string, EviState>): void => {
   }
 };
 
+// 확정 «정답 아님» — 엿보기(peek)·반박(disprove)으로 **게임이 알려준** 카드값.
+// 사용자가 손으로 지운 것(evidence `cleared`)과 구분해서 따로 저장한다 — 고발 잠금은
+// 확정(손패·공통·엿보기·반박)만 걸고, 수동 제외는 선택 가능(라벨만)이기 때문(anveloper).
+const eviDefKey = (roomId: string): string => `zc_evi_def_${roomId}`;
+const loadDefinite = (roomId: string): Set<string> => {
+  try {
+    const arr = JSON.parse(localStorage.getItem(eviDefKey(roomId)) ?? "[]");
+    return new Set<string>(Array.isArray(arr) ? arr : []);
+  } catch {
+    return new Set<string>();
+  }
+};
+const addDefinite = (roomId: string, values: string[]): void => {
+  const s = loadDefinite(roomId);
+  for (const v of values) s.add(v);
+  try {
+    localStorage.setItem(eviDefKey(roomId), JSON.stringify([...s]));
+  } catch {
+    /* noop */
+  }
+};
+
 // 항목별 간단 메모(요청 ②) — 상태(제외/의심)와 별도 키로 저장해 기존 데이터와 호환.
 const eviMemoKey = (roomId: string): string => `zc_evimemo_${roomId}`;
 const loadEviMemo = (roomId: string): Record<string, string> => {
@@ -2098,6 +2154,8 @@ const buildEvidence = (roomId: string): void => {
   const commonSet = new Set<string>(
     room ? ([...((room.state.commonCards as string[]) ?? [])] as string[]) : [],
   );
+  // 엿보기·반박으로 게임이 알려준 확정 «정답 아님» — 손패·공통과 같이 자동 제외·잠금(비순환).
+  const definiteSet = loadDefinite(roomId);
   // 3번째 원소 = 십이지 고유색 적용 대상인지(§4.2 "증거노트 용의자 칩").
   // 훔친 것·장소는 십이지가 아니므로 색이 없다(`zodiacColorHex`가 중립색을 주는 것과 별개로
   // 의미 없는 색을 칠하지 않는다).
@@ -2147,15 +2205,17 @@ const buildEvidence = (roomId: string): void => {
         memoBtn.classList.toggle("has", m !== "");
       };
 
-      // 내 패 또는 공통 단서 → 정답 아님, 자동 제외·잠금(상태 순환 없음).
-      const own = myCards.has(v) || commonSet.has(v);
+      // 내 패·공통 단서·확정(엿보기·반박) → 정답 아님, 자동 제외·잠금(상태 순환 없음).
+      const own = myCards.has(v) || commonSet.has(v) || definiteSet.has(v);
       if (own) {
         chip.className = base + " cleared own";
         // 확정 문안(§4.3). `(자동 제외)`가 빠지면 **클릭에 반응하지 않는 유일한 칩**의
         // 이유가 화면에서 사라진다.
         row.title = commonSet.has(v)
           ? "공통 단서 — 모두 공개 · 정답 아님 (자동 제외)"
-          : "내 손패 — 정답 아님 (자동 제외)";
+          : myCards.has(v)
+            ? "내 손패 — 정답 아님 (자동 제외)"
+            : "이미 확인함(엿보기·반박) — 정답 아님 (자동 제외)";
       } else {
         row.title = "클릭: 없음(제외) → 의심 → 초기화";
         const apply = (): void => {
@@ -2454,8 +2514,6 @@ const enterGame = async (): Promise<void> => {
       fixedRoom: me.room,
       note: "지목한 인물과 물건이 이 방으로 소환돼요.",
       okLabel: "이 조합으로 제안",
-      mySuffix: " — 내 패",
-      lockMine: false, // §6.1 — 제안에서는 내 패도 고를 수 있다(반증자 통제 전술)
     });
     if (pick) {
       // 장소는 서버가 player.room에서 가져간다 — 고정행은 표시일 뿐 값을 바꾸지 않는다.
@@ -2475,8 +2533,7 @@ const enterGame = async (): Promise<void> => {
       note: "이 3장이 정답 봉투와 모두 같아야 승리해요.",
       okLabel: "고발한다",
       okDanger: true,
-      mySuffix: " — 내 패 (정답 아님)",
-      lockMine: true, // §6.2 — 고발에서 내 패 지목은 자멸이므로 잠금 유지
+      lockKnown: true, // 고발: 확정 «정답 아님»(손패·공통·엿보기·반박)만 선택 불가 — 수동 제외는 선택 가능(표기만)
     });
     if (pick && pick.room) {
       room?.send("accuse", {
