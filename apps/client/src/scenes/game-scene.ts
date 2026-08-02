@@ -658,23 +658,18 @@ export class GameScene extends Phaser.Scene implements ViewContract {
       const w = r.w * CELL;
       const h = r.h * CELL;
       this.roomRects.set(r.name, new Phaser.Geom.Rectangle(x, y, w, h));
-      // 바닥: 에셋이 있으면 방 이미지, 없으면 단색 한지. 문·명패는 아래에서 그대로 그려진다.
+      // 바닥: 단색 한지를 먼저 깔고(정사각 이미지 주변 여백), 에셋이 있으면 그 위에 이미지.
+      // 문·명패는 아래에서 그대로 그려진다.
+      const g = this.add.graphics();
+      g.fillStyle(BOARD.room, 1);
+      g.fillRoundedRect(x, y, w, h, 12);
       const imgKey = `room-${r.name}`;
       if (this.textures.exists(imgKey)) {
-        // 이미지를 방 칸 크기에 맞추고, 둥근 모서리(radius 12)를 마스크로 유지한다.
-        // 마스크는 벡터라 텍스처 업로드가 없다(G4 무관). 표시목록 밖 그래픽으로 만든다.
-        const floor = this.add.image(x + w / 2, y + h / 2, imgKey);
-        // 1:1 비율 유지(다희) — 정사각 이미지를 방 사각형에 늘려 왜곡하지 않는다.
-        // 방을 덮는 최소 배율로 균일 스케일(cover), 넘치는 부분은 아래 둥근 마스크가 잘라낸다.
-        floor.setScale(Math.max(w, h) / floor.width);
-        const clip = this.make.graphics({ x: 0, y: 0 }, false);
-        clip.fillStyle(0xffffff, 1);
-        clip.fillRoundedRect(x, y, w, h, 12);
-        floor.setMask(clip.createGeometryMask());
-      } else {
-        const g = this.add.graphics();
-        g.fillStyle(BOARD.room, 1);
-        g.fillRoundedRect(x, y, w, h, 12);
+        // 1:1 fit(다희) — 정사각 이미지를 «잘리지 않게» 방 안에 넣는다. 방이 정사각이 아니면
+        // 짧은 변에 맞춘 정사각으로 중앙 배치(contain), 남는 폭은 아래 한지 바닥이 채운다.
+        // (cover는 위/아래를 잘라내 그림 일부가 사라졌다 — 그래서 fit으로 되돌린다.)
+        const side = Math.min(w, h);
+        this.add.image(x + w / 2, y + h / 2, imgKey).setDisplaySize(side, side);
       }
       // 방 경계선 — 이미지/단색 공통. 이미지 방도 다른 방과 같은 또렷한 외곽을 갖는다.
       const edge = this.add.graphics();
