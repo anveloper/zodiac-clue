@@ -100,6 +100,28 @@ const NAME_STRIPE_PX = 3;
 const SURVEY_CHECK_INSET_PX = 3;
 const SURVEY_CHECK_FONT_PX = 13;
 
+/**
+ * 바닥을 **이미지**로 그리는 방 — `ROOM_REGIONS`의 로마자 id와 텍스처 키를 맞춘다
+ * (`room-<id>` ← `/assets/rooms/<id>.png`). 여기 없는 방은 단색 한지 바닥을 유지한다.
+ * 부엌(`jeongji`)부터 순차 교체 — 에셋이 오는 대로 이 배열에 키만 추가하면 된다
+ * (다희 «방 이미지 매핑» §2.2). 문·명패·잔치상 섹션은 이 교체의 영향을 받지 않는다.
+ */
+const ROOM_IMAGE_KEYS = [
+  "jeongji",
+  "daecheong",
+  "huwon",
+  "sarangbang",
+  "sarangchae",
+  "seojae",
+  "anbang",
+  "haengnang",
+  "byeoldang",
+] as const;
+
+/** 방 명패 칩 — 방 **바깥 위쪽 중앙**에 두고(다희), 방 위 경계와 `PLAQUE_GAP_PX`만큼 띄운다. */
+const PLAQUE_H = 30;
+const PLAQUE_GAP_PX = 6;
+
 /** `pulseCell`의 의미 → 뷰1 팔레트 번역(색이 아니라 의미를 받는다). */
 const TONE_COLOR: Record<PulseTone, number> = {
   neutral: BOARD.plaqueText,
@@ -259,6 +281,15 @@ export class GameScene extends Phaser.Scene implements ViewContract {
 
   constructor() {
     super("game");
+  }
+
+  /** 방 바닥 이미지 로드 — `create()`/`drawBoard()` 이전에 텍스처를 확보한다. */
+  preload(): void {
+    for (const key of ROOM_IMAGE_KEYS) {
+      this.load.image(`room-${key}`, `/assets/rooms/${key}.png`);
+    }
+    // 중앙 잔치상(ROOM_REGIONS 밖 · 별도 좌표)도 이미지가 있으면 로드.
+    this.load.image("room-feast", "/assets/rooms/feast.png");
   }
 
   create(): void {
@@ -612,14 +643,29 @@ export class GameScene extends Phaser.Scene implements ViewContract {
     const feast = this.add.graphics();
     feast.fillStyle(BOARD.feast, 1);
     feast.fillRoundedRect(fx, fy, fw, fh, 16);
-    feast.lineStyle(3, BOARD.feastEdge, 1);
-    feast.strokeRoundedRect(fx, fy, fw, fh, 16);
-    this.add
-      .text(fx + fw / 2, fy + fh / 2 - 18, "🎁", {
-        fontSize: "48px",
-        padding: { x: 6, y: 12 },
-      })
-      .setOrigin(0.5);
+    if (this.textures.exists("room-feast")) {
+      // 잔치상은 6×6 정사각이라 정사각 이미지가 그대로 딱 맞는다(왜곡 0). 둥근 모서리는 마스크로.
+      // 이미지에 이미 선물이 그려져 있어 기존 🎁 이모지는 제거한다(다희 §2.4, 중복 방지).
+      const feastImg = this.add
+        .image(fx + fw / 2, fy + fh / 2, "room-feast")
+        .setDisplaySize(fw, fh);
+      const fclip = this.make.graphics({ x: 0, y: 0 }, false);
+      fclip.fillStyle(0xffffff, 1);
+      fclip.fillRoundedRect(fx, fy, fw, fh, 16);
+      feastImg.setMask(fclip.createGeometryMask());
+    } else {
+      this.add
+        .text(fx + fw / 2, fy + fh / 2 - 18, "🎁", {
+          fontSize: "48px",
+          padding: { x: 6, y: 12 },
+        })
+        .setOrigin(0.5);
+    }
+    // 경계선은 이미지 위에 그린다(이미지가 덮지 않도록 별도 그래픽·나중 추가).
+    const feastEdge = this.add.graphics();
+    feastEdge.lineStyle(3, BOARD.feastEdge, 1);
+    feastEdge.strokeRoundedRect(fx, fy, fw, fh, 16);
+    // 「잔치상」 라벨은 목표 식별용이라 유지 — 이미지 하단 위에 얹는다.
     this.add
       .text(fx + fw / 2, fy + fh / 2 + 36, "잔치상", {
         fontSize: "22px",
@@ -634,19 +680,36 @@ export class GameScene extends Phaser.Scene implements ViewContract {
       const w = r.w * CELL;
       const h = r.h * CELL;
       this.roomRects.set(r.name, new Phaser.Geom.Rectangle(x, y, w, h));
+      // 바닥: 단색 한지를 먼저 깔고(정사각 이미지 주변 여백), 에셋이 있으면 그 위에 이미지.
+      // 문·명패는 아래에서 그대로 그려진다.
       const g = this.add.graphics();
       g.fillStyle(BOARD.room, 1);
       g.fillRoundedRect(x, y, w, h, 12);
-      g.lineStyle(3, BOARD.roomEdge, 1);
-      g.strokeRoundedRect(x, y, w, h, 12);
+      const imgKey = `room-${r.name}`;
+      if (this.textures.exists(imgKey)) {
+        // 1:1 fit(다희) — 정사각 이미지를 «잘리지 않게» 방 안에 넣는다. 방이 정사각이 아니면
+        // 짧은 변에 맞춘 정사각으로 중앙 배치(contain), 남는 폭은 아래 한지 바닥이 채운다.
+        // (cover는 위/아래를 잘라내 그림 일부가 사라졌다 — 그래서 fit으로 되돌린다.)
+        const side = Math.min(w, h);
+        this.add.image(x + w / 2, y + h / 2, imgKey).setDisplaySize(side, side);
+      }
+      // 방 경계선 — 이미지/단색 공통. 이미지 방도 다른 방과 같은 또렷한 외곽을 갖는다.
+      const edge = this.add.graphics();
+      edge.lineStyle(3, BOARD.roomEdge, 1);
+      edge.strokeRoundedRect(x, y, w, h, 12);
 
+      // 명패: 방 **바깥 위쪽 중앙**, 방과 6px 간격(다희). 방 바닥이 이미지가 되면서
+      // 방 안 좌상단 명패가 화로 등 그림과 겹쳐 안 읽혔다 → 바깥으로 뺀다. radius 10(몽타주 칩).
       const name = label(r.name);
-      const plW = Math.min(w - 16, name.length * 20 + 24);
+      const plW = Math.min(w, name.length * 20 + 24);
+      const chipX = x + w / 2 - plW / 2;
+      const chipY = y - PLAQUE_GAP_PX - PLAQUE_H;
+      const chipMidY = chipY + PLAQUE_H / 2;
       const plaque = this.add.graphics();
       plaque.fillStyle(BOARD.plaque, 0.92);
-      plaque.fillRoundedRect(x + 10, y + 10, plW, 30, 7);
+      plaque.fillRoundedRect(chipX, chipY, plW, PLAQUE_H, 10);
       this.add
-        .text(x + 10 + plW / 2, y + 25, name, {
+        .text(chipX + plW / 2, chipMidY, name, {
           fontSize: "18px",
           color: hexString(BOARD.plaqueText),
         })
@@ -654,7 +717,7 @@ export class GameScene extends Phaser.Scene implements ViewContract {
       // "이미 살펴본 방" ✓ 스탬프 — 명패 **내부 좌측**(사유는 `SURVEY_CHECK_*` 주석).
       // 기본 숨김, `setSurveyed`가 켠다(§5 행 16).
       const check = this.add
-        .text(x + 10 + SURVEY_CHECK_INSET_PX, y + 25, "✓", {
+        .text(chipX + SURVEY_CHECK_INSET_PX, chipMidY, "✓", {
           fontSize: `${SURVEY_CHECK_FONT_PX}px`,
           color: hexString(BOARD.gold),
         })
