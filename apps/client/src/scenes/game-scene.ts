@@ -100,6 +100,14 @@ const NAME_STRIPE_PX = 3;
 const SURVEY_CHECK_INSET_PX = 3;
 const SURVEY_CHECK_FONT_PX = 13;
 
+/**
+ * 바닥을 **이미지**로 그리는 방 — `ROOM_REGIONS`의 로마자 id와 텍스처 키를 맞춘다
+ * (`room-<id>` ← `/assets/rooms/<id>.png`). 여기 없는 방은 단색 한지 바닥을 유지한다.
+ * 부엌(`jeongji`)부터 순차 교체 — 에셋이 오는 대로 이 배열에 키만 추가하면 된다
+ * (다희 «방 이미지 매핑» §2.2). 문·명패·잔치상 섹션은 이 교체의 영향을 받지 않는다.
+ */
+const ROOM_IMAGE_KEYS = ["jeongji", "daecheong"] as const;
+
 /** `pulseCell`의 의미 → 뷰1 팔레트 번역(색이 아니라 의미를 받는다). */
 const TONE_COLOR: Record<PulseTone, number> = {
   neutral: BOARD.plaqueText,
@@ -255,6 +263,13 @@ export class GameScene extends Phaser.Scene implements ViewContract {
 
   constructor() {
     super("game");
+  }
+
+  /** 방 바닥 이미지 로드 — `create()`/`drawBoard()` 이전에 텍스처를 확보한다. */
+  preload(): void {
+    for (const key of ROOM_IMAGE_KEYS) {
+      this.load.image(`room-${key}`, `/assets/rooms/${key}.png`);
+    }
   }
 
   create(): void {
@@ -630,11 +645,26 @@ export class GameScene extends Phaser.Scene implements ViewContract {
       const w = r.w * CELL;
       const h = r.h * CELL;
       this.roomRects.set(r.name, new Phaser.Geom.Rectangle(x, y, w, h));
-      const g = this.add.graphics();
-      g.fillStyle(BOARD.room, 1);
-      g.fillRoundedRect(x, y, w, h, 12);
-      g.lineStyle(3, BOARD.roomEdge, 1);
-      g.strokeRoundedRect(x, y, w, h, 12);
+      // 바닥: 에셋이 있으면 방 이미지, 없으면 단색 한지. 문·명패는 아래에서 그대로 그려진다.
+      const imgKey = `room-${r.name}`;
+      if (this.textures.exists(imgKey)) {
+        // 이미지를 방 칸 크기에 맞추고, 둥근 모서리(radius 12)를 마스크로 유지한다.
+        // 마스크는 벡터라 텍스처 업로드가 없다(G4 무관). 표시목록 밖 그래픽으로 만든다.
+        const floor = this.add.image(x + w / 2, y + h / 2, imgKey);
+        floor.setDisplaySize(w, h);
+        const clip = this.make.graphics({ x: 0, y: 0 }, false);
+        clip.fillStyle(0xffffff, 1);
+        clip.fillRoundedRect(x, y, w, h, 12);
+        floor.setMask(clip.createGeometryMask());
+      } else {
+        const g = this.add.graphics();
+        g.fillStyle(BOARD.room, 1);
+        g.fillRoundedRect(x, y, w, h, 12);
+      }
+      // 방 경계선 — 이미지/단색 공통. 이미지 방도 다른 방과 같은 또렷한 외곽을 갖는다.
+      const edge = this.add.graphics();
+      edge.lineStyle(3, BOARD.roomEdge, 1);
+      edge.strokeRoundedRect(x, y, w, h, 12);
 
       const name = label(r.name);
       const plW = Math.min(w - 16, name.length * 20 + 24);
