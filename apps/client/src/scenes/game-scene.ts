@@ -182,6 +182,10 @@ type Token = {
 /** 말풍선 1건이 소유한 오브젝트·타이머 전부. 정리 경로를 한 곳으로 모은다. */
 type BubbleRec = {
   txt: Phaser.GameObjects.Text;
+  /** 말풍선 바탕. 테두리·글자와 **같은 상자**로 항상 전체를 칠한다 — 타자기 마스크는
+   *  글자에만 걸리므로(§9.3), 바탕을 `Text.backgroundColor`로 두면 마스크에 같이
+   *  깎여 «테두리(전체) vs 바탕(진행분)»이 어긋난다. 그래서 바탕을 별도 그래픽으로 뺀다. */
+  bg?: Phaser.GameObjects.Graphics;
   /** 배경 분리 테두리 + (귓속말이면) 파선 테두리. 공개/귓속말 모두 존재한다. */
   deco?: Phaser.GameObjects.Graphics;
   /** 귓속말 여부 — 테두리 문법을 가른다(계약 §2). */
@@ -1096,19 +1100,25 @@ export class GameScene extends Phaser.Scene implements ViewContract {
     // 귓속말은 공개 대사와 반드시 구분된다(계약 §2) — 접두 + 파선 테두리.
     const body = opts.whisper ? `(귓속말) ${text}` : text;
     const txt = this.add
+      // 바탕은 `backgroundColor`로 굽지 않는다 — 그러면 타자기 마스크가 글자와 함께
+      // 바탕까지 깎아 테두리와 어긋난다(BubbleRec.bg 주석). 바탕은 `rec.bg`가 전담.
       .text(anchor.x, anchor.y - CELL * 0.95, "", {
         fontSize: "15px",
         color: hexString(BOARD.bubbleText),
-        backgroundColor: hexString(BOARD.bubbleBg),
         padding: { x: 8, y: 4 },
         align: "center",
         wordWrap: { width: 260 },
       })
       .setOrigin(0.5, 1)
       .setDepth(100);
-    // 테두리는 **항상** 그린다 — 말풍선 바탕과 방바닥의 대비가 1.55:1뿐이라
-    // 선이 없으면 밝은 방 위에서 말풍선 경계가 녹는다(§1.6 `BOARD.bubbleEdge`).
-    const rec: BubbleRec = { txt, deco: this.add.graphics().setDepth(101) };
+    // 바탕(99, 글자 아래) + 테두리(101, 글자 위). 둘 다 **항상 전체 상자**로 그린다 —
+    // 말풍선 바탕과 방바닥의 대비가 1.55:1뿐이라 선이 없으면 밝은 방 위에서
+    // 말풍선 경계가 녹는다(§1.6 `BOARD.bubbleEdge`). 타자기는 글자에만 걸린다.
+    const rec: BubbleRec = {
+      txt,
+      bg: this.add.graphics().setDepth(99),
+      deco: this.add.graphics().setDepth(101),
+    };
     rec.whisper = opts.whisper === true;
     this.bubbles.set(id, rec);
 
@@ -1171,6 +1181,13 @@ export class GameScene extends Phaser.Scene implements ViewContract {
     const h = rec.txt.displayHeight;
     const z = this.cam?.zoom || 1;
     const lw = BUBBLE_BORDER_PX / z;
+    // 바탕 — 항상 전체 상자(글자 진행분과 무관). 테두리와 정확히 같은 사각형이라
+    // 타자기가 글자를 다 드러내기 전에도 «상자»는 완성된 채로 읽힌다.
+    if (rec.bg) {
+      rec.bg.clear();
+      rec.bg.fillStyle(BOARD.bubbleBg, 1);
+      rec.bg.fillRect(tl.x, tl.y, w, h);
+    }
     g.clear();
     g.lineStyle(lw, BOARD.bubbleEdge, 1);
     g.strokeRect(tl.x - lw / 2, tl.y - lw / 2, w + lw, h + lw);
@@ -1194,6 +1211,7 @@ export class GameScene extends Phaser.Scene implements ViewContract {
     rec.tick?.remove();
     rec.hold?.remove();
     if (rec.reveal) destroyReveal(rec.reveal);
+    rec.bg?.destroy();
     rec.deco?.destroy();
     rec.txt.destroy();
     this.bubbles.delete(id);
