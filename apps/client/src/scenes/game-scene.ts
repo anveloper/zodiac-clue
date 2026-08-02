@@ -284,6 +284,8 @@ export class GameScene extends Phaser.Scene implements ViewContract {
     for (const key of ROOM_IMAGE_KEYS) {
       this.load.image(`room-${key}`, `/assets/rooms/${key}.png`);
     }
+    // 중앙 잔치상(ROOM_REGIONS 밖 · 별도 좌표)도 이미지가 있으면 로드.
+    this.load.image("room-feast", "/assets/rooms/feast.png");
   }
 
   create(): void {
@@ -637,14 +639,29 @@ export class GameScene extends Phaser.Scene implements ViewContract {
     const feast = this.add.graphics();
     feast.fillStyle(BOARD.feast, 1);
     feast.fillRoundedRect(fx, fy, fw, fh, 16);
-    feast.lineStyle(3, BOARD.feastEdge, 1);
-    feast.strokeRoundedRect(fx, fy, fw, fh, 16);
-    this.add
-      .text(fx + fw / 2, fy + fh / 2 - 18, "🎁", {
-        fontSize: "48px",
-        padding: { x: 6, y: 12 },
-      })
-      .setOrigin(0.5);
+    if (this.textures.exists("room-feast")) {
+      // 잔치상은 6×6 정사각이라 정사각 이미지가 그대로 딱 맞는다(왜곡 0). 둥근 모서리는 마스크로.
+      // 이미지에 이미 선물이 그려져 있어 기존 🎁 이모지는 제거한다(다희 §2.4, 중복 방지).
+      const feastImg = this.add
+        .image(fx + fw / 2, fy + fh / 2, "room-feast")
+        .setDisplaySize(fw, fh);
+      const fclip = this.make.graphics({ x: 0, y: 0 }, false);
+      fclip.fillStyle(0xffffff, 1);
+      fclip.fillRoundedRect(fx, fy, fw, fh, 16);
+      feastImg.setMask(fclip.createGeometryMask());
+    } else {
+      this.add
+        .text(fx + fw / 2, fy + fh / 2 - 18, "🎁", {
+          fontSize: "48px",
+          padding: { x: 6, y: 12 },
+        })
+        .setOrigin(0.5);
+    }
+    // 경계선은 이미지 위에 그린다(이미지가 덮지 않도록 별도 그래픽·나중 추가).
+    const feastEdge = this.add.graphics();
+    feastEdge.lineStyle(3, BOARD.feastEdge, 1);
+    feastEdge.strokeRoundedRect(fx, fy, fw, fh, 16);
+    // 「잔치상」 라벨은 목표 식별용이라 유지 — 이미지 하단 위에 얹는다.
     this.add
       .text(fx + fw / 2, fy + fh / 2 + 36, "잔치상", {
         fontSize: "22px",
