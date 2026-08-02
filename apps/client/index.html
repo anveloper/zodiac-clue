@@ -883,10 +883,21 @@
           grid-template-rows: repeat(3, 44px);
           gap: 3px; padding: 5px; border-radius: 12px;
         }
-        /* 손패는 턴 배너 **아래 한 줄**. 상단에 검은 띠 두 개가 겹치면 보드가 사라진다. */
+        /* 턴 배너 — 폰에서는 **상단 풀폭 밴드**로 눕힌다.
+           데스크톱은 명패 띠를 비켜 270px로 좁혔지만(위 주석), 폰은 max-width 270 +
+           `nowrap`이라 첫 줄("내 턴 · 남은 이동 n칸 · 방에서 …")이 상자 밖으로 넘쳤고,
+           즉시고발 카운트다운 3번째 줄은 손패(top:72)에 가려졌다(실측 IMG_9430).
+           → 폭을 화면에 맞춰 줄바꿈을 허용(넘침 해소)하고, 손패·AI를 배너 최대 높이(3줄)
+             아래로 내려 겹침을 없앤다. */
+        .hud-turn {
+          left: calc(8px + var(--sa-l, 0px)); right: calc(8px + var(--sa-r, 0px));
+          transform: none; max-width: none;
+          white-space: normal; text-align: center;
+        }
+        /* 손패는 턴 배너(최대 3줄) **아래**. 상단에 검은 띠 두 개가 겹치면 보드가 사라진다. */
         .hud-hand {
           left: calc(8px + var(--sa-l, 0px)); right: auto;
-          top: calc(72px + var(--sa-t, 0px)); bottom: auto;
+          top: calc(108px + var(--sa-t, 0px)); bottom: auto;
           /* 폭을 화면에 맞추면 상단에 **검은 띠가 두 개** 생겨 보드가 그만큼 사라진다.
              내용만큼만 차지하게 두고, 길면 그 안에서 가로로 민다. */
           width: max-content; max-width: calc(100% - 16px);
@@ -898,7 +909,7 @@
         .hud-ai {
           display: block;
           left: calc(8px + var(--sa-l, 0px)); right: auto;
-          top: calc(126px + var(--sa-t, 0px)); bottom: auto;
+          top: calc(162px + var(--sa-t, 0px)); bottom: auto;
           width: max-content; max-width: calc(100% - 16px);
           padding: 5px 9px; font-size: 12px; line-height: 1.45;
           background: rgba(255, 248, 239, 0.85);
