@@ -106,7 +106,14 @@ const SURVEY_CHECK_FONT_PX = 13;
  * 부엌(`jeongji`)부터 순차 교체 — 에셋이 오는 대로 이 배열에 키만 추가하면 된다
  * (다희 «방 이미지 매핑» §2.2). 문·명패·잔치상 섹션은 이 교체의 영향을 받지 않는다.
  */
-const ROOM_IMAGE_KEYS = ["jeongji", "daecheong", "huwon"] as const;
+const ROOM_IMAGE_KEYS = [
+  "jeongji",
+  "daecheong",
+  "huwon",
+  "sarangbang",
+  "sarangchae",
+  "seojae",
+] as const;
 
 /** 방 명패 칩 — 방 **바깥 위쪽 중앙**에 두고(다희), 방 위 경계와 `PLAQUE_GAP_PX`만큼 띄운다. */
 const PLAQUE_H = 30;
