@@ -113,6 +113,8 @@ const ROOM_IMAGE_KEYS = [
   "sarangbang",
   "sarangchae",
   "seojae",
+  "anbang",
+  "haengnang",
 ] as const;
 
 /** 방 명패 칩 — 방 **바깥 위쪽 중앙**에 두고(다희), 방 위 경계와 `PLAQUE_GAP_PX`만큼 띄운다. */
