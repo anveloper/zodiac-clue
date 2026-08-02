@@ -106,7 +106,11 @@ const SURVEY_CHECK_FONT_PX = 13;
  * 부엌(`jeongji`)부터 순차 교체 — 에셋이 오는 대로 이 배열에 키만 추가하면 된다
  * (다희 «방 이미지 매핑» §2.2). 문·명패·잔치상 섹션은 이 교체의 영향을 받지 않는다.
  */
-const ROOM_IMAGE_KEYS = ["jeongji", "daecheong"] as const;
+const ROOM_IMAGE_KEYS = ["jeongji", "daecheong", "huwon"] as const;
+
+/** 방 명패 칩 — 방 **바깥 위쪽 중앙**에 두고(다희), 방 위 경계와 `PLAQUE_GAP_PX`만큼 띄운다. */
+const PLAQUE_H = 30;
+const PLAQUE_GAP_PX = 6;
 
 /** `pulseCell`의 의미 → 뷰1 팔레트 번역(색이 아니라 의미를 받는다). */
 const TONE_COLOR: Record<PulseTone, number> = {
@@ -651,7 +655,9 @@ export class GameScene extends Phaser.Scene implements ViewContract {
         // 이미지를 방 칸 크기에 맞추고, 둥근 모서리(radius 12)를 마스크로 유지한다.
         // 마스크는 벡터라 텍스처 업로드가 없다(G4 무관). 표시목록 밖 그래픽으로 만든다.
         const floor = this.add.image(x + w / 2, y + h / 2, imgKey);
-        floor.setDisplaySize(w, h);
+        // 1:1 비율 유지(다희) — 정사각 이미지를 방 사각형에 늘려 왜곡하지 않는다.
+        // 방을 덮는 최소 배율로 균일 스케일(cover), 넘치는 부분은 아래 둥근 마스크가 잘라낸다.
+        floor.setScale(Math.max(w, h) / floor.width);
         const clip = this.make.graphics({ x: 0, y: 0 }, false);
         clip.fillStyle(0xffffff, 1);
         clip.fillRoundedRect(x, y, w, h, 12);
@@ -666,13 +672,18 @@ export class GameScene extends Phaser.Scene implements ViewContract {
       edge.lineStyle(3, BOARD.roomEdge, 1);
       edge.strokeRoundedRect(x, y, w, h, 12);
 
+      // 명패: 방 **바깥 위쪽 중앙**, 방과 6px 간격(다희). 방 바닥이 이미지가 되면서
+      // 방 안 좌상단 명패가 화로 등 그림과 겹쳐 안 읽혔다 → 바깥으로 뺀다. radius 10(몽타주 칩).
       const name = label(r.name);
-      const plW = Math.min(w - 16, name.length * 20 + 24);
+      const plW = Math.min(w, name.length * 20 + 24);
+      const chipX = x + w / 2 - plW / 2;
+      const chipY = y - PLAQUE_GAP_PX - PLAQUE_H;
+      const chipMidY = chipY + PLAQUE_H / 2;
       const plaque = this.add.graphics();
       plaque.fillStyle(BOARD.plaque, 0.92);
-      plaque.fillRoundedRect(x + 10, y + 10, plW, 30, 7);
+      plaque.fillRoundedRect(chipX, chipY, plW, PLAQUE_H, 10);
       this.add
-        .text(x + 10 + plW / 2, y + 25, name, {
+        .text(chipX + plW / 2, chipMidY, name, {
           fontSize: "18px",
           color: hexString(BOARD.plaqueText),
         })
@@ -680,7 +691,7 @@ export class GameScene extends Phaser.Scene implements ViewContract {
       // "이미 살펴본 방" ✓ 스탬프 — 명패 **내부 좌측**(사유는 `SURVEY_CHECK_*` 주석).
       // 기본 숨김, `setSurveyed`가 켠다(§5 행 16).
       const check = this.add
-        .text(x + 10 + SURVEY_CHECK_INSET_PX, y + 25, "✓", {
+        .text(chipX + SURVEY_CHECK_INSET_PX, chipMidY, "✓", {
           fontSize: `${SURVEY_CHECK_FONT_PX}px`,
           color: hexString(BOARD.gold),
         })
