@@ -30,7 +30,7 @@
 | ② | 대청마루(daecheong) | 6×5 | 하단(남) · 가운데 | 1/6 | ✅ 반영 |
 | ③ | 후원(huwon) | 5×5 | 하단(남) · 가운데 | 1/5 | ✅ 반영 |
 | ④ | 사랑방(sarangbang) | 5×6 | 우측(동) · 위쪽-중간 | 1/6 | ✅ 반영 |
-| ⑤ | 사랑채(sarangchae) | 5×4 | 좌측(서) · 위쪽 | 1/4 | ⏳ 대기 |
+| ⑤ | 사랑채(sarangchae) | 5×4 | 좌측(서) · 위쪽 | 1/4 | ✅ 반영 |
 | ⑥ | 서재(seojae) | 5×4 | 좌측(서) · 위쪽 | 1/4 | ⏳ 대기 |
 | ⑦ | 안방(anbang) | 5×5 | 상단(북) · 가운데 | 1/5 | ⏳ 대기 |
 | ⑧ | 행랑채(haengnang) | 6×5 | 상단(북) · 가운데 | 1/6 | ⏳ 대기 |
@@ -102,7 +102,7 @@ and below the gap.
 No characters/text/UI, NO border. Aspect 5:6 (taller than wide, 5×6).
 ```
 
-## ⑤ 사랑채 (sarangchae) — 5×4 가로 · 문=좌측 위쪽  ⏳
+## ⑤ 사랑채 (sarangchae) — 5×4 가로 · 문=좌측 위쪽  ✅
 ![사랑채](https://zodiac-clue.vercel.app/assets/rooms/sarangchae.webp)
 ```
 Top-down bird's-eye view of a TRADITIONAL KOREAN HANOK guest quarters (사랑채). Cozy
@@ -111,9 +111,11 @@ Contents: a low tea table (소반) with a celadon (청자) teapot and cups; a fo
 set / thick floor mattress (보료/이부자리); floor cushions (방석); a low cabinet (문갑); a
 folding screen (병풍); a potted plant. Light warm-brown wood floor. Walls: Korean 한지
 lattice windows (창호), ceiling beams.
-Walls enclose ALL FOUR sides. ONLY OPENING: one doorway in the LEFT wall — ONE tile tall
-(~1/4), positioned in the upper area (2nd tile from the top of 4); threshold gap, left wall
-intact above and below. Do NOT open the whole left side.
+DOORWAY — EXACTLY ONE, ONLY on the LEFT wall (upper area, 2nd tile from the top). TOP/RIGHT/
+BOTTOM walls are COMPLETELY CLOSED solid walls — no bottom door, no other opening. The one
+left-wall door is an OPEN FLOOR-LEVEL PASSAGE: a one-tile gap with a LOW threshold (문지방)
+flush with the floor, floor continues through to a darker corridor. NOT a window (no 한지/
+glass/raised sill/frame). Left wall closed above and below the gap.
 No characters/text/UI, NO border. Aspect 5:4 (wider than tall, 5×4).
 ```
 
