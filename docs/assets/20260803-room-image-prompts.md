@@ -1,0 +1,165 @@
+# 방 이미지 에셋 — 생성 프롬프트 · 결과 (2026-08-03)
+
+> 대상: `apps/client/public/assets/rooms/*.webp` — 게임 뷰1 방 바닥 이미지.
+> 생성: ChatGPT 이미지. **부엌 이미지를 톤 레퍼런스로 첨부**하고 프롬프트를 넣으면 방마다 팔레트·밝기가 일관된다.
+> 처리 파이프라인(자동): 디스코드로 받은 PNG → 흰 테두리 자동 크롭 → WebP(q85) 변환 → `rooms/<id>.webp` 대치 → 배포.
+
+## 공통 규칙 (모든 방 프롬프트에 포함)
+- **한국 전통 한옥(hanok) 스타일만** — NOT western, NOT Japanese, no brick fireplace, no western furniture.
+- **톤 일치** — 부엌과 같은 밝기·팔레트(밝은 따뜻한 목재·따뜻한 채광). 어둡거나 칙칙하게 금지.
+- **문**: 벽은 **4면 전부 유지**, 문이 난 벽에만 **1타일 폭 개구부**(작은 문턱 gap). «벽 전체 제거» 금지.
+- **비율**: 방 타일 비율에 맞춤. **흰/색 테두리 없이** 캔버스 edge-to-edge.
+- 캐릭터·글자·UI·워터마크 없음. 플랫 탑다운(bird's-eye).
+
+## 방별 문 위치·비율·상태
+| # | 방 | 타일 | 문(열리는 벽 · 위치) | 개구부 폭 | 상태 |
+|---|---|---|---|---|---|
+| ① | 부엌(jeongji) | 5×5 | 하단(남) · 가운데 | 1/5 | ✅ 반영 |
+| ② | 대청마루(daecheong) | 6×5 | 하단(남) · 가운데 | 1/6 | ✅ 반영 |
+| ③ | 후원(huwon) | 5×5 | 하단(남) · 가운데 | 1/5 | ✅ 반영 |
+| ④ | 사랑방(sarangbang) | 5×6 | 우측(동) · 위쪽-중간 | 1/6 | ⏳ 대기 |
+| ⑤ | 사랑채(sarangchae) | 5×4 | 좌측(서) · 위쪽 | 1/4 | ⏳ 대기 |
+| ⑥ | 서재(seojae) | 5×4 | 좌측(서) · 위쪽 | 1/4 | ⏳ 대기 |
+| ⑦ | 안방(anbang) | 5×5 | 상단(북) · 가운데 | 1/5 | ⏳ 대기 |
+| ⑧ | 행랑채(haengnang) | 6×5 | 상단(북) · 가운데 | 1/6 | ⏳ 대기 |
+| ⑨ | 별당(byeoldang) | 5×3 | 상단(북) · 가운데 | 1/5 | ⏳ 대기 |
+
+> 잔치상(feast, 6×6 중앙)은 문 없음(사방 접근) — 별도.
+
+---
+
+## ① 부엌 (jeongji) — 5×5 · 문=하단 가운데  ✅
+![부엌](https://zodiac-clue.vercel.app/assets/rooms/jeongji.webp)
+```
+Top-down bird's-eye view of a TRADITIONAL KOREAN HANOK kitchen (정지). Cozy top-down
+pixel-art game asset, warm bright palette. Korean hanok style ONLY — NOT western/Japanese,
+no brick, no western furniture.
+Contents: clay wood-fired furnace (아궁이) with an iron cauldron, stacked firewood, wooden
+barrels, ceramic onggi jars (옹기), a wooden storage chest, a hanging ladle. Packed-earth/
+wood-plank floor.
+Walls enclose ALL FOUR sides. ONLY OPENING: one doorway in the BOTTOM wall — ONE tile wide
+(~1/5 of the bottom edge), centered; a small threshold gap, bottom wall intact on both sides.
+No characters/text/UI, NO white/colored border (fills canvas edge to edge). Square 1:1 (5×5).
+```
+
+## ② 대청마루 (daecheong) — 6×5 · 문=하단 가운데  ✅
+![대청마루](https://zodiac-clue.vercel.app/assets/rooms/daecheong.webp)
+```
+Top-down bird's-eye view of a TRADITIONAL KOREAN HANOK main hall (대청마루). Cozy top-down
+pixel-art game asset. Korean hanok ONLY — not western/Japanese, no brick fireplace.
+COLOR & TONE: warm, bright — match the kitchen room's palette/brightness.
+Floor: light warm-brown wood plank in a 우물마루 grid. Walls: Korean 한지 lattice windows
+(창호), exposed ceiling beams. Furniture (Korean only): rice chest (뒤주), open shelf
+(사방탁자) with celadon (청자)/white porcelain (백자), low cabinet (문갑), front-opening
+chest (반닫이), small tray table (소반), floor cushions (방석), folding screen (병풍).
+Walls enclose ALL FOUR sides. ONLY OPENING: one doorway in the BOTTOM wall — ONE tile wide
+(~1/6), centered; threshold gap, wall intact on both sides.
+No characters/text/UI, NO border. Aspect 6:5 (6×5).
+```
+
+## ③ 후원 (huwon) — 5×5 · 문=하단 가운데  ✅
+![후원](https://zodiac-clue.vercel.app/assets/rooms/huwon.webp)
+```
+Top-down bird's-eye view of a TRADITIONAL KOREAN HANOK back-garden storeroom (후원). Cozy
+top-down pixel-art, warm bright palette (match the kitchen). Korean hanok ONLY.
+Contents: a low platform (장독대) with round onggi jars (옹기 항아리), strings of dried
+persimmons (곶감) and hanging dried herbs, a stone lantern (석등), green bamboo (대나무) in
+a corner, a water jar and wooden bucket, a stone mortar (절구), a woven basket. Light
+warm-brown floor. Walls: Korean 한지 lattice windows (창호), ceiling beams.
+Walls enclose ALL FOUR sides. ONLY OPENING: one doorway in the BOTTOM wall — ONE tile wide
+(~1/5), centered; threshold gap, wall intact on both sides.
+No characters/text/UI, NO border. Square 1:1 (5×5).
+```
+
+## ④ 사랑방 (sarangbang) — 5×6 세로 · 문=우측 위쪽-중간  ⏳
+![사랑방](https://zodiac-clue.vercel.app/assets/rooms/sarangbang.webp)
+```
+Top-down bird's-eye view of a TRADITIONAL KOREAN HANOK scholar's study (사랑방). Cozy
+top-down pixel-art, warm bright palette (match the kitchen). Korean hanok ONLY — not
+western/Japanese, no western furniture.
+Contents: a low writing desk (서안) with brush (붓), inkstone (벼루) and stacked thread-bound
+books (한적); a low bookshelf/book stand; a stationery chest (문갑/연상); an open display
+shelf (사방탁자); a celadon brush holder (청자 필통); a folding screen (병풍) with ink
+calligraphy; a folding fan (부채); a floor cushion (방석). Light warm-brown wood floor.
+Walls: Korean 한지 lattice windows (창호), ceiling beams.
+Walls enclose ALL FOUR sides. ONLY OPENING: one doorway in the RIGHT wall — ONE tile tall
+(~1/6), positioned upper-middle (about 1/3 down from the top); threshold gap, right wall
+intact above and below. Do NOT open the whole right side.
+No characters/text/UI, NO border. Aspect 5:6 (taller than wide, 5×6).
+```
+
+## ⑤ 사랑채 (sarangchae) — 5×4 가로 · 문=좌측 위쪽  ⏳
+![사랑채](https://zodiac-clue.vercel.app/assets/rooms/sarangchae.webp)
+```
+Top-down bird's-eye view of a TRADITIONAL KOREAN HANOK guest quarters (사랑채). Cozy
+top-down pixel-art, warm bright palette (match the kitchen). Korean hanok ONLY.
+Contents: a low tea table (소반) with a celadon (청자) teapot and cups; a folded bedding
+set / thick floor mattress (보료/이부자리); floor cushions (방석); a low cabinet (문갑); a
+folding screen (병풍); a potted plant. Light warm-brown wood floor. Walls: Korean 한지
+lattice windows (창호), ceiling beams.
+Walls enclose ALL FOUR sides. ONLY OPENING: one doorway in the LEFT wall — ONE tile tall
+(~1/4), positioned in the upper area (2nd tile from the top of 4); threshold gap, left wall
+intact above and below. Do NOT open the whole left side.
+No characters/text/UI, NO border. Aspect 5:4 (wider than tall, 5×4).
+```
+
+## ⑥ 서재 (seojae) — 5×4 가로 · 문=좌측 위쪽  ⏳
+![서재](https://zodiac-clue.vercel.app/assets/rooms/seojae.webp)
+```
+Top-down bird's-eye view of a TRADITIONAL KOREAN HANOK library/study (서재). Cozy top-down
+pixel-art, warm bright palette (match the kitchen). Korean hanok ONLY.
+Contents: a tall bookshelf with thread-bound books (한적) and rolled scrolls (두루마리); a
+low writing desk (서안) with brush, inkstone and a water dropper (연적); a hanging ink-
+painting scroll (서화 족자); an abacus (주판); a floor cushion (방석); a small brazier.
+Light warm-brown wood floor. Walls: Korean 한지 lattice windows (창호), ceiling beams.
+Walls enclose ALL FOUR sides. ONLY OPENING: one doorway in the LEFT wall — ONE tile tall
+(~1/4), upper area (2nd tile from top of 4); threshold gap, left wall intact above and below.
+No characters/text/UI, NO border. Aspect 5:4 (wider than tall, 5×4).
+```
+
+## ⑦ 안방 (anbang) — 5×5 · 문=상단 가운데  ⏳
+![안방](https://zodiac-clue.vercel.app/assets/rooms/anbang.webp)
+```
+Top-down bird's-eye view of a TRADITIONAL KOREAN HANOK master bedroom (안방). Cozy top-down
+pixel-art, warm bright palette (match the kitchen). Korean hanok ONLY — not western/Japanese.
+Contents: a folded quilt/bedding set (이부자리) and a bedding chest (이불장); a low vanity
+(경대) with a round mirror; a front-opening chest (반닫이); a sewing basket (반짇고리); floor
+cushions (방석); an oil lamp (등잔); a wrapped cloth bundle (보자기). Light warm-brown wood
+floor / warm ondol floor. Walls: Korean 한지 lattice windows (창호), ceiling beams.
+Walls enclose ALL FOUR sides. ONLY OPENING: one doorway in the TOP wall — ONE tile wide
+(~1/5), centered; threshold gap, top wall intact on both sides.
+No characters/text/UI, NO border. Square 1:1 (5×5).
+```
+
+## ⑧ 행랑채 (haengnang) — 6×5 · 문=상단 가운데  ⏳
+![행랑채](https://zodiac-clue.vercel.app/assets/rooms/haengnang.webp)
+```
+Top-down bird's-eye view of a TRADITIONAL KOREAN HANOK servants' quarters (행랑채). Cozy
+top-down pixel-art, warm bright palette (match the kitchen). Korean hanok ONLY.
+Contents: a woven straw mat (멍석/돗자리); a broom (빗자루); straw sandals (짚신); a simple
+wooden shelf with earthenware bowls; a plain wooden chest (궤); a water bucket; an A-frame
+carrier (지게). Packed-earth / plain wood floor. Walls: simple wooden plank walls with small
+한지 windows, ceiling beams.
+Walls enclose ALL FOUR sides. ONLY OPENING: one doorway in the TOP wall — ONE tile wide
+(~1/6), centered; threshold gap, top wall intact on both sides.
+No characters/text/UI, NO border. Aspect 6:5 (wider than tall, 6×5).
+```
+
+## ⑨ 별당 (byeoldang) — 5×3 가로 · 문=상단 가운데  ⏳
+![별당](https://zodiac-clue.vercel.app/assets/rooms/byeoldang.webp)
+```
+Top-down bird's-eye view of a TRADITIONAL KOREAN HANOK annex pavilion (별당). Cozy top-down
+pixel-art, warm bright palette (match the kitchen). Korean hanok ONLY.
+Contents: a folding screen (병풍) with plum-blossom (매화) painting; a hanging paper lantern;
+a celadon (청자) flower vase; a low tray table (소반) with a folding fan (부채); a floor
+cushion (방석); a bonsai (분재). Light warm-brown wood floor. Walls: Korean 한지 lattice
+windows (창호), ceiling beams. (Wide, shallow room.)
+Walls enclose ALL FOUR sides. ONLY OPENING: one doorway in the TOP wall — ONE tile wide
+(~1/5), centered; threshold gap, top wall intact on both sides.
+No characters/text/UI, NO border. Aspect 5:3 (wide landscape, 5×3).
+```
+
+---
+
+## 변경 이력
+- **2026-08-03** 신설 — 9방 프롬프트(한국식·톤일치·1타일 문턱·비율) + 결과 webp. ①부엌·②대청마루·③후원 반영, ④~⑨ 대기.
