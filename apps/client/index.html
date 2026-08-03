@@ -75,6 +75,12 @@
          패널은 전부 자체 스크롤이므로 문서가 스크롤될 이유가 없다.
          랜딩·대기실은 카드가 화면보다 길 수 있어 잠그지 않는다 — 클래스로만 건다. */
       body.no-scroll { overflow: hidden; height: 100dvh; }
+      /* 게임 실행 중(게임화면)에는 전체 텍스트 선택을 끈다 — 드래그 이동·탭 중 파란 선택 블록 방지.
+         랜딩·로비(no-scroll 없음)에선 정상 선택 가능. 입력 요소는 예외로 복원. */
+      body.no-scroll,
+      body.no-scroll * { user-select: none; -webkit-user-select: none; }
+      body.no-scroll input,
+      body.no-scroll textarea { user-select: text; -webkit-user-select: text; }
       body {
         margin: 0;
         font-family: system-ui, -apple-system, "Apple SD Gothic Neo", sans-serif;
