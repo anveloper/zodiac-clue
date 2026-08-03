@@ -11,7 +11,7 @@
 | ① | 플레이 가능한 빌드 + 소스 | ✅ **완료** | 웹빌드 https://zodiac-clue.vercel.app (즉시 플레이·무료·설치 불필요) · 소스 public https://github.com/anveloper/zodiac-clue |
 | ② | 플레이 동영상(YouTube, 30~60초) | ❌ **미제작 — 최우선** | 콘티는 완성(`20260728-video-storyboard.{md,html}`, 55초 6컷). **촬영·업로드가 사람 몫** |
 | ③ | 게임 소개·설명 문서 | ✅ 완료 (PDF 인쇄만) | `docs/submission/game-intro.{md,html}` |
-| ④ | AI 활용 기술 문서 | ✅ 완료 (PDF 인쇄만) | `docs/design/20260720-ai-tech-doc.{md,html}` — **4판**(§2.3 목표 길이·3단 절단 · §2.5 캐시 0% 논증 · §3 P6 · §4 관측 가능성 구현 완료 · §4.2 랜딩 노출) |
+| ④ | AI 활용 기술 문서 | ✅ 완료 (PDF 인쇄만) | `docs/submission/20260720-ai-tech-doc.{md,html}` — **4판**(§2.3 목표 길이·3단 절단 · §2.5 캐시 0% 논증 · §3 P6 · §4 관측 가능성 구현 완료 · §4.2 랜딩 노출) |
 | ⑤ | 팀원 롤 기술서 | ⚠️ **제출 형태 확정 대기** | 초안 `docs/submission/20260728-team-roles.md` 작성 완료. 2인 이상 팀이면 필수, 개인이면 삭제 |
 
 **⑤의 비대칭 리스크** — 상류 회의록(`docs/planning/meetings/*`)은 **3인 팀(anveloper / 2jonghun / hwi2924)**과 R&R 안건·팀 단위 상금을 명시한다. 커밋이 단독이라는 사실만으로 "개인 참여"로 확정하면 **⑤ 누락 = 심사 제외**. 초안을 미리 써 둔 이유가 이것이다(개인 확정 시 삭제하면 끝).

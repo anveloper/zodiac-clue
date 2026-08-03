@@ -1,7 +1,7 @@
 # 통합 실행 계획서 — 07-27 → 08-10 (D-14)
 
 > 작성 2026-07-27 · 사람용 `.html` 동봉
-> 상위 문서: `20260727-improvement-roadmap.md`(§1~§9) · `20260727-view-contract-spec.md` · `../submission/20260728-video-storyboard.md` · `../submission/submission-checklist.md` · `20260720-ai-tech-doc.md`
+> 상위 문서: `20260727-improvement-roadmap.md`(§1~§9) · `20260727-view-contract-spec.md` · `../submission/20260728-video-storyboard.md` · `../submission/submission-checklist.md` · `../submission/20260720-ai-tech-doc.md`
 > **이 문서는 새 개선안을 만들지 않는다.** 기존 항목의 **순서·의존성·리스크**만 정리한다. 항목 정의는 전부 상위 문서에 있고 여기엔 `§`로 참조만 한다.
 > ⚠️ **커밋 전 필수**: 이 파일은 `improvement-roadmap`과 동일한 이유로 공개 배포 대상이 아니다 → `scripts/gen-docs-manifest.mjs`의 `EXCLUDE`에 `/execution-plan/`을 **추가한 뒤** 푸시할 것(§7.4).
 

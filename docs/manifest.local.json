@@ -4,6 +4,10 @@
     "dir": "submission",
     "items": [
       {
+        "path": "submission/20260720-ai-tech-doc.html",
+        "title": "제출물 ④ AI 활용 기술 문서"
+      },
+      {
         "path": "submission/20260728-team-roles.md",
         "title": "제출물 ⑤ — 팀원 롤 기술서 (초안)",
         "private": true
@@ -15,7 +19,7 @@
       },
       {
         "path": "submission/game-intro.html",
-        "title": "제출물 ③ 게임 소개"
+        "title": "제출물 ③ 게임 소개: zodiac-clue"
       },
       {
         "path": "submission/submission-checklist.md",
@@ -71,10 +75,6 @@
       {
         "path": "design/20260720-camera-and-hud.html",
         "title": "게임형 카메라 & 플로팅 HUD"
-      },
-      {
-        "path": "design/20260720-ai-tech-doc.html",
-        "title": "제출물 ④ AI 활용 기술 문서"
       }
     ]
   },
@@ -100,6 +100,16 @@
     "label": "🗂 플랜 · 진행",
     "dir": "plans/active",
     "items": [
+      {
+        "path": "plans/active/19-gecko-ui-backlog.md",
+        "title": "19 — 게코 브랜치 UI 백로그 (07-30~)",
+        "private": true
+      },
+      {
+        "path": "plans/active/18-cameo-helper-npcs.md",
+        "title": "18 — 팀 카메오 계략 NPC (쿼카 · 안드로이드) (07-30)",
+        "private": true
+      },
       {
         "path": "plans/active/12-view-evolution-stages.md",
         "title": "plan: 뷰 진화 단계 선택기 (개발 진화를 기능으로)",

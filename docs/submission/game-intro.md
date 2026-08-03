@@ -26,7 +26,7 @@
 > **한 판 길이**만 완전 삭제(리매치 항목과 겹친다). 사람용 `.html`은 이 5행을 존댓말로 싣는다 — 실측 511자 = 61초.
 
 ## AI를 어떻게 썼는가 — 그리고 그 증거
-> 상세: 제출물 ④ AI 기술문서 → https://zodiac-clue.vercel.app/docs/design/20260720-ai-tech-doc.html
+> 상세: 제출물 ④ AI 기술문서 → https://zodiac-clue.vercel.app/docs/submission/20260720-ai-tech-doc.html
 
 - **경계가 먼저다.** 정답 봉투·반증·승패·주사위는 **결정론 규칙엔진**만 만든다. LLM은 **대사 한 줄**만 쓴다. 검증기가 `NarrationInput` 필드를 정적으로 파싱해 **정답·손패 필드가 존재하지 않음**을 매 실행 증명한다(eval S1).
 - **페르소나가 대사에만 있지 않다.** 봇의 고발 판단에 `BOT_NERVE` 12값(캐릭터 성격 한 줄에서 유도)이 들어가 `p = nerve × (1/조합수)`로 지른다. 호랑이는 성급히 고발하고 양 목동은 안 한다 — 최상/최하 **14배** 차이가 실측으로 나온다. **임의 마법상수 0개**이고, `Math.random()`은 판 시드 발행 1회뿐이라 **이 판단은 결정론**이다. 07-29(`459a51f`)에 **정답 봉투·덱 셔플·주사위까지 판 시드에서 파생**시켜, 이제 **로그의 시드를 되먹이면 판 전체가 재생된다** — 같은 시드 2회에 정답·손패·주사위 53회·제안 로그가 전부 동일하고, 다른 시드면 전부 상이하다.
@@ -105,5 +105,5 @@
 ## 링크
 - 플레이: https://zodiac-clue.vercel.app
 - 소스: https://github.com/anveloper/zodiac-clue
-- AI 기술문서(제출물 ④): https://zodiac-clue.vercel.app/docs/design/20260720-ai-tech-doc.html
+- AI 기술문서(제출물 ④): https://zodiac-clue.vercel.app/docs/submission/20260720-ai-tech-doc.html
 - 플레이 영상: **(제출물 ② 촬영·업로드 후 이 자리에 링크)** — 아직 없는 링크를 적지 않는다

@@ -2,7 +2,7 @@
 //
 // 근거 문서: docs/design/20260727-improvement-roadmap.md §9.1(번들)·§9.6(수용 게이트)
 //           docs/design/20260727-execution-plan.md §2(08-02 기준선 / 08-04 통과)·§6(일일 체크포인트)
-//           docs/design/20260720-ai-tech-doc.md §3(환각 검증)
+//           docs/submission/20260720-ai-tech-doc.md §3(환각 검증)
 //
 // ⚠ 이 파일은 **판정 기준**만 담는다. "지금 값이 얼마인가"(기준선)는
 //    `scripts/gate.baseline.json`에 따로 기록한다 — 기준선은 코드 변경과 함께
@@ -206,7 +206,7 @@ export const DOC_CHECKS = [
       { name: "LINE_MAX", file: "apps/server/src/ai/narrator.ts", re: /^export const LINE_MAX = (\d+);/m },
     ],
     doc: {
-      file: "docs/design/20260720-ai-tech-doc.md",
+      file: "docs/submission/20260720-ai-tech-doc.md",
       // 앵커: "제안 **25자** / 그 외 **40자**" 형태(강조 기호 유무 무관).
       re: /제안\s*\*{0,2}(\d+)자\*{0,2}\s*\/\s*그\s*외\s*\*{0,2}(\d+)자/,
       names: ["LINE_BUDGET_SUGGEST", "LINE_MAX"],
