@@ -177,8 +177,8 @@ Make a SHEET of special HANOK props, transparent background, matching style/scal
    방 문 앞은 §2-2 디딤돌 통로로 이어 붙여 «드나드는» 동선을 만든다.
 6. 완성 방은 방별 PNG로 export → 기존 `rooms/<id>.webp`를 교체(같은 파이프라인: WebP q85).
 
-> 방 크기·문 방향 표는 `docs/assets/20260803-room-image-prompts.md` §「방별 문 위치·비율·상태」 참조.
-> (통짜 프롬프트 문서는 타일셋 전환 이후 «과거 방식» 아카이브로 남긴다.)
+> 방 크기·문 방향은 아래 「부록」 표(= `packages/shared/src/content/clue/board.ts` `ROOM_REGIONS`) 참조.
+> (통짜 방 이미지 방식은 폐기 — 타일셋 조립으로 전환.)
 
 ---
 
