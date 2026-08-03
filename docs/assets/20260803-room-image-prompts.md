@@ -7,9 +7,18 @@
 ## 공통 규칙 (모든 방 프롬프트에 포함)
 - **한국 전통 한옥(hanok) 스타일만** — NOT western, NOT Japanese, no brick fireplace, no western furniture.
 - **톤 일치** — 부엌과 같은 밝기·팔레트(밝은 따뜻한 목재·따뜻한 채광). 어둡거나 칙칙하게 금지.
-- **문**: 벽은 **4면 전부 유지**, 문이 난 벽에만 **1타일 폭 개구부**(작은 문턱 gap). «벽 전체 제거» 금지.
+- **문(중요)**: 벽은 **4면 전부 유지**, 문이 난 벽에만 **1타일 폭 개구부**(«벽 전체 제거» 금지). 개구부는
+  **바닥과 같은 높이의 낮은 문지방(문지방 flush with floor)이 있는 «걸어서 지나가는 통로»**다 — 바닥이 그 gap을
+  통해 복도로 이어진다. **창문이 아님**: 개구부에 한지/유리/높은 턱·창틀을 넣지 말 것(높은 문지방은 창문처럼 보인다).
+  개구부 좌우(또는 상하)의 벽은 닫힌 채로 둔다.
 - **비율**: 방 타일 비율에 맞춤. **흰/색 테두리 없이** 캔버스 edge-to-edge.
 - 캐릭터·글자·UI·워터마크 없음. 플랫 탑다운(bird's-eye).
+
+> **DOORWAY (English, paste into every prompt)**: The doorway is an OPEN FLOOR-LEVEL PASSAGE you
+> walk through — a one-tile gap in the wall with a LOW wooden threshold (문지방) flush with the floor;
+> the floor continues through the gap to a darker corridor beyond. It is NOT a window: no paper/lattice
+> (한지), no glass, no raised sill, no window frame in the doorway. The wall stays closed on both sides
+> of the gap.
 
 ## 방별 문 위치·비율·상태
 | # | 방 | 타일 | 문(열리는 벽 · 위치) | 개구부 폭 | 상태 |
@@ -82,9 +91,10 @@ books (한적); a low bookshelf/book stand; a stationery chest (문갑/연상); 
 shelf (사방탁자); a celadon brush holder (청자 필통); a folding screen (병풍) with ink
 calligraphy; a folding fan (부채); a floor cushion (방석). Light warm-brown wood floor.
 Walls: Korean 한지 lattice windows (창호), ceiling beams.
-Walls enclose ALL FOUR sides. ONLY OPENING: one doorway in the RIGHT wall — ONE tile tall
-(~1/6), positioned upper-middle (about 1/3 down from the top); threshold gap, right wall
-intact above and below. Do NOT open the whole right side.
+DOORWAY: an OPEN FLOOR-LEVEL PASSAGE in the RIGHT wall, UPPER-MIDDLE (~1/3 down from the top) —
+one-tile gap with a LOW wooden threshold (문지방) flush with the floor; the floor continues
+through the gap to a darker corridor. NOT a window: no 한지/glass/raised sill/window frame in
+the doorway. Right wall stays closed above and below the gap.
 No characters/text/UI, NO border. Aspect 5:6 (taller than wide, 5×6).
 ```
 
