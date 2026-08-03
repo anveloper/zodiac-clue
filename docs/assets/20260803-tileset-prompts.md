@@ -50,6 +50,7 @@ uniform gap between cells so each can be sliced individually in Figma.
 
 한 장씩 시트로. **네 변이 서로 이어지게(seamless tiling)** — 방을 여러 칸 깔아도 경계가 안 보여야 함.
 
+### 2-1. 방 안 바닥
 ```
 [공통 규격] +
 Make a SHEET of 4 seamless FLOOR tiles (top view, flat), each a square that tiles edge-to-edge
@@ -59,6 +60,22 @@ in every direction with no visible seam:
 3) packed-earth / dirt floor (흙바닥), subtle pebbles (for kitchen 정지 & servants' 행랑채).
 4) warm ONDOL paper floor (장판) — smooth oiled-paper amber floor (for bedrooms).
 Each tile fully fills its cell, seamless on all four edges. Transparent gap between the 4 cells.
+```
+
+### 2-2. 방 밖 통로·마당 바닥 (건물 사이 이동 격자)
+방과 방 사이의 «바깥» 이동 칸. 현재 보드의 초록 배경을 대체/보강한다. 마당은 잔디가 아니라
+**흙·자갈 마당 + 디딤돌**이 한옥 정통. 통로 타일도 사방 seamless.
+```
+[공통 규격] +
+Make a SHEET of seamless OUTDOOR courtyard/path tiles for a hanok yard, top view flat, each
+tiling edge-to-edge with no seam:
+1) 마당 — packed earthen courtyard ground, fine gravel & faint rake lines (main outdoor floor).
+2) 디딤돌 통로 — a stepping-stone / flat-stone path segment, straight run (walkable corridor
+   between buildings), stones set into the earthen ground; must repeat along its length.
+3) 디딤돌 통로 교차/모서리 — corner & T-junction variants of the stone path so it can turn.
+4) 잔디 가장자리 — soft grass/moss edging tile (optional, to blend the yard border).
+Keep the SAME warm daylight & palette as the interior floors so inside/outside read as one scene.
+Transparent gap between cells.
 ```
 
 ---
@@ -154,12 +171,93 @@ Make a SHEET of special HANOK props, transparent background, matching style/scal
 
 1. 시트 1장씩 받아 **투명 PNG**로 저장 → Figma에서 조각별로 슬라이스(프레임/컴포넌트화).
 2. **256px 격자 프레임**을 깔고 스냅 켜기. 1칸 = 256px(= 인게임 40px).
-3. 방 골격: `모서리·벽·문` 을 가장자리에 배치 → 안쪽 `바닥` 채우기 → `가구`를 벽에 붙여 얹기.
-4. 각 방(5×3~6×6)은 [board.ts `ROOM_REGIONS`]의 크기·문 방향(top/bottom/left/right)대로 조립.
-5. 완성 방은 방별 PNG로 export → 기존 `rooms/<id>.webp`를 교체(같은 파이프라인: WebP q85).
+3. 바깥 먼저: 전체 격자에 `마당·디딤돌 통로`(§2-2)를 깔아 배경을 만든다 → 그 위에 방들을 얹는다.
+4. 방 골격: `모서리·벽·문` 을 가장자리에 배치 → 안쪽 `방 안 바닥`(§2-1) 채우기 → `가구`를 벽에 붙여 얹기.
+5. 각 방(5×3~6×6)은 [board.ts `ROOM_REGIONS`]의 크기·문 방향(top/bottom/left/right)대로 조립.
+   방 문 앞은 §2-2 디딤돌 통로로 이어 붙여 «드나드는» 동선을 만든다.
+6. 완성 방은 방별 PNG로 export → 기존 `rooms/<id>.webp`를 교체(같은 파이프라인: WebP q85).
 
 > 방 크기·문 방향 표는 `docs/assets/20260803-room-image-prompts.md` §「방별 문 위치·비율·상태」 참조.
 > (통짜 프롬프트 문서는 타일셋 전환 이후 «과거 방식» 아카이브로 남긴다.)
+
+---
+
+## 7. 코드 조립(단일 아틀라스) — 확정 방식
+
+**이미지는 딱 한 장(마스터 아틀라스).** 벽·바닥·문·가구·마당을 한 시트에 모아 뽑고, **코드가 잘라
+규칙대로 좌표에 배치**한다. Figma 수동 배치·방별 webp가 모두 사라지고 방이 «데이터»가 된다.
+한 장에서 나오므로 톤·광원·원근이 구조적으로 동일 → 통짜 이미지의 흔들림 근절.
+
+### 7-0. 단일 아틀라스 규약 (신원 확정)
+자동 슬라이스한 조각이 «어느 타일인지» 알아야 규칙 배치가 된다. ChatGPT는 격자가 흔들리므로 **좌표가
+아니라 순서로** 신원을 맞춘다:
+- 아틀라스를 **정해진 순서(행 우선: 위→아래, 각 행은 좌→우)**로 그리도록 프롬프트에 배치 순서를 못 박는다.
+- 슬라이스 후 조각을 **bbox 중심 y→x로 정렬** → 아래 «**id 순서 목록**»과 zip해 id 부여.
+- 개수/순서가 목록과 맞으면 흔들려도 신원 확정. 어긋나면 그 한 조각만 수동 교정.
+- **id 순서 목록**(이 순서대로 아틀라스에 배치):
+  ```
+  floor:     maru, umulmaru, heuk, jangpan
+  yard:      madang, path_straight, path_corner, path_tjunc, grass_edge
+  wall:      wall_top, wall_bottom, wall_left, wall_right,
+             corner_tl, corner_tr, corner_bl, corner_br
+  door:      door_top, door_bottom, door_left, door_right
+  furniture: banaji, dwiju, ibuljang, sabangtakja, chaekjang, mungab, gyeongdae, byeongpung,
+             soban, seoan, bangseok, hwaro, deungjan, onggi, jeolgu, muldongi, baguni,
+             banjitgori, bojagi, bunjae, cheongja_hwabyeong,
+             agungi, jangdokdae, seokdeung, jige, meongseok, daenamu, gotgam, bitjaru, jipsin
+  ```
+  (§2~§5의 조각 전체 = 이 한 목록. 카테고리별 시트는 «이 하나»로 합쳐 뽑는다.)
+
+### 7-1. 왜 «고정 프레임 맹목 슬라이스»가 아니라 «자동 검출»인가
+
+### 7-1. 왜 «고정 프레임 맹목 슬라이스»가 아니라 «자동 검출»인가
+ChatGPT 이미지는 픽셀-정확 균일 격자를 못 뽑아 조각이 미세하게 흔들린다 → `frameWidth` 고정 슬라이스는
+어긋난다. 그래서 **조각 사이를 넉넉한 투명 간격**으로 뽑고, **투명 경계로 조각을 자동 검출(alpha bbox,
+connected-component)** 해 개별로 트림한다. 흔들려도 조각은 정확히 잘린다.
+
+### 7-2. 파이프라인
+1. 시트 생성 시 §1 공통 규격의 OUTPUT에 **"uniform TRANSPARENT gap ≥ 24px between every cell,
+   no piece touching another"** 를 명시(자동 검출이 조각을 분리하도록).
+2. 오프라인 슬라이스(Pillow):
+   ```python
+   # atlas.png(투명 배경, 조각 사이 간격) → 조각별 트림 PNG + index.json(id·w·h)
+   from PIL import Image
+   import numpy as np, json
+   im = np.array(Image.open("atlas.png").convert("RGBA"))
+   alpha = im[..., 3] > 8
+   # scipy.ndimage.label 로 연결요소 검출 → 각 요소 bbox 크롭 → 순서/이름 부여
+   ```
+   (labeling은 `scipy.ndimage.label`; 없으면 flood-fill 직접 구현. venv: `/tmp/imgvenv`.)
+3. 결과: `assets/tiles/<category>/<id>.png` + `<category>.atlas.json`(각 조각의 footprint 칸수).
+4. Phaser 로드: 개별 PNG를 `this.load.image`로, 또는 트림 조각을 재-패킹해 `this.load.atlas`로.
+5. **방 = 타일맵 데이터.** 방별 `layout`(바닥 종류 + 가구 배치 [id, gx, gy])을 `board.ts` 근처
+   콘텐츠 데이터로 두고, `drawBoard()`가 그 데이터를 읽어 스프라이트를 좌표에 찍는다.
+
+### 7-3. 방 레이아웃 데이터 예시(스케치)
+```ts
+type Placement = { id: string; gx: number; gy: number };   // 방 로컬 그리드 좌표(0-based)
+type RoomLayout = {
+  floor: "maru" | "umulmaru" | "heuk" | "jangpan";
+  furniture: Placement[];                                    // 벽면·바닥 가구
+};
+// 예: 서재(5×4, 문=좌측)
+const seojae: RoomLayout = {
+  floor: "maru",
+  furniture: [
+    { id: "chaekjang", gx: 1, gy: 0 },   // 상단벽 책장
+    { id: "banaji",    gx: 3, gy: 0 },
+    { id: "seoan",     gx: 2, gy: 2 },   // 중앙 낮은 서안
+  ],
+};
+```
+벽·문·모서리는 방 크기와 `doorSideOf`로 **자동 배치**(코드가 가장자리에 두름) → 손으로 둘 필요 없음.
+바깥 마당·통로(§2-2)는 전체 격자 배경으로 먼저 깐다.
+
+### 7-4. 장점 요약
+- **일관성**: 한 시트에서 나온 조각이라 톤·광원·원근이 구조적으로 동일.
+- **유지보수**: 가구 하나 바꾸려면 조각 PNG만 교체, 방 전체 재생성 불필요.
+- **경량**: 중복 타일은 한 번만 로드(방 9개가 같은 마루·벽 공유).
+- **정합**: 문·이동 격자가 데이터(`board.ts`)와 1:1 → 시각과 규칙이 어긋나지 않음.
 
 ---
 
