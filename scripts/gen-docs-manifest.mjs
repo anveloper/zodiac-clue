@@ -16,7 +16,20 @@ import { join } from "node:path";
 import { isPrivateDocPath, LOCAL_MANIFEST } from "./docs-private.mjs";
 
 const GROUPS = [
-  { dir: "submission", label: "📤 제출물", ext: "pair" },
+  // 제출물은 알파벳순이 아니라 **제출 번호 순서**로 고정한다(③ 소개 → ④ AI → ⑤ 롤 → 콘티 → 체크리스트).
+  // 파일명(`20260720-ai-tech-doc`)이 `game-intro`보다 알파벳상 앞서 ④가 ③보다 위로 뜨던 것 교정.
+  {
+    dir: "submission",
+    label: "📤 제출물",
+    ext: "pair",
+    order: [
+      "game-intro",
+      "20260720-ai-tech-doc",
+      "20260728-team-roles",
+      "20260728-video-storyboard",
+      "submission-checklist",
+    ],
+  },
   { dir: "design", label: "📐 설계", ext: ".html" },
   { dir: "assets", label: "🎨 에셋·컨셉", ext: "pair" },
   { dir: "plans/active", label: "🗂 플랜 · 진행", ext: ".md" },
@@ -63,6 +76,14 @@ for (const g of GROUPS) {
     g.ext === "pair"
       ? pickPairFiles(all)
       : all.filter((f) => f.endsWith(g.ext)).sort().reverse(); // 최신 날짜 위로
+  // 명시 순서가 있으면(제출물) 그 순서로 — 없는 파일은 뒤로.
+  if (g.order) {
+    const rank = (f) => {
+      const i = g.order.indexOf(f.replace(/\.(md|html)$/, ""));
+      return i === -1 ? g.order.length : i;
+    };
+    files.sort((a, b) => rank(a) - rank(b));
+  }
   const items = files
     .map((f) => `${g.dir}/${f}`)
     .map((path) => {
