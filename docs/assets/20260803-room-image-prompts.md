@@ -38,7 +38,7 @@
 | ④ | 사랑방(sarangbang) | 5×6 | 우측(동) · 위쪽-중간 | 1/6 | ✅ 반영 |
 | ⑤ | 사랑채(sarangchae) | 5×4 | 좌측(서) · 위쪽 | 1/4 | ✅ 반영 |
 | ⑥ | 서재(seojae) | 5×4 | 좌측(서) · 위쪽 | 1/4 | ✅ 반영 |
-| ⑦ | 안방(anbang) | 5×5 | 상단(북) · 가운데 | 1/5 | ⏳ 대기 |
+| ⑦ | 안방(anbang) | 5×5 | 상단(북) · 가운데 | 1/5 | ✅ 반영 |
 | ⑧ | 행랑채(haengnang) | 6×5 | 상단(북) · 가운데 | 1/6 | ⏳ 대기 |
 | ⑨ | 별당(byeoldang) | 5×3 | 상단(북) · 가운데 | 1/5 | ⏳ 대기 |
 
@@ -144,7 +144,7 @@ corridor. NOT a window (no 한지/glass/raised sill/frame). Left wall closed abo
 No characters/text/UI, NO border. Aspect 5:4 (wider than tall, 5×4).
 ```
 
-## ⑦ 안방 (anbang) — 5×5 · 문=상단 가운데  ⏳
+## ⑦ 안방 (anbang) — 5×5 · 문=상단 가운데  ✅
 ![안방](https://zodiac-clue.vercel.app/assets/rooms/anbang.webp)
 ```
 Top-down bird's-eye view of a TRADITIONAL KOREAN HANOK master bedroom (안방). Cozy top-down
@@ -153,8 +153,12 @@ Contents: a folded quilt/bedding set (이부자리) and a bedding chest (이불�
 (경대) with a round mirror; a front-opening chest (반닫이); a sewing basket (반짇고리); floor
 cushions (방석); an oil lamp (등잔); a wrapped cloth bundle (보자기). Light warm-brown wood
 floor / warm ondol floor. Walls: Korean 한지 lattice windows (창호), ceiling beams.
+PLACEMENT: all furniture is pushed FLUSH against the walls, leaving the center floor open.
+PERSPECTIVE: slightly-oblique top-down (2.5D) like the kitchen. Tall/vertical items
+(bedding chest, vanity, chest) show their FRONT FACE and clearly STAND UPRIGHT against the
+wall — NOT lying flat on the floor as a flat top-view. Attach the kitchen image as a style reference.
 Walls enclose ALL FOUR sides. ONLY OPENING: one doorway in the TOP wall — ONE tile wide
-(~1/5), centered; threshold gap, top wall intact on both sides.
+(~1/5), centered; threshold gap flush to the floor (not a window), top wall intact on both sides.
 No characters/text/UI, NO border. Square 1:1 (5×5).
 ```
 
