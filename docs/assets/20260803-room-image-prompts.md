@@ -14,6 +14,12 @@
   **바닥과 같은 높이의 낮은 문지방(문지방 flush with floor)이 있는 «걸어서 지나가는 통로»**다 — 바닥이 그 gap을
   통해 복도로 이어진다. **창문이 아님**: 개구부에 한지/유리/높은 턱·창틀을 넣지 말 것(높은 문지방은 창문처럼 보인다).
   개구부 좌우(또는 상하)의 벽은 닫힌 채로 둔다.
+- **배치(중요)**: 가구는 **벽에 밀착**(가장자리 정렬)하고 **방 가운데는 빈 바닥**으로 둔다. 낮은 상(서안·소반)만
+  중앙 허용. **가구가 방 중앙에 떠 있거나** 벽과 가구 사이에 큰 여백이 생기지 않게(캐릭터가 설 중앙 공간 확보).
+  영문: *place all furniture FLUSH against the walls, keep the CENTER open floor; do NOT float furniture in the middle.*
+- **원근(중요)**: **부엌과 같은 살짝 비스듬한 탑다운(2.5D)**. 키 큰/세로 가구(책장·궤·족자)는 **정면이 보이게 «서 있게»**
+  그린다 — «벽에 세워진» 느낌. **바닥에 눕힌 평면뷰(윗면만 보임) 금지.** 벽 가구엔 뒤에 벽이 보이게.
+  영문: *tall/vertical furniture must show its FRONT FACE and STAND UPRIGHT against the wall — NOT lying flat on the floor as a flat top-view.*
 - **비율**: 방 타일 비율에 맞춤. **흰/색 테두리 없이** 캔버스 edge-to-edge.
 - 캐릭터·글자·UI·워터마크 없음. 플랫 탑다운(bird's-eye).
 
@@ -31,7 +37,7 @@
 | ③ | 후원(huwon) | 5×5 | 하단(남) · 가운데 | 1/5 | ✅ 반영 |
 | ④ | 사랑방(sarangbang) | 5×6 | 우측(동) · 위쪽-중간 | 1/6 | ✅ 반영 |
 | ⑤ | 사랑채(sarangchae) | 5×4 | 좌측(서) · 위쪽 | 1/4 | ✅ 반영 |
-| ⑥ | 서재(seojae) | 5×4 | 좌측(서) · 위쪽 | 1/4 | ⏳ 대기 |
+| ⑥ | 서재(seojae) | 5×4 | 좌측(서) · 위쪽 | 1/4 | ✅ 반영 |
 | ⑦ | 안방(anbang) | 5×5 | 상단(북) · 가운데 | 1/5 | ⏳ 대기 |
 | ⑧ | 행랑채(haengnang) | 6×5 | 상단(북) · 가운데 | 1/6 | ⏳ 대기 |
 | ⑨ | 별당(byeoldang) | 5×3 | 상단(북) · 가운데 | 1/5 | ⏳ 대기 |
@@ -119,7 +125,7 @@ glass/raised sill/frame). Left wall closed above and below the gap.
 No characters/text/UI, NO border. Aspect 5:4 (wider than tall, 5×4).
 ```
 
-## ⑥ 서재 (seojae) — 5×4 가로 · 문=좌측 위쪽  ⏳
+## ⑥ 서재 (seojae) — 5×4 가로 · 문=좌측 위쪽  ✅
 ![서재](https://zodiac-clue.vercel.app/assets/rooms/seojae.webp)
 ```
 Top-down bird's-eye view of a TRADITIONAL KOREAN HANOK library/study (서재). Cozy top-down
@@ -128,8 +134,13 @@ Contents: a tall bookshelf with thread-bound books (한적) and rolled scrolls (
 low writing desk (서안) with brush, inkstone and a water dropper (연적); a hanging ink-
 painting scroll (서화 족자); an abacus (주판); a floor cushion (방석); a small brazier.
 Light warm-brown wood floor. Walls: Korean 한지 lattice windows (창호), ceiling beams.
-Walls enclose ALL FOUR sides. ONLY OPENING: one doorway in the LEFT wall — ONE tile tall
-(~1/4), upper area (2nd tile from top of 4); threshold gap, left wall intact above and below.
+LAYOUT: place all furniture AGAINST THE WALLS (bookshelf/chests flush to walls, scroll ON a
+wall, brazier by a wall); keep the CENTER as open floor; only the writing desk (서안) may sit
+toward the center. Do NOT float furniture in the middle.
+DOORWAY — EXACTLY ONE, ONLY on the LEFT wall (upper area, 2nd tile from the top). TOP/RIGHT/
+BOTTOM walls COMPLETELY CLOSED — no bottom door. Left-wall door = OPEN FLOOR-LEVEL PASSAGE:
+one-tile gap with a LOW threshold (문지방) flush with the floor, floor continues to a darker
+corridor. NOT a window (no 한지/glass/raised sill/frame). Left wall closed above and below.
 No characters/text/UI, NO border. Aspect 5:4 (wider than tall, 5×4).
 ```
 
