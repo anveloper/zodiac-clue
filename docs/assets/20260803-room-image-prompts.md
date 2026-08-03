@@ -7,6 +7,9 @@
 ## 공통 규칙 (모든 방 프롬프트에 포함)
 - **한국 전통 한옥(hanok) 스타일만** — NOT western, NOT Japanese, no brick fireplace, no western furniture.
 - **톤 일치** — 부엌과 같은 밝기·팔레트(밝은 따뜻한 목재·따뜻한 채광). 어둡거나 칙칙하게 금지.
+- **문 개수·위치(중요)**: 문은 **방 전체에 딱 1개**, **지정한 벽에만**. 나머지 3면은 **완전히 막힌 벽**
+  (특히 «하단 문»을 습관적으로 추가하지 말 것 — 비-하단 문 방에서 문이 2개가 되던 원인). 아래 «문» 항목의
+  개구부는 그 지정한 벽 1곳에만 만든다.
 - **문(중요)**: 벽은 **4면 전부 유지**, 문이 난 벽에만 **1타일 폭 개구부**(«벽 전체 제거» 금지). 개구부는
   **바닥과 같은 높이의 낮은 문지방(문지방 flush with floor)이 있는 «걸어서 지나가는 통로»**다 — 바닥이 그 gap을
   통해 복도로 이어진다. **창문이 아님**: 개구부에 한지/유리/높은 턱·창틀을 넣지 말 것(높은 문지방은 창문처럼 보인다).
@@ -91,10 +94,11 @@ books (한적); a low bookshelf/book stand; a stationery chest (문갑/연상); 
 shelf (사방탁자); a celadon brush holder (청자 필통); a folding screen (병풍) with ink
 calligraphy; a folding fan (부채); a floor cushion (방석). Light warm-brown wood floor.
 Walls: Korean 한지 lattice windows (창호), ceiling beams.
-DOORWAY: an OPEN FLOOR-LEVEL PASSAGE in the RIGHT wall, UPPER-MIDDLE (~1/3 down from the top) —
-one-tile gap with a LOW wooden threshold (문지방) flush with the floor; the floor continues
-through the gap to a darker corridor. NOT a window: no 한지/glass/raised sill/window frame in
-the doorway. Right wall stays closed above and below the gap.
+DOORWAY — EXACTLY ONE, ONLY on the RIGHT wall (upper-middle, ~1/3 down). TOP/LEFT/BOTTOM walls
+are COMPLETELY CLOSED solid walls — no bottom door. The one right-wall door is an OPEN FLOOR-
+LEVEL PASSAGE: a one-tile gap with a LOW threshold (문지방) flush with the floor, floor continues
+through to a darker corridor. NOT a window (no 한지/glass/raised sill/frame). Wall closed above
+and below the gap.
 No characters/text/UI, NO border. Aspect 5:6 (taller than wide, 5×6).
 ```
 
