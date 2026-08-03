@@ -139,7 +139,7 @@
 <div class="wrap">
 
   <h1>제출물 ④ — AI 활용 기술 문서</h1>
-  <p class="sub">zodiac-clue · 초판 2026-07-20 · <b class="ok">개정 4판 2026-07-28</b> ·
+  <p class="sub">zodiac-clue · 초판 2026-07-20 · <b class="ok">개정 5판 2026-08-03</b> ·
     저장소 <code>github.com/anveloper/zodiac-clue</code> (public) · 라이브 <code>zodiac-clue.vercel.app</code></p>
   <p class="sub">AI 압축본 <code>20260720-ai-tech-doc.md</code> · 본 문서의 모든 경로·심볼은 저장소 실측값이며,
     미구현 항목은 <span class="badge b-amber">요구사항</span>으로 명시한다.</p>
@@ -154,7 +154,7 @@
     <a href="#s0">0. 이중 계층</a><a href="#s03">0.3 초판 정정 6건</a><a href="#s1">1. 계층 구조</a>
     <a href="#s2">2. 디렉팅 명세</a><a href="#s24">2.4 페르소나 12종</a><a href="#s3">3. 환각 검증</a>
     <a href="#s35">3.5 회귀 게이트</a><a href="#s4">4. 관측 가능성</a><a href="#s5">5. Gemini 운용</a><a href="#s6">6. 템포</a>
-    <a href="#s7">7. AI 도구 사용내역</a><a href="#s72">7.2 비위임 결정권</a><a href="#s8">8. 본행사 계승</a>
+    <a href="#s7">7. AI 도구 사용내역</a><a href="#s72">7.2 비위임 결정권</a><a href="#s73">7.3 다인 디렉팅</a><a href="#s8">8. 본행사 계승</a>
     <a href="#s9">9. 에셋 출처</a><a href="#s10">10. 파일 맵</a>
   </div>
 
@@ -957,6 +957,7 @@
     <div class="stat"><b>문서 69편</b><span><code>.md</code> 53편(AI용 압축) + 사람용 <code>.html</code> 16편</span></div>
     <div class="stat"><b>플랜 워크플로</b><span>done 11 / active 3 / hold 1 — <code>git mv</code>로 이관</span></div>
   </div>
+  <p class="note"><b>“커미터 1명”은 git 아티팩트다</b> — 실제 디렉팅은 여러 팀원이 디스코드로 지시하는 다인 루프이며, 팀원 브랜치로 분리된다(<b>§7.3</b>).</p>
 
   <h3>7.1 도구 · 용도 · 산출물 · 사람 검토 지점</h3>
   <div class="scroll"><table>
@@ -1040,6 +1041,29 @@
     <tr><td><b>실제 플레이 영상 촬영 · 업로드</b></td><td>규정상 AI 합성 금지 → 사람이 직접 녹화</td></tr>
     <tr><td><b>공개 문서 범위</b> — 어떤 내부 문서를 심사자에게 노출할지</td><td>로드맵 §7.4</td></tr>
   </table></div>
+
+  <h3 id="s73">7.3 다인 라이브 디렉팅 — 디스코드 채널 · 브랜치별 워크트리 · 브랜치별 프리뷰 URL</h3>
+  <div class="lead">§7 서두의 <b>“커미터 1명”은 git 아티팩트</b>다(커밋 계정 1개). 실제 디렉팅은
+    <b>여러 팀원이 각자 디스코드 채널로 에이전트에 실시간 지시</b>하는 다인 루프이며,
+    “누가 무엇을 지시했는가”는 <b>브랜치 분리 + 디스코드 로그</b>로 추적된다.</div>
+  <div class="scroll"><table>
+    <tr><th style="width:180px">축</th><th>동작</th></tr>
+    <tr><td><b>다인 디스코드 루프</b></td>
+        <td>팀원이 디스코드 채널로 요청(스펙·에셋 첨부) → 에이전트가 구현·검증(<code>typecheck</code>·build·화면게이트)·배포 →
+            <b>진행도·캡처·URL을 디스코드로 회신</b> → 사람이 화면을 보고 다음 지시.
+            LLM은 진실값을 만들지 않는다는 경계(§0)가 이 루프에서도 동일하게 적용된다.</td></tr>
+    <tr><td><b>브랜치별 워크트리 격리</b></td>
+        <td>팀원마다 <b>전용 브랜치 + 독립 git worktree</b>(<code>zodiac-clue-&lt;브랜치&gt;/</code>).
+            한 팀원의 작업이 다른 팀원·<code>main</code>과 섞이지 않고, 워크트리라 브랜치 전환 없이 동시 진행된다.
+            에이전트는 <b class="ok">지시받은 브랜치 밖으로 나가지 않는다.</b></td></tr>
+    <tr><td><b>브랜치별 프리뷰 URL</b></td>
+        <td>각 팀원 브랜치를 Vercel 프리뷰로 배포하고 <b>브랜치 서브도메인 별칭</b>(<code>…-&lt;브랜치&gt;.vercel.app</code>)을 걸어
+            <b>프로덕션과 분리된 화면</b>에서 자기 지시 결과를 즉시 확인한다. 오너 지시로 검증·정렬한 뒤에야 <code>main</code>→prod.</td></tr>
+  </table></div>
+  <p class="note"><b>검증은 브랜치에서도 유지</b> — 브랜치 작업도 <code>pnpm -r typecheck</code> · client build · 화면게이트(S1~S8)를 통과해야 커밋한다.
+     회귀 게이트(§7.1)는 브랜치·<code>main</code> 공통이다.</p>
+  <div class="lead"><b>사람 검토 지점</b> — 브랜치 권한 부여 · <code>main</code> 병합 · 프로덕션 배포 승인은 전부 <b>오너(사람) 결정</b>이다.
+     에이전트는 병합·배포를 스스로 결정하지 않는다(§7.2의 원칙 — “무엇을 맡기지 않았는가”).</div>
 
   <!-- ══════ 8 ══════ -->
   <h2 id="s8">8. 본행사 계승 — 자유 심문 · 거짓말/뇌물 축</h2>
@@ -1138,6 +1162,11 @@
   <hr>
   <h2 style="border:0;margin-bottom:6px">변경 이력</h2>
   <div class="card">
+    <p class="s13"><span class="badge b-green">2026-08-03</span><b>5판 보정</b> —
+      <b>§7.3 다인 라이브 디렉팅 신설</b>: 여러 팀원이 디스코드 채널로 에이전트에 실시간 지시하는 다인 루프 ·
+      <b>브랜치별 워크트리 격리</b>(팀원 전용 브랜치 + 독립 worktree) ·
+      <b>브랜치별 Vercel 프리뷰 URL</b>(브랜치 서브도메인 별칭 · 프로덕션과 분리) ·
+      §7 서두 «커미터 1명 = git 아티팩트» 보정(다인 디렉팅은 브랜치 분리로 추적).</p>
     <p class="s13"><span class="badge">2026-07-20</span><b>초판(66줄)</b> — 구조 · 프롬프트 · 에셋 출처.</p>
     <p class="s13"><span class="badge b-green">2026-07-28</span><b>4판 보정</b> —
       §2.3 <b>목표 길이 인하(32 / 25) + 어절 앵커 + 3단 절단</b> 반영(상한 40 불변) 및
