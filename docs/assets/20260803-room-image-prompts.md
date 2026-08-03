@@ -40,7 +40,7 @@
 | ⑥ | 서재(seojae) | 5×4 | 좌측(서) · 위쪽 | 1/4 | ✅ 반영 |
 | ⑦ | 안방(anbang) | 5×5 | 상단(북) · 가운데 | 1/5 | ✅ 반영 |
 | ⑧ | 행랑채(haengnang) | 6×5 | 상단(북) · 가운데 | 1/6 | ✅ 반영 |
-| ⑨ | 별당(byeoldang) | 5×3 | 상단(북) · 가운데 | 1/5 | ⏳ 대기 |
+| ⑨ | 별당(byeoldang) | 5×3 | 상단(북) · 가운데 | 1/5 | ✅ 반영 |
 
 > 잔치상(feast, 6×6 중앙)은 문 없음(사방 접근) — 별도.
 
@@ -181,7 +181,7 @@ Walls enclose ALL FOUR sides. ONLY OPENING: one doorway in the TOP wall — ONE 
 No characters/text/UI, NO border. Aspect 6:5 (wider than tall, 6×5).
 ```
 
-## ⑨ 별당 (byeoldang) — 5×3 가로 · 문=상단 가운데  ⏳
+## ⑨ 별당 (byeoldang) — 5×3 가로 · 문=상단 가운데  ✅
 ![별당](https://zodiac-clue.vercel.app/assets/rooms/byeoldang.webp)
 ```
 Top-down bird's-eye view of a TRADITIONAL KOREAN HANOK annex pavilion (별당). Cozy top-down
@@ -190,8 +190,12 @@ Contents: a folding screen (병풍) with plum-blossom (매화) painting; a hangi
 a celadon (청자) flower vase; a low tray table (소반) with a folding fan (부채); a floor
 cushion (방석); a bonsai (분재). Light warm-brown wood floor. Walls: Korean 한지 lattice
 windows (창호), ceiling beams. (Wide, shallow room.)
+PLACEMENT: folding screen, lantern, vase, bonsai are pushed FLUSH against the walls; center floor open.
+PERSPECTIVE: slightly-oblique top-down (2.5D) like the kitchen. Tall/vertical items (folding
+screen, hanging lantern, vase, bonsai) show their FRONT FACE and STAND UPRIGHT against the wall
+— NOT lying flat as a flat top-view. Attach the kitchen image as a style reference.
 Walls enclose ALL FOUR sides. ONLY OPENING: one doorway in the TOP wall — ONE tile wide
-(~1/5), centered; threshold gap, top wall intact on both sides.
+(~1/5), centered; threshold gap flush to the floor (not a window), top wall intact on both sides.
 No characters/text/UI, NO border. Aspect 5:3 (wide landscape, 5×3).
 ```
 
