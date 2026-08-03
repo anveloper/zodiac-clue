@@ -76,12 +76,16 @@ export const paintReveal = (r: TypeReveal): void => {
       take >= line.length
         ? text.displayWidth
         : (padLeft + text.context.measureText(line.slice(0, take)).width) * sx;
-    mask.fillRect(
-      tl.x,
-      tl.y + (padTop + i * lh) * sy,
-      w,
-      (lh + (i === 0 ? padTop : 0)) * sy,
-    );
+    // 세로 범위: 첫 줄은 상자 **위**(padTop 포함)부터, 마지막 줄은 상자 **바닥**(padBottom·descender 포함)까지.
+    // `lh`가 실제 렌더 줄높이보다 짧으면 줄 하단이 잘리던 문제(두 번째 줄이 타이핑 중 잘려 보이다 완성 시 나타남)를
+    // 없앤다 — 완성 시 쓰는 «전체 상자» 마스크와 세로 커버리지를 맞춘다. 폭(`w`)이 진행률을 통제하므로
+    // 아래 줄이 미리 드러나지 않는다(마지막 줄 아래엔 글자가 없다).
+    const top = i === 0 ? tl.y : tl.y + (padTop + i * lh) * sy;
+    const bottom =
+      i === lines.length - 1
+        ? tl.y + text.displayHeight
+        : tl.y + (padTop + (i + 1) * lh) * sy;
+    mask.fillRect(tl.x, top, w, bottom - top);
     // 줄바꿈에서 소비된 공백 1자를 함께 센다(래핑으로 사라진 구분자).
     rest -= take + 1;
   }
