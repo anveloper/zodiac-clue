@@ -285,11 +285,12 @@ export class GameScene extends Phaser.Scene implements ViewContract {
 
   /** 방 바닥 이미지 로드 — `create()`/`drawBoard()` 이전에 텍스처를 확보한다. */
   preload(): void {
+    // 방 이미지는 WebP(용량 최적화 — PNG 대비 ~93% 감소). 손실압축 q85, 시각 차이 미미.
     for (const key of ROOM_IMAGE_KEYS) {
-      this.load.image(`room-${key}`, `/assets/rooms/${key}.png`);
+      this.load.image(`room-${key}`, `/assets/rooms/${key}.webp`);
     }
     // 중앙 잔치상(ROOM_REGIONS 밖 · 별도 좌표)도 이미지가 있으면 로드.
-    this.load.image("room-feast", "/assets/rooms/feast.png");
+    this.load.image("room-feast", "/assets/rooms/feast.webp");
   }
 
   create(): void {
