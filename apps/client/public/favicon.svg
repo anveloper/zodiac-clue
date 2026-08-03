@@ -1,35 +1,23 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="호랑이">
-  <!-- 배경: 크림 라운드 사각(밝은/어두운 탭 양쪽에서 보이게) -->
-  <rect width="64" height="64" rx="14" fill="#FBF3E7"/>
+  <!-- 얼굴(주황 라운드 사각) -->
+  <rect width="64" height="64" rx="15" fill="#E58A3E"/>
   <!-- 귀 -->
-  <path d="M13 20 Q12 7 25 13 Z" fill="#C4632E"/>
-  <path d="M51 20 Q52 7 39 13 Z" fill="#C4632E"/>
-  <circle cx="18.5" cy="14.5" r="3" fill="#33271A"/>
-  <circle cx="45.5" cy="14.5" r="3" fill="#33271A"/>
-  <!-- 얼굴 -->
-  <ellipse cx="32" cy="35" rx="21" ry="20" fill="#C86B34"/>
-  <!-- 흰 볼·주둥이 -->
-  <ellipse cx="32" cy="43" rx="15" ry="12" fill="#FBEFD8"/>
-  <!-- 이마 王(호랑이) 줄무늬 -->
-  <g stroke="#33271A" stroke-width="3.4" stroke-linecap="round" fill="none">
-    <path d="M32 15 L28 27"/>
-    <path d="M32 15 L36 27"/>
-    <path d="M32 18 L32 28"/>
-    <!-- 옆 줄무늬 -->
-    <path d="M12 30 Q17 31 20 31"/>
-    <path d="M13 38 Q18 38 21 37"/>
-    <path d="M52 30 Q47 31 44 31"/>
-    <path d="M51 38 Q46 38 43 37"/>
+  <path d="M11 13 L23 17 L16 25 Z" fill="#33271A"/>
+  <path d="M53 13 L41 17 L48 25 Z" fill="#33271A"/>
+  <!-- 흰 주둥이 -->
+  <rect x="10" y="36" width="44" height="20" rx="10" fill="#FBEFD8"/>
+  <!-- 이마 줄무늬(가운데로 모이는 3선) -->
+  <g stroke="#33271A" stroke-width="4" stroke-linecap="round">
+    <path d="M32 11 V21"/>
+    <path d="M23 15 L27 22"/>
+    <path d="M41 15 L37 22"/>
   </g>
   <!-- 눈 -->
-  <circle cx="24.5" cy="35" r="3.1" fill="#33271A"/>
-  <circle cx="39.5" cy="35" r="3.1" fill="#33271A"/>
+  <circle cx="23" cy="33" r="4" fill="#33271A"/>
+  <circle cx="41" cy="33" r="4" fill="#33271A"/>
   <!-- 코 -->
-  <path d="M28.6 40.5 H35.4 L32 44.2 Z" fill="#33271A"/>
+  <path d="M28 42 H36 L32 46 Z" fill="#33271A"/>
   <!-- 입 -->
-  <g stroke="#33271A" stroke-width="2.2" stroke-linecap="round" fill="none">
-    <path d="M32 44.2 V47"/>
-    <path d="M32 47 Q28.5 49.2 26 47.8"/>
-    <path d="M32 47 Q35.5 49.2 38 47.8"/>
-  </g>
+  <path d="M32 46 V49 M32 49 Q29 50.5 27 49.5 M32 49 Q35 50.5 37 49.5"
+        stroke="#33271A" stroke-width="2.4" stroke-linecap="round" fill="none"/>
 </svg>
