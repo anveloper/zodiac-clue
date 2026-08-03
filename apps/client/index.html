@@ -507,12 +507,13 @@
       }
       .hud-hand {
         left: calc(16px + var(--sa-l, 0px)); bottom: calc(16px + var(--sa-b, 0px));
-        max-width: 300px;
+        max-width: 360px;
       }
+      /* 손패는 한 줄 — 라벨 + 카드 3장을 같은 줄에 흐른다(«이 3장은 정답이 아님» 문구는
+         제거하고 hover 툴팁이 그 규칙을 설명한다). 폭이 부족하면 자연스레 줄바꿈. */
+      #hand { display: flex; flex-wrap: wrap; align-items: baseline; gap: 3px 12px; }
       #hand .hand-label { color: var(--wds-label-strong); font-weight: 600; }
-      #hand .hand-cards {
-        margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px 14px; color: var(--wds-label-normal);
-      }
+      #hand .hand-card { color: var(--wds-label-normal); white-space: nowrap; }
       .hud-view {
         left: calc(16px + var(--sa-l, 0px)); bottom: calc(72px + var(--sa-b, 0px));
         padding: 6px 8px; position: fixed;

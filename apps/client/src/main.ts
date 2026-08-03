@@ -690,17 +690,17 @@ const openPicker = (opts: PickerOpts): Promise<Pick | null> =>
 const renderHand = (cards: Card[]): void => {
   const host = $("hand");
   host.innerHTML = "";
-  const line1 = document.createElement("div");
-  line1.className = "hand-label";
-  line1.textContent = "🃏 내 손패 · 이 3장은 정답이 아님";
-  const line2 = document.createElement("div");
-  line2.className = "hand-cards";
+  // 한 줄: 라벨 + 카드 3장을 형제로 나열(«이 3장은 정답이 아님»은 툴팁으로 이동 — ui-copy §4.1).
+  const lbl = document.createElement("span");
+  lbl.className = "hand-label";
+  lbl.textContent = "🃏 내 손패";
+  host.appendChild(lbl);
   for (const c of cards) {
     const chip = document.createElement("span");
+    chip.className = "hand-card";
     chip.textContent = `${cardIcon(c.value)} ${label(c.value)}`;
-    line2.appendChild(chip);
+    host.appendChild(chip);
   }
-  host.append(line1, line2);
 };
 
 // ── 상태 ─────────────────────────────
