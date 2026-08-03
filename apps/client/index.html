@@ -167,24 +167,6 @@
       .game-item .gi-body b { color: var(--wds-label-strong); font-size: 14px; }
       .game-item .gi-sub { font-size: 12px; color: var(--wds-label-alternative); }
       .game-item.selected { border-color: var(--wds-primary-normal); background: var(--wds-bg-alternative); }
-      /* 랜딩 AI 고지 — 첫 45초에 심사 축이 보이게 한다. */
-      .ai-note {
-        margin: 12px 0 14px;
-        padding: 11px 13px;
-        border: 1px solid var(--wds-line-normal);
-        border-left: 3px solid var(--wds-accent);
-        border-radius: 8px;
-        background: var(--wds-bg-elevated);
-        font-size: 12.5px;
-        line-height: 1.6;
-        color: var(--wds-label-normal);
-        text-align: left;
-      }
-      .ai-note b { color: var(--wds-label-strong); }
-      .ai-note > b { display: block; margin-bottom: 3px; font-size: 13px; }
-      .ai-links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
-      .ai-links a { color: var(--wds-primary-normal); font-size: 12px; text-decoration: none; border-bottom: 1px solid var(--wds-label-assistive); }
-      .ai-links a:hover { border-bottom-color: var(--wds-primary-normal); }
       .hint-sm { font-size: 12px; color: var(--wds-label-alternative); margin: 6px 0 14px; text-align: center; }
       /* 공개/비공개 세그먼트 토글 */
       .seg { display: flex; gap: 6px; }
@@ -1046,18 +1028,6 @@
         .field label.rooms-label { min-height: 44px; }
         .mini { min-height: 44px; padding: 0 12px; }
         .room-item button { min-height: 44px; }
-        /* 문서 링크 3개는 18px짜리 텍스트 링크였다. 칩으로 바꾸면 첫 화면 무게가 달라지므로
-           **누를 수 있는 높이만** 44px로 올린다. 다만 밑줄이 `border-bottom`이라 상자를
-           키우면 밑줄이 글자에서 26px 떨어져 붕 뜬다(실측) → 같은 색 그대로 text-decoration으로
-           바꿔 글자에 붙여 둔다. */
-        .ai-links a {
-          display: inline-flex; align-items: center; min-height: 44px;
-          border-bottom: 0;
-          text-decoration: underline; text-decoration-color: var(--wds-label-assistive);
-          text-underline-offset: 4px;
-        }
-        .ai-links a:hover { text-decoration-color: var(--wds-primary-normal); }
-        .ai-links { gap: 0 14px; margin-top: 2px; }
       }
       /* 폰 폭에서 모달은 **카드 계열과 같은 폭**으로 선다.
          300px 고정은 390px 화면에서 좌우 45px씩을 버려 랜딩(.card 358)·결과(.end-card 359)와
@@ -1098,24 +1068,6 @@
       <div class="card">
         <h1>🐯 호랑이 생신 잔치</h1>
         <p class="subtitle">대감집 손님들 중 잔치 선물을 훔친 자를 추리하라</p>
-        <!--
-          심사 1순위 축이 "AI를 어떻게 썼는가"인데 랜딩에 AI 신호가 0이었다.
-          잘 만든 계측을 아무도 못 보는 자리에 둔 셈이라, 첫 화면에서 경계를 밝힌다.
-          링크는 배포본에 실제로 있는 경로만 건다(없는 링크를 걸면 그것대로 감점이다).
-        -->
-        <div class="ai-note">
-          <b>🤖 NPC 대사는 Gemini가 실시간으로 짓습니다.</b>
-          <span
-            >판정·정답은 <b>규칙 엔진</b>만 결정합니다 — LLM은 표현 전용이라
-            대사가 끊겨도 게임은 그대로 굴러갑니다. 게임 화면 [AI 대사] 칸에서
-            <b>LLM · 캐시 · 폴백</b> 호출 수가 실시간으로 보입니다.</span
-          >
-          <span class="ai-links">
-            <a href="/docs/submission/20260720-ai-tech-doc.html">AI 활용 기술문서</a>
-            <a href="/docs/submission/game-intro.html">게임 소개</a>
-            <a href="/docs/">전체 문서</a>
-          </span>
-        </div>
         <!-- 게임 선택 슬롯: 현재 1종. 다른 게임 컨텐츠가 추가되면 선택 UI로 확장. -->
         <div class="field">
           <label>게임</label>
