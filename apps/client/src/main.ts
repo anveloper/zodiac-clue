@@ -382,19 +382,28 @@ const readSuggestEntry = (v: unknown): SuggestEntry | null => {
  */
 const sugRow = (e: SuggestEntry): HTMLElement => {
   const row = document.createElement("div");
-  row.className = "sg-row";
+  // 내 제안이면 강조 — 기록이 길어져도 «어느 게 내 것»인지 즉시 보이게(byId = 내 좌석).
+  const mine = !!e.byId && e.byId === room?.sessionId;
+  row.className = "sg-row" + (mine ? " sg-mine" : "");
   const top = document.createElement("div");
   top.className = "sg-top";
   const n = document.createElement("span");
   n.className = "sg-n";
   n.textContent = String(e.seq);
+  top.appendChild(n);
+  if (mine) {
+    const tag = document.createElement("span");
+    tag.className = "sg-mine-tag";
+    tag.textContent = "나";
+    top.appendChild(tag);
+  }
   const by = document.createElement("span");
   by.className = "sg-by";
   by.textContent = `🔍 ${e.byName}`;
   const res = document.createElement("span");
   res.className = "sg-res" + (e.disprovedByName ? "" : " none");
   res.textContent = e.disprovedByName ? `🛡 ${e.disprovedByName}` : "❗ 미반증";
-  top.append(n, by, res);
+  top.append(by, res);
   const combo = document.createElement("div");
   combo.className = "sg-combo";
   combo.textContent =

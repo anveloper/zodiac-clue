@@ -700,7 +700,9 @@
       .evi-group { margin-bottom: 8px; }
       .evi-group .cat { font-size: 12px; color: var(--wds-label-alternative); margin-bottom: 4px; }
       /* 규칙적인 그리드 배치 (탐정 수첩 느낌) */
-      .evi-chips { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; }
+      /* 폭에 따라 열 수가 늘어난다 — 기본 260px 컬럼에선 2열, 넓히면 3·4열로. 칩이 쓸데없이 넓어지지 않게.
+         (최소 112px: 기본 폭에서 2열이 유지되는 값 — 더 크면 1열로 떨어져 오히려 넓어진다.) */
+      .evi-chips { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 4px; }
       .evi-chip {
         display: flex; flex-direction: column; gap: 2px; min-width: 0;
         padding: 4px 7px; border-radius: 6px; cursor: pointer;
@@ -818,6 +820,14 @@
       .sg-res { flex: none; font-size: 12px; color: var(--wds-label-normal); }
       .sg-res.none { color: var(--wds-primary-normal); font-weight: 600; }
       .sg-combo { margin-top: 2px; padding-left: 17px; color: var(--wds-label-alternative); line-height: 1.4; }
+      /* 제안기록표는 <details>+flex 구조라 내부 스크롤이 안 잡히던 것 → 본문에 명시 상한으로 스크롤 보장. */
+      #sugBody { max-height: 26vh; }
+      /* 내 제안 강조 — 기록이 길어지면 «어느 게 내 것»인지 안 보이던 것 해소(접두 «나» 뱃지 + 강조 테두리). */
+      .sg-row.sg-mine { border-left-color: var(--wds-accent); background: rgba(180, 98, 43, 0.14); }
+      .sg-mine-tag {
+        flex: none; font-size: 11px; font-weight: 700; color: var(--wds-accent);
+        background: rgba(180, 98, 43, 0.18); border-radius: 4px; padding: 0 5px; line-height: 1.5;
+      }
 
       /* 우측 컬럼 접힘 — `display:none`이라야 hud-inset의 ResizeObserver가 즉시
          zero-rect로 재측정해 카메라 인셋이 0으로 떨어진다(§7.8). transform으로
