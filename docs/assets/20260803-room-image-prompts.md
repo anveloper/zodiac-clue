@@ -39,7 +39,7 @@
 | ⑤ | 사랑채(sarangchae) | 5×4 | 좌측(서) · 위쪽 | 1/4 | ✅ 반영 |
 | ⑥ | 서재(seojae) | 5×4 | 좌측(서) · 위쪽 | 1/4 | ✅ 반영 |
 | ⑦ | 안방(anbang) | 5×5 | 상단(북) · 가운데 | 1/5 | ✅ 반영 |
-| ⑧ | 행랑채(haengnang) | 6×5 | 상단(북) · 가운데 | 1/6 | ⏳ 대기 |
+| ⑧ | 행랑채(haengnang) | 6×5 | 상단(북) · 가운데 | 1/6 | ✅ 반영 |
 | ⑨ | 별당(byeoldang) | 5×3 | 상단(북) · 가운데 | 1/5 | ⏳ 대기 |
 
 > 잔치상(feast, 6×6 중앙)은 문 없음(사방 접근) — 별도.
@@ -162,7 +162,7 @@ Walls enclose ALL FOUR sides. ONLY OPENING: one doorway in the TOP wall — ONE 
 No characters/text/UI, NO border. Square 1:1 (5×5).
 ```
 
-## ⑧ 행랑채 (haengnang) — 6×5 · 문=상단 가운데  ⏳
+## ⑧ 행랑채 (haengnang) — 6×5 · 문=상단 가운데  ✅
 ![행랑채](https://zodiac-clue.vercel.app/assets/rooms/haengnang.webp)
 ```
 Top-down bird's-eye view of a TRADITIONAL KOREAN HANOK servants' quarters (행랑채). Cozy
@@ -171,8 +171,13 @@ Contents: a woven straw mat (멍석/돗자리); a broom (빗자루); straw sanda
 wooden shelf with earthenware bowls; a plain wooden chest (궤); a water bucket; an A-frame
 carrier (지게). Packed-earth / plain wood floor. Walls: simple wooden plank walls with small
 한지 windows, ceiling beams.
+PLACEMENT: shelf, chest and A-frame carrier are pushed FLUSH against the walls; center floor open.
+(The straw mat 멍석 lies flat on the floor — that one is fine.)
+PERSPECTIVE: slightly-oblique top-down (2.5D) like the kitchen. The shelf, chest and A-frame
+carrier show their FRONT FACE and STAND UPRIGHT against the wall — NOT lying flat as a flat
+top-view. Attach the kitchen image as a style reference.
 Walls enclose ALL FOUR sides. ONLY OPENING: one doorway in the TOP wall — ONE tile wide
-(~1/6), centered; threshold gap, top wall intact on both sides.
+(~1/6), centered; threshold gap flush to the floor (not a window), top wall intact on both sides.
 No characters/text/UI, NO border. Aspect 6:5 (wider than tall, 6×5).
 ```
 
