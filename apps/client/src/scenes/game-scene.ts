@@ -688,9 +688,11 @@ export class GameScene extends Phaser.Scene implements ViewContract {
       g.fillRoundedRect(x, y, w, h, 12);
       const imgKey = `room-${r.name}`;
       if (this.textures.exists(imgKey)) {
-        // 방 사각형에 꽉 채운다(stretch) — 이미지가 방 타일 비율(5×4·5×6·5×3…)에 맞춰
-        // 생성되어 방 전체를 여백 없이 덮는다. 아래 단색 한지는 텍스처 누락 시 폴백.
-        this.add.image(x + w / 2, y + h / 2, imgKey).setDisplaySize(w, h);
+        // 1:1 fit(다희) — 정사각 이미지를 «잘리지 않게» 방 안에 넣는다. 방이 정사각이 아니면
+        // 짧은 변에 맞춘 정사각으로 중앙 배치(contain), 남는 폭은 아래 한지 바닥이 채운다.
+        // (cover는 위/아래를 잘라내 그림 일부가 사라졌다 — 그래서 fit으로 되돌린다.)
+        const side = Math.min(w, h);
+        this.add.image(x + w / 2, y + h / 2, imgKey).setDisplaySize(side, side);
       }
       // 방 경계선 — 이미지/단색 공통. 이미지 방도 다른 방과 같은 또렷한 외곽을 갖는다.
       const edge = this.add.graphics();
