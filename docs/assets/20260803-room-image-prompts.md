@@ -29,7 +29,7 @@
 | ① | 부엌(jeongji) | 5×5 | 하단(남) · 가운데 | 1/5 | ✅ 반영 |
 | ② | 대청마루(daecheong) | 6×5 | 하단(남) · 가운데 | 1/6 | ✅ 반영 |
 | ③ | 후원(huwon) | 5×5 | 하단(남) · 가운데 | 1/5 | ✅ 반영 |
-| ④ | 사랑방(sarangbang) | 5×6 | 우측(동) · 위쪽-중간 | 1/6 | ⏳ 대기 |
+| ④ | 사랑방(sarangbang) | 5×6 | 우측(동) · 위쪽-중간 | 1/6 | ✅ 반영 |
 | ⑤ | 사랑채(sarangchae) | 5×4 | 좌측(서) · 위쪽 | 1/4 | ⏳ 대기 |
 | ⑥ | 서재(seojae) | 5×4 | 좌측(서) · 위쪽 | 1/4 | ⏳ 대기 |
 | ⑦ | 안방(anbang) | 5×5 | 상단(북) · 가운데 | 1/5 | ⏳ 대기 |
@@ -83,7 +83,7 @@ Walls enclose ALL FOUR sides. ONLY OPENING: one doorway in the BOTTOM wall — O
 No characters/text/UI, NO border. Square 1:1 (5×5).
 ```
 
-## ④ 사랑방 (sarangbang) — 5×6 세로 · 문=우측 위쪽-중간  ⏳
+## ④ 사랑방 (sarangbang) — 5×6 세로 · 문=우측 위쪽-중간  ✅
 ![사랑방](https://zodiac-clue.vercel.app/assets/rooms/sarangbang.webp)
 ```
 Top-down bird's-eye view of a TRADITIONAL KOREAN HANOK scholar's study (사랑방). Cozy
