@@ -27,7 +27,6 @@ import type { PublicRoom } from "./network";
 // 동적 `import()`로 들어오므로, 이 세 줄은 번들에 1바이트도 남기지 않는다.
 import type { GameScene } from "./scenes/game-scene";
 import type { PixelScene } from "./scenes/pixel-scene";
-import type { TileScene } from "./scenes/tile-scene";
 import type { IsoView } from "./scenes/iso-view";
 import { cvdMode, resolveMotion } from "./scenes/view-motion";
 import { showMoveHint, markMovedOnce } from "./scenes/move-hint";
@@ -743,7 +742,6 @@ type PhaserMod = {
   P: PhaserNS;
   GameScene: typeof import("./scenes/game-scene").GameScene;
   PixelScene: typeof import("./scenes/pixel-scene").PixelScene;
-  TileScene: typeof import("./scenes/tile-scene").TileScene;
 };
 type IsoMod = { IsoView: typeof import("./scenes/iso-view").IsoView };
 
@@ -759,16 +757,14 @@ const loadPhaserMod = (): Promise<unknown> => {
       import("phaser"),
       import("./scenes/game-scene"),
       import("./scenes/pixel-scene"),
-      import("./scenes/tile-scene"),
     ])
-      .then(([p, g, x, t]) => {
+      .then(([p, g, x]) => {
         // phaser는 `export = Phaser`(CJS) — 번들러 interop에 따라 default에 들어온다.
         const d = (p as { default?: PhaserNS }).default;
         phaserMod = {
           P: d ?? (p as PhaserNS),
           GameScene: g.GameScene,
           PixelScene: x.PixelScene,
-          TileScene: t.TileScene,
         };
         readyLoaders.add(loadPhaserMod);
       })
@@ -804,7 +800,7 @@ const loadIsoMod = (): Promise<unknown> => {
 type Stage = {
   id: string;
   label: string;
-  kind: "phaser" | "three" | "pixel" | "tiles";
+  kind: "phaser" | "three" | "pixel";
   assets: boolean;
   /**
    * §9.5 최소 방어 — **`load` 자리**. 이 단계를 그리는 데 필요한 청크를 받아온다.
@@ -816,8 +812,7 @@ type Stage = {
 };
 const STAGES: Stage[] = [
   { id: "2d-emoji", label: "뷰1 · 2D", kind: "phaser", assets: false, load: loadPhaserMod },
-  // 뷰2를 임시로 «타일셋 실험»으로 대체(A안). 기존 Three 2.5D(three-emoji)는 뷰3 옆으로 잠시 밀어둔다.
-  { id: "tiles", label: "뷰2 · 타일(실험)", kind: "tiles", assets: false, load: loadPhaserMod },
+  { id: "three-emoji", label: "뷰2 · 2.5D", kind: "three", assets: false, load: loadIsoMod },
   { id: "three-asset", label: "뷰3 · 에셋", kind: "three", assets: true, load: loadIsoMod },
   { id: "pixel", label: "뷰4 · 도트", kind: "pixel", assets: false, load: loadPhaserMod },
   // 미래: { id: "three-3d", ..., load: () => import("./scenes/three-3d") } 등 append
@@ -885,20 +880,15 @@ const cardTriple = (t: CardTriple): string =>
 // ⚠ Phaser 씬은 **`create()`가 끝나기 전에도 인스턴스가 조회된다.** 그 시점에 계약을
 //   호출하면 보드 사각형·명패가 아직 없어 조용히 아무 일도 안 일어난다 →
 //   `isActive(key)`(= status RUNNING, create 완료)로 게이트한다.
-const phaserView = (
-  key: "game" | "pixel" | "tiles",
-): GameScene | PixelScene | TileScene | null => {
+const phaserView = (key: "game" | "pixel"): GameScene | PixelScene | null => {
   if (!game || !game.scene.isActive(key)) return null;
-  return (
-    (game.scene.getScene(key) as GameScene | PixelScene | TileScene | null) ?? null
-  );
+  return (game.scene.getScene(key) as GameScene | PixelScene | null) ?? null;
 };
 
 /** 지금 화면을 그리고 있는 뷰. 아직 준비되지 않았으면 `null`. */
 const activeView = (): ViewContract | null => {
   const st = STAGES[stageIndex];
   if (st.kind === "three") return iso;
-  if (st.kind === "tiles") return phaserView("tiles");
   return phaserView(st.kind === "pixel" ? "pixel" : "game");
 };
 
@@ -909,8 +899,6 @@ const allViews = (): ViewContract[] => {
   if (g) out.push(g);
   const p = phaserView("pixel");
   if (p) out.push(p);
-  const t = phaserView("tiles");
-  if (t) out.push(t);
   if (iso) out.push(iso);
   return out;
 };
@@ -2388,7 +2376,7 @@ const enterGame = async (): Promise<void> => {
       mode: P.Scale.RESIZE,
       autoCenter: P.Scale.NO_CENTER,
     },
-    scene: [mod.GameScene, mod.PixelScene, mod.TileScene],
+    scene: [mod.GameScene, mod.PixelScene],
   });
   game.registry.set("room", room);
   // 런타임 게이트(§9.6) 측정 훅 — `__zcIso`와 짝. 콘솔에서
@@ -2418,7 +2406,6 @@ const enterGame = async (): Promise<void> => {
     const st = STAGES[stageIndex];
     const three = st.kind === "three";
     const pixel = st.kind === "pixel";
-    const tiles = st.kind === "tiles";
     if (three && !iso && room && isoMod) {
       iso = new isoMod.IsoView(room, $("gameScreen"));
     }
@@ -2426,8 +2413,6 @@ const enterGame = async (): Promise<void> => {
     // (렌더러 `pixel-scene.ts` `setActive` 주석의 `TODO(main.ts)`가 이 한 줄이다.
     //  시작되지 않은 씬에는 계약 메서드가 존재하지 않으므로 씬 밖에서 해야 한다.)
     if (pixel && game && !game.scene.isActive("pixel")) game.scene.run("pixel");
-    // TileScene(뷰2 실험)도 config 3번째라 자동 시작 안 됨 — 첫 진입에서만 run.
-    if (tiles && game && !game.scene.isActive("tiles")) game.scene.run("tiles");
     // ── §9.2 «보이지 않는 뷰가 계속 돈다» ─────────────────────────────
     // Phaser `SceneManager.update()`는 `visible`을 보지 않는다 → 뷰2·3에서도 씬 루프가
     // 계속 돌아 RAF 2개·프레임당 강제 레이아웃 2회가 된다. 축은 **"three 뷰인가"** 하나다.
@@ -2452,12 +2437,11 @@ const enterGame = async (): Promise<void> => {
     // 정리하는 책임이 뷰에 있어 `sys.setVisible` 직접 호출로는 그 계약이 실행되지 않는다.
     // (뷰1은 뷰4에서도 계속 active — 입력·카메라 담당이고 표시만 꺼진다.)
     iso?.setActive(three);
-    if (three) iso?.setAssets(st.assets); // 뷰3=에셋 아트(three)
+    if (three) iso?.setAssets(st.assets); // 뷰2=이모지 / 뷰3=에셋 아트
     phaserView("game")?.setActive(st.kind === "phaser");
     phaserView("pixel")?.setActive(pixel);
-    phaserView("tiles")?.setActive(tiles); // 뷰2 실험 타일셋
-    // three/tiles에선 GameScene을 안 그린다 → Phaser 키보드 off. phaser/pixel만 GameScene이 담당.
-    if (game?.input.keyboard) game.input.keyboard.enabled = !three && !tiles;
+    // three에선 iso가 입력 담당 → Phaser 키보드 off. phaser/pixel은 GameScene이 담당.
+    if (game?.input.keyboard) game.input.keyboard.enabled = !three;
     viewBtn.textContent = st.label + " ▲";
     [...viewList.children].forEach((li, idx) =>
       (li as HTMLElement).classList.toggle("active", idx === stageIndex),

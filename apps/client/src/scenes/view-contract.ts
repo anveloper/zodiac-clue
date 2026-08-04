@@ -25,14 +25,8 @@ import type { MotionProfile } from "@zodiac-clue/shared";
  *    `STAGES`의 `load` 슬롯은 `main.ts` 소유라 이 작업 범위 밖이다.
  */
 
-/** 뷰 식별자. 한 인스턴스가 두 뷰를 겸할 수 있다(IsoView = 뷰2·뷰3).
- * `tiles`는 임시 타일셋 실험 뷰(뷰2 슬롯) — 조립형 한옥 타일 비주얼 확인용. */
-export type ViewId =
-  | "2d-emoji"
-  | "three-emoji"
-  | "three-asset"
-  | "pixel"
-  | "tiles";
+/** 뷰 식별자. 한 인스턴스가 두 뷰를 겸할 수 있다(IsoView = 뷰2·뷰3). */
+export type ViewId = "2d-emoji" | "three-emoji" | "three-asset" | "pixel";
 
 /** 그리드 칸 — 서버가 주는 위치 진실값의 유일한 단위(x,y ∈ 0..23). */
 export type ViewCell = { x: number; y: number };
