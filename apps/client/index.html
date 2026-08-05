@@ -239,6 +239,12 @@
         text-align: center;
       }
       .char .em { font-size: 20px; line-height: 1; }
+      /* 미리 크롭한 캐릭터 «얼굴» 아이콘(원형) — 선택칩·제안기록·도감 썸네일 공용 */
+      .face-ic {
+        display: inline-block; border-radius: 50%; background: center / cover no-repeat;
+        vertical-align: middle; box-shadow: 0 0 0 1px rgba(0,0,0,0.12);
+      }
+      .sg-combo .face-ic { margin-right: 1px; }
       .char:hover { border-color: var(--wds-primary-normal); }
       .char.selected { border-color: var(--wds-primary-normal); background: var(--wds-bg-alternative); color: var(--wds-label-strong); }
       .char.locked { opacity: 0.35; cursor: not-allowed; }

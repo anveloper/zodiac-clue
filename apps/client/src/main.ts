@@ -42,6 +42,19 @@ import type {
 /** 재접속 토큰 저장 키. sessionStorage = 탭 단위(새로고침엔 유지, 새 탭엔 없음). */
 const RECONNECT_KEY = "zc_reconnect";
 
+/** 미리 잘라둔 «얼굴» 아이콘을 가진 캐릭터(십이지 12 + 특별손님 3). */
+const FACE_IDS = new Set<string>([...ZODIAC, "quokka", "cat", "android"]);
+/**
+ * 캐릭터 «얼굴» 아이콘 조각 — 선택칩·제안기록·도감 썸네일 공용. 전신샷에서 미리 크롭해 둔
+ * `/assets/characters/face/<id>.webp`(원형)을 쓴다. 얼굴이 없는 값(장물·장소)이면 이모지 폴백.
+ * id는 검증된 키(FACE_IDS)일 때만 URL에 넣으므로 주입 위험 없음.
+ */
+const faceIc = (id: string, px: number): string =>
+  FACE_IDS.has(id)
+    ? `<span class="face-ic" style="width:${px}px;height:${px}px;` +
+      `background-image:url('/assets/characters/face/${id}.webp')"></span>`
+    : `<span style="font-size:${Math.round(px * 0.85)}px">${emoji(id)}</span>`;
+
 // ── 진입 파라미터 스냅샷 ─────────────────────────────
 // `wireRoom()`이 주소를 `/room/ID`로 정리하면서 **쿼리스트링을 통째로 버린다.**
 // 그래서 그 뒤에 `location.search`를 읽는 코드(`?demo=1` 등)는 항상 빈 값을 봤다.
@@ -408,8 +421,9 @@ const sugRow = (e: SuggestEntry): HTMLElement => {
   top.append(by, res);
   const combo = document.createElement("div");
   combo.className = "sg-combo";
-  combo.textContent =
-    `${cardIcon(e.suspect)} ${label(e.suspect)} · ` +
+  // 용의자는 «얼굴» 아이콘, 장물·장소는 기존 이모지. 값이 모두 검증된 카드 키라 innerHTML 안전.
+  combo.innerHTML =
+    `${faceIc(e.suspect, 18)} ${label(e.suspect)} · ` +
     `${cardIcon(e.weapon)} ${label(e.weapon)} · ` +
     `${cardIcon(e.room)} ${label(e.room)}`;
   row.append(top, combo);
@@ -2080,7 +2094,7 @@ const renderLobbyChars = (state: Room["state"]): void => {
     // 2차 단서는 이미 있는 이모지 + 이름 전체.
     cell.style.boxShadow = colorStripe(z);
     cell.innerHTML =
-      `<span class="em">${emoji(z)}</span>` +
+      `<span class="em">${faceIc(z, 34)}</span>` +
       `<span>${label(z)}${cvdTag(z)}</span>`;
     // 직업 뜻풀이를 툴팁으로도 노출(생소한 단어 설명).
     const j = job(z);
@@ -2926,7 +2940,7 @@ const init = async (): Promise<void> => {
       const nm = (CODEX_EXTRA[id]?.name ?? label(id)).split(" ")[0];
       return (
         `<div class="cx-thumb" data-id="${id}">` +
-        `<span class="te">${emoji(id) || "🎭"}</span><span class="tn">${nm}</span></div>`
+        `<span class="te">${faceIc(id, 30)}</span><span class="tn">${nm}</span></div>`
       );
     }).join("");
     for (const t of Array.from($("cxRail").children)) {
