@@ -51,8 +51,17 @@
       /* 터치 T0: 당겨서 새로고침·스크롤 체이닝으로 판이 날아가는 것을 막는다. */
       html, body { overscroll-behavior: none; }
       /* ── 자연 배경 낙엽(다희 스펙) — 정지 SVG + CSS 애니. 새 의존성·이미지 에셋 0. ── */
+      /* 조선 풍경 배경(대감집 숲길) — 방 만들기·대기실에 깔고, 그 위로 낙엽이 떨어진다.
+         게임화면(body.no-scroll)에선 보드가 덮으므로 끈다. leaf-bg보다 DOM상 먼저 와서 아래에 깔린다. */
+      #scene-bg {
+        position: fixed; inset: 0; z-index: 0; pointer-events: none;
+        background: url("/assets/bg/forest-manor.webp") center/cover no-repeat;
+      }
+      #scene-bg::after { content: ""; position: absolute; inset: 0;
+        background: linear-gradient(180deg, rgba(20,14,6,0.28), rgba(20,14,6,0.12) 40%, rgba(20,14,6,0.42)); }
+      body.no-scroll #scene-bg { display: none; }
       #leaf-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
-      #landing, #lobby { position: relative; z-index: 1; } /* UI를 낙엽 위로 */
+      #landing, #lobby { position: relative; z-index: 1; } /* UI를 배경·낙엽 위로 */
       body.no-scroll #leaf-bg { display: none; } /* 게임화면에선 끈다(정보 밀도) */
       @media (prefers-reduced-motion: reduce) { #leaf-bg { display: none; } }
       .leaf {
@@ -1053,6 +1062,7 @@
   <body>
     <!-- 자연 배경(다희 스펙) — 대기실·랜딩 뒤 낙엽. 이미지·라이브러리 없이 인라인 SVG + CSS만.
          게임화면(body.no-scroll)·모션감소에선 끈다. 순수 장식(pointer-events:none). -->
+    <div id="scene-bg" aria-hidden="true"></div>
     <div id="leaf-bg" aria-hidden="true">
       <span class="leaf" style="left:4%;animation-delay:-1s"></span>
       <span class="leaf" style="left:11%;animation-delay:-7s"></span>
