@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * 환각 검증기 — 제출물 ④ §3 "환각 검증 프로토콜"의 실행체.
- *   문서: docs/submission/20260720-ai-tech-doc.md §2(디렉팅 명세) · §3(C1~C7) · §4(관측 가능성)
+ *   문서: docs/design/20260720-ai-tech-doc.md §2(디렉팅 명세) · §3(C1~C7) · §4(관측 가능성)
  *
  * 이 스크립트는 **읽기 전용**이다. 게임 규칙·상태·문서를 일절 바꾸지 않는다.
  * 검사 대상 함수는 미러링하지 않고 **실제 소스를 그대로 import**한다
@@ -1165,7 +1165,7 @@ const exitCode =
 
 const report = {
   tool: "eval-narrator",
-  spec: "docs/submission/20260720-ai-tech-doc.md §3",
+  spec: "docs/design/20260720-ai-tech-doc.md §3",
   mode: OPT.live ? "live" : "offline",
   seed: OPT.seed,
   generatedAt: new Date().toISOString(),

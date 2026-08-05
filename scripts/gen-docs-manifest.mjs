@@ -16,19 +16,13 @@ import { join } from "node:path";
 import { isPrivateDocPath, LOCAL_MANIFEST } from "./docs-private.mjs";
 
 const GROUPS = [
-  // 제출물은 알파벳순이 아니라 **제출 번호 순서**로 고정한다(③ 소개 → ④ AI → ⑤ 롤 → 콘티 → 체크리스트).
-  // 파일명(`20260720-ai-tech-doc`)이 `game-intro`보다 알파벳상 앞서 ④가 ③보다 위로 뜨던 것 교정.
+  // 제출물 탭 = **실제 심사에 내는 최종본만**(③ 소개 → ④ AI → ⑤ 롤). 번호 접두라 정렬은 자연히 맞는다.
+  // 장문 원본·콘티·체크리스트는 design/으로 옮겼다(작업 문서지 제출물이 아니다).
   {
     dir: "submission",
     label: "📤 제출물",
     ext: "pair",
-    order: [
-      "game-intro",
-      "20260720-ai-tech-doc",
-      "20260728-team-roles",
-      "20260728-video-storyboard",
-      "submission-checklist",
-    ],
+    order: ["03-game-intro", "04-ai-tech", "05-team-roles"],
   },
   { dir: "design", label: "📐 설계", ext: ".html" },
   { dir: "assets", label: "🎨 에셋·컨셉", ext: "pair" },

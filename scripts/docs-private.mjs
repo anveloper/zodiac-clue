@@ -14,9 +14,10 @@ export const PRIVATE_DIRS = [
 
 /** 파일 단위 제외 (docs/ 기준 상대 경로, 확장자 제외한 basename 매칭) */
 export const PRIVATE_FILES = [
-  "submission/submission-checklist", // 미제작 항목·심사 프로세스 메모
-  "submission/20260728-team-roles", // ⑤ 초안(미확정·[확인 필요] 포함)
-  "submission/20260728-video-storyboard", // 미구현 기능 표시가 드러남
+  "submission/05-team-roles", // ⑤ 최종본 — 실명 포함이라 공개 docs 사이트엔 배포하지 않는다(로컬·PDF 제출만)
+  "design/submission-checklist", // 미제작 항목·심사 프로세스 메모
+  "design/20260728-team-roles", // ⑤ 초안(미확정·[확인 필요] 포함)
+  "design/20260728-video-storyboard", // 미구현 기능 표시가 드러남
   "design/20260727-improvement-roadmap", // 자기 결함 목록
   "design/20260729-mafia-content-design", // 오염 지점 11건 = 자기 결함 목록. 표제도 «분리는 성립하지 않는다»다
   "design/20260727-execution-plan", // 남은 일정·컷라인

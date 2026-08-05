@@ -4,12 +4,12 @@
     "dir": "submission",
     "items": [
       {
-        "path": "submission/game-intro.html",
-        "title": "제출물 ③ 게임 소개: zodiac-clue"
+        "path": "submission/03-game-intro.html",
+        "title": "제출물 ③ 게임 소개"
       },
       {
-        "path": "submission/20260720-ai-tech-doc.html",
-        "title": "제출물 ④ AI 활용 기술 문서"
+        "path": "submission/04-ai-tech.html",
+        "title": "제출물 ④ AI 활용 기술 문서 (요약)"
       }
     ]
   },
@@ -17,6 +17,10 @@
     "label": "📐 설계",
     "dir": "design",
     "items": [
+      {
+        "path": "design/game-intro.html",
+        "title": "제출물 ③ 게임 소개: zodiac-clue"
+      },
       {
         "path": "design/20260727-view-contract-spec.html",
         "title": "4뷰 표기 계약 명세"
@@ -40,6 +44,10 @@
       {
         "path": "design/20260720-camera-and-hud.html",
         "title": "게임형 카메라 & 플로팅 HUD"
+      },
+      {
+        "path": "design/20260720-ai-tech-doc.html",
+        "title": "제출물 ④ AI 활용 기술 문서"
       }
     ]
   },
