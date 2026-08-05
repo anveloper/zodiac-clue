@@ -423,25 +423,34 @@
       .hud-turnface .tf-tx { display: flex; flex-direction: column; line-height: 1.12; }
       .hud-turnface .tf-tx b { font-size: 10px; color: var(--wds-label-alternative); font-weight: 600; }
       .hud-turnface .tf-tx > span { font-size: 13px; font-weight: 700; color: var(--wds-label-strong); }
-      /* PC: 전체 이름 노출 + **컴팩트**. 예전(패딩 8/16·칩 4/10·15px)은 폭이 커
-         상단 명패와 우측 패널을 파고들었다. 크기를 줄이고, 중심을 «보드 영역»
-         (= 뷰포트 − 우측 컬럼 폭 `--rp-w` − 여백)으로 옮겨 패널을 비켜 간다.
+      /* PC: **평소엔 모바일처럼 아주 작게**(이모지 칩 + 상태 한 줄), 이름·화살표 확장은
+         «마우스 올렸을 때»만. 예전엔 항상 전체 이름을 펼쳐 상단 명패·우측 패널을 파고들었다.
+         중심은 «보드 영역»(= 뷰포트 − 우측 컬럼 폭 `--rp-w` − 여백)으로 잡아 패널을 비켜 간다.
          `--rp-w`는 JS가 폭 드래그·패널 토글마다 갱신한다(기본 260px). */
       @media (min-width: 761px) {
         .hud-turn {
           left: calc(16px + (100vw - 32px - var(--rp-w, 260px)) / 2 + var(--sa-l, 0px));
-          max-width: min(760px, calc(100vw - 64px - var(--rp-w, 260px)));
-          padding: 5px 12px; white-space: normal;
+          max-width: 320px; padding: 5px 12px;
+          transition: max-width .12s ease, padding .12s ease;
         }
-        .ti-order { gap: 5px; margin-top: 4px; flex-wrap: wrap; }
-        .ti-chip { align-items: center; gap: 3px; padding: 2px 7px; font-size: 13px; border-radius: 6px; }
-        .ti-chip .ti-ini { display: none; }
-        .ti-chip .ti-nm {
+        .ti-order { gap: 3px; margin-top: 4px; flex-wrap: nowrap; }
+        .ti-chip { align-items: center; gap: 0; padding: 1px 4px; font-size: 15px; border-radius: 6px; }
+        .ti-chip .ti-ini { display: none; } /* 이모지로 충분 */
+        .ti-chip .ti-nm { display: none; }  /* 이름은 hover 때만 */
+        .ti-chip.cur { transform: scale(1.12); }
+        .ti-arrow { font-size: 11px; }
+        /* 마우스 올리면 펼침 — 이름·간격 복원, 폭 상한을 보드 영역 최대로. */
+        .hud-turn:hover {
+          max-width: min(760px, calc(100vw - 64px - var(--rp-w, 260px)));
+          padding: 8px 14px; z-index: 20;
+        }
+        .hud-turn:hover .ti-order { gap: 6px; flex-wrap: wrap; }
+        .hud-turn:hover .ti-chip { gap: 4px; padding: 3px 9px; font-size: 14px; }
+        .hud-turn:hover .ti-chip .ti-nm {
           display: inline; font-size: 12px; font-weight: 700; color: var(--wds-label-normal);
         }
-        .ti-chip.cur { transform: scale(1.06); }
-        .ti-chip.cur .ti-nm { color: var(--wds-label-strong); }
-        .ti-arrow { font-size: 11px; }
+        .hud-turn:hover .ti-chip.cur { transform: scale(1.06); }
+        .hud-turn:hover .ti-chip.cur .ti-nm { color: var(--wds-label-strong); }
       }
       .ti-chip.cur {
         transform: scale(1.2); opacity: 1;
