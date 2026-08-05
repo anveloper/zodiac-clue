@@ -399,14 +399,15 @@
       }
       /* 전체 이름 — 기본(모바일)은 숨김(첫 글자만), PC에서 노출. */
       .ti-chip .ti-nm { display: none; font-style: normal; }
-      /* 현재 차례 얼굴 배지 + 행 배치 (기본=세로: 모바일은 스트립 아래에 배지). */
-      .ti-row { display: flex; flex-direction: column; align-items: center; gap: 6px; }
-      .ti-face { display: inline-flex; align-items: center; gap: 8px;
-        padding: 3px 12px 3px 5px; border-radius: 999px; background: rgba(0,0,0,0.06); }
-      .ti-face-tx { display: flex; flex-direction: column; line-height: 1.12; text-align: left; }
-      .ti-face-tx b { font-size: 10px; color: var(--wds-label-alternative); font-weight: 600; }
-      .ti-face-tx > span { font-size: 13px; font-weight: 700; color: var(--wds-label-strong); }
-      /* PC: 순서 스트립에 여백 더 + 전체 이름 노출 + 배지를 스트립 옆으로(가로). */
+      /* 현재 차례 얼굴 배지 — 순서 스트립 밖의 독립 HUD(좌상단, 액션 버튼 아래). */
+      .hud-turnface {
+        left: calc(16px + var(--sa-l, 0px)); top: calc(52px + var(--sa-t, 0px));
+        display: flex; align-items: center; gap: 8px; padding: 5px 12px 5px 6px;
+      }
+      .hud-turnface .tf-tx { display: flex; flex-direction: column; line-height: 1.12; }
+      .hud-turnface .tf-tx b { font-size: 10px; color: var(--wds-label-alternative); font-weight: 600; }
+      .hud-turnface .tf-tx > span { font-size: 13px; font-weight: 700; color: var(--wds-label-strong); }
+      /* PC: 순서 스트립에 여백 더 + 전체 이름 노출. */
       @media (min-width: 761px) {
         .hud-turn { max-width: min(1120px, 96vw); padding: 8px 16px; white-space: normal; }
         .ti-order { gap: 8px; margin-top: 5px; flex-wrap: wrap; }
@@ -418,7 +419,6 @@
         .ti-chip.cur { transform: scale(1.08); }
         .ti-chip.cur .ti-nm { color: var(--wds-label-strong); }
         .ti-arrow { font-size: 13px; }
-        .ti-row { flex-direction: row; gap: 16px; flex-wrap: wrap; justify-content: center; }
       }
       .ti-chip.cur {
         transform: scale(1.2); opacity: 1;
@@ -674,10 +674,10 @@
          드래그로 정한 높이는 유지하되 공간이 모자라면 줄어들도록 shrink를 연다. */
       .rp-evi { flex: 0 1 auto; height: 260px; min-height: 72px; } /* 높이 드래그로 조절 */
       .rp-log { flex: 1 1 0; min-height: 72px; } /* 남은 공간 채우고 내부 스크롤 */
-      /* AI 패널도 축소 허용(0 0 auto면 내용이 길 때 안 줄어 아래 패널을 밀어 겹쳤다). 내부는 스크롤. */
-      .rp-ai { flex: 0 1 auto; max-height: 40%; }
+      /* AI·제안 패널: 축소 허용 + 내부 스크롤. 높이는 리사이저로 조절(그래서 max-height 캡을 두지 않는다). */
+      .rp-ai { flex: 0 1 auto; }
       .rp-ai #aiDetail { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
-      .rp-sug { flex: 0 1 auto; max-height: 32%; }
+      .rp-sug { flex: 0 1 auto; }
 
       /* 드래그 핸들 — 잡을 수 있음이 보이도록 강조색(주황) + 그립 */
       .rp-hresizer {
@@ -691,11 +691,13 @@
       }
       .rp-hresizer:hover { background: rgba(180, 98, 43, 0.32); }
       .rp-hresizer:hover::before { background: var(--wds-primary-normal); }
-      /* 너비 조절 핸들(컬럼 좌측 모서리) */
+      /* 위 섹션이 접히면(hidden) 그 아래 리사이저도 숨긴다 — 4섹션 각각 사이에만 핸들이 뜬다. */
+      .rp-panel.hidden + .rp-hz { display: none; }
+      /* 너비 조절 핸들 — 패널 «왼쪽 바깥»의 여백에 띄워 본문과 겹치지 않게(딱 붙던 문제). */
       .rp-wresizer {
-        position: absolute; left: -8px; top: 0; bottom: 0; width: 16px; border-radius: 8px;
+        position: absolute; left: -16px; top: 0; bottom: 0; width: 11px; border-radius: 8px;
         cursor: col-resize; display: flex; align-items: center; justify-content: center;
-        background: rgba(180, 98, 43, 0.18);
+        background: rgba(180, 98, 43, 0.16);
       }
       .rp-wresizer::before {
         content: ""; width: 6px; height: 56px; border-radius: 3px;
@@ -1289,6 +1291,8 @@
       </div>
 
       <div class="hud hud-turn hidden" id="turnInfo"></div>
+      <!-- 현재 차례 얼굴 배지 — 순서 스트립 «밖»의 독립 HUD(좌상단) -->
+      <div class="hud hud-turnface hidden" id="turnFace"></div>
 
       <div class="hud hud-spectate hidden" id="spectateBar">
         <!-- 문안 확정본: ui-copy §7.2. 버튼 라벨 교체([나가기])는 «확인 다이얼로그
@@ -1400,11 +1404,13 @@
             </div>
           </details>
         </div>
+        <!-- 각 리사이저는 «바로 위» 섹션의 높이를 조절한다. 위 섹션이 접히면(hidden) 리사이저도 숨는다. -->
+        <div class="rp-hresizer rp-hz" title="드래그로 높이 조절" aria-hidden="true"></div>
         <div class="rp-panel rp-evi" id="eviPanel">
           <div class="rp-head">🔍 증거 노트 <span class="rp-sub">(나만 봄)</span></div>
           <div id="evidence" class="rp-body"></div>
         </div>
-        <div class="rp-hresizer" id="colResizer" title="드래그로 높이 조절"></div>
+        <div class="rp-hresizer rp-hz" id="colResizer" title="드래그로 높이 조절" aria-hidden="true"></div>
         <!-- 제안 기록표(§1.2) — 서버 `suggestLog`가 도착해야 나타난다. -->
         <div class="rp-panel rp-fold rp-sug hidden" id="sugPanel">
           <details open>
@@ -1415,6 +1421,7 @@
             <div id="sugBody" class="rp-body"></div>
           </details>
         </div>
+        <div class="rp-hresizer rp-hz" title="드래그로 높이 조절" aria-hidden="true"></div>
         <div class="rp-panel rp-log" id="logPanel">
           <div class="rp-head">📜 기록 / 알림</div>
           <div id="log" class="rp-body"></div>

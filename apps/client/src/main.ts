@@ -2006,6 +2006,7 @@ const updateTurnInfo = (state: Room["state"]): void => {
   updateActionButtons(state); // phase와 무관하게 항상 최신 사유를 유지
   if (state.phase !== "playing") {
     el.classList.add("hidden");
+    $("turnFace").classList.add("hidden");
     document.title = BASE_TITLE;
     lastTurn = "";
     return;
@@ -2030,16 +2031,18 @@ const updateTurnInfo = (state: Room["state"]): void => {
   const status = mine
     ? `<div class="ti-status">${myTurnText(state.stepsLeft ?? 0)}</div>`
     : `<div class="ti-status">${cur ? `⏳ ${emoji(cur.suspect)} ${cur.name} 님의 턴` : ""}</div>`;
-  // 현재 차례 «얼굴» 배지 — 큰 얼굴이 살아나는 자리. PC=순서 스트립 옆, 모바일=아래(CSS).
-  const curFace = cur
-    ? `<div class="ti-face">${faceIc(cur.suspect, 44)}` +
-      `<span class="ti-face-tx"><b>지금 차례</b><span>${cur.name}</span></span></div>`
-    : "";
+  // 현재 차례 «얼굴» 배지 — 순서 스트립 «밖»의 독립 HUD(PC·모바일 공통, 좌상단).
+  const tf = $("turnFace");
+  if (cur) {
+    tf.innerHTML =
+      `${faceIc(cur.suspect, 44)}` +
+      `<span class="tf-tx"><b>지금 차례</b><span>${cur.name}</span></span>`;
+    tf.classList.remove("hidden");
+  } else {
+    tf.classList.add("hidden");
+  }
   // 부제(.ti-sub) = 즉시고발 창 카운트다운(§9.5). 창이 닫혀 있으면 빈 문자열이다.
-  el.innerHTML =
-    status +
-    `<div class="ti-row">${renderTurnStrip(state)}${curFace}</div>` +
-    accuseSubHtml();
+  el.innerHTML = status + renderTurnStrip(state) + accuseSubHtml();
   el.title = "클릭: 전체 턴 순서(원형) 보기";
   el.onclick = openTurnCircle;
   if (mine && turnChanged) showDiceRoll(); // 내 턴 시작 → 중앙 주사위
@@ -2641,9 +2644,8 @@ const enterGame = async (): Promise<void> => {
     if (e.target === $("turnCircle")) closeTurnCircle();
   };
 
-  // 우측 컬럼: 좌측 모서리 드래그=너비, 노트↔기록 사이 드래그=높이
+  // 우측 컬럼: 좌측 모서리 드래그=너비, 섹션 사이 드래그=위 섹션 높이
   const rightCol = $("rightPanel");
-  const eviPanel = $("eviPanel");
 
   const makeDrag = (
     handle: HTMLElement,
@@ -2670,14 +2672,20 @@ const enterGame = async (): Promise<void> => {
     handle.addEventListener("pointercancel", stop);
   };
 
-  // 높이 조절: 증거노트 높이 = 포인터 y − **증거노트 자신의 top**.
-  // (컬럼 top 기준으로 재면 위에 뜬 AI 패널 높이까지 포함돼 값이 어긋났다 — 꼬임의 원인.)
-  makeDrag($("colResizer"), (e) => {
-    const eviTop = eviPanel.getBoundingClientRect().top;
-    const colBottom = rightCol.getBoundingClientRect().bottom;
-    const h = Math.max(80, Math.min(colBottom - eviTop - 160, e.clientY - eviTop));
-    eviPanel.style.height = `${h}px`;
-  });
+  // 높이 조절: 각 리사이저(.rp-hz)는 «바로 위» 섹션의 높이를 조절한다(섹션 4개 → 사이마다 핸들).
+  // 높이는 그 섹션 «자신의 top» 기준으로 재 — 위에 다른 패널이 떠 있어도 값이 안 섞인다.
+  for (const hz of Array.from(
+    document.querySelectorAll<HTMLElement>(".rp-hz"),
+  )) {
+    const panel = hz.previousElementSibling as HTMLElement | null;
+    if (!panel || !panel.classList.contains("rp-panel")) continue;
+    makeDrag(hz, (e) => {
+      const top = panel.getBoundingClientRect().top;
+      const colBottom = rightCol.getBoundingClientRect().bottom;
+      const h = Math.max(72, Math.min(colBottom - top - 110, e.clientY - top));
+      panel.style.height = `${h}px`;
+    });
+  }
   // 너비 조절: 컬럼 너비 = 우측 고정 모서리 − 포인터 x
   makeDrag($("colWResizer"), (e) => {
     const right = rightCol.getBoundingClientRect().right;
