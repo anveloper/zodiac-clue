@@ -2093,6 +2093,15 @@ const renderLobbyChars = (state: Room["state"]): void => {
     }
     grid.appendChild(cell);
   }
+  // 호버는 «미리보기». 그리드 밖으로 마우스가 나가면 지금 «선택된» 캐릭터로 되돌린다.
+  grid.onmouseleave = () => {
+    if (mySuspect) showCharInfo(mySuspect);
+    else {
+      $("lobby-char").classList.remove("on");
+      $("lobbyPersona").innerHTML =
+        "캐릭터에 올리면 <b>직업 풀이</b>와 성격이 표시됩니다.";
+    }
+  };
   // 기본 표시 = 내 캐릭터(있으면).
   if (mySuspect) showCharInfo(mySuspect);
 };
