@@ -75,6 +75,16 @@
   .chr .em { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
   .todo { color:var(--dim) !important; }
 }
+  /* 캐릭터 이미지 + 프롬프트(<details>) */
+  .art { display:flex; flex-wrap:wrap; gap:12px; align-items:flex-start; margin:12px 0 4px; }
+  .art .face { width:76px; height:76px; border-radius:50%; object-fit:cover; border:2px solid var(--edge); flex:none; background:#0003; }
+  .art .body { height:230px; width:auto; border-radius:8px; border:1px solid var(--edge); background:#0002; display:block; }
+  .art .pr { flex-basis:100%; margin-top:2px; }
+  details.pr > summary { cursor:pointer; color:var(--gold); font-size:13px; padding:4px 0; list-style:none; }
+  details.pr > summary::before { content:"▸ "; }
+  details.pr[open] > summary::before { content:"▾ "; }
+  details.pr pre { white-space:pre-wrap; word-break:break-word; font-size:12px; line-height:1.55; background:var(--bg); border:1px solid var(--edge); border-radius:8px; padding:10px 12px; color:var(--dim); margin:4px 0 0; }
+  @media print { .art .body { height:160px; } details.pr pre { display:block; } }
 </style>
 </head>
 <body>
@@ -114,6 +124,9 @@
 
   <div class="chr">
     <div class="top"><span class="em">🐭</span><span class="nm">생쥐 서생</span><span class="one">약삭빠르고 잔꾀 많은 책상물림. 매사 이문부터 따진다.</span></div>
+    <div class="art"><img class="face" src="https://zodiac-clue.vercel.app/assets/characters/face/rat.webp" alt="얼굴" loading="lazy"/><a href="https://zodiac-clue.vercel.app/assets/characters/rat.webp" target="_blank" rel="noopener"><img class="body" src="https://zodiac-clue.vercel.app/assets/characters/rat.webp" alt="전신" loading="lazy"/></a><details class="pr"><summary>이미지 생성 프롬프트</summary><pre>조선 사극풍 채색 일러스트, 한국 전통 한복 기반, 동물 특징을 얼굴·귀·소품으로 은은하게 의인화, 먹·주홍·황금 팔레트, 부드러운 붓터치와 은은한 음영, 따뜻한 화선지 질감, 고급 게임 캐릭터 아트, 과하지 않은 디테일, 깔끔한 실루엣.
+왜소한 생쥐 서생, 회청색 도포에 먹물 얼룩, 큼직한 앞니와 쫑긋한 쥐 귀, 손엔 붓과 주판, 약삭빠르게 굴리는 눈.
+전신 3/4 서 있는 포즈, 인물만 그린다(배경·바닥·그림자 없음). 배경은 완전 투명(알파) 또는 단일 순색 마젠타(#FF00FF)로 완전히 균일 — 그라데이션·비네트·그림자 금지. 세로 1024x1536 (2:3).</pre></details></div>
     <dl>
       <dt>배경</dt><dd>과거 준비하는 가난한 서생이나 셈·문서에 밝아 대감집 장부 일을 봐주며 드나든다. 잔치엔 축하 겸 인맥을 노리고 왔다. 경주 설화처럼 큰 것(소) 등에 올라타 이문을 챙기는 처세가 몸에 뱄다.</dd>
       <dt>외형</dt><dd>왜소한 체구, 회청색 도포에 먹물 얼룩. 큼직한 앞니·쫑긋한 귀, 붓과 주판을 품음. 눈이 재빠르게 굴러간다.</dd>
@@ -124,6 +137,9 @@
 
   <div class="chr">
     <div class="top"><span class="em">🐮</span><span class="nm">황소 역사</span><span class="one">우직하고 뚝심 있는 장사. 말수 적고 직설적이다.</span></div>
+    <div class="art"><img class="face" src="https://zodiac-clue.vercel.app/assets/characters/face/ox.webp" alt="얼굴" loading="lazy"/><a href="https://zodiac-clue.vercel.app/assets/characters/ox.webp" target="_blank" rel="noopener"><img class="body" src="https://zodiac-clue.vercel.app/assets/characters/ox.webp" alt="전신" loading="lazy"/></a><details class="pr"><summary>이미지 생성 프롬프트</summary><pre>조선 사극풍 채색 일러스트, 한국 전통 한복 기반, 동물 특징을 얼굴·귀·소품으로 은은하게 의인화, 먹·주홍·황금 팔레트, 부드러운 붓터치와 은은한 음영, 따뜻한 화선지 질감, 고급 게임 캐릭터 아트, 과하지 않은 디테일, 깔끔한 실루엣.
+거대한 체구의 황소 역사, 무명 저고리에 굵은 팔뚝, 뿔 모양 두건과 코뚜레 장신구, 뚝뚝하나 선한 눈매.
+전신 3/4 서 있는 포즈, 인물만 그린다(배경·바닥·그림자 없음). 배경은 완전 투명(알파) 또는 단일 순색 마젠타(#FF00FF)로 완전히 균일 — 그라데이션·비네트·그림자 금지. 세로 1024x1536 (2:3).</pre></details></div>
     <dl>
       <dt>배경</dt><dd>대감집 곳간·행사에 힘을 보태는 짐꾼·역사(力士). 성실해 신망이 두텁다. 잔치 준비에 무거운 상을 나른 당사자라 장물 사건에 억울하게 지목되기 쉽다.</dd>
       <dt>외형</dt><dd>거대한 체구, 무명 저고리에 굵은 팔뚝. 뿔 상징 두건, 코뚜레 장신구. 뚝뚝하나 선한 눈매.</dd>
@@ -134,6 +150,9 @@
 
   <div class="chr">
     <div class="top"><span class="em">🐯</span><span class="nm">호랑이 대감</span><span class="one">위엄 넘치고 오만한 잔치 주최자. 호령하듯 말한다.</span></div>
+    <div class="art"><img class="face" src="https://zodiac-clue.vercel.app/assets/characters/face/tiger.webp" alt="얼굴" loading="lazy"/><a href="https://zodiac-clue.vercel.app/assets/characters/tiger.webp" target="_blank" rel="noopener"><img class="body" src="https://zodiac-clue.vercel.app/assets/characters/tiger.webp" alt="전신" loading="lazy"/></a><details class="pr"><summary>이미지 생성 프롬프트</summary><pre>조선 사극풍 채색 일러스트, 한국 전통 한복 기반, 동물 특징을 얼굴·귀·소품으로 은은하게 의인화, 먹·주홍·황금 팔레트, 부드러운 붓터치와 은은한 음영, 따뜻한 화선지 질감, 고급 게임 캐릭터 아트, 과하지 않은 디테일, 깔끔한 실루엣.
+장대한 풍채의 호랑이 대감, 호피 무늬 배자와 금박 갓끈, 위엄 있는 수염과 부리부리한 눈, 손엔 긴 장죽(담뱃대), 오만하고 위엄있는 표정.
+전신 3/4 서 있는 포즈, 인물만 그린다(배경·바닥·그림자 없음). 배경은 완전 투명(알파) 또는 단일 순색 마젠타(#FF00FF)로 완전히 균일 — 그라데이션·비네트·그림자 금지. 세로 1024x1536 (2:3).</pre></details></div>
     <dl>
       <dt>배경</dt><dd>대감집 주인이자 오늘 생신의 주인공. 권세·재물이 대단해 십이지를 손님으로 부른다. 도둑맞은 잔치 선물의 <b>피해자</b>로서 손님을 붙잡아 사건을 파헤친다.</dd>
       <dt>외형</dt><dd>장대한 풍채, 호피 배자에 금박 갓끈. 위엄 있는 수염·부리부리한 눈, 손엔 장죽.</dd>
@@ -144,6 +163,9 @@
 
   <div class="chr">
     <div class="top"><span class="em">🐰</span><span class="nm">토끼 낭자</span><span class="one">영민하고 새침한 낭자. 말이 빠르고 눈치가 밝다.</span></div>
+    <div class="art"><img class="face" src="https://zodiac-clue.vercel.app/assets/characters/face/rabbit.webp" alt="얼굴" loading="lazy"/><a href="https://zodiac-clue.vercel.app/assets/characters/rabbit.webp" target="_blank" rel="noopener"><img class="body" src="https://zodiac-clue.vercel.app/assets/characters/rabbit.webp" alt="전신" loading="lazy"/></a><details class="pr"><summary>이미지 생성 프롬프트</summary><pre>조선 사극풍 채색 일러스트, 한국 전통 한복 기반, 동물 특징을 얼굴·귀·소품으로 은은하게 의인화, 먹·주홍·황금 팔레트, 부드러운 붓터치와 은은한 음영, 따뜻한 화선지 질감, 고급 게임 캐릭터 아트, 과하지 않은 디테일, 깔끔한 실루엣.
+고운 다홍 치마저고리의 토끼 낭자, 길고 쫑긋한 토끼 귀 가체, 총기 어린 큰 눈, 손엔 약과 소반과 부채, 새침하고 영민한 표정.
+전신 3/4 서 있는 포즈, 인물만 그린다(배경·바닥·그림자 없음). 배경은 완전 투명(알파) 또는 단일 순색 마젠타(#FF00FF)로 완전히 균일 — 그라데이션·비네트·그림자 금지. 세로 1024x1536 (2:3).</pre></details></div>
     <dl>
       <dt>배경</dt><dd>약방집 딸로 잔치 다과·약과를 맡아 부엌을 자주 드나든다. 눈썰미가 밝아 누가 어디서 뭘 집었는지 곧잘 본다 → 목격자도 용의자도 될 위치.</dd>
       <dt>외형</dt><dd>고운 다홍 치마저고리, 길고 쫑긋한 귀 장식(가체). 총기 도는 큰 눈, 손엔 약과 소반·부채.</dd>
@@ -156,6 +178,9 @@
 
   <div class="chr">
     <div class="top"><span class="em">🦎</span><span class="nm">게코 도령</span><span class="one">자존심 세고 허풍이 심한 도령. 벽 타듯 능청맞고 과장이 몸에 뱄다.</span></div>
+    <div class="art"><img class="face" src="https://zodiac-clue.vercel.app/assets/characters/face/gecko.webp" alt="얼굴" loading="lazy"/><a href="https://zodiac-clue.vercel.app/assets/characters/gecko.webp" target="_blank" rel="noopener"><img class="body" src="https://zodiac-clue.vercel.app/assets/characters/gecko.webp" alt="전신" loading="lazy"/></a><details class="pr"><summary>이미지 생성 프롬프트</summary><pre>조선 사극풍 채색 일러스트, 한국 전통 한복 기반, 동물 특징을 얼굴·귀·소품으로 은은하게 의인화, 먹·주홍·황금 팔레트, 부드러운 붓터치와 은은한 음영, 따뜻한 화선지 질감, 고급 게임 캐릭터 아트, 과하지 않은 디테일, 깔끔한 실루엣.
+늘씬한 게코 도령, 비취색 두루마기, 이마에 용을 흉내 낸 작은 뿔, 길고 특징적인 손발 끝, 자신만만한 눈웃음과 허세 가득한 포즈.
+전신 3/4 서 있는 포즈, 인물만 그린다(배경·바닥·그림자 없음). 배경은 완전 투명(알파) 또는 단일 순색 마젠타(#FF00FF)로 완전히 균일 — 그라데이션·비네트·그림자 금지. 세로 1024x1536 (2:3).</pre></details></div>
     <dl>
       <dt>배경</dt><dd>십이지 '용(辰)' 자리를 이은 게코붙이. 스스로를 "작은 용"이라 여겨 허세가 대단. 벽·처마를 타고 후원·별당 담장을 넘나드는 재주 → <b>장물 사건 유력 용의자</b>로 지목되기 쉽다.</dd>
       <dt>외형</dt><dd>늘씬한 몸, 비취색 두루마기, 이마에 용 흉내 뿔 장식. 길고 특징적인 손발 끝(벽 짚는 손매), 자신만만한 눈웃음.</dd>
@@ -166,6 +191,9 @@
 
   <div class="chr">
     <div class="top"><span class="em">🐍</span><span class="nm">뱀 무녀</span><span class="one">음산하고 속을 알 수 없는 무녀. 늘 에둘러 말한다.</span></div>
+    <div class="art"><img class="face" src="https://zodiac-clue.vercel.app/assets/characters/face/snake.webp" alt="얼굴" loading="lazy"/><a href="https://zodiac-clue.vercel.app/assets/characters/snake.webp" target="_blank" rel="noopener"><img class="body" src="https://zodiac-clue.vercel.app/assets/characters/snake.webp" alt="전신" loading="lazy"/></a><details class="pr"><summary>이미지 생성 프롬프트</summary><pre>조선 사극풍 채색 일러스트, 한국 전통 한복 기반, 동물 특징을 얼굴·귀·소품으로 은은하게 의인화, 먹·주홍·황금 팔레트, 부드러운 붓터치와 은은한 음영, 따뜻한 화선지 질감, 고급 게임 캐릭터 아트, 과하지 않은 디테일, 깔끔한 실루엣.
+검붉은 무복의 뱀 무녀, 방울과 부적, 뱀 비늘 문양 목걸이, 가늘고 긴 눈, 손엔 신칼과 방울, 음산하고 신비로운 분위기.
+전신 3/4 서 있는 포즈, 인물만 그린다(배경·바닥·그림자 없음). 배경은 완전 투명(알파) 또는 단일 순색 마젠타(#FF00FF)로 완전히 균일 — 그라데이션·비네트·그림자 금지. 세로 1024x1536 (2:3).</pre></details></div>
     <dl>
       <dt>배경</dt><dd>길흉을 점치는 무녀, 잔치의 안녕을 비는 굿을 청탁받아 왔다. 남들 비밀·동선을 은근히 꿰어 <b>결정적 단서</b>를 흘리거나 일부러 흐린다.</dd>
       <dt>외형</dt><dd>검붉은 무복에 방울·부적, 뱀 비늘 문양 목걸이. 가늘고 긴 눈, 낮게 가라앉은 목소리, 손엔 신칼·방울.</dd>
@@ -176,6 +204,9 @@
 
   <div class="chr">
     <div class="top"><span class="em">🐴</span><span class="nm">말 장수</span><span class="one">발 넓고 수다스러운 장돌뱅이. 소문에 훤하다.</span></div>
+    <div class="art"><img class="face" src="https://zodiac-clue.vercel.app/assets/characters/face/horse.webp" alt="얼굴" loading="lazy"/><a href="https://zodiac-clue.vercel.app/assets/characters/horse.webp" target="_blank" rel="noopener"><img class="body" src="https://zodiac-clue.vercel.app/assets/characters/horse.webp" alt="전신" loading="lazy"/></a><details class="pr"><summary>이미지 생성 프롬프트</summary><pre>조선 사극풍 채색 일러스트, 한국 전통 한복 기반, 동물 특징을 얼굴·귀·소품으로 은은하게 의인화, 먹·주홍·황금 팔레트, 부드러운 붓터치와 은은한 음영, 따뜻한 화선지 질감, 고급 게임 캐릭터 아트, 과하지 않은 디테일, 깔끔한 실루엣.
+볕에 그을린 말 장수(장돌뱅이), 행상 차림에 봇짐과 말채찍, 갈기 같은 머리, 늘 웃는 입, 발엔 짚신, 수다스럽고 활기찬 분위기.
+전신 3/4 서 있는 포즈, 인물만 그린다(배경·바닥·그림자 없음). 배경은 완전 투명(알파) 또는 단일 순색 마젠타(#FF00FF)로 완전히 균일 — 그라데이션·비네트·그림자 금지. 세로 1024x1536 (2:3).</pre></details></div>
     <dl>
       <dt>배경</dt><dd>전국 장을 도는 마방 장수. 잔치 선물을 대느라 대감집을 오가며 소문을 물어 나른다. 누가 무엇을 탐냈는지 <b>소문의 출처</b>이자 헛소문의 진원.</dd>
       <dt>외형</dt><dd>볕에 그을린 얼굴, 행상 차림에 봇짐·말채찍. 갈기 같은 머리, 늘 웃는 입, 빠른 걸음의 짚신.</dd>
@@ -186,6 +217,9 @@
 
   <div class="chr">
     <div class="top"><span class="em">🐑</span><span class="nm">양 목동</span><span class="one">순박하고 겁 많은 목동. 매사 조심스럽다.</span></div>
+    <div class="art"><img class="face" src="https://zodiac-clue.vercel.app/assets/characters/face/sheep.webp" alt="얼굴" loading="lazy"/><a href="https://zodiac-clue.vercel.app/assets/characters/sheep.webp" target="_blank" rel="noopener"><img class="body" src="https://zodiac-clue.vercel.app/assets/characters/sheep.webp" alt="전신" loading="lazy"/></a><details class="pr"><summary>이미지 생성 프롬프트</summary><pre>조선 사극풍 채색 일러스트, 한국 전통 한복 기반, 동물 특징을 얼굴·귀·소품으로 은은하게 의인화, 먹·주홍·황금 팔레트, 부드러운 붓터치와 은은한 음영, 따뜻한 화선지 질감, 고급 게임 캐릭터 아트, 과하지 않은 디테일, 깔끔한 실루엣.
+포근한 무명옷에 양털 조끼를 걸친 양 목동, 곱슬한 머리와 순한 눈, 손엔 목동 지팡이, 움츠린 어깨, 소심하고 순박한 분위기.
+전신 3/4 서 있는 포즈, 인물만 그린다(배경·바닥·그림자 없음). 배경은 완전 투명(알파) 또는 단일 순색 마젠타(#FF00FF)로 완전히 균일 — 그라데이션·비네트·그림자 금지. 세로 1024x1536 (2:3).</pre></details></div>
     <dl>
       <dt>배경</dt><dd>대감집 목장을 돌보는 순한 목동. 양젖·나물을 대러 왔다 얼떨결에 사건에 휘말린다. 추궁받으면 쩔쩔매 <b>애먼 의심</b>을 사나 실은 가장 정직한 목격자.</dd>
       <dt>외형</dt><dd>포근한 무명옷에 양털 조끼, 곱슬머리·순한 눈. 손엔 목동 지팡이, 늘 움츠린 어깨.</dd>
@@ -198,6 +232,9 @@
 
   <div class="chr">
     <div class="top"><span class="em">🐵</span><span class="nm">잔나비 광대</span><span class="one">익살맞고 촐랑대는 광대. 농을 즐긴다.</span></div>
+    <div class="art"><img class="face" src="https://zodiac-clue.vercel.app/assets/characters/face/monkey.webp" alt="얼굴" loading="lazy"/><a href="https://zodiac-clue.vercel.app/assets/characters/monkey.webp" target="_blank" rel="noopener"><img class="body" src="https://zodiac-clue.vercel.app/assets/characters/monkey.webp" alt="전신" loading="lazy"/></a><details class="pr"><summary>이미지 생성 프롬프트</summary><pre>조선 사극풍 채색 일러스트, 한국 전통 한복 기반, 동물 특징을 얼굴·귀·소품으로 은은하게 의인화, 먹·주홍·황금 팔레트, 부드러운 붓터치와 은은한 음영, 따뜻한 화선지 질감, 고급 게임 캐릭터 아트, 과하지 않은 디테일, 깔끔한 실루엣.
+오방색 광대옷과 방울 달린 고깔을 쓴 잔나비 광대, 붉은 뺨, 잽싼 손발, 장난기 가득한 눈, 손엔 소고나 탈, 익살맞고 촐랑대는 포즈.
+전신 3/4 서 있는 포즈, 인물만 그린다(배경·바닥·그림자 없음). 배경은 완전 투명(알파) 또는 단일 순색 마젠타(#FF00FF)로 완전히 균일 — 그라데이션·비네트·그림자 금지. 세로 1024x1536 (2:3).</pre></details></div>
     <dl>
       <dt>배경</dt><dd>잔치 흥을 돋우러 온 재인 광대. 재주넘기·재담으로 사방을 헤집어 어느 방이든 드나든다 → <b>알리바이가 애매</b>.</dd>
       <dt>외형</dt><dd>오방색 광대옷·방울 고깔, 붉은 뺨, 잽싼 손발, 장난기 눈. 손엔 소고·탈.</dd>
@@ -208,6 +245,9 @@
 
   <div class="chr">
     <div class="top"><span class="em">🐔</span><span class="nm">닭 훈장</span><span class="one">깐깐하고 원칙주의 훈장. 훈계조로 말한다.</span></div>
+    <div class="art"><img class="face" src="https://zodiac-clue.vercel.app/assets/characters/face/rooster.webp" alt="얼굴" loading="lazy"/><a href="https://zodiac-clue.vercel.app/assets/characters/rooster.webp" target="_blank" rel="noopener"><img class="body" src="https://zodiac-clue.vercel.app/assets/characters/rooster.webp" alt="전신" loading="lazy"/></a><details class="pr"><summary>이미지 생성 프롬프트</summary><pre>조선 사극풍 채색 일러스트, 한국 전통 한복 기반, 동물 특징을 얼굴·귀·소품으로 은은하게 의인화, 먹·주홍·황금 팔레트, 부드러운 붓터치와 은은한 음영, 따뜻한 화선지 질감, 고급 게임 캐릭터 아트, 과하지 않은 디테일, 깔끔한 실루엣.
+꼿꼿한 도포와 정자관을 쓴 닭 훈장, 볏을 닮은 붉은 갓끈, 부리부리한 눈에 긴 수염, 손엔 회초리와 서책, 깐깐하고 훈계하는 근엄한 분위기.
+전신 3/4 서 있는 포즈, 인물만 그린다(배경·바닥·그림자 없음). 배경은 완전 투명(알파) 또는 단일 순색 마젠타(#FF00FF)로 완전히 균일 — 그라데이션·비네트·그림자 금지. 세로 1024x1536 (2:3).</pre></details></div>
     <dl>
       <dt>배경</dt><dd>서당 훈장, 법도·예의를 목숨처럼 안다. 잔치 예법을 감독하다 흐트러진 자를 꾸짖음. 새벽 알리듯 <b>잘못을 큰 소리로 들춤</b>.</dd>
       <dt>외형</dt><dd>꼿꼿한 도포·정자관, 볏 닮은 붉은 갓끈, 긴 수염, 회초리·서책.</dd>
@@ -218,6 +258,9 @@
 
   <div class="chr">
     <div class="top"><span class="em">🐶</span><span class="nm">삽살 포교</span><span class="one">충직하고 우직한 포교. 딱딱한 공무 말투.</span></div>
+    <div class="art"><img class="face" src="https://zodiac-clue.vercel.app/assets/characters/face/dog.webp" alt="얼굴" loading="lazy"/><a href="https://zodiac-clue.vercel.app/assets/characters/dog.webp" target="_blank" rel="noopener"><img class="body" src="https://zodiac-clue.vercel.app/assets/characters/dog.webp" alt="전신" loading="lazy"/></a><details class="pr"><summary>이미지 생성 프롬프트</summary><pre>조선 사극풍 채색 일러스트, 한국 전통 한복 기반, 동물 특징을 얼굴·귀·소품으로 은은하게 의인화, 먹·주홍·황금 팔레트, 부드러운 붓터치와 은은한 음영, 따뜻한 화선지 질감, 고급 게임 캐릭터 아트, 과하지 않은 디테일, 깔끔한 실루엣.
+단단한 체구의 삽살 포교, 포교 전복과 벙거지, 허리엔 육모방망이와 오랏줄, 삽살개처럼 덥수룩한 눈썹과 털, 곧은 눈빛, 충직하고 우직한 분위기.
+전신 3/4 서 있는 포즈, 인물만 그린다(배경·바닥·그림자 없음). 배경은 완전 투명(알파) 또는 단일 순색 마젠타(#FF00FF)로 완전히 균일 — 그라데이션·비네트·그림자 금지. 세로 1024x1536 (2:3).</pre></details></div>
     <dl>
       <dt>배경</dt><dd>관아 포교, 잔치 경비 중 사건이 터지자 <b>수사를 주도</b>. "도둑 잡기 전엔 못 나간다"며 손님을 붙든 장본인. 사심 없이 파헤침.</dd>
       <dt>외형</dt><dd>단단한 체구·포교 전복·벙거지, 허리엔 육모방망이·오랏줄, 삽살개처럼 덥수룩한 눈썹.</dd>
@@ -228,6 +271,9 @@
 
   <div class="chr">
     <div class="top"><span class="em">🐷</span><span class="nm">돼지 객주</span><span class="one">넉살 좋고 셈에 밝은 객주. 흥정하듯 말한다.</span></div>
+    <div class="art"><img class="face" src="https://zodiac-clue.vercel.app/assets/characters/face/pig.webp" alt="얼굴" loading="lazy"/><a href="https://zodiac-clue.vercel.app/assets/characters/pig.webp" target="_blank" rel="noopener"><img class="body" src="https://zodiac-clue.vercel.app/assets/characters/pig.webp" alt="전신" loading="lazy"/></a><details class="pr"><summary>이미지 생성 프롬프트</summary><pre>조선 사극풍 채색 일러스트, 한국 전통 한복 기반, 동물 특징을 얼굴·귀·소품으로 은은하게 의인화, 먹·주홍·황금 팔레트, 부드러운 붓터치와 은은한 음영, 따뜻한 화선지 질감, 고급 게임 캐릭터 아트, 과하지 않은 디테일, 깔끔한 실루엣.
+넉넉한 풍채에 앞치마 두른 저고리의 돼지 객주, 불그레한 볼과 사람 좋은 웃음, 손엔 됫박과 엽전 꾸러미, 허리춤엔 술병, 넉살 좋고 흥정하는 분위기.
+전신 3/4 서 있는 포즈, 인물만 그린다(배경·바닥·그림자 없음). 배경은 완전 투명(알파) 또는 단일 순색 마젠타(#FF00FF)로 완전히 균일 — 그라데이션·비네트·그림자 금지. 세로 1024x1536 (2:3).</pre></details></div>
     <dl>
       <dt>배경</dt><dd>주막·객주 장사꾼. 잔치 음식·술을 대느라 부엌·곳간을 제집처럼 드나듦 → 음식(장물)에 가장 가까워 <b>의심의 눈초리</b>, 셈 밝아 손해 볼 짓 안 한다 항변.</dd>
       <dt>외형</dt><dd>넉넉한 풍채·앞치마 저고리, 불그레한 볼·사람 좋은 웃음, 됫박·엽전 꾸러미, 허리춤 술병.</dd>
@@ -241,6 +287,9 @@
 
   <div class="chr">
     <div class="top"><span class="em">🦫</span><span class="nm">쿼카 아씨</span><span class="one">세상에서 가장 행복한 얼굴로 웃는 쿼카 아씨. 낯선 땅에서 왔지만 누구에게나 방긋 웃으며 스스럼없이 다가간다.</span></div>
+    <div class="art"><img class="face" src="https://zodiac-clue.vercel.app/assets/characters/face/quokka.webp" alt="얼굴" loading="lazy"/><a href="https://zodiac-clue.vercel.app/assets/characters/quokka.webp" target="_blank" rel="noopener"><img class="body" src="https://zodiac-clue.vercel.app/assets/characters/quokka.webp" alt="전신" loading="lazy"/></a><details class="pr"><summary>이미지 생성 프롬프트</summary><pre>조선 사극풍 채색 일러스트, 한국 전통 한복 기반, 동물 특징을 얼굴·귀·소품으로 은은하게 의인화, 먹·주홍·황금 팔레트, 부드러운 붓터치와 은은한 음영, 따뜻한 화선지 질감, 고급 게임 캐릭터 아트, 과하지 않은 디테일, 깔끔한 실루엣.
+세상에서 가장 행복한 얼굴로 방긋 웃는 쿼카 아씨, 둥근 볼과 갈색 털, 통통하고 작은 체구, 낯선 남방 이국 복색 위에 조선 저고리를 얹어 입음, 해맑고 붙임성 좋은 분위기.
+전신 3/4 서 있는 포즈, 인물만 그린다(배경·바닥·그림자 없음). 배경은 완전 투명(알파) 또는 단일 순색 마젠타(#FF00FF)로 완전히 균일 — 그라데이션·비네트·그림자 금지. 세로 1024x1536 (2:3).</pre></details></div>
     <dl>
       <dt>배경</dt><dd>바다 건너 먼 섬에서 잔치 소문을 듣고 찾아온 이방(異邦) 손님. 경계라곤 없이 아무에게나 다가가 말을 걸고, 저도 모르게 주워들은 것을 방긋방긋 흘리고 만다 → 곁에 서면 카드 한 장이 절로 새어 나온다(엿보기).</dd>
       <dt>외형</dt><dd>둥근 볼에 늘 웃는 입, 갈색 털. 낯선 남방(南方) 복색 위에 조선 저고리를 얹어 입음. 작은 몸에 통통한 실루엣.</dd>
@@ -251,11 +300,27 @@
 
   <div class="chr">
     <div class="top"><span class="em">🤖</span><span class="nm">안드로이드</span><span class="one">칭호도 족보도 없이 잔치에 끼어든 안드로이드. 사람 흉내를 내보려 하지만 결정적인 순간에 꼭 계측값부터 읊어 분위기를 깬다.</span></div>
+    <div class="art"><img class="face" src="https://zodiac-clue.vercel.app/assets/characters/face/android.webp" alt="얼굴" loading="lazy"/><a href="https://zodiac-clue.vercel.app/assets/characters/android.webp" target="_blank" rel="noopener"><img class="body" src="https://zodiac-clue.vercel.app/assets/characters/android.webp" alt="전신" loading="lazy"/></a><details class="pr"><summary>이미지 생성 프롬프트</summary><pre>조선 사극풍 채색 일러스트, 한국 전통 한복 기반, 동물 특징을 얼굴·귀·소품으로 은은하게 의인화, 먹·주홍·황금 팔레트, 부드러운 붓터치와 은은한 음영, 따뜻한 화선지 질감, 고급 게임 캐릭터 아트, 과하지 않은 디테일, 깔끔한 실루엣.
+매끈한 금속 몸체의 안드로이드 손님, 회색 먹빛 승복(장삼) 위에 조선 갓을 억지로 얹어 씀, 눈 자리에 은은한 푸른 빛, 관절마다 이음매, 목엔 염주, 손엔 목탁, 표정 없이 고개를 살짝 갸웃한 수도승 같은 자세.
+전신 3/4 서 있는 포즈, 인물만 그린다(배경·바닥·그림자 없음). 배경은 완전 투명(알파) 또는 단일 순색 마젠타(#FF00FF)로 완전히 균일 — 그라데이션·비네트·그림자 금지. 세로 1024x1536 (2:3).</pre></details></div>
     <dl>
       <dt>배경</dt><dd>어느 시대에서 왔는지 알 수 없는 쇠붙이 손님. 예법도 족보도 모른 채 끼어들어 사람의 말·표정을 “학습”하려 든다. 무엇이든 수치로 재어 읊는 버릇 → 엿본 카드도 담담하게 “계측 결과”로 흘린다.</dd>
       <dt>외형</dt><dd>매끈한 금속 몸체에 억지로 두른 갓·도포. 눈 자리에 은은한 빛, 관절마다 이음매. 표정은 없지만 고개를 갸웃한다.</dd>
       <dt>성격</dt><dd>무표정·정직(과할 만큼). 거짓을 모르고 분위기를 못 읽는다. 위트는 이 “못 읽음”에서 나온다.</dd>
       <dt>상관관계</dt><dd>예법을 따지는 <b>닭 훈장</b>과 가장 자주 부딪친다(족보 없는 난입자라). <b>쿼카 아씨</b>와는 정반대 극(해맑음 대 무표정)이라 묘하게 짝처럼 붙어 다닌다.</dd>
+    </dl>
+  </div>
+
+
+  <div class="chr">
+    <div class="top"><span class="em">🐱</span><span class="nm">고양이 밤손님</span><span class="one">소리 없이 드나드는 도둑고양이. 날렵하고 새침하다.</span></div>
+    <div class="art"><img class="face" src="https://zodiac-clue.vercel.app/assets/characters/face/cat.webp" alt="얼굴" loading="lazy"/><a href="https://zodiac-clue.vercel.app/assets/characters/cat.webp" target="_blank" rel="noopener"><img class="body" src="https://zodiac-clue.vercel.app/assets/characters/cat.webp" alt="전신" loading="lazy"/></a><details class="pr"><summary>이미지 생성 프롬프트</summary><pre>조선 사극풍 채색 일러스트, 한국 전통 한복 기반, 동물 특징을 얼굴·귀·소품으로 은은하게 의인화, 먹·주홍·황금 팔레트, 부드러운 붓터치와 은은한 음영, 따뜻한 화선지 질감, 고급 게임 캐릭터 아트, 과하지 않은 디테일, 깔끔한 실루엣.
+날렵하고 새침한 고양이, 매끈한 털과 치켜뜬 날카로운 눈, 어두운 남색·먹빛 경장(輕裝) 한복에 복면을 살짝 내린 밤손님 차림, 손엔 방울과 비단 주머니, 소리 없이 움직이는 도둑고양이 같은 나긋한 포즈.
+전신 3/4 서 있는 포즈, 인물만 그린다(배경·바닥·그림자 없음). 배경은 완전 투명(알파) 또는 단일 순색 마젠타(#FF00FF)로 완전히 균일 — 그라데이션·비네트·그림자 금지. 세로 1024x1536 (2:3).</pre></details></div>
+    <dl>
+      <dt>배경</dt><dd>절도극에 어울리는 밤손님. 벽과 처마를 소리 없이 넘나들어 어느 방이든 드나든 흔적이 애매하다. (신규 특별 손님)</dd>
+      <dt>외형</dt><dd>매끈한 털과 치켜뜬 날카로운 눈, 어두운 먹빛 경장 한복에 복면을 살짝 내림. 손엔 방울과 비단 주머니.</dd>
+      <dt>성격</dt><dd>날렵·새침. 나긋하게 움직이며 좀처럼 속을 안 보인다.</dd>
     </dl>
   </div>
 
