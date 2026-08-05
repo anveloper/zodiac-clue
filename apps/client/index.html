@@ -64,10 +64,12 @@
          서서 UI를 안 가림), 모바일=중앙 하단 + 낮은 불투명도(글자 가독성 확보). 게임화면에선 끈다. */
       #lobby-char {
         position: fixed; inset: 0; z-index: 0; pointer-events: none;
-        background-repeat: no-repeat; background-position: right -2vw bottom;
-        background-size: auto 94vh; opacity: 0; transition: opacity .4s ease;
+        background-repeat: no-repeat; background-position: right 3vw bottom;
+        background-size: auto 88vh; opacity: 0; transition: opacity .4s ease;
         filter: drop-shadow(0 8px 24px rgba(0,0,0,0.35));
       }
+      /* 초광폭에선 카드에서 너무 멀어지지 않게 살짝 더 안쪽으로 */
+      @media (min-width: 1500px) { #lobby-char { background-position: right 6vw bottom; background-size: auto 86vh; } }
       #lobby-char.on { opacity: 1; }
       body.no-scroll #lobby-char { display: none; }
       @media (max-width: 760px) {
