@@ -1734,7 +1734,8 @@ const renderTurnStrip = (state: Room["state"]): string => {
       const chip =
         `<span class="${cls}" style="box-shadow:${colorUnderline(p.suspect)}"` +
         ` title="${nm}${tag}">${emoji(p.suspect)}` +
-        `<i class="ti-ini">${nm.charAt(0)}</i>${cvdTag(p.suspect)}</span>`;
+        `<i class="ti-ini">${nm.charAt(0)}</i>` +
+        `<i class="ti-nm">${nm}</i>${cvdTag(p.suspect)}</span>`;
       const arrow =
         i < seq.length - 1
           ? `<span class="ti-arrow">→</span>`
@@ -2029,8 +2030,16 @@ const updateTurnInfo = (state: Room["state"]): void => {
   const status = mine
     ? `<div class="ti-status">${myTurnText(state.stepsLeft ?? 0)}</div>`
     : `<div class="ti-status">${cur ? `⏳ ${emoji(cur.suspect)} ${cur.name} 님의 턴` : ""}</div>`;
+  // 현재 차례 «얼굴» 배지 — 큰 얼굴이 살아나는 자리. PC=순서 스트립 옆, 모바일=아래(CSS).
+  const curFace = cur
+    ? `<div class="ti-face">${faceIc(cur.suspect, 44)}` +
+      `<span class="ti-face-tx"><b>지금 차례</b><span>${cur.name}</span></span></div>`
+    : "";
   // 부제(.ti-sub) = 즉시고발 창 카운트다운(§9.5). 창이 닫혀 있으면 빈 문자열이다.
-  el.innerHTML = status + renderTurnStrip(state) + accuseSubHtml();
+  el.innerHTML =
+    status +
+    `<div class="ti-row">${renderTurnStrip(state)}${curFace}</div>` +
+    accuseSubHtml();
   el.title = "클릭: 전체 턴 순서(원형) 보기";
   el.onclick = openTurnCircle;
   if (mine && turnChanged) showDiceRoll(); // 내 턴 시작 → 중앙 주사위

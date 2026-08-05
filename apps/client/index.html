@@ -397,6 +397,29 @@
       .ti-chip .ti-ini {
         font-size: 12px; font-style: normal; font-weight: 700; color: var(--wds-label-normal);
       }
+      /* 전체 이름 — 기본(모바일)은 숨김(첫 글자만), PC에서 노출. */
+      .ti-chip .ti-nm { display: none; font-style: normal; }
+      /* 현재 차례 얼굴 배지 + 행 배치 (기본=세로: 모바일은 스트립 아래에 배지). */
+      .ti-row { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+      .ti-face { display: inline-flex; align-items: center; gap: 8px;
+        padding: 3px 12px 3px 5px; border-radius: 999px; background: rgba(0,0,0,0.06); }
+      .ti-face-tx { display: flex; flex-direction: column; line-height: 1.12; text-align: left; }
+      .ti-face-tx b { font-size: 10px; color: var(--wds-label-alternative); font-weight: 600; }
+      .ti-face-tx > span { font-size: 13px; font-weight: 700; color: var(--wds-label-strong); }
+      /* PC: 순서 스트립에 여백 더 + 전체 이름 노출 + 배지를 스트립 옆으로(가로). */
+      @media (min-width: 761px) {
+        .hud-turn { max-width: min(1120px, 96vw); padding: 8px 16px; white-space: normal; }
+        .ti-order { gap: 8px; margin-top: 5px; flex-wrap: wrap; }
+        .ti-chip { align-items: center; gap: 4px; padding: 4px 10px; font-size: 15px; border-radius: 8px; }
+        .ti-chip .ti-ini { display: none; }
+        .ti-chip .ti-nm {
+          display: inline; font-size: 13px; font-weight: 700; color: var(--wds-label-normal);
+        }
+        .ti-chip.cur { transform: scale(1.08); }
+        .ti-chip.cur .ti-nm { color: var(--wds-label-strong); }
+        .ti-arrow { font-size: 13px; }
+        .ti-row { flex-direction: row; gap: 16px; flex-wrap: wrap; justify-content: center; }
+      }
       .ti-chip.cur {
         transform: scale(1.2); opacity: 1;
         filter: drop-shadow(0 0 3px var(--wds-accent));
