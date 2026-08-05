@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>제출물 ④ AI 활용 기술 문서 (요약) — zodiac-clue</title>
+<style>
+  :root { --ink:#1a1712; --dim:#5b5346; --line:#d8cdb8; --card:#faf7f0; --accent:#b4622b; --gold:#9a7b2e; }
+  * { box-sizing:border-box; }
+  html,body { margin:0; background:#eae4d8; color:var(--ink);
+    font-family:"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif; line-height:1.62; }
+  .page { max-width:820px; margin:24px auto; background:#fff; padding:44px 52px; box-shadow:0 4px 24px rgba(0,0,0,.12); }
+  h1 { font-size:25px; margin:0 0 2px; letter-spacing:-.4px; }
+  .lead { font-size:13.5px; color:var(--dim); margin:2px 0 6px; }
+  .tag { display:inline-block; background:var(--card); border:1px solid var(--line); border-radius:999px; padding:2px 10px; font-size:12px; color:var(--dim); }
+  h2 { font-size:17px; margin:24px 0 8px; padding-bottom:5px; border-bottom:2px solid var(--line); }
+  h3 { font-size:14.5px; margin:15px 0 4px; color:var(--accent); }
+  p { margin:6px 0; } ul { margin:6px 0; padding-left:20px; } li { margin:4px 0; }
+  b.k { color:var(--accent); }
+  table { width:100%; border-collapse:collapse; margin:8px 0; font-size:12.8px; }
+  th,td { border:1px solid var(--line); padding:6px 9px; text-align:left; vertical-align:top; }
+  th { background:var(--card); font-weight:700; }
+  code { background:#f0ece2; border-radius:4px; padding:1px 5px; font-size:12px; }
+  .honest { background:#fff6ec; border:1px solid #e6c3a0; border-left:4px solid var(--accent); border-radius:8px; padding:10px 14px; font-size:13px; color:#7a5a30; margin:12px 0; }
+  .foot { margin-top:26px; padding-top:10px; border-top:1px solid var(--line); color:var(--dim); font-size:12px; }
+  @media print {
+    html,body { background:#fff; } .page { box-shadow:none; margin:0; max-width:none; padding:0 6mm; }
+    h2 { break-after:avoid; } table,.honest { break-inside:avoid; }
+    @page { size:A4; margin:15mm 14mm; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>AI 활용 기술 문서 <span style="font-size:15px;color:var(--dim)">(심사 요약본)</span></h1>
+  <p class="lead">zodiac-clue · github.com/anveloper/zodiac-clue · zodiac-clue.vercel.app</p>
+  <p><span class="tag">제출물 ④</span> <span class="tag">전체 문서는 저장소 <code>docs/submission/20260720-ai-tech-doc.html</code></span></p>
+
+  <div class="honest">
+    이 요약본은 <b>심사 판단에 필요한 만큼</b>만 담았습니다. 파일 맵·개정 이력·내부 프로토콜은 전체 문서에 있습니다.
+    <b>못 한 것은 못 했다고 적었고</b>, 검증 표본의 한계도 그대로 표시했습니다.
+  </div>
+
+  <h2>0. 핵심 원칙 — AI를 두 층으로 나눠 쓴다</h2>
+  <table>
+    <tr><th>층</th><th>담당</th><th>AI 종류</th><th>없으면</th></tr>
+    <tr><td><b>진실 계층</b></td><td>정답 봉투·카드 분배·반증·고발 판정</td><td>없음(순수 규칙)</td><td>게임 성립 안 함</td></tr>
+    <tr><td><b>에이전트 계층</b></td><td>빈 좌석 NPC의 추리·의사결정</td><td>결정론 추론 엔진</td><td><b>게임 성립 안 함</b>(혼자 접속하면 상대 0명)</td></tr>
+    <tr><td><b>표현 계층</b></td><td>NPC 대사·연출</td><td>LLM(Gemini)</td><td>게임은 굴러가나 캐릭터가 사라짐</td></tr>
+  </table>
+  <p><b>AI 없으면 게임이 성립 안 되는 지점 = 에이전트 계층.</b> 심사자는 링크를 눌러 혼자 플레이하는데, 클루는 상대가 없으면 반증 자체가 안 된다. 봇의 좌석 충원은 연출이 아니라 게임 성립 조건이다.</p>
+
+  <h3>왜 판정에서 LLM을 배제했나 — 설계 판단 4근거</h3>
+  <ul>
+    <li><b class="k">환각이 곧 규칙 위반.</b> 반증은 전칭 판정이라 LLM이 없는 카드로 반증하면 정답이 도달 불가능 — 게임이 "틀리는" 게 아니라 <b>끝나지 않는다</b>.</li>
+    <li><b class="k">재현성 없으면 검증도 없다.</b> 진실값을 규칙 함수로 고정했기에 판을 오프라인에서 1만 번 재생·시뮬할 수 있다.</li>
+    <li><b class="k">치트 불가는 "안 준다"로만 증명.</b> <code>solution</code>은 <code>private</code>이고 스키마에 없어 <b>동기화 자체가 안 된다</b>. 프롬프트에도 넣지 않는다 — 주지 않은 정보는 인젝션으로도 못 샌다.</li>
+    <li><b class="k">무료티어에서 판정은 못 산다.</b> 판정을 LLM에 걸면 호출이 행동에 비례해 폭증, 429 한 번에 게임이 멈춘다. 표현에만 걸면 429는 말투가 단조로워질 뿐.</li>
+  </ul>
+  <p style="color:var(--dim);font-size:13px">→ LLM을 표현에 가둔 것은 능력 부족이 아니라 <b>검증 가능성과 가용성을 사기 위한 설계 비용</b>이다. 그래서 이 문서의 본론은 "AI를 어떻게 넣었나"가 아니라 <b>"AI를 어떻게 지휘·검수했나"</b>다.</p>
+
+  <h2>1. 디렉팅 — LLM은 결정에 참여하지 않는다</h2>
+  <p>NPC 대사는 <code>narrate()</code> 하나가 만든다. 입력 필드는 <b>전부 규칙엔진이 이미 확정한 값</b>(화자 이름·행동·제안 3장·페르소나·말투)이다. LLM은 그 결정을 사람이 읽을 문장으로 바꿀 뿐이다.</p>
+  <h3>절대 넘기지 않는 값</h3>
+  <table>
+    <tr><th>값</th><th>LLM 전달</th></tr>
+    <tr><td>정답 봉투 <code>solution</code></td><td><b>없음 (전 경로)</b> — 입력 타입에 필드 자체가 없다</td></tr>
+    <tr><td>임의 플레이어 손패 / 봇 후보집합 / 대사 히스토리</td><td><b>없음</b> — 히스토리 없음 = 인젝션 표면 0</td></tr>
+  </table>
+  <p><b>단 하나의 예외</b> — 계략(귓속말)의 <code>hint</code>: 규칙엔진이 <b>이미 그 사용자에게 공개하기로 결정한</b> 카드 라벨만 넘기며, 그 출력은 <b>동일 수신자에게만</b> 전송된다. LLM이 카드를 고르지 않는다.</p>
+
+  <h2>2. 환각 검증 — 사람 눈이 아니라 기계로 판정</h2>
+  <p>"LLM이 진실값을 바꾸지 않았는가"를 <code>pnpm eval:narrator</code>(오프라인·Gemini 호출 0)가 기계로 판정한다. 커밋마다 통합 게이트 <code>pnpm verify</code>에서 돈다.</p>
+  <table>
+    <tr><th>검사</th><th>내용</th></tr>
+    <tr><td>C1~C3</td><td>한 줄 · 길이 상한 · 마크업/머리말 금지</td></tr>
+    <tr><td><b>C4 (blocking)</b></td><td>진실값 치환 없음 — 제안 카드를 바꿔 말하면 FAIL(로그와 대사가 모순되면 오추리 유발)</td></tr>
+    <tr><td><b>C5 (blocking)</b></td><td>미제공 카드·금지어(정답/봉투/손패…) 누출 없음</td></tr>
+    <tr><td><b>C6 (blocking)</b></td><td>계략: <code>hint</code> 외 다른 손패 라벨 등장 시 즉시 FAIL</td></tr>
+  </table>
+  <p><b>실측(2026-07-28, seed 고정):</b> 스위트 A 36케이스·문안 130 + 폴백 전수 <b>112,752문장</b> — C1~C6 <b>위반 0</b>. 판정기 자기검사(알려진 위반 11건이 실제 FAIL로 잡히는지)도 함께 통과.</p>
+  <div class="honest">
+    <b>정직한 한계.</b> 위 112,752 전수 PASS는 <b>전부 폴백(결정론 템플릿) 경로</b>다 — 구조상 환각이 불가능한 생성기를 검사한 것이라 거의 항진명제에 가깝다. <b>정작 위험한 실제 Gemini 출력에 대한 C4·C5 표본은 아직 0</b>이다(<code>--live</code> 36콜을 돌리면 처음 생긴다). 경로·지연 분포(C7)도 무료 쿼터를 소모하므로 미판정으로 남겼다 — 추정치로 채우지 않았다.
+  </div>
+
+  <h2>3. 관측 가능성 — AI가 돌았다는 증거를 화면에</h2>
+  <p><b>문제:</b> 대사가 어디서 왔는지가 화면에 없으면, 심사자가 플레이해도 AI 흔적이 0이고 이 문서의 주장이 입증 불가다(실제로 2026-07-27 라이브에서 대사 5/5가 폴백이었는데 화면상 신호가 없었다).</p>
+  <p><b>구현(2026-07-28):</b></p>
+  <ul>
+    <li><code>narrate()</code> 반환에 <b>경로·지연·모델·폴백사유(6종)</b> 동봉. 대사 줄마다 배지(<code>✨</code>LLM · <code>♻</code>캐시 · <code>⚙</code>폴백) + 지연(<code>✨ 0.9s</code>).</li>
+    <li><b>AI 카운터 칩 기본 노출</b>(<code>✨LLM · ♻캐시 · ⚙폴백</code>) — 쿼리 파라미터 게이팅 없이. 심사자는 파라미터 없는 URL로 들어온다.</li>
+    <li>서버 <code>GET /health</code> → AI 상태·모델·호출/폴백/쿼터오류 수. <b>전부 폴백이어도 숨기지 않고 사유와 함께 표시</b> — 값을 감추는 칩은 계측이 없는 것과 같다.</li>
+    <li>운영 메타는 <b>게임 상태(스키마)에 넣지 않았다</b> — "AI가 판정에 관여한다"는 오독 방지.</li>
+  </ul>
+  <p><b>실측 1판:</b> 23제안·24발화 = <code>LLM 19(평균 923ms) · 캐시 0 · 폴백 4</code>. 이 계측이 우리 문서의 주장 2건을 반증하기도 했다("왕복 ~1.2초"→실측 926ms, "캐시가 완충"→히트 0/24).</p>
+
+  <h2>4. AI 도구 사용내역 (심사 요건)</h2>
+  <table>
+    <tr><th>도구</th><th>용도</th><th>사람이 검토·결정한 지점</th></tr>
+    <tr><td><b>Claude Code</b>(에이전트 CLI)</td><td>코드·문서 전반, 서브에이전트 병렬 검수, 회귀 게이트, 규칙 시뮬레이터, 배포 CI</td><td>플랜 승인, 검수 결과 채택/기각, 기준선·예산 값과 사유</td></tr>
+    <tr><td><b>Google Gemini API</b></td><td><b>게임 내 유일한 LLM 사용처</b> — NPC 대사(<code>ai/narrator.ts</code>)</td><td>프롬프트 계약, 금지 목록, 파라미터</td></tr>
+    <tr><td>이미지 생성 도구</td><td>캐릭터·방 아트</td><td>스타일 프리셋·해상도 규칙</td></tr>
+  </table>
+
+  <h3>사람이 AI에 위임하지 않은 결정권</h3>
+  <p style="color:var(--dim);font-size:13px">AI가 코드를 썼다는 사실보다, <b>무엇을 AI에게 맡기지 않았는지</b>가 이 프로젝트의 설계다.</p>
+  <ul>
+    <li>게임 주제·컨셉·스코프 확정(회의록) · <b>진실값 경계 규약 자체</b>(AI가 자기 권한을 정하지 않는다).</li>
+    <li>D-14 신규 기능(자유 심문) <b>기각</b> · 제출 형태(개인/팀) 결정.</li>
+    <li>API 키 발급·과금(<code>.env</code>는 gitignore, <b>에이전트는 키를 본 적 없다</b>) · <b>main 병합·프로덕션 배포 승인</b>.</li>
+    <li>실제 플레이 영상 촬영(AI 합성 금지 → 사람이 직접 녹화) · 공개 문서 범위.</li>
+  </ul>
+
+  <h3>다인 라이브 디렉팅 — 디스코드 · 브랜치별 워크트리 · 브랜치별 프리뷰 URL</h3>
+  <p>커밋 계정이 1개인 것은 git 아티팩트다. 실제 디렉팅은 <b>여러 팀원이 각자 디스코드 채널로 에이전트에 실시간 지시</b>하는 다인 루프다.</p>
+  <ul>
+    <li><b>다인 디스코드 루프</b>: 팀원이 요청(스펙·에셋 첨부) → 에이전트가 구현·검증·배포 → 진행도·캡처·URL을 디스코드로 회신 → 사람이 화면 보고 다음 지시.</li>
+    <li><b>브랜치별 워크트리 격리</b>: 팀원마다 전용 브랜치 + 독립 git worktree. 에이전트는 지시받은 브랜치 밖으로 나가지 않는다.</li>
+    <li><b>브랜치별 프리뷰 URL</b>: 브랜치 서브도메인 별칭으로 프로덕션과 분리된 화면에서 즉시 확인. 오너 승인 뒤에야 main→prod.</li>
+    <li><b>병합·배포 승인은 전부 사람(오너) 결정</b> — 에이전트는 스스로 병합·배포하지 않는다.</li>
+  </ul>
+
+  <div class="foot">zodiac-clue · 제출물 ④ AI 활용 기술 문서(요약본) · 전체: <code>docs/submission/20260720-ai-tech-doc.html</code></div>
+</div>
+</body>
+</html>
