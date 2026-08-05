@@ -49,11 +49,18 @@ const FACE_IDS = new Set<string>([...ZODIAC, "quokka", "cat", "android"]);
  * `/assets/characters/face/<id>.webp`(원형)을 쓴다. 얼굴이 없는 값(장물·장소)이면 이모지 폴백.
  * id는 검증된 키(FACE_IDS)일 때만 URL에 넣으므로 주입 위험 없음.
  */
-const faceIc = (id: string, px: number): string =>
-  FACE_IDS.has(id)
-    ? `<span class="face-ic" style="width:${px}px;height:${px}px;` +
-      `background-image:url('/assets/characters/face/${id}.webp')"></span>`
-    : `<span style="font-size:${Math.round(px * 0.85)}px">${emoji(id)}</span>`;
+const faceIc = (id: string, px: number): string => {
+  if (!FACE_IDS.has(id))
+    return `<span style="font-size:${Math.round(px * 0.85)}px">${emoji(id)}</span>`;
+  // 얼굴 톤이 다 비슷하므로 캐릭터 고유색(zodiacColor)을 배경+테두리 링으로 둘러 구분한다.
+  const col = zodiacColorHex(id);
+  const ring = Math.max(2, Math.round(px * 0.09));
+  return (
+    `<span class="face-ic" style="width:${px}px;height:${px}px;` +
+    `background-color:${col};background-image:url('/assets/characters/face/${id}.webp');` +
+    `box-shadow:0 0 0 ${ring}px ${col},0 0 0 ${ring + 1}px rgba(0,0,0,0.18)"></span>`
+  );
+};
 
 // ── 진입 파라미터 스냅샷 ─────────────────────────────
 // `wireRoom()`이 주소를 `/room/ID`로 정리하면서 **쿼리스트링을 통째로 버린다.**
