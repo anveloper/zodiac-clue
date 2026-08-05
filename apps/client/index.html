@@ -60,6 +60,60 @@
       #scene-bg::after { content: ""; position: absolute; inset: 0;
         background: linear-gradient(180deg, rgba(20,14,6,0.28), rgba(20,14,6,0.12) 40%, rgba(20,14,6,0.42)); }
       body.no-scroll #scene-bg { display: none; }
+      /* 대기실: 선택/호버한 캐릭터 일러스트를 카드 뒤에 크게 렌더. PC=우측 하단 정렬(카드 옆으로 비껴
+         서서 UI를 안 가림), 모바일=중앙 하단 + 낮은 불투명도(글자 가독성 확보). 게임화면에선 끈다. */
+      #lobby-char {
+        position: fixed; inset: 0; z-index: 0; pointer-events: none;
+        background-repeat: no-repeat; background-position: right -2vw bottom;
+        background-size: auto 94vh; opacity: 0; transition: opacity .4s ease;
+        filter: drop-shadow(0 8px 24px rgba(0,0,0,0.35));
+      }
+      #lobby-char.on { opacity: 1; }
+      body.no-scroll #lobby-char { display: none; }
+      @media (max-width: 760px) {
+        #lobby-char { background-position: center bottom; background-size: auto 66vh; }
+        #lobby-char.on { opacity: 0.3; }
+      }
+      @media (prefers-reduced-motion: reduce) { #lobby-char { transition: none; } }
+      /* 캐릭터 도감(손님 소개) — 랜딩 진입 버튼 + 전체 모달 */
+      .codex-open {
+        width: 100%; margin-bottom: 8px; font-size: 13px;
+        background: var(--wds-bg-normal); color: var(--wds-label-normal);
+        border: 1px solid var(--wds-line-normal);
+      }
+      .codex-open:hover { background: var(--wds-bg-alternative); color: var(--wds-label-strong); }
+      .codex-overlay {
+        position: fixed; inset: 0; z-index: 50; padding: 16px;
+        background: rgba(20,14,6,0.72); backdrop-filter: blur(3px);
+        display: flex; align-items: center; justify-content: center;
+      }
+      .codex-panel {
+        width: min(920px, 96vw); max-height: 92vh; overflow-y: auto;
+        background: var(--wds-bg-elevated); border: 1px solid var(--wds-line-normal);
+        border-radius: 16px; padding: 16px 18px; box-shadow: 0 12px 48px rgba(0,0,0,0.5);
+      }
+      .codex-head { display: flex; align-items: center; justify-content: space-between; }
+      .codex-head h2 { margin: 0; font-size: 18px; color: var(--wds-label-strong); }
+      .codex-x {
+        width: 34px; height: 34px; border-radius: 8px; padding: 0;
+        background: var(--wds-bg-normal); border: 1px solid var(--wds-line-normal);
+        color: var(--wds-label-normal);
+      }
+      .codex-sub { font-size: 12px; color: var(--wds-label-alternative); margin: 6px 0 12px; }
+      .codex-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+      .cx-card {
+        background: var(--wds-bg-normal); border: 1px solid var(--wds-line-normal);
+        border-radius: 12px; overflow: hidden; display: flex; flex-direction: column;
+      }
+      .cx-art { height: 200px; background: center top / contain no-repeat; background-color: rgba(0,0,0,0.05); }
+      .cx-body { padding: 8px 10px 10px; }
+      .cx-name { font-weight: 700; color: var(--wds-label-strong); font-size: 14px; }
+      .cx-job { font-size: 11px; color: var(--wds-primary-normal); margin: 2px 0 4px; }
+      .cx-desc { font-size: 12px; color: var(--wds-label-normal); line-height: 1.4; }
+      @media (max-width: 480px) {
+        .codex-grid { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); }
+        .cx-art { height: 158px; }
+      }
       #leaf-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
       #landing, #lobby { position: relative; z-index: 1; } /* UI를 배경·낙엽 위로 */
       body.no-scroll #leaf-bg { display: none; } /* 게임화면에선 끈다(정보 밀도) */
@@ -1063,6 +1117,7 @@
     <!-- 자연 배경(다희 스펙) — 대기실·랜딩 뒤 낙엽. 이미지·라이브러리 없이 인라인 SVG + CSS만.
          게임화면(body.no-scroll)·모션감소에선 끈다. 순수 장식(pointer-events:none). -->
     <div id="scene-bg" aria-hidden="true"></div>
+    <div id="lobby-char" aria-hidden="true"></div>
     <div id="leaf-bg" aria-hidden="true">
       <span class="leaf" style="left:4%;animation-delay:-1s"></span>
       <span class="leaf" style="left:11%;animation-delay:-7s"></span>
@@ -1080,6 +1135,17 @@
       <span class="leaf" style="left:94%;animation-delay:-3.5s"></span>
       <span class="leaf" style="left:22%;animation-delay:-6.5s"></span>
       <span class="leaf" style="left:78%;animation-delay:-9.5s"></span>
+    </div>
+    <!-- 캐릭터 도감(손님 소개) — 방 목록(랜딩)에서 진입 -->
+    <div id="codex" class="codex-overlay hidden" role="dialog" aria-label="잔치 손님 소개">
+      <div class="codex-panel">
+        <div class="codex-head">
+          <h2>🏮 잔치 손님 소개</h2>
+          <button type="button" id="codexClose" class="codex-x" aria-label="닫기">✕</button>
+        </div>
+        <p class="codex-sub">호랑이 대감의 생신 잔치에 모인 손님들. 이 중 누군가 잔치 선물을 훔쳤다.</p>
+        <div id="codexGrid" class="codex-grid"></div>
+      </div>
     </div>
     <!-- ① 랜딩 -->
     <section id="landing" class="center">
@@ -1107,6 +1173,7 @@
           </div>
         </div>
         <p class="hint-sm">캐릭터는 대기실에서 골라요. 공개방은 목록에 보여집니다.</p>
+        <button type="button" id="codexBtn" class="codex-open">🎭 어떤 손님들이 오나요? · 캐릭터 소개</button>
         <button id="createBtn" class="full">방 만들기</button>
         <div class="divider">— 또는 초대 코드로 —</div>
         <div class="join-row">

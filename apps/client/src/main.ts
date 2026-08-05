@@ -84,6 +84,8 @@ const SCREENS = ["landing", "lobby", "gameScreen"] as const;
 type ScreenId = (typeof SCREENS)[number];
 const show = (which: ScreenId): void => {
   for (const id of SCREENS) $(id).classList.toggle("hidden", id !== which);
+  // 대기실을 벗어나면 뒤 캐릭터 일러스트를 끈다(랜딩·게임에선 안 보이게).
+  if (which !== "lobby") $("lobby-char").classList.remove("on");
   // 게임 화면에서는 문서 스크롤을 잠근다. `overscroll-behavior`는 스크롤 **연쇄**만 막을 뿐,
   // 문서가 뷰포트보다 조금이라도 길면 화면이 통째로 밀려 올라간다
   // (실측: 폰에서 보드가 위로 사라지고 아래에 빈 검은 띠가 남았다).
@@ -2048,6 +2050,10 @@ const showCharInfo = (z: string): void => {
     : "";
   $("lobbyPersona").innerHTML =
     `${emoji(z)} <b>${label(z)}</b>${jobHtml}<br>${persona(z)}`;
+  // 선택/호버한 캐릭터 일러스트를 대기실 카드 뒤에 렌더(반응형은 CSS가 담당).
+  const lc = $("lobby-char");
+  lc.style.backgroundImage = `url("/assets/characters/${z}.webp")`;
+  lc.classList.add("on");
 };
 
 // 대기실 캐릭터 그리드 — 선택됨/사용중(다른 사람) 실시간 반영, 클릭 시 변경.
@@ -2872,6 +2878,38 @@ const init = async (): Promise<void> => {
   ($("refreshRooms") as HTMLButtonElement).onclick = () =>
     void loadPublicRooms();
   void loadPublicRooms();
+
+  // ── 캐릭터 도감(손님 소개) — 방 목록(랜딩)에서 진입 ──────────────
+  // 십이지 12 + 특별 손님(쿼카·고양이·안드로이드). 카드 = 일러스트 + 이름 + 직업풀이 + 성격.
+  const CODEX_IDS: readonly string[] = [...ZODIAC, "quokka", "cat", "android"];
+  // cat은 게임 데이터(cards.ts)에 없는 신규 손님 → 도감 표기만 로컬로 보강.
+  const CODEX_EXTRA: Record<string, { name: string; desc: string }> = {
+    cat: { name: "고양이 밤손님", desc: "소리 없이 드나드는 도둑고양이. 날렵하고 새침하다." },
+  };
+  const renderCodex = (): void => {
+    $("codexGrid").innerHTML = CODEX_IDS.map((id) => {
+      const ex = CODEX_EXTRA[id];
+      const name = ex?.name ?? label(id);
+      const j = job(id);
+      const jobLine = j ? `<div class="cx-job">${j.term} · ${j.gloss}</div>` : "";
+      const desc = ex?.desc ?? persona(id) ?? "";
+      return (
+        `<div class="cx-card">` +
+        `<div class="cx-art" style="background-image:url('/assets/characters/${id}.webp')"></div>` +
+        `<div class="cx-body"><div class="cx-name">${emoji(id)} ${name}</div>` +
+        `${jobLine}<div class="cx-desc">${desc}</div></div></div>`
+      );
+    }).join("");
+  };
+  const closeCodex = (): void => $("codex").classList.add("hidden");
+  ($("codexBtn") as HTMLButtonElement).onclick = () => {
+    renderCodex();
+    $("codex").classList.remove("hidden");
+  };
+  ($("codexClose") as HTMLButtonElement).onclick = closeCodex;
+  $("codex").addEventListener("click", (e) => {
+    if (e.target === $("codex")) closeCodex(); // 바깥 클릭으로 닫기
+  });
   // 랜딩이 보이는 동안 주기적으로 공개방 목록 갱신.
   window.setInterval(() => {
     if (!$("landing").classList.contains("hidden")) void loadPublicRooms();
