@@ -2703,6 +2703,15 @@ const enterGame = async (): Promise<void> => {
   // 우측 컬럼: 좌측 모서리 드래그=너비, 섹션 사이 드래그=위 섹션 높이
   const rightCol = $("rightPanel");
 
+  // 우측 컬럼의 유효 폭을 `--rp-w`로 노출한다. 상단 순서 스트립(PC)이 이 값을 읽어
+  // «보드 영역» 중앙에 자리 잡고(패널을 비켜 감) 폭을 상한한다. 접힌 상태(rp-off)면 0.
+  const syncRpW = (): void => {
+    const w = rightCol.classList.contains("rp-off")
+      ? 0
+      : rightCol.getBoundingClientRect().width;
+    document.documentElement.style.setProperty("--rp-w", `${Math.round(w)}px`);
+  };
+
   const makeDrag = (
     handle: HTMLElement,
     onMove: (e: PointerEvent) => void,
@@ -2747,6 +2756,7 @@ const enterGame = async (): Promise<void> => {
     const right = rightCol.getBoundingClientRect().right;
     const w = Math.max(220, Math.min(680, right - e.clientX));
     rightCol.style.width = `${w}px`;
+    syncRpW(); // 순서 스트립이 폭 변화를 따라오도록
   });
 
   // 우측 패널 마우스 드래그 스크롤 — 데스크톱에서 «드래그로 이전 내역 확인»(요청 ①).
@@ -2813,6 +2823,7 @@ const enterGame = async (): Promise<void> => {
     // 열려 있을 때는 버튼을 컬럼 모서리로 옮긴다(CSS `.rp-on`).
     // 화면 한가운데 오른쪽에 떠 있으면 무엇을 닫는 버튼인지 읽히지 않는다.
     rpToggle.classList.toggle("rp-on", open);
+    syncRpW(); // 접기/펴기에 따라 순서 스트립 중심·폭 갱신
   };
   const narrow = window.matchMedia?.("(max-width: 680px)");
   const applyNarrow = (): void => {

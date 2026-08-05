@@ -423,18 +423,25 @@
       .hud-turnface .tf-tx { display: flex; flex-direction: column; line-height: 1.12; }
       .hud-turnface .tf-tx b { font-size: 10px; color: var(--wds-label-alternative); font-weight: 600; }
       .hud-turnface .tf-tx > span { font-size: 13px; font-weight: 700; color: var(--wds-label-strong); }
-      /* PC: 순서 스트립에 여백 더 + 전체 이름 노출. */
+      /* PC: 전체 이름 노출 + **컴팩트**. 예전(패딩 8/16·칩 4/10·15px)은 폭이 커
+         상단 명패와 우측 패널을 파고들었다. 크기를 줄이고, 중심을 «보드 영역»
+         (= 뷰포트 − 우측 컬럼 폭 `--rp-w` − 여백)으로 옮겨 패널을 비켜 간다.
+         `--rp-w`는 JS가 폭 드래그·패널 토글마다 갱신한다(기본 260px). */
       @media (min-width: 761px) {
-        .hud-turn { max-width: min(1120px, 96vw); padding: 8px 16px; white-space: normal; }
-        .ti-order { gap: 8px; margin-top: 5px; flex-wrap: wrap; }
-        .ti-chip { align-items: center; gap: 4px; padding: 4px 10px; font-size: 15px; border-radius: 8px; }
+        .hud-turn {
+          left: calc(16px + (100vw - 32px - var(--rp-w, 260px)) / 2 + var(--sa-l, 0px));
+          max-width: min(760px, calc(100vw - 64px - var(--rp-w, 260px)));
+          padding: 5px 12px; white-space: normal;
+        }
+        .ti-order { gap: 5px; margin-top: 4px; flex-wrap: wrap; }
+        .ti-chip { align-items: center; gap: 3px; padding: 2px 7px; font-size: 13px; border-radius: 6px; }
         .ti-chip .ti-ini { display: none; }
         .ti-chip .ti-nm {
-          display: inline; font-size: 13px; font-weight: 700; color: var(--wds-label-normal);
+          display: inline; font-size: 12px; font-weight: 700; color: var(--wds-label-normal);
         }
-        .ti-chip.cur { transform: scale(1.08); }
+        .ti-chip.cur { transform: scale(1.06); }
         .ti-chip.cur .ti-nm { color: var(--wds-label-strong); }
-        .ti-arrow { font-size: 13px; }
+        .ti-arrow { font-size: 11px; }
       }
       .ti-chip.cur {
         transform: scale(1.2); opacity: 1;
