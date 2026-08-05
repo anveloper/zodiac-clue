@@ -2880,26 +2880,49 @@ const init = async (): Promise<void> => {
   void loadPublicRooms();
 
   // ── 캐릭터 도감(손님 소개) — 방 목록(랜딩)에서 진입 ──────────────
-  // 십이지 12 + 특별 손님(쿼카·고양이·안드로이드). 카드 = 일러스트 + 이름 + 직업풀이 + 성격.
+  // 풀스크린: 배경 중앙에 캐릭터 크게 + 측면 설명 + 하단 캐러셀로 선택(한눈에 다 볼 필요 없음).
+  // 십이지 12 + 특별 손님(쿼카·고양이·안드로이드).
   const CODEX_IDS: readonly string[] = [...ZODIAC, "quokka", "cat", "android"];
   // cat은 게임 데이터(cards.ts)에 없는 신규 손님 → 도감 표기만 로컬로 보강.
   const CODEX_EXTRA: Record<string, { name: string; desc: string }> = {
     cat: { name: "고양이 밤손님", desc: "소리 없이 드나드는 도둑고양이. 날렵하고 새침하다." },
   };
+  const isCameo = (id: string): boolean =>
+    id === "quokka" || id === "cat" || id === "android";
+  const selectCodex = (id: string): void => {
+    $("cxArt").style.backgroundImage = `url("/assets/characters/${id}.webp")`;
+    const ex = CODEX_EXTRA[id];
+    const name = ex?.name ?? label(id);
+    const j = job(id);
+    const desc = ex?.desc ?? persona(id) ?? "";
+    $("cxInfo").innerHTML =
+      `<div class="n">${emoji(id)} ${name}</div>` +
+      (j ? `<div class="j">${j.term} · ${j.gloss}</div>` : "") +
+      `<div class="d">${desc}</div>` +
+      `<span class="tag">${isCameo(id) ? "특별 손님" : "십이지 손님"}</span>`;
+    for (const t of Array.from($("cxRail").children)) {
+      const el = t as HTMLElement;
+      el.classList.toggle("active", el.dataset.id === id);
+    }
+    // 선택한 썸네일이 가로 캐러셀에서 보이도록 스크롤.
+    ($("cxRail").querySelector(".cx-thumb.active") as HTMLElement | null)?.scrollIntoView({
+      block: "nearest",
+      inline: "center",
+    });
+  };
   const renderCodex = (): void => {
-    $("codexGrid").innerHTML = CODEX_IDS.map((id) => {
-      const ex = CODEX_EXTRA[id];
-      const name = ex?.name ?? label(id);
-      const j = job(id);
-      const jobLine = j ? `<div class="cx-job">${j.term} · ${j.gloss}</div>` : "";
-      const desc = ex?.desc ?? persona(id) ?? "";
+    $("cxRail").innerHTML = CODEX_IDS.map((id) => {
+      const nm = (CODEX_EXTRA[id]?.name ?? label(id)).split(" ")[0];
       return (
-        `<div class="cx-card">` +
-        `<div class="cx-art" style="background-image:url('/assets/characters/${id}.webp')"></div>` +
-        `<div class="cx-body"><div class="cx-name">${emoji(id)} ${name}</div>` +
-        `${jobLine}<div class="cx-desc">${desc}</div></div></div>`
+        `<div class="cx-thumb" data-id="${id}">` +
+        `<span class="te">${emoji(id) || "🎭"}</span><span class="tn">${nm}</span></div>`
       );
     }).join("");
+    for (const t of Array.from($("cxRail").children)) {
+      const el = t as HTMLElement;
+      el.onclick = () => selectCodex(el.dataset.id ?? "tiger");
+    }
+    selectCodex("tiger"); // 기본 = 호랑이 대감(잔치 주최자)
   };
   const closeCodex = (): void => $("codex").classList.add("hidden");
   ($("codexBtn") as HTMLButtonElement).onclick = () => {
@@ -2907,8 +2930,8 @@ const init = async (): Promise<void> => {
     $("codex").classList.remove("hidden");
   };
   ($("codexClose") as HTMLButtonElement).onclick = closeCodex;
-  $("codex").addEventListener("click", (e) => {
-    if (e.target === $("codex")) closeCodex(); // 바깥 클릭으로 닫기
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !$("codex").classList.contains("hidden")) closeCodex();
   });
   // 랜딩이 보이는 동안 주기적으로 공개방 목록 갱신.
   window.setInterval(() => {

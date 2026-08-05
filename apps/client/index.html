@@ -85,36 +85,55 @@
       }
       .codex-open:hover { background: var(--wds-bg-alternative); color: var(--wds-label-strong); }
       .codex-overlay {
-        position: fixed; inset: 0; z-index: 50; padding: 16px;
-        background: rgba(20,14,6,0.72); backdrop-filter: blur(3px);
-        display: flex; align-items: center; justify-content: center;
+        position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column;
+        background: #2a2016 url("/assets/bg/forest-manor.webp") center/cover no-repeat;
       }
-      .codex-panel {
-        width: min(920px, 96vw); max-height: 92vh; overflow-y: auto;
-        background: var(--wds-bg-elevated); border: 1px solid var(--wds-line-normal);
-        border-radius: 16px; padding: 16px 18px; box-shadow: 0 12px 48px rgba(0,0,0,0.5);
-      }
-      .codex-head { display: flex; align-items: center; justify-content: space-between; }
-      .codex-head h2 { margin: 0; font-size: 18px; color: var(--wds-label-strong); }
+      .codex-overlay::before { content: ""; position: absolute; inset: 0; background: rgba(20,14,6,0.5); }
       .codex-x {
-        width: 34px; height: 34px; border-radius: 8px; padding: 0;
-        background: var(--wds-bg-normal); border: 1px solid var(--wds-line-normal);
-        color: var(--wds-label-normal);
+        position: absolute; top: 14px; right: 14px; z-index: 4; width: 40px; height: 40px;
+        border-radius: 10px; padding: 0; font-size: 16px;
+        background: rgba(30,22,12,0.7); border: 1px solid rgba(255,255,255,0.25); color: #f4ead7;
       }
-      .codex-sub { font-size: 12px; color: var(--wds-label-alternative); margin: 6px 0 12px; }
-      .codex-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
-      .cx-card {
-        background: var(--wds-bg-normal); border: 1px solid var(--wds-line-normal);
-        border-radius: 12px; overflow: hidden; display: flex; flex-direction: column;
+      /* 무대: 중앙 큰 캐릭터 + 측면 설명 */
+      .cx-stage { position: relative; z-index: 2; flex: 1; min-height: 0; }
+      .cx-stage-art {
+        position: absolute; inset: 0; background-repeat: no-repeat;
+        background-position: 40% bottom; background-size: auto 82%;
+        filter: drop-shadow(0 10px 30px rgba(0,0,0,0.5));
       }
-      .cx-art { height: 200px; background: center top / contain no-repeat; background-color: rgba(0,0,0,0.05); }
-      .cx-body { padding: 8px 10px 10px; }
-      .cx-name { font-weight: 700; color: var(--wds-label-strong); font-size: 14px; }
-      .cx-job { font-size: 11px; color: var(--wds-primary-normal); margin: 2px 0 4px; }
-      .cx-desc { font-size: 12px; color: var(--wds-label-normal); line-height: 1.4; }
-      @media (max-width: 480px) {
-        .codex-grid { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); }
-        .cx-art { height: 158px; }
+      .cx-stage-info {
+        position: absolute; right: 3vw; top: 50%; transform: translateY(-50%);
+        width: min(360px, 40vw); padding: 16px 18px; border-radius: 14px;
+        background: rgba(28,20,11,0.82); border: 1px solid rgba(255,255,255,0.18);
+        color: #f4ead7; box-shadow: 0 10px 40px rgba(0,0,0,0.5); backdrop-filter: blur(2px);
+      }
+      .cx-stage-info .n { font-size: 22px; font-weight: 800; }
+      .cx-stage-info .j { font-size: 13px; color: #e6b877; margin: 6px 0 10px; }
+      .cx-stage-info .d { font-size: 14px; line-height: 1.6; color: #ece0cd; }
+      .cx-stage-info .tag { display: inline-block; font-size: 11px; margin-top: 12px; padding: 2px 8px;
+        border-radius: 999px; background: rgba(255,255,255,0.12); color: #d8c8ac; }
+      /* 하단 캐러셀 */
+      .cx-rail {
+        position: relative; z-index: 3; display: flex; gap: 8px; overflow-x: auto;
+        padding: 10px 12px calc(10px + var(--sa-b, 0px)); background: rgba(16,11,5,0.72);
+        border-top: 1px solid rgba(255,255,255,0.12); scrollbar-width: thin;
+      }
+      .cx-thumb {
+        flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 2px;
+        min-width: 68px; padding: 6px 8px; border-radius: 10px; cursor: pointer;
+        background: rgba(255,255,255,0.06); border: 1px solid transparent; color: #e9ddc8;
+      }
+      .cx-thumb .te { font-size: 20px; line-height: 1; }
+      .cx-thumb .tn { font-size: 11px; white-space: nowrap; }
+      .cx-thumb:hover { background: rgba(255,255,255,0.12); }
+      .cx-thumb.active { border-color: #e6b877; background: rgba(230,184,119,0.18); color: #fff; }
+      @media (max-width: 760px) {
+        .cx-stage-art { background-position: center 8%; background-size: auto 66%; }
+        .cx-stage-info {
+          right: 0; left: 0; bottom: 0; top: auto; transform: none; width: auto;
+          border-radius: 14px 14px 0 0; padding: 12px 16px;
+        }
+        .cx-stage-info .n { font-size: 18px; } .cx-stage-info .d { font-size: 13px; line-height: 1.5; }
       }
       #leaf-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
       #landing, #lobby { position: relative; z-index: 1; } /* UI를 배경·낙엽 위로 */
@@ -1138,16 +1157,14 @@
       <span class="leaf" style="left:22%;animation-delay:-6.5s"></span>
       <span class="leaf" style="left:78%;animation-delay:-9.5s"></span>
     </div>
-    <!-- 캐릭터 도감(손님 소개) — 방 목록(랜딩)에서 진입 -->
+    <!-- 캐릭터 도감(손님 소개) — 방 목록(랜딩)에서 진입. 배경 중앙 캐릭터 + 측면 설명 + 하단 캐러셀 -->
     <div id="codex" class="codex-overlay hidden" role="dialog" aria-label="잔치 손님 소개">
-      <div class="codex-panel">
-        <div class="codex-head">
-          <h2>🏮 잔치 손님 소개</h2>
-          <button type="button" id="codexClose" class="codex-x" aria-label="닫기">✕</button>
-        </div>
-        <p class="codex-sub">호랑이 대감의 생신 잔치에 모인 손님들. 이 중 누군가 잔치 선물을 훔쳤다.</p>
-        <div id="codexGrid" class="codex-grid"></div>
+      <button type="button" id="codexClose" class="codex-x" aria-label="닫기">✕</button>
+      <div class="cx-stage">
+        <div id="cxArt" class="cx-stage-art"></div>
+        <div id="cxInfo" class="cx-stage-info"></div>
       </div>
+      <div id="cxRail" class="cx-rail" aria-label="손님 선택"></div>
     </div>
     <!-- ① 랜딩 -->
     <section id="landing" class="center">
