@@ -21,7 +21,6 @@ import {
   BUBBLE_SAFE_PAD_PX,
   bubbleLifeMs,
   fitZoom,
-  ZODIAC,
   doorOutward,
   doorSideOf,
   emoji,
@@ -188,7 +187,7 @@ type Token = {
   c: Phaser.GameObjects.Container;
   ring: Phaser.GameObjects.Arc;
   disc: Phaser.GameObjects.Arc;
-  face: Phaser.GameObjects.Image | Phaser.GameObjects.Text;
+  face: Phaser.GameObjects.Text;
   name: Phaser.GameObjects.Text;
   /** 이름표 좌측 색 스트라이프 — 색과 이름을 같은 픽셀에. */
   stripe: Phaser.GameObjects.Rectangle;
@@ -292,24 +291,6 @@ export class GameScene extends Phaser.Scene implements ViewContract {
     }
     // 중앙 잔치상(ROOM_REGIONS 밖 · 별도 좌표)도 이미지가 있으면 로드.
     this.load.image("room-feast", "/assets/rooms/feast.webp");
-    // 보드 토큰 «얼굴»(원형) — 십이지 12 + 계략 NPC(쿼카·안드로이드). 색 원판 위에 얹는다.
-    for (const key of [...ZODIAC, "quokka", "android"]) {
-      this.load.image(`face-${key}`, `/assets/characters/face/${key}.webp`);
-    }
-  }
-
-  /** 토큰 얼굴 조각 — 얼굴 이미지(원형)가 있으면 그걸, 없으면 이모지 텍스트로 폴백. */
-  private makeFace(
-    value: string,
-    px: number,
-  ): Phaser.GameObjects.Image | Phaser.GameObjects.Text {
-    const key = `face-${value}`;
-    if (this.textures.exists(key)) {
-      return this.add.image(0, 0, key).setDisplaySize(px, px).setOrigin(0.5);
-    }
-    return this.add
-      .text(0, 0, emoji(value), { fontSize: `${Math.floor(px * 0.72)}px` })
-      .setOrigin(0.5);
   }
 
   create(): void {
@@ -916,7 +897,11 @@ export class GameScene extends Phaser.Scene implements ViewContract {
         const disc = this.add
           .circle(0, 0, CELL * 0.42, BOARD.helperDisc)
           .setStrokeStyle(TOKEN_OUTLINE_PX, BOARD.helperEdge);
-        const face = this.makeFace(h.value, CELL * 0.72);
+        const face = this.add
+          .text(0, 0, emoji(h.value), {
+            fontSize: `${Math.floor(CELL * 0.5)}px`,
+          })
+          .setOrigin(0.5);
         const mark = this.add
           .text(CELL * 0.3, -CELL * 0.3, "🃏", { fontSize: "15px" })
           .setOrigin(0.5);
@@ -1315,13 +1300,7 @@ export class GameScene extends Phaser.Scene implements ViewContract {
     const color = zodiacColor(suspect);
     this.tokens.forEach((t) => {
       if (t.suspect !== suspect) return;
-      // 얼굴 표기 되맞춤 — 이미지면 텍스처, 이모지 폴백이면 텍스트.
-      if (t.face instanceof Phaser.GameObjects.Text) {
-        t.face.setText(emoji(suspect));
-      } else {
-        const key = `face-${suspect}`;
-        if (this.textures.exists(key)) t.face.setTexture(key);
-      }
+      t.face.setText(emoji(suspect));
       t.disc.setFillStyle(color);
       t.stripe.setFillStyle(color);
     });
@@ -1500,8 +1479,12 @@ export class GameScene extends Phaser.Scene implements ViewContract {
     const disc = this.add
       .circle(0, 0, CELL * 0.4, color)
       .setStrokeStyle(TOKEN_OUTLINE_PX, TOKEN_OUTLINE_COLOR);
-    // 얼굴(원형 일러스트) — 색 원판보다 살짝 작게 얹어 원판 색이 링으로 보이게(색은 보조 단서).
-    const face = this.makeFace(a.suspect, CELL * 0.72);
+    // 이모지 = 색에 의존하지 않는 1차 식별자. 색은 보조 단서다.
+    const face = this.add
+      .text(0, 0, emoji(a.suspect), {
+        fontSize: `${Math.floor(CELL * 0.52)}px`,
+      })
+      .setOrigin(0.5);
     const name = this.add
       .text(0, CELL * 0.55, `${a.isBot ? "🤖" : ""}${a.name}`, {
         fontSize: "13px",
