@@ -49,6 +49,49 @@ const FACE_IDS = new Set<string>([...ZODIAC, "quokka", "cat", "android"]);
  * `/assets/characters/face/<id>.webp`(원형)을 쓴다. 얼굴이 없는 값(장물·장소)이면 이모지 폴백.
  * id는 검증된 키(FACE_IDS)일 때만 URL에 넣으므로 주입 위험 없음.
  */
+// ── 배경음(8비트 조선풍) ─────────────────────────────────────────────
+// 스피커 아이콘 = 음소거 토글, 호버 슬라이더 = 음량. 낮은 기본값. 자동재생 정책상
+// 첫 상호작용에서 재생을 건다. 음량·음소거는 localStorage에 기억한다.
+(() => {
+  const audio = document.getElementById("bgm") as HTMLAudioElement | null;
+  const vol = document.getElementById("bgmVol") as HTMLInputElement | null;
+  const btn = document.getElementById("bgmToggle") as HTMLButtonElement | null;
+  if (!audio || !vol || !btn) return;
+  const VK = "zc_bgm_vol";
+  const MK = "zc_bgm_muted";
+  let v = Number(localStorage.getItem(VK) ?? "0.2");
+  if (!Number.isFinite(v) || v < 0 || v > 1) v = 0.2;
+  let muted = localStorage.getItem(MK) === "1";
+  const apply = (): void => {
+    audio.volume = muted ? 0 : v;
+    btn.textContent = muted || v === 0 ? "🔇" : "🔊";
+    vol.value = String(Math.round(v * 100));
+  };
+  apply();
+  vol.oninput = () => {
+    v = Number(vol.value) / 100;
+    muted = false;
+    localStorage.setItem(VK, String(v));
+    localStorage.setItem(MK, "0");
+    apply();
+    void audio.play().catch(() => {});
+  };
+  btn.onclick = () => {
+    muted = !muted;
+    localStorage.setItem(MK, muted ? "1" : "0");
+    apply();
+    if (!muted) void audio.play().catch(() => {});
+  };
+  // 자동재생 정책 — 첫 사용자 입력에서 재생 시작(음소거 상태면 걸지 않는다).
+  const start = (): void => {
+    if (!muted) void audio.play().catch(() => {});
+    window.removeEventListener("pointerdown", start);
+    window.removeEventListener("keydown", start);
+  };
+  window.addEventListener("pointerdown", start);
+  window.addEventListener("keydown", start);
+})();
+
 const faceIc = (id: string, px: number): string => {
   if (!FACE_IDS.has(id))
     return `<span style="font-size:${Math.round(px * 0.85)}px">${emoji(id)}</span>`;
