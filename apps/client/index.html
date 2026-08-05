@@ -645,7 +645,9 @@
          드래그로 정한 높이는 유지하되 공간이 모자라면 줄어들도록 shrink를 연다. */
       .rp-evi { flex: 0 1 auto; height: 260px; min-height: 72px; } /* 높이 드래그로 조절 */
       .rp-log { flex: 1 1 0; min-height: 72px; } /* 남은 공간 채우고 내부 스크롤 */
-      .rp-ai { flex: 0 0 auto; max-height: 40%; }
+      /* AI 패널도 축소 허용(0 0 auto면 내용이 길 때 안 줄어 아래 패널을 밀어 겹쳤다). 내부는 스크롤. */
+      .rp-ai { flex: 0 1 auto; max-height: 40%; }
+      .rp-ai #aiDetail { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
       .rp-sug { flex: 0 1 auto; max-height: 32%; }
 
       /* 드래그 핸들 — 잡을 수 있음이 보이도록 강조색(주황) + 그립 */

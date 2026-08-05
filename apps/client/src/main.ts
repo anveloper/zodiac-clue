@@ -2640,10 +2640,12 @@ const enterGame = async (): Promise<void> => {
     handle.addEventListener("pointercancel", stop);
   };
 
-  // 높이 조절: 증거노트 높이 = 포인터 y − 컬럼 top
+  // 높이 조절: 증거노트 높이 = 포인터 y − **증거노트 자신의 top**.
+  // (컬럼 top 기준으로 재면 위에 뜬 AI 패널 높이까지 포함돼 값이 어긋났다 — 꼬임의 원인.)
   makeDrag($("colResizer"), (e) => {
-    const rect = rightCol.getBoundingClientRect();
-    const h = Math.max(80, Math.min(rect.height - 160, e.clientY - rect.top));
+    const eviTop = eviPanel.getBoundingClientRect().top;
+    const colBottom = rightCol.getBoundingClientRect().bottom;
+    const h = Math.max(80, Math.min(colBottom - eviTop - 160, e.clientY - eviTop));
     eviPanel.style.height = `${h}px`;
   });
   // 너비 조절: 컬럼 너비 = 우측 고정 모서리 − 포인터 x
