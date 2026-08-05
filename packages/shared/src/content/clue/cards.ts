@@ -147,6 +147,7 @@ export const EMOJI: Record<string, string> = {
   // 팀 카메오 계략 NPC (비-십이지) — 보드 토큰 표시용
   quokka: "🦫",
   android: "🤖",
+  cat: "🐱",
 };
 
 export const emoji = (value: string): string => EMOJI[value] ?? "";
@@ -186,6 +187,7 @@ export const LABELS: Record<string, string> = {
   // 팀 카메오 계략 NPC
   quokka: "쿼카 아씨",
   android: "안드로이드",
+  cat: "고양이 밤손님",
 };
 
 export const label = (value: string): string => LABELS[value] ?? value;
@@ -234,6 +236,7 @@ export const PERSONA: Record<string, string> = {
     "세상에서 가장 행복한 얼굴로 웃는 쿼카 아씨. 낯선 땅에서 왔지만 누구에게나 방긋 웃으며 스스럼없이 다가가, 저도 모르게 아는 것을 흘리고 만다.",
   android:
     "칭호도 족보도 없이 잔치에 끼어든 안드로이드. 사람 흉내를 내보려 하지만 결정적인 순간에 꼭 계측값부터 읊어 분위기를 깬다.",
+  cat: "소리 없이 드나드는 도둑고양이. 날렵하고 새침하다. 슬쩍 흘리는 정보에 장난기가 배어 있다.",
 };
 
 export const persona = (value: string): string => PERSONA[value] ?? "";
@@ -261,6 +264,7 @@ export const VOICE: Record<string, Voice> = {
   // 팀 카메오 계략 NPC
   quokka: { tone: "해맑게 방긋 웃으며", intro: "히힛, ", outro: " 도움이 됐으면 좋겠다!" },
   android: { tone: "기계처럼 담담하게", intro: "삐빅, ", outro: " 연산 완료." },
+  cat: { tone: "나긋하고 새침하게 흘리듯", intro: "야옹— ", outro: " …나 못 봤지?" },
 };
 
 export const voice = (value: string): Voice =>

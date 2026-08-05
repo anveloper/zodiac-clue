@@ -132,12 +132,10 @@ const HELPER_CORNERS = [
   { x: GRID_WIDTH - 1, y: GRID_HEIGHT - 1 },
 ];
 // 방↔방 사이 벽면(외곽 링의 복도 틈)에만 배치 — 중앙 잔치상 가장자리는 제외.
+// «문 바로 앞»(방 문과 같은 열·행 2칸 앞: 옛 (3,7)·(20,7)·(3,16))은 제외 — 문 앞을 막지 않게.
 const HELPER_MIDS = [
   { x: 7, y: 3 }, //  정지 ↔ 대청
   { x: 16, y: 3 }, // 대청 ↔ 후원
-  { x: 3, y: 7 }, //  정지 ↔ 사랑방
-  { x: 20, y: 7 }, // 후원 ↔ 사랑채
-  { x: 3, y: 16 }, // 사랑방 ↔ 안방
   { x: 20, y: 13 }, // 사랑채 ↔ 서재
   { x: 7, y: 20 }, //  안방 ↔ 행랑
   { x: 16, y: 20 }, // 행랑 ↔ 별당
@@ -145,11 +143,13 @@ const HELPER_MIDS = [
 
 // 팀 카메오 계략 NPC — 고정 위치·엿보기 1장(peek). owner 지시.
 // 값이 비-십이지라 덱·밸런스와 무관: 엿보기 내용은 헬퍼 정체성과 독립(handleUseBonus).
-// 좌표는 HELPER_MIDS의 두 칸을 «고정 예약» — 십이지 배치에서 제외된다.
-const HELPER_CAMEOS = [
-  { value: "quokka", x: 3, y: 7 }, //  정지 ↔ 사랑방(좌)
-  { value: "android", x: 20, y: 13 }, // 사랑채 ↔ 서재(우)
+// 구성: 쿼카는 항상, 두 번째는 고양이|안드로이드 중 «시드로 택1»(handleStart에서 결정).
+// 좌표(문 앞 아님)는 HELPER_MIDS의 두 칸을 «고정 예약» — 십이지 배치에서 제외된다.
+const CAMEO_POS = [
+  { x: 7, y: 3 }, //  정지 ↔ 대청(상단)
+  { x: 20, y: 13 }, // 사랑채 ↔ 서재(우)
 ] as const;
+const CAMEO_ALT = ["cat", "android"] as const; // 이 중 시드로 하나만 등장
 const CENTER = { x: 11, y: 11 };
 
 /** 취소 가능한 타이머 핸들(colyseus `Delayed`와 구조적으로 호환). */
@@ -957,8 +957,17 @@ export class ClueRoom extends Room<GameState> {
 
     // 고정 NPC(계략): 팀 카메오 2 + 남은 십이지. 총수·엿보기 횟수는 기존과 동일(교체).
     this.state.helpers.clear();
-    // (1) 카메오 2명 — 고정 좌표·peek1. 상수라 시드 재생에도 위치 불변.
-    for (const cam of HELPER_CAMEOS) {
+    // (1) 카메오 2명 — 쿼카 고정 + (고양이|안드로이드 시드 택1). 고정 좌표(문 앞 아님)·peek1.
+    const altCameo = seededPick(
+      CAMEO_ALT as readonly string[],
+      this.gameSeed,
+      "cameoAlt",
+    );
+    const cameos = [
+      { value: "quokka", ...CAMEO_POS[0] },
+      { value: altCameo, ...CAMEO_POS[1] },
+    ];
+    for (const cam of cameos) {
       const h = new HelperToken();
       h.value = cam.value;
       h.x = cam.x;
@@ -970,8 +979,8 @@ export class ClueRoom extends Room<GameState> {
     const leftover = (SUSPECTS as readonly string[]).filter(
       (z) => !suspectPool.includes(z),
     );
-    const zCount = Math.max(0, leftover.length - HELPER_CAMEOS.length);
-    const camSpots = new Set(HELPER_CAMEOS.map((c) => `${c.x},${c.y}`));
+    const zCount = Math.max(0, leftover.length - cameos.length);
+    const camSpots = new Set(cameos.map((c) => `${c.x},${c.y}`));
     const corners = [...HELPER_CORNERS];
     seededShuffle(corners, this.gameSeed, "helperCorners");
     const mids = HELPER_MIDS.filter((m) => !camSpots.has(`${m.x},${m.y}`));
