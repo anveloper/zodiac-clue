@@ -428,28 +428,28 @@
          중심은 «보드 영역»(= 뷰포트 − 우측 컬럼 폭 `--rp-w` − 여백)으로 잡아 패널을 비켜 간다.
          `--rp-w`는 JS가 폭 드래그·패널 토글마다 갱신한다(기본 260px). */
       @media (min-width: 761px) {
+        /* 컨테이너 폭은 항상 «보드 영역» 상한으로 «고정»한다(폭을 애니메이션하지 않는다).
+           칩도 nowrap 한 줄로 «고정»한다. 이 둘을 바꾸면 확대 도중 줄바꿈·리플로우가
+           여러 번 튀어 «뚝뚝 끊기고 모양이 여러 번 바뀌는» 원인이 된다. */
         .hud-turn {
           left: calc(16px + (100vw - 32px - var(--rp-w, 260px)) / 2 + var(--sa-l, 0px));
-          max-width: 320px; padding: 5px 12px;
-          transition: max-width .12s ease, padding .12s ease;
-        }
-        .ti-order { gap: 3px; margin-top: 4px; flex-wrap: nowrap; }
-        .ti-chip { align-items: center; gap: 0; padding: 1px 4px; font-size: 15px; border-radius: 6px; }
-        .ti-chip .ti-ini { display: none; } /* 이모지로 충분 */
-        .ti-chip .ti-nm { display: none; }  /* 이름은 hover 때만 */
-        .ti-chip.cur { transform: scale(1.12); }
-        .ti-arrow { font-size: 11px; }
-        /* 마우스 올리면 펼침 — 이름·간격 복원, 폭 상한을 보드 영역 최대로. */
-        .hud-turn:hover {
           max-width: min(760px, calc(100vw - 64px - var(--rp-w, 260px)));
-          padding: 8px 14px; z-index: 20;
+          padding: 6px 12px;
         }
-        .hud-turn:hover .ti-order { gap: 6px; flex-wrap: wrap; }
-        .hud-turn:hover .ti-chip { gap: 4px; padding: 3px 9px; font-size: 14px; }
-        .hud-turn:hover .ti-chip .ti-nm {
-          display: inline; font-size: 12px; font-weight: 700; color: var(--wds-label-normal);
+        .ti-order { gap: 4px; margin-top: 4px; flex-wrap: nowrap; }
+        .ti-chip { align-items: center; gap: 2px; padding: 2px 6px; font-size: 14px; border-radius: 6px; }
+        .ti-chip .ti-ini { display: none; } /* 이모지로 충분 */
+        /* 이름만 평소 폭 0으로 접어두고 hover 때 «슬라이드 오픈» — 유일한 애니메이션이라 끊김이 없다. */
+        .ti-chip .ti-nm {
+          display: inline-block; max-width: 0; opacity: 0; overflow: hidden;
+          white-space: nowrap; vertical-align: bottom; margin-left: 0;
+          font-size: 12px; font-weight: 700; color: var(--wds-label-normal);
+          transition: max-width .2s ease, opacity .18s ease, margin-left .2s ease;
         }
-        .hud-turn:hover .ti-chip.cur { transform: scale(1.06); }
+        .ti-chip.cur { transform: scale(1.1); }
+        .ti-arrow { font-size: 11px; }
+        .hud-turn:hover { z-index: 20; }
+        .hud-turn:hover .ti-chip .ti-nm { max-width: 6em; opacity: 1; margin-left: 3px; }
         .hud-turn:hover .ti-chip.cur .ti-nm { color: var(--wds-label-strong); }
       }
       .ti-chip.cur {
