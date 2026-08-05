@@ -18,8 +18,9 @@ export const DEFAULT_ROOM_TYPE: RoomType = "clue";
 /** 새 방을 만들고 방장이 된다. isPublic=false면 목록에 안 뜨는 비공개방(코드 참가만). */
 export const createRoom = (
   isPublic: boolean,
+  demo = false,
   roomType: RoomType = DEFAULT_ROOM_TYPE,
-): Promise<Room> => client.create(roomType, { isPublic });
+): Promise<Room> => client.create(roomType, { isPublic, demo });
 
 /**
  * 초대 코드(roomId)로 참가. 비공개방도 코드로는 참가 가능.

@@ -1168,6 +1168,19 @@ const wireRoom = (r: Room): void => {
     endInfo = info;
     updateEndState(r.state);
   });
+  // 데모 방(`?demo=1`) 정답 귓속말 — **콘솔에만** 찍는다(화면·영상엔 안 뜬다). 촬영 시 고발용.
+  r.onMessage(
+    "demoAnswer",
+    (m: { suspect: string; weapon: string; room: string }) => {
+      // eslint-disable-next-line no-console
+      console.log(
+        `%c🎬 DEMO 정답 — ${emoji(m.suspect)} ${label(m.suspect)} · ${label(
+          m.weapon,
+        )} · ${label(m.room)}`,
+        "font-size:15px;color:#b4622b;font-weight:bold",
+      );
+    },
+  );
   // AI 누적 집계(§7.7) — 서버가 권위. 없는 빌드면 이 핸들러가 영영 안 불릴 뿐이다.
   r.onMessage("aiStats", (s: unknown) => applyAiStats(s));
   // 제안 기록표(§1.2) — 실시간 1건 / 재접속 시 전체.
@@ -2941,7 +2954,7 @@ const loadPublicRooms = async (): Promise<void> => {
 const startSolo = async (): Promise<void> => {
   setLandingMsg("비공개방 만드는 중…");
   try {
-    const r = await (await loadNet()).createRoom(false);
+    const r = await (await loadNet()).createRoom(false, entryParam("demo") === "1");
     wireRoom(r); // 대기실 배선 + 재접속 토큰 저장 + /room/ID로 주소 정리
     r.send("start", {}); // 방장 = 나 → 빈자리 NPC 충원 후 즉시 시작
   } catch (e) {
@@ -3033,7 +3046,12 @@ const init = async (): Promise<void> => {
   ($("createBtn") as HTMLButtonElement).onclick = async () => {
     setLandingMsg(createPublic ? "공개방 만드는 중…" : "비공개방 만드는 중…");
     try {
-      wireRoom(await (await loadNet()).createRoom(createPublic));
+      wireRoom(
+        await (await loadNet()).createRoom(
+          createPublic,
+          entryParam("demo") === "1",
+        ),
+      );
     } catch (e) {
       setLandingMsg("방 생성 실패: " + errMsg(e));
     }

@@ -50,7 +50,7 @@ import {
 } from "../rules/rng";
 
 type JoinOptions = { character?: string };
-type CreateOptions = { isPublic?: boolean };
+type CreateOptions = { isPublic?: boolean; demo?: boolean };
 
 /** 봇의 추리 노트 — 각 카테고리에서 아직 남은(정답 후보) 값들. */
 type BotKnowledge = {
@@ -165,6 +165,9 @@ export class ClueRoom extends Room<GameState> {
 
   // 서버 전용 비밀 상태 (동기화하지 않음)
   private solution: Solution | null = null;
+  /** 촬영·시연용 데모 방(`?demo=1`). 정답을 «해당 클라에게만» 귓속말로 알려준다(판정은 불변).
+   * 판정을 우회하지 않으므로 "실제 플레이 화면 · 정답 개입 금지" 규정에 저촉되지 않는다. */
+  private demoMode = false;
   private hands = new Map<string, Card[]>();
   private botKnowledge = new Map<string, BotKnowledge>();
   private botSeq = 0;
@@ -274,6 +277,7 @@ export class ClueRoom extends Room<GameState> {
     // 공개방은 기본 노출 → 판이 도는 동안만 `setListed(false)`로 감췄다가 종료 시 복귀한다.
     const isPublic = options.isPublic !== false;
     this.createdPublic = isPublic;
+    this.demoMode = options.demo === true; // 촬영·시연용 정답 귓속말
     if (!isPublic) void this.setPrivate(true);
     // 메타데이터를 쓰는 곳은 `syncMeta()` **하나뿐이다** — 예전처럼 여기서 따로 쓰면
     // 첫 `syncMeta()`가 그 객체를 통째로 덮어써 `isPublic`이 조용히 사라진다(실제로 그랬다).
@@ -1014,6 +1018,8 @@ export class ClueRoom extends Room<GameState> {
       room: seededPick(ROOMS, this.gameSeed, "solution", "room"),
     };
     this.solution = solution;
+    // 데모 방: 정답을 방에 귓속말(클라 콘솔에만 표시 — 화면·영상엔 안 뜬다). 판정은 불변.
+    if (this.demoMode) this.broadcast("demoAnswer", { ...solution });
 
     const deck: Card[] = [
       ...suspectPool
