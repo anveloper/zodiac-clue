@@ -4,6 +4,16 @@
     "dir": "submission",
     "items": [
       {
+        "title": "① 빌드 + 소스 (GitHub)",
+        "url": "https://github.com/anveloper/zodiac-clue",
+        "external": true
+      },
+      {
+        "title": "② 플레이 영상 (YouTube)",
+        "url": "https://youtu.be/s-YfjsEzDHk",
+        "external": true
+      },
+      {
         "path": "submission/03-game-intro.html",
         "title": "제출물 ③ 게임 소개"
       },

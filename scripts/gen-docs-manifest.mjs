@@ -16,12 +16,17 @@ import { join } from "node:path";
 import { isPrivateDocPath, LOCAL_MANIFEST } from "./docs-private.mjs";
 
 const GROUPS = [
-  // 제출물 탭 = **실제 심사에 내는 최종본만**(③ 소개 → ④ AI → ⑤ 롤). 번호 접두라 정렬은 자연히 맞는다.
-  // 장문 원본·콘티·체크리스트는 design/으로 옮겼다(작업 문서지 제출물이 아니다).
+  // 제출물 탭 = **심사에 내는 5종 그대로** ①~⑤ 순서.
+  //  ①②는 파일이 아니라 외부 링크(빌드·영상)라 `links`로 맨 위에 주입한다(새 탭). ③④⑤만 로컬 문서.
+  //  장문 원본·콘티·체크리스트는 design/으로 옮겼다(작업 문서지 제출물이 아니다).
   {
     dir: "submission",
     label: "📤 제출물",
     ext: "pair",
+    links: [
+      { title: "① 빌드 + 소스 (GitHub)", url: "https://github.com/anveloper/zodiac-clue" },
+      { title: "② 플레이 영상 (YouTube)", url: "https://youtu.be/s-YfjsEzDHk" },
+    ],
     order: ["03-game-intro", "04-ai-tech", "05-team-roles"],
   },
   { dir: "design", label: "📐 설계", ext: ".html" },
@@ -87,6 +92,8 @@ for (const g of GROUPS) {
       if (isPrivateDocPath(path)) item.private = true;
       return item;
     });
+  // 외부 링크(빌드·영상 등)는 파일이 아니므로 그룹 맨 위에 주입한다. `url`만 있고 `path`는 없다.
+  if (g.links) items.unshift(...g.links.map((l) => ({ title: l.title, url: l.url, external: true })));
   if (items.length) all_.push({ label: g.label, dir: g.dir, items });
 }
 
