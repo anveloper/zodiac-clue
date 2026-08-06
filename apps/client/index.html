@@ -1016,12 +1016,14 @@
         .hud-ctrl {
           left: calc(8px + var(--sa-l, 0px));
           right: calc(8px + var(--sa-r, 0px));
-          top: auto; bottom: calc(8px + var(--sa-b, 0px));
+          top: auto; bottom: calc(6px + var(--sa-b, 0px));
           display: grid; grid-template-columns: repeat(6, 1fr);
-          gap: 4px; padding: 6px;
+          gap: 3px; padding: 4px;
         }
+        /* 위아래 여백이 컸던 문제 — 높이는 터치 하한(44px) 유지하되 내부 패딩을 줄이고
+           글자를 키워(11.5→12.5) 빈 공간을 메운다. */
         .hud-ctrl button {
-          padding: 8px 2px; min-height: 46px; font-size: 11.5px;
+          padding: 4px 2px; min-height: 44px; font-size: 12.5px;
           letter-spacing: -0.2px; white-space: nowrap; border-radius: 8px;
         }
         /* 비활성 버튼 — 배경을 지우면 6칸의 리듬이 끊긴다. 칸은 남기고 **채도만** 뺀다. */
@@ -1052,6 +1054,9 @@
           transform: none; max-width: none;
           white-space: normal; text-align: center;
         }
+        /* 「지금 차례」 얼굴 배지는 폰에서 **감춘다** — top:52로 순서 스트립 위에 올라타
+           겹쳤고(IMG_9468), 배너("○○ 님의 턴")+스트립(현재 강조)이 이미 차례를 알린다. */
+        .hud-turnface { display: none; }
         /* 손패는 턴 배너(최대 3줄) **아래**. 상단에 검은 띠 두 개가 겹치면 보드가 사라진다. */
         .hud-hand {
           left: calc(8px + var(--sa-l, 0px)); right: auto;
@@ -1104,9 +1109,7 @@
         /* 패널 사이 «높이 드래그바»도 폰에선 손가락 드래그가 어렵고 자리만 먹는다 → 숨긴다.
            컬럼이 세로로 스크롤되므로 높이 조절 없이도 다 볼 수 있다(드래그바 여백 피드백). */
         .rp-hz { display: none; }
-        /* 컬럼을 열면 「증거 노트」가 먼저 오도록 AI 패널을 맨 아래로 민다(폰 우선순위 낮음). */
-        .rp-ai { order: 5; }
-        /* 패널 사이 간격을 폰에 맞게 좁힌다. */
+        /* 패널 사이 간격을 폰에 맞게 좁힌다. (AI는 PC와 동일하게 컬럼의 한 섹션으로 둔다.) */
         .rp-col { gap: 6px; }
         #rpToggle { display: flex; }
         .hud-help { display: none; }
