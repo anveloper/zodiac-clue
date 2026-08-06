@@ -36,7 +36,10 @@
   @media print {
     html,body { background:#fff; }
     .page { box-shadow:none; margin:0; max-width:none; padding:0 6mm; }
-    h2 { break-after:avoid; } table,.note,.who { break-inside:avoid; }
+    h1, h2, h3 { break-after: avoid; page-break-after: avoid; }
+    h2, h3 { break-inside: avoid; }
+    table { break-inside: auto; }
+    tr, li, .who, .note { break-inside: avoid; page-break-inside: avoid; }
     @page { size:A4; margin:16mm 14mm; }
   }
 </style>

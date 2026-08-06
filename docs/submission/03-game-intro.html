@@ -26,7 +26,10 @@
   .foot { margin-top:26px; padding-top:10px; border-top:1px solid var(--line); color:var(--dim); font-size:12px; }
   @media print {
     html,body { background:#fff; } .page { box-shadow:none; margin:0; max-width:none; padding:0 6mm; }
-    h2 { break-after:avoid; } table { break-inside:avoid; }
+    h1, h2, h3 { break-after: avoid; page-break-after: avoid; }
+    h2, h3 { break-inside: avoid; }
+    table { break-inside: auto; }
+    tr, li { break-inside: avoid; page-break-inside: avoid; }
     @page { size:A4; margin:15mm 14mm; }
   }
 </style>
