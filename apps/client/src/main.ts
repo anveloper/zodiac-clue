@@ -757,19 +757,16 @@ const openPicker = (opts: PickerOpts): Promise<Pick | null> =>
  * 클라가 정답 여부를 계산하지 않는다(규칙: 손패는 정답 봉투에서 제외된 카드).
  */
 const renderHand = (cards: Card[]): void => {
-  const host = $("hand");
-  host.innerHTML = "";
-  // 한 줄: 라벨 + 카드 3장을 형제로 나열(«이 3장은 정답이 아님»은 툴팁으로 이동 — ui-copy §4.1).
-  const lbl = document.createElement("span");
-  lbl.className = "hand-label";
-  lbl.textContent = "🃏 내 손패";
-  host.appendChild(lbl);
-  for (const c of cards) {
-    const chip = document.createElement("span");
-    chip.className = "hand-card";
-    chip.textContent = `${cardIcon(c.value)} ${label(c.value)}`;
-    host.appendChild(chip);
-  }
+  // 한 줄: 라벨 + 카드 3장(«이 3장은 정답이 아님»은 툴팁 — ui-copy §4.1). 카드 라벨은 고정 상수라 안전.
+  const html =
+    `<span class="hand-label">🃏 내 손패</span>` +
+    cards
+      .map((c) => `<span class="hand-card">${cardIcon(c.value)} ${label(c.value)}</span>`)
+      .join("");
+  // 플로팅 HUD(데스크톱) + 증거 패널 안의 손패 줄(폰) 두 곳에 같은 내용을 채운다.
+  $("hand").innerHTML = html;
+  const panel = document.getElementById("handPanel");
+  if (panel) panel.innerHTML = html;
 };
 
 // ── 상태 ─────────────────────────────

@@ -648,8 +648,11 @@
       /* 손패는 한 줄 — 라벨 + 카드 3장을 같은 줄에 흐른다(«이 3장은 정답이 아님» 문구는
          제거하고 hover 툴팁이 그 규칙을 설명한다). 폭이 부족하면 자연스레 줄바꿈. */
       #hand { display: flex; flex-wrap: wrap; align-items: baseline; gap: 3px 12px; }
-      #hand .hand-label { color: var(--wds-label-strong); font-weight: 600; }
-      #hand .hand-card { color: var(--wds-label-normal); white-space: nowrap; }
+      #hand .hand-label, .rp-hand .hand-label { color: var(--wds-label-strong); font-weight: 600; }
+      #hand .hand-card, .rp-hand .hand-card { color: var(--wds-label-normal); white-space: nowrap; }
+      /* 증거 패널 안의 「내 손패」 줄 — 폰에서 플로팅 손패를 숨긴 대신 여기에 명시한다. */
+      .rp-hand { display: none; }
+      .rp-hand:empty { display: none !important; }
       .hud-view {
         left: calc(16px + var(--sa-l, 0px)); bottom: calc(72px + var(--sa-b, 0px));
         padding: 6px 8px; position: fixed;
@@ -1058,7 +1061,7 @@
            스트립 위에 올라타 겹쳤으므로(IMG_9468), 배너+스트립 «아래»로 내린다. */
         .hud-turnface {
           left: calc(8px + var(--sa-l, 0px)); right: auto;
-          top: calc(110px + var(--sa-t, 0px)); bottom: auto;
+          top: calc(80px + var(--sa-t, 0px)); bottom: auto;
         }
         /* 손패는 턴 배너(최대 3줄) **아래**. 상단에 검은 띠 두 개가 겹치면 보드가 사라진다. */
         .hud-hand {
@@ -1086,6 +1089,12 @@
           min-width: 0; min-height: 44px; padding: 6px 12px; font-size: 12px;
           background: rgba(241, 228, 208, 0.95); color: var(--wds-label-normal);
           border-color: var(--wds-line-normal);
+        }
+        /* BGM 스피커는 top-right에서 «닫기 버튼·턴 배너»와 겹쳐 탭이 엉켰다(음소거 안 됨).
+           좌하단(뷰 칩 위)로 옮겨 충돌을 없앤다 — 터치는 탭=음소거로 동작한다. */
+        .bgm-ctrl {
+          top: auto; bottom: calc(120px + var(--sa-b, 0px));
+          right: auto; left: calc(8px + var(--sa-l, 0px));
         }
         /* 폰에서 260px 고정 컬럼이 화면 폭의 2/3를 덮어 보드·턴 배너를 가렸다(§7.8 부수).
            기존 반응형은 DOM에 없는 `.hud-evi`/`.hud-log`를 잡고 있어 죽은 코드였다. */
@@ -1120,9 +1129,12 @@
         .hud-hand { display: flex; align-items: center; gap: 8px; white-space: nowrap;
                     overflow-x: auto; overscroll-behavior-x: contain; }
         .hud-hand > * { flex: 0 0 auto; }
-        /* 손패 플로팅 스트립은 폰에서 제거 — 어차피 [증거 노트]를 열어 비교하고,
-           내 카드는 증거 노트에 «자동 제외»로 표시된다. 상단은 프로필·턴 정보만 남긴다. */
+        /* 손패 플로팅 스트립은 폰에서 제거 — 대신 [증거 노트] 패널 안에 「내 손패」 줄로 명시한다. */
         .hud-hand { display: none; }
+        .rp-hand {
+          display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center;
+          padding: 7px 12px; border-bottom: 1px solid var(--wds-bg-alternative); font-size: 12px;
+        }
       }
       @media (max-width: 420px) {
         .hud-hand { max-width: 92vw; width: auto; right: 8px; }
@@ -1456,6 +1468,7 @@
         <div class="rp-hresizer rp-hz" title="드래그로 높이 조절" aria-hidden="true"></div>
         <div class="rp-panel rp-evi" id="eviPanel">
           <div class="rp-head">🔍 증거 노트 <span class="rp-sub">(나만 봄)</span></div>
+          <div id="handPanel" class="rp-hand"></div>
           <div id="evidence" class="rp-body"></div>
         </div>
         <div class="rp-hresizer rp-hz" id="colResizer" title="드래그로 높이 조절" aria-hidden="true"></div>
