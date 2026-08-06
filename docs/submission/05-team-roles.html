@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>⑤ 팀원 롤 — zodiac-clue</title>
+<title>⑤ 팀원 롤 - zodiac-clue</title>
 <style>
   :root { --ink:#1a1712; --dim:#5b5346; --line:#d8cdb8; --card:#faf7f0; --accent:#b4622b; --gold:#9a7b2e; }
   * { box-sizing:border-box; }
@@ -11,7 +11,9 @@
     font-family:"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif; line-height:1.6; }
   .page { max-width:820px; margin:24px auto; background:#fff; padding:44px 52px;
     box-shadow:0 4px 24px rgba(0,0,0,.12); }
-  h1 { font-size:26px; margin:0 0 4px; letter-spacing:-.3px; }
+  h1 { font-size:25px; margin:0 0 2px; letter-spacing:-.4px; }
+  .lead { font-size:14.5px; color:var(--dim); margin:2px 0 6px; }
+  .tag { display:inline-block; background:var(--card); border:1px solid var(--line); border-radius:999px; padding:2px 10px; font-size:12px; color:var(--dim); }
   .sub { color:var(--dim); font-size:13px; margin:0 0 4px; }
   .draft { display:inline-block; background:#fbe9d8; color:var(--accent); border:1px solid #e6c3a0;
     border-radius:999px; padding:2px 10px; font-size:12px; font-weight:700; }
@@ -41,14 +43,14 @@
 </head>
 <body>
 <div class="page">
-  <h1>제출물 ⑤ — 팀원 롤 기술서</h1>
-  <p class="sub">zodiac-clue · NHN NAN 2026 사전과제 · 마감 2026-08-10</p>
-  <p class="sub">팀 <b>바이브 코딩 방범대</b> · 3인</p>
+  <h1>팀원 롤 기술서</h1>
+  <p class="lead">팀 <b>바이브 코딩 방범대</b> · 3인 · 각자의 직무와 담당 역할.</p>
+  <p><span class="tag">제출물 ⑤ · 팀원 롤</span> <span class="tag">NHN NAN 2026 사전과제</span></p>
 
   <h2>1. 팀 개요</h2>
   <table>
     <tr><th>항목</th><th>내용</th></tr>
-    <tr><td>팀 구성</td><td>3인 — 아래 「팀원」</td></tr>
+    <tr><td>팀 구성</td><td>3인, 아래 「팀원」</td></tr>
     <tr><td>팀명</td><td><b>바이브 코딩 방범대</b></td></tr>
     <tr><td>협업 채널</td><td>Discord <code>#nan-2026</code></td></tr>
     <tr><td>협업 방식</td><td>회의체에서 컨셉·방향 결정 → 문서로 고정 → 구현. 3인 팀이라 역할 겸임 전제.</td></tr>
@@ -66,8 +68,8 @@
   <table>
     <tr><th>팀원</th><th>역할(확인된 범위)</th><th>근거</th></tr>
     <tr><td>안성진</td><td>개발 총괄 · 구현 · 문서 · 배포 · AI 연동</td><td>git 커밋 이력, 회의록 정리 작성</td></tr>
-    <tr><td>이종훈</td><td>기획 · 게임 룰 설계 · 시장/기술 리서치 발주 · 방향 제안</td><td>브레인스토밍 문서 4건(§3.2), 회의체 룰 논의</td></tr>
-    <tr><td>윤다희</td><td>기획 · 게임 룰 설계 · 문서 톤 보정 · 보드 디자인 · 방/캐릭터 아트 에셋</td><td>회의록, <code>quokka</code> 브랜치, 방·캐릭터 이미지 원본</td></tr>
+    <tr><td>이종훈</td><td>기획 · 게임 룰 설계 · 시장/기술 리서치 발주 · 방향 제안</td><td>브레인스토밍 문서, 회의체 룰 논의</td></tr>
+    <tr><td>윤다희</td><td>기획 · 게임 룰 설계 · 문서 톤 보정 · 보드 디자인 · 방/캐릭터 아트 에셋</td><td>회의록, 방·캐릭터 이미지 원본</td></tr>
   </table>
 
   <h2>3. 개인별 상세</h2>
@@ -84,10 +86,10 @@
   <h3>3.2 이종훈 <span class="who"><span class="hd">스마트팩토리 엔지니어 · 4년차</span></span></h3>
   <p>기획 / 게임 룰 설계 / 리서치 / 방향 제안</p>
   <ul>
-    <li>게임 룰 설계: 클루형 추리 규칙(용의자·장물·방·반증·고발) 회의체에서 함께 확정.</li>
-    <li>주최사 포트폴리오 분석 발주(<code>brainstorming/20260715-nhn-revenue-genre.md</code>).</li>
-    <li>엔진·스택 조사 발주(<code>brainstorming/20260715-game-engines.md</code>).</li>
-    <li>게임 방향 제안(<code>20260714-game-ideas.md</code> 방향 Ⓔ·Ⓕ).</li>
+    <li>게임 룰 설계: 클루형 추리 규칙(용의자·장물·방·반증·고발)을 회의체에서 함께 확정.</li>
+    <li>주최사 포트폴리오·매출 분석 발주.</li>
+    <li>게임 엔진·스택 비교 조사 발주.</li>
+    <li>게임 방향 제안.</li>
   </ul>
 
   <h3>3.3 윤다희 <span class="who"><span class="hd">프로덕트 디자이너 · 1년차</span></span></h3>
@@ -97,20 +99,20 @@
     <li>게임 룰 설계: 클루형 추리 규칙을 회의체에서 함께 확정.</li>
     <li>문서 톤 보정: 사람용 소개·설명 문서의 문안과 톤 검수.</li>
     <li>보드 디자인: 게임 보드 배치와 방 레이아웃 디자인 변경 반영.</li>
-    <li>아트·에셋: 방·캐릭터 이미지 원본 제공(<code>quokka</code> 브랜치).</li>
+    <li>아트·에셋: 방·캐릭터 이미지 원본 제공.</li>
   </ul>
 
   <h2>4. 의사결정 이력</h2>
   <table>
     <tr><th>일자</th><th>결정</th></tr>
-    <tr><td>07-14</td><td>킥오프 — 과제·마감·제출물 5종 공유, 아이디어 후보 정리</td></tr>
+    <tr><td>07-14</td><td>킥오프, 과제·마감·제출물 5종 공유, 아이디어 후보 정리</td></tr>
     <tr><td>07-15</td><td>NHN 매출·장르 / 엔진 비교 리서치</td></tr>
-    <tr><td>07-18</td><td>컨셉 확정 — 소규모 퍼즐 / 클루 기반 추리 / AI NPC, 배경 「호랑이 생신 잔치」</td></tr>
+    <tr><td>07-18</td><td>컨셉 확정, 소규모 퍼즐 / 클루 기반 추리 / AI NPC, 배경 「호랑이 생신 잔치」</td></tr>
     <tr><td>07-19~</td><td>구현 착수</td></tr>
   </table>
 
   <div class="foot">
-    zodiac-clue · 제출물 ⑤ 팀원 롤 · 팀 바이브 코딩 방범대
+    zodiac-clue · 제출물 ⑤ 팀원 롤 · 심사 제출용
   </div>
 </div>
 </body>

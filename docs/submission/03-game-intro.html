@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>③ 게임 소개 — zodiac-clue</title>
+<title>③ 게임 소개 - zodiac-clue</title>
 <style>
   :root { --ink:#1a1712; --dim:#5b5346; --line:#d8cdb8; --card:#faf7f0; --accent:#b4622b; --gold:#9a7b2e; }
   * { box-sizing:border-box; }
   html,body { margin:0; background:#eae4d8; color:var(--ink);
     font-family:"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif; line-height:1.62; }
   .page { max-width:820px; margin:24px auto; background:#fff; padding:44px 52px; box-shadow:0 4px 24px rgba(0,0,0,.12); }
-  h1 { font-size:27px; margin:0 0 2px; letter-spacing:-.4px; }
+  h1 { font-size:25px; margin:0 0 2px; letter-spacing:-.4px; }
   .lead { font-size:14.5px; color:var(--dim); margin:2px 0 6px; }
   .tag { display:inline-block; background:var(--card); border:1px solid var(--line); border-radius:999px;
     padding:2px 10px; font-size:12px; color:var(--dim); }
@@ -33,27 +33,27 @@
 </head>
 <body>
 <div class="page">
-  <h1>zodiac-clue — 호랑이 생신 잔치</h1>
+  <h1>zodiac-clue · 호랑이 생신 잔치</h1>
   <p class="lead">십이지 손님 중 <b>잔치 음식·선물을 훔친 도둑</b>을 추리하는 <b>웹 멀티플레이 추리 게임</b>. 빈자리는 <b>AI NPC</b>가 채워 함께 플레이.</p>
-  <p><span class="tag">제출물 ③ 게임 소개</span> <span class="tag">NHN NAN 2026 사전과제</span></p>
+  <p><span class="tag">제출물 ③ · 게임 소개</span> <span class="tag">NHN NAN 2026 사전과제</span></p>
 
   <h2>심사자 60초 요약</h2>
   <table class="sixty">
     <tr><th>한 판 하려면</th><td><a href="https://zodiac-clue.site">zodiac-clue.site</a> → <b>[방 만들기]</b> → 캐릭터 클릭 → <b>[잔치 시작]</b> (3클릭, 계정·설치 없음) · 더 빠르게는 <code>?solo=1</code></td></tr>
-    <tr><th>혼자 되나</th><td><b>된다.</b> 6인 미만이면 AI NPC가 좌석을 자동 충원 — 1인 접속으로도 정식 규칙 판이 성립.</td></tr>
+    <tr><th>혼자 되나</th><td><b>된다.</b> 6인 미만이면 AI NPC가 좌석을 자동 충원, 1인 접속으로도 정식 규칙 판이 성립.</td></tr>
     <tr><th>AI 경계</th><td><b>정답·반증·승패 판정 = 결정론 규칙엔진</b> / <b>LLM(Gemini) = NPC 대사(표현)만.</b> 정답 봉투는 어떤 경로로도 LLM에 넘기지 않는다.</td></tr>
     <tr><th>AI가 돌았다는 증거</th><td>화면 우측 <b>AI 칩</b>(<code>✨LLM · ♻캐시 · ⚙폴백</code>) + 대사 줄마다 경로·지연 배지(<code>✨ 0.9s</code>) + <code>GET /health</code>. 실측 1판 = <b>LLM 19 · 폴백 4 · 캐시 0</b>.</td></tr>
     <tr><th>게임이 성립하나</th><td>사람 승률 <b>2.3% → 21.6%</b>(6인 공정 몫 16.7%) · 봇도 <b>7.0%의 판에서 오답 고발로 탈락</b>한다.</td></tr>
   </table>
 
-  <h2>AI를 어떻게 썼는가 — 그리고 그 증거</h2>
+  <h2>AI를 어떻게 썼는가, 그리고 그 증거</h2>
   <ul>
     <li><b class="k">경계가 먼저다.</b> 정답 봉투·반증·승패·주사위는 결정론 규칙엔진만 만든다. LLM은 대사 한 줄만 쓴다. 검증기가 <code>NarrationInput</code>을 정적 파싱해 <b>정답·손패 필드가 존재하지 않음</b>을 매 실행 증명한다.</li>
-    <li><b class="k">페르소나가 대사에만 있지 않다.</b> 봇 고발 판단에 성격에서 유도한 12값이 들어가 <code>p = nerve × (1/조합수)</code>로 지른다. 호랑이는 성급히, 양 목동은 신중 — 최상/최하 <b>14배</b> 차이가 실측된다. 임의 마법상수 0개, <code>Math.random()</code>은 판 시드 1회뿐이라 <b>결정론</b>이다.</li>
-    <li><b class="k">계측을 붙였다.</b> <code>narrate()</code>가 경로·지연·모델·폴백사유(6종)를 돌려준다. <b>전부 폴백이어도 숨기지 않고 사유와 함께 표시</b>한다 — 값을 감추는 칩은 계측이 없는 것과 같다.</li>
-    <li><b class="k">그 계측이 우리 주장을 반증했다.</b> "LLM 왕복 ~1.2초"는 실측 <b>평균 926ms</b>, "캐시가 완충한다"던 논리는 <b>히트 0/24</b>로 발동 안 함 — 문서를 실측에 맞춰 고쳤다.</li>
-    <li><b class="k">AI를 '쓴' 게 아니라 '지휘'했다.</b> 이 게임 자체를 팀이 <b>디스코드로 에이전트에 실시간 지시</b>해 만들었다 — 팀원별 전용 브랜치+독립 워크트리로 격리, 브랜치별 프리뷰 URL로 즉시 확인하되 <b>병합·배포 승인은 사람</b>이 쥔다.</li>
-    <li><b class="k">못 한 것은 못 했다고 쓴다.</b> 실호출 경로·지연 분포(C7)는 무료 쿼터를 소모하므로 미판정으로 남겼다 — 추정치로 채우지 않았다.</li>
+    <li><b class="k">페르소나가 대사에만 있지 않다.</b> 봇 고발 판단에 성격에서 유도한 12값이 들어가 <code>p = nerve × (1/조합수)</code>로 지른다. 호랑이는 성급히, 양 목동은 신중, 최상/최하 <b>14배</b> 차이가 실측된다. 임의 마법상수 0개, <code>Math.random()</code>은 판 시드 1회뿐이라 <b>결정론</b>이다.</li>
+    <li><b class="k">계측을 붙였다.</b> <code>narrate()</code>가 경로·지연·모델·폴백사유(6종)를 돌려준다. <b>전부 폴백이어도 숨기지 않고 사유와 함께 표시</b>한다, 값을 감추는 칩은 계측이 없는 것과 같다.</li>
+    <li><b class="k">그 계측이 우리 주장을 반증했다.</b> "LLM 왕복 ~1.2초"는 실측 <b>평균 926ms</b>, "캐시가 완충한다"던 논리는 <b>히트 0/24</b>로 발동 안 함, 문서를 실측에 맞춰 고쳤다.</li>
+    <li><b class="k">AI를 '쓴' 게 아니라 '지휘'했다.</b> 이 게임 자체를 팀이 <b>디스코드로 에이전트에 실시간 지시</b>해 만들었다, 팀원별 전용 브랜치+독립 워크트리로 격리, 브랜치별 프리뷰 URL로 즉시 확인하되 <b>병합·배포 승인은 사람</b>이 쥔다.</li>
+    <li><b class="k">못 한 것은 못 했다고 쓴다.</b> 실호출 경로·지연 분포(C7)는 무료 쿼터를 소모하므로 미판정으로 남겼다, 추정치로 채우지 않았다.</li>
   </ul>
 
   <h2>왜 이 게임인가</h2>
@@ -61,11 +61,11 @@
     <li><b>장르 = 소규모 퍼즐 추리.</b> 규칙이 검증된 보드게임(클루) 위에 올려 D-23 스코프에서 완성 가능.</li>
     <li><b>AI가 없으면 규칙이 안 돈다.</b> 심사자는 혼자 링크를 눌러 플레이하는데, 클루는 상대 0명이면 반증이 성립 안 한다 → AI NPC 좌석 충원은 연출이 아니라 <b>게임 성립 조건</b>이다.</li>
     <li><b>주최사 정합.</b> NHN 게임 매출은 웹보드+퍼즐/캐주얼이 합계 약 70%. 보드 규칙 + 짧은 세션 + 리플레이가 그 결이다. 단, <b>사행성 소재는 배제</b>(정통 룰만).</li>
-    <li><b>테마 = 십이지.</b> 12명을 별도 설명 없이 즉시 식별, 슬롯(플레이어 6 + 고정 NPC 6)과 정확히 맞는다. 카드 ID는 로마자, 화면 라벨만 한글 — <b>주제 교체 가능한 엔진</b>.</li>
+    <li><b>테마 = 십이지.</b> 12명을 별도 설명 없이 즉시 식별, 슬롯(플레이어 6 + 고정 NPC 6)과 정확히 맞는다. 카드 ID는 로마자, 화면 라벨만 한글, <b>주제 교체 가능한 엔진</b>.</li>
   </ul>
 
   <h2>목표 · 조작</h2>
-  <p><b>목표</b> — 봉인된 정답(<b>누가·무엇을·어디서</b>)을 추리해 가장 먼저 정확히 <b>고발</b>하면 승리. 예: "게코 도령이 사랑방에서 잡채를 훔쳤다."</p>
+  <p><b>목표</b>: 봉인된 정답(<b>누가·무엇을·어디서</b>)을 추리해 가장 먼저 정확히 <b>고발</b>하면 승리. 예: "게코 도령이 사랑방에서 잡채를 훔쳤다."</p>
   <ul>
     <li><b>이동</b>: 방향키(WASD), 턴마다 <b>주사위 2d6</b>만큼 복도 이동. 방은 입구(🚪)로만 출입, 들어간 턴엔 못 나감.</li>
     <li><b>추리/고발</b>: 방에서 [추리하기] → 지목 → 시계방향 반증. 제안한 턴에 바로 고발(30초 창). 같은 방 연속 제안 불가.</li>
@@ -75,17 +75,17 @@
 
   <h2>주요 특징</h2>
   <ul>
-    <li><b>AI NPC 자동 충원</b> — 봇 = 규칙기반 추리 + LLM 대사, 성격에 따라 도박 고발로 탈락하기도.</li>
+    <li><b>AI NPC 자동 충원</b>, 봇 = 규칙기반 추리 + LLM 대사, 성격에 따라 도박 고발로 탈락하기도.</li>
     <li><b>비밀 통로</b> 대각 방 3쌍(주사위 없이 순간이동) · <b>고정 NPC(계략)</b> 다가가면 이동 보너스 + 귓속말 단서(당사자에게만 전문).</li>
     <li><b>증거 노트 · 제안 기록표</b> 개인 메모(내 패·엿본 카드 자동 제외) + 흩어진 제안·반증을 한 행으로 모음.</li>
-    <li><b>혼자 두어도 판이 안 멈춘다</b> — 이탈 좌석은 봇이 인계, 재접속 시 손패·기록 복구. 리매치 즉시.</li>
-    <li><b>접근성</b> — <code>?cvd=1</code> 색각 대체 표기(색 단독 식별 금지), 포커스 링, 모바일 대응(우측 컬럼 접기).</li>
+    <li><b>혼자 두어도 판이 안 멈춘다</b>, 이탈 좌석은 봇이 인계, 재접속 시 손패·기록 복구. 리매치 즉시.</li>
+    <li><b>접근성</b>, <code>?cvd=1</code> 색각 대체 표기(색 단독 식별 금지), 포커스 링, 모바일 대응(우측 컬럼 접기).</li>
   </ul>
 
   <h2>종료 조건</h2>
   <ul>
     <li>정답 고발 성공 → <b>승리(종료)</b>. 오답 고발 → <b>탈락</b>(관전·반증만), 최후 1인 생존 시 승리.</li>
-    <li>어떤 경로로 끝나든 <b>정답 봉투를 공개</b> — 답을 모른 채 끝나는 판은 없다.</li>
+    <li>어떤 경로로 끝나든 <b>정답 봉투를 공개</b>, 답을 모른 채 끝나는 판은 없다.</li>
   </ul>
 
   <h2>실행 방법</h2>
@@ -113,7 +113,7 @@
     <li>플레이 영상: <a href="https://youtu.be/s-YfjsEzDHk">youtu.be/s-YfjsEzDHk</a></li>
   </ul>
 
-  <div class="foot">zodiac-clue · 제출물 ③ 게임 소개 · 심사 제출용 PDF</div>
+  <div class="foot">zodiac-clue · 제출물 ③ 게임 소개 · 심사 제출용</div>
 </div>
 </body>
 </html>
