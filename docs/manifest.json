@@ -15,11 +15,15 @@
       },
       {
         "path": "submission/03-game-intro.html",
-        "title": "제출물 ③ 게임 소개"
+        "title": "③ 게임 소개"
       },
       {
         "path": "submission/04-ai-tech.html",
-        "title": "제출물 ④ AI 활용 기술 문서 (요약)"
+        "title": "④ AI 활용 기술 문서 (요약)"
+      },
+      {
+        "path": "submission/05-team-roles.html",
+        "title": "⑤ 팀원 롤"
       }
     ]
   },
@@ -29,7 +33,7 @@
     "items": [
       {
         "path": "design/game-intro.html",
-        "title": "제출물 ③ 게임 소개: zodiac-clue"
+        "title": "게임 소개 (전체판)"
       },
       {
         "path": "design/20260727-view-contract-spec.html",
@@ -57,7 +61,7 @@
       },
       {
         "path": "design/20260720-ai-tech-doc.html",
-        "title": "제출물 ④ AI 활용 기술 문서"
+        "title": "AI 활용 기술 문서 (전체판)"
       }
     ]
   },

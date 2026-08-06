@@ -15,16 +15,15 @@
       },
       {
         "path": "submission/03-game-intro.html",
-        "title": "제출물 ③ 게임 소개"
+        "title": "③ 게임 소개"
       },
       {
         "path": "submission/04-ai-tech.html",
-        "title": "제출물 ④ AI 활용 기술 문서 (요약)"
+        "title": "④ AI 활용 기술 문서 (요약)"
       },
       {
         "path": "submission/05-team-roles.html",
-        "title": "제출물 ⑤ 팀원 롤",
-        "private": true
+        "title": "⑤ 팀원 롤"
       }
     ]
   },
@@ -34,7 +33,7 @@
     "items": [
       {
         "path": "design/game-intro.html",
-        "title": "제출물 ③ 게임 소개: zodiac-clue"
+        "title": "게임 소개 (전체판)"
       },
       {
         "path": "design/20260729-mafia-content-design.html",
@@ -43,7 +42,7 @@
       },
       {
         "path": "design/20260728-video-storyboard.html",
-        "title": "제출물 ② 플레이 영상 촬영 콘티",
+        "title": "플레이 영상 촬영 콘티",
         "private": true
       },
       {
@@ -87,7 +86,7 @@
       },
       {
         "path": "design/20260720-ai-tech-doc.html",
-        "title": "제출물 ④ AI 활용 기술 문서"
+        "title": "AI 활용 기술 문서 (전체판)"
       }
     ]
   },
@@ -113,6 +112,11 @@
     "label": "🗂 플랜 · 진행",
     "dir": "plans/active",
     "items": [
+      {
+        "path": "plans/active/board-cell-face-tokens.md",
+        "title": "보드 셀 확대 + 얼굴 토큰 (뷰1)",
+        "private": true
+      },
       {
         "path": "plans/active/19-gecko-ui-backlog.md",
         "title": "19 — 게코 브랜치 UI 백로그 (07-30~)",

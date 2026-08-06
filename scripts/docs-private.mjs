@@ -14,7 +14,8 @@ export const PRIVATE_DIRS = [
 
 /** 파일 단위 제외 (docs/ 기준 상대 경로, 확장자 제외한 basename 매칭) */
 export const PRIVATE_FILES = [
-  "submission/05-team-roles", // ⑤ 최종본 — 실명 포함이라 공개 docs 사이트엔 배포하지 않는다(로컬·PDF 제출만)
+  // ⑤ 팀원 롤(submission/05-team-roles)은 **공개**로 둔다 — 제출물 5종을 목록에 모두 노출한다는
+  // 결정(2026-08-06). 실명은 「팀원 롤 문서」에만 허용되는 예외라 규칙과 충돌하지 않는다.
   "design/submission-checklist", // 미제작 항목·심사 프로세스 메모
   "design/20260728-team-roles", // ⑤ 초안(미확정·[확인 필요] 포함)
   "design/20260728-video-storyboard", // 미구현 기능 표시가 드러남
