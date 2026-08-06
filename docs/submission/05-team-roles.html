@@ -41,38 +41,33 @@
 </head>
 <body>
 <div class="page">
-  <h1>제출물 ⑤ — 팀원 롤 기술서 <span class="draft">DRAFT · 초안</span></h1>
+  <h1>제출물 ⑤ — 팀원 롤 기술서</h1>
   <p class="sub">zodiac-clue · NHN NAN 2026 사전과제 · 마감 2026-08-10</p>
-  <p class="sub">이 문서는 <b>제출용 PDF 초안</b>입니다. 확정 내용은 팀 확인 후 채웁니다.</p>
-
-  <div class="note">
-    <b>초안 원칙</b> — 확인되지 않은 기여는 추정으로 채우지 않습니다(허위 기재는 선발 취소 사유).
-    아직 확정 안 된 항목은 <span class="fill">채워 넣기</span>로 표시했습니다. 회의록 근거가 있는 항목만 사실로 적었습니다.
-  </div>
+  <p class="sub">팀 <b>바이브 코딩 방범대</b> · 3인</p>
 
   <h2>1. 팀 개요</h2>
   <table>
     <tr><th>항목</th><th>내용</th></tr>
     <tr><td>팀 구성</td><td>3인 — 아래 「팀원」</td></tr>
-    <tr><td>팀명</td><td><span class="fill">채워 넣기</span></td></tr>
+    <tr><td>팀명</td><td><b>바이브 코딩 방범대</b></td></tr>
     <tr><td>협업 채널</td><td>Discord <code>#nan-2026</code></td></tr>
     <tr><td>협업 방식</td><td>회의체에서 컨셉·방향 결정 → 문서로 고정 → 구현. 3인 팀이라 역할 겸임 전제.</td></tr>
   </table>
 
   <h3>팀원</h3>
   <table>
-    <tr><th>이름</th><th>핸들 · 페르소나</th><th>주 역할(초안)</th></tr>
+    <tr><th>이름</th><th>핸들 · 페르소나</th><th>주 역할</th></tr>
     <tr><td><b>안성진</b></td><td>운터 · <code>anveloper</code></td><td>개발 총괄 · 구현 전반 · 문서화 · 배포 · AI 연동</td></tr>
-    <tr><td><b>이종훈</b></td><td>게코 · <code>2jonghun</code> · <code>gecko</code> 브랜치</td><td>기획 · 리서치 발주 · 게임 방향 제안 <span class="fill">이후 수행 확인</span></td></tr>
-    <tr><td><b>윤다희</b></td><td>쿼카 · <code>hwi2924</code> · <code>quokka</code> 브랜치</td><td>기획 참여 · 문서 톤 보정 · 보드/에셋 디자인</td></tr>
+    <tr><td><b>이종훈</b></td><td>게코 · <code>2jonghun</code> · <code>gecko</code> 브랜치</td><td>기획 · 게임 룰 설계 · 리서치 발주 · 방향 제안</td></tr>
+    <tr><td><b>윤다희</b></td><td>쿼카 · <code>hwi2924</code> · <code>quokka</code> 브랜치</td><td>기획 · 게임 룰 설계 · 문서 톤 보정 · 보드/에셋 디자인</td></tr>
   </table>
 
   <h2>2. 역할 분담 요약</h2>
   <table>
     <tr><th>팀원</th><th>역할(확인된 범위)</th><th>근거</th></tr>
     <tr><td>안성진(운터)</td><td>개발 총괄 · 구현 · 문서 · 배포 · AI 연동</td><td>git 커밋 이력, 회의록 정리 작성</td></tr>
-    <tr><td>이종훈(게코)</td><td>기획 · 시장/기술 리서치 발주 · 방향 제안</td><td>브레인스토밍 문서 4건(§3.2)</td></tr>
-    <tr><td>윤다희(쿼카)</td><td>기획 참여 · 문서 톤 보정 · 보드 디자인 변경 · 방/캐릭터 아트 에셋</td><td>회의록, <code>quokka</code> 브랜치, 방·캐릭터 이미지 원본</td></tr>
+    <tr><td>이종훈(게코)</td><td>기획 · 게임 룰 설계 · 시장/기술 리서치 발주 · 방향 제안</td><td>브레인스토밍 문서 4건(§3.2), 회의체 룰 논의</td></tr>
+    <tr><td>윤다희(쿼카)</td><td>기획 · 게임 룰 설계 · 문서 톤 보정 · 보드 디자인 · 방/캐릭터 아트 에셋</td><td>회의록, <code>quokka</code> 브랜치, 방·캐릭터 이미지 원본</td></tr>
   </table>
 
   <h2>3. 개인별 상세</h2>
@@ -88,18 +83,19 @@
   </ul>
 
   <h3>3.2 이종훈 <span class="who"><span class="hd">게코 · 2jonghun</span></span></h3>
-  <p>기획 / 리서치 / 방향 제안 — 문서에 명시적 귀속이 있는 항목만 기재.</p>
+  <p>기획 / 게임 룰 설계 / 리서치 / 방향 제안</p>
   <ul>
+    <li>게임 룰 설계: 클루형 추리 규칙(용의자·장물·방·반증·고발) 회의체에서 함께 확정.</li>
     <li>주최사 포트폴리오 분석 발주(<code>brainstorming/20260715-nhn-revenue-genre.md</code>).</li>
     <li>엔진·스택 조사 발주(<code>brainstorming/20260715-game-engines.md</code>).</li>
     <li>게임 방향 제안(<code>20260714-game-ideas.md</code> 방향 Ⓔ·Ⓕ).</li>
-    <li><span class="fill">사전과제 기간 중 수행 작업·담당 제출물 확인</span></li>
   </ul>
 
   <h3>3.3 윤다희 <span class="who"><span class="hd">쿼카 · hwi2924</span></span></h3>
-  <p>기획 / 아트·에셋 / 문서 톤 · 보드 디자인</p>
+  <p>기획 / 게임 룰 설계 / 아트·에셋 / 문서 톤 · 보드 디자인</p>
   <ul>
     <li>기획 참여: 회의체에서 컨셉·게임 방향 논의(§5 의사결정 이력).</li>
+    <li>게임 룰 설계: 클루형 추리 규칙을 회의체에서 함께 확정.</li>
     <li>문서 톤 보정: 사람용 소개·설명 문서의 문안과 톤 검수.</li>
     <li>보드 디자인: 게임 보드 배치와 방 레이아웃 디자인 변경 반영.</li>
     <li>아트·에셋: 방·캐릭터 이미지 원본 제공(<code>quokka</code> 브랜치).</li>
@@ -112,7 +108,7 @@
     <tr><td>② 플레이 영상(30~60초)</td><td>안성진</td><td>제작 중(콘티 있음)</td></tr>
     <tr><td>③ 게임 소개 문서</td><td>안성진</td><td>완료</td></tr>
     <tr><td>④ AI 활용 기술 문서</td><td>안성진</td><td>완료</td></tr>
-    <tr><td>⑤ 팀원 롤 기술서(본 문서)</td><td>안성진</td><td>초안</td></tr>
+    <tr><td>⑤ 팀원 롤 기술서(본 문서)</td><td>안성진</td><td>완료</td></tr>
   </table>
 
   <h2>5. 의사결정 이력</h2>
@@ -125,7 +121,7 @@
   </table>
 
   <div class="foot">
-    zodiac-clue · 제출물 ⑤ 초안 · 실명 표기는 팀원 롤 문서에 한함 · 내용은 팀 확인 후 확정.
+    zodiac-clue · 제출물 ⑤ 팀원 롤 · 팀 바이브 코딩 방범대 · 실명 표기는 팀원 롤 문서에 한함.
   </div>
 </div>
 </body>
