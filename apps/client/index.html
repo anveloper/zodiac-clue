@@ -1062,21 +1062,9 @@
           padding: 5px 9px; font-size: 12px; line-height: 1.45;
           background: rgba(255, 248, 239, 0.85);
         }
-        /* AI 계측 HUD — 손패(top 72 · 실측 높이 48) 아래 6px. 손패와 **같은 좌측선·같은
-           무게**로 두어 상단 좌측이 한 덩어리로 읽히게 한다(새 축을 만들지 않는다). */
-        .hud-ai {
-          display: block;
-          left: calc(8px + var(--sa-l, 0px)); right: auto;
-          top: calc(162px + var(--sa-t, 0px)); bottom: auto;
-          width: max-content; max-width: calc(100% - 16px);
-          padding: 5px 9px; font-size: 12px; line-height: 1.45;
-          background: rgba(255, 248, 239, 0.85);
-        }
-        /* 컬럼을 펴면 그 안의 `#aiPanel`(평균·모델·범례까지 있는 원본)이 뜬다 →
-           같은 계측이 한 화면에 두 벌 뜨지 않도록 그동안은 이 HUD를 접는다.
-           (D-패드가 `.dp-off`로 하는 것과 같은 규약.) 접었다 펴는 사이에 사라지는 정보는
-           없다 — 어느 쪽이 떠 있든 계측을 보는 곳이 정확히 하나다. */
-        .hud-ai.ai-off { display: none; }
+        /* 플로팅 AI HUD는 폰에서 **감춘다** — 보드 위를 늘 덮어 「중요하지 않은 AI 전송
+           내용이 계속 보인다」는 피드백. 계측은 [증거 노트] 컬럼의 AI 패널에 그대로 있다. */
+        .hud-ai { display: none; }
         /* 뷰 선택은 조작이 아니라 **관람 설정**이다 — 게임 버튼과 같은 무게로 두면 안 된다.
            D-패드 반대쪽(좌하단)에 작은 칩으로 놓아 하단이 좌우 대칭을 이루게 한다. */
         .hud-view {
@@ -1113,6 +1101,13 @@
         #aiPanel summary, #eviPanel .rp-head { padding-right: 58px; }
         /* 컬럼 좌측 너비 핸들은 좁은 화면에서 보드 조작과 충돌한다 */
         .rp-wresizer { display: none; }
+        /* 패널 사이 «높이 드래그바»도 폰에선 손가락 드래그가 어렵고 자리만 먹는다 → 숨긴다.
+           컬럼이 세로로 스크롤되므로 높이 조절 없이도 다 볼 수 있다(드래그바 여백 피드백). */
+        .rp-hz { display: none; }
+        /* 컬럼을 열면 「증거 노트」가 먼저 오도록 AI 패널을 맨 아래로 민다(폰 우선순위 낮음). */
+        .rp-ai { order: 5; }
+        /* 패널 사이 간격을 폰에 맞게 좁힌다. */
+        .rp-col { gap: 6px; }
         #rpToggle { display: flex; }
         .hud-help { display: none; }
         /* 손패 제목과 카드 줄을 한 줄로 눕힌다(세로 2줄이면 보드를 그만큼 더 먹는다). */
