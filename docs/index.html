@@ -138,7 +138,7 @@
   .wrap { max-width:none !important; padding:0 !important; }
   /* 안내문 — 대시보드를 인쇄한 사람이 무엇을 해야 하는지 */
   body::before {
-    content:"🐯 zodiac-clue 문서 대시보드\A 이 페이지는 문서를 골라 보는 뷰어입니다. 인쇄해도 내용이 담기지 않습니다.\A PDF로 저장하려면 왼쪽 트리에서 문서를 연 뒤 상단 [원문 ↗]으로 그 문서를 새 탭에 띄우고, 거기서 인쇄하세요.\A (각 문서는 인쇄 전용 라이트 팔레트를 갖고 있습니다.)\A 라이브: https://zodiac-clue.vercel.app  ·  소스: https://github.com/anveloper/zodiac-clue";
+    content:"🐯 zodiac-clue 문서 대시보드\A 이 페이지는 문서를 골라 보는 뷰어입니다. 인쇄해도 내용이 담기지 않습니다.\A PDF로 저장하려면 왼쪽 트리에서 문서를 연 뒤 상단 [원문 ↗]으로 그 문서를 새 탭에 띄우고, 거기서 인쇄하세요.\A (각 문서는 인쇄 전용 라이트 팔레트를 갖고 있습니다.)\A 라이브: https://zodiac-clue.site  ·  소스: https://github.com/anveloper/zodiac-clue";
     display:block; white-space:pre-wrap; font-size:13px; line-height:1.9; color:#1a1712;
     background:#fdf6e4; border:1px solid #b08b3e; border-left:4px solid #8a6a1e;
     border-radius:10px; padding:18px 22px; margin:0 0 16px;
@@ -179,7 +179,7 @@
     <div class="side-head">
       <div class="brand">🐯 zodiac-clue 문서</div>
       <div class="links">
-        <a href="https://zodiac-clue.vercel.app" target="_blank">🎮 라이브</a>
+        <a href="https://zodiac-clue.site" target="_blank">🎮 라이브</a>
         <a href="https://github.com/anveloper/zodiac-clue" target="_blank">GitHub</a>
       </div>
     </div>
@@ -300,7 +300,8 @@
     $("content").innerHTML=`<div class="home-card">
       <h1>🐯 zodiac-clue 문서</h1>
       <p>호랑이 생신 잔치 · 십이지 손님 중 도둑을 찾는 웹 멀티 추리 게임. 빈자리는 AI NPC가 채웁니다.</p>
-      <p class="live">🎮 라이브: <a href="https://zodiac-clue.vercel.app" target="_blank">zodiac-clue.vercel.app</a>
+      <p class="live">🎮 라이브: <a href="https://zodiac-clue.site" target="_blank">zodiac-clue.site</a>
+        &nbsp;·&nbsp; <a href="https://zodiac-clue.vercel.app" target="_blank">vercel.app(별칭)</a>
         &nbsp;·&nbsp; <a href="https://github.com/anveloper/zodiac-clue" target="_blank">GitHub</a></p>
 
       <h2>먼저 볼 것</h2>
@@ -382,7 +383,7 @@
         내부 문서 본문 파일도 마찬가지로 복사되지 않는다. 즉 배포본에는 **보여줄 데이터도,
         열어볼 문서도 없다** — 이 스크립트가 어떻게 동작하든 카드는 생기지 않는다.
      ② **요청** — 그럼에도 배포본에서 404 요청이 나가지 않도록, 호스트가 로컬일 때만 읽는다.
-        아래 판정은 **로컬 화이트리스트**다. 배포 도메인(zodiac-clue.vercel.app · *.vercel.app ·
+        아래 판정은 **로컬 화이트리스트**다. 배포 도메인(zodiac-clue.site · zodiac-clue.vercel.app · *.vercel.app ·
         프리뷰 URL)은 어느 항목에도 해당하지 않으므로 **반드시 «배포»로 떨어진다.**
         LAN IP(192.168.x.x 등)로 띄운 경우도 «배포»로 떨어진다 — 남에게 보여주는 상황이라
         가리는 쪽이 안전하다(fail-closed). */
