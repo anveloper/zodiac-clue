@@ -16,7 +16,7 @@
 ## 1. `packages/shared/src/view-consts.ts`
 
 ### 1.1 좌표계
-서버가 주는 위치 진실값은 그리드 칸 하나뿐(`x,y ∈ 0..23`). 뷰1·뷰4 = 픽셀(1칸 = `CELL_PX` 40), 뷰2·뷰3 = 월드 유닛(1칸 = `CELL_UNIT` 1.0). 환산은 `PX_PER_UNIT`(40) **하나로만** 한다.
+서버가 주는 위치 진실값은 그리드 칸 하나뿐(`x,y ∈ 0..23`). 뷰1·뷰4 = 픽셀(1칸 = `CELL_PX` 80), 뷰2·뷰3 = 월드 유닛(1칸 = `CELL_UNIT` 1.0). 환산은 `PX_PER_UNIT`(80) **하나로만** 한다.
 
 ### 1.2 표기 강도 (모든 뷰 동일 · 모션 프로파일 무관)
 "정보가 얼마나 죽어 보이는가"는 표현이 아니라 **정보**다. 뷰마다 다르면 오독이 생긴다.
@@ -101,7 +101,7 @@
 > **[완료] 2026-07-28 — 아래 항목은 `main.ts` 이관분까지 포함해 전부 이행됐다.** 목록은 지우지 않고 **무엇을 왜 고쳤는지의 이력**으로 남긴다. 남은 것은 `main.ts`의 `mount()`/`tick(dt)` 생명주기 축(로드맵 §9.5, 본행사 백로그)뿐이다.
 
 ### `scenes/game-scene.ts` (뷰1)
-- `CELL 40` → `CELL_PX` 재수출(호환) · `PLAYER_COLORS` **삭제** → `ZODIAC_COLOR[p.suspect]`
+- `CELL 80` → `CELL_PX` 재수출(호환) · `PLAYER_COLORS` **삭제** → `ZODIAC_COLOR[p.suspect]`
 - `MOVE_COOLDOWN_MS`·`MOVE_TWEEN_MS`·`CAM_SWITCH_DELAY`·`TYPE_MS`·`BUBBLE_HOLD_MS`·`C_*` → view-consts
 - `rightInset()` → 공용 `hudInset(): {right,bottom}` + ~~**`offsetParent === null || rect.width === 0` 가드**~~(§7.8 선행 조건)
   - [버그] **정정(07-28 구현 시점): `offsetParent === null` 가드는 이 DOM에서 틀렸다.** 우측 컬럼 `.rp-col`이 `position: fixed`이고 **fixed 요소의 `offsetParent`는 항상 `null`**이라, 넣으면 인셋이 영구 0이 된다. **zero-rect(`rect.width/height === 0`) + 화면 밖 + `display/visibility/opacity` 비표시** 판정으로 대체했다(로드맵 §9.2와 같은 진단). 구현: `apps/client/src/scenes/hud-inset.ts`(뷰1·2·3 공용 · 화면 절반 클램프 · ResizeObserver 캐시 · refcount `disconnect()`).

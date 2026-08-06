@@ -6,6 +6,7 @@ import {
   ELIM_ALPHA,
   GRID_HEIGHT,
   GRID_WIDTH,
+  ZODIAC,
   RING_CURRENT,
   ROOM_REGIONS,
   SPENT_ALPHA,
@@ -71,8 +72,12 @@ export const CELL = CELL_PX;
 export const BOARD_W = GRID_WIDTH * CELL;
 export const BOARD_H = GRID_HEIGHT * CELL;
 
-// 카메라: 근접(1.0)이 기본·최대 근처, 축소(<1)로 전체 조망
-const MIN_ZOOM = 0.3;
+/** 토큰 얼굴 텍스처 id — 십이지 + 계략 NPC 3종(쿼카·고양이·안드로이드). */
+const FACE_TOKEN_IDS: readonly string[] = [...ZODIAC, "quokka", "cat", "android"];
+
+// 카메라: 근접(1.0)이 기본·최대 근처, 축소(<1)로 전체 조망.
+// CELL 80으로 월드가 2배(1920)라 축소 하한을 올린다 — 0.4면 보드 ≈화면 53%(«20%까지 축소» 해소).
+const MIN_ZOOM = 0.4;
 const MAX_ZOOM = 1.25;
 const INIT_ZOOM = 1.0;
 const CAM_LERP = 0.12; // 내 캐릭터 추적(빠름)
@@ -187,7 +192,8 @@ type Token = {
   c: Phaser.GameObjects.Container;
   ring: Phaser.GameObjects.Arc;
   disc: Phaser.GameObjects.Arc;
-  face: Phaser.GameObjects.Text;
+  /** 얼굴 = 원형 프로필 이미지(있으면) · 없으면 이모지 폴백. */
+  face: Phaser.GameObjects.Image | Phaser.GameObjects.Text;
   name: Phaser.GameObjects.Text;
   /** 이름표 좌측 색 스트라이프 — 색과 이름을 같은 픽셀에. */
   stripe: Phaser.GameObjects.Rectangle;
@@ -291,6 +297,10 @@ export class GameScene extends Phaser.Scene implements ViewContract {
     }
     // 중앙 잔치상(ROOM_REGIONS 밖 · 별도 좌표)도 이미지가 있으면 로드.
     this.load.image("room-feast", "/assets/rooms/feast.webp");
+    // 토큰 얼굴 — 원형(투명 코너) webp 15종. CELL 80에서 프로필을 토큰으로 쓴다(§ board-cell-face-tokens).
+    for (const id of FACE_TOKEN_IDS) {
+      this.load.image(`face-${id}`, `/assets/characters/face/${id}.webp`);
+    }
   }
 
   create(): void {
@@ -897,11 +907,7 @@ export class GameScene extends Phaser.Scene implements ViewContract {
         const disc = this.add
           .circle(0, 0, CELL * 0.42, BOARD.helperDisc)
           .setStrokeStyle(TOKEN_OUTLINE_PX, BOARD.helperEdge);
-        const face = this.add
-          .text(0, 0, emoji(h.value), {
-            fontSize: `${Math.floor(CELL * 0.5)}px`,
-          })
-          .setOrigin(0.5);
+        const face = this.faceGO(h.value, CELL * 0.74);
         const mark = this.add
           .text(CELL * 0.3, -CELL * 0.3, "🃏", { fontSize: "15px" })
           .setOrigin(0.5);
@@ -1300,7 +1306,12 @@ export class GameScene extends Phaser.Scene implements ViewContract {
     const color = zodiacColor(suspect);
     this.tokens.forEach((t) => {
       if (t.suspect !== suspect) return;
-      t.face.setText(emoji(suspect));
+      // 얼굴은 suspect로만 정해져 이미 맞지만, 팔레트 재맞춤 경로에서 함께 되맞춘다.
+      if (t.face instanceof Phaser.GameObjects.Text) {
+        t.face.setText(emoji(suspect));
+      } else if (this.textures.exists(`face-${suspect}`)) {
+        t.face.setTexture(`face-${suspect}`);
+      }
       t.disc.setFillStyle(color);
       t.stripe.setFillStyle(color);
     });
@@ -1468,6 +1479,27 @@ export class GameScene extends Phaser.Scene implements ViewContract {
     return out;
   }
 
+  /**
+   * 토큰 얼굴 — 원형 프로필 이미지(있으면)를 색 디스크 위에 얹는다. 얼굴 webp는 코너가
+   * 투명해 마스크가 필요 없고, 디스크보다 약간 작게 얹어 «대표색 링»이 테두리로 드러난다.
+   * 텍스처가 없으면(미로드·미지원) 이모지 Text로 폴백한다.
+   */
+  private faceGO(
+    suspect: string,
+    diameter: number,
+  ): Phaser.GameObjects.Image | Phaser.GameObjects.Text {
+    const key = `face-${suspect}`;
+    if (this.textures.exists(key)) {
+      return this.add
+        .image(0, 0, key)
+        .setDisplaySize(diameter, diameter)
+        .setOrigin(0.5);
+    }
+    return this.add
+      .text(0, 0, emoji(suspect), { fontSize: `${Math.floor(diameter * 0.7)}px` })
+      .setOrigin(0.5);
+  }
+
   private createToken(id: string, a: ActorSnapshot): Token {
     // 색은 접속 순서가 아니라 `suspect`로 결정된다 — 판 도중에도 불변(§4).
     const color = zodiacColor(a.suspect);
@@ -1476,15 +1508,12 @@ export class GameScene extends Phaser.Scene implements ViewContract {
       .setStrokeStyle(3, RING_CURRENT)
       .setVisible(false);
     // 색면에는 반드시 아웃라인(§4.1) — 밝은 방바닥과 대비가 1.0까지 떨어지는 색이 있다.
+    // 디스크는 얼굴보다 약간 커서 대표색이 테두리 링으로 남는다(비슷한 톤 구분·다희 스펙).
     const disc = this.add
-      .circle(0, 0, CELL * 0.4, color)
+      .circle(0, 0, CELL * 0.42, color)
       .setStrokeStyle(TOKEN_OUTLINE_PX, TOKEN_OUTLINE_COLOR);
-    // 이모지 = 색에 의존하지 않는 1차 식별자. 색은 보조 단서다.
-    const face = this.add
-      .text(0, 0, emoji(a.suspect), {
-        fontSize: `${Math.floor(CELL * 0.52)}px`,
-      })
-      .setOrigin(0.5);
+    // 얼굴 프로필 = 색에 의존하지 않는 1차 식별자(원형 webp). 색 링은 보조 단서다.
+    const face = this.faceGO(a.suspect, CELL * 0.74);
     const name = this.add
       .text(0, CELL * 0.55, `${a.isBot ? "🤖" : ""}${a.name}`, {
         fontSize: "13px",
