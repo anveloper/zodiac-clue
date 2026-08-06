@@ -347,7 +347,23 @@
       // iframe이 스크롤 영역을 꽉 채우도록 wrap 패딩 제거
       content.style.maxWidth="none"; content.style.padding="0";
       $("scroll").style.overflow="hidden";
-      content.querySelector("iframe").style.height=$("scroll").clientHeight+"px";
+      const ifr=content.querySelector("iframe");
+      ifr.style.height=$("scroll").clientHeight+"px";
+      // iframe 내부 문서의 «못생긴 기본 회색 스크롤바»를 문서 톤에 맞춰 덧입힌다.
+      // 동일 출처라 contentDocument 접근이 되고, 개별 문서 15+개를 안 고쳐도 한 곳에서 일괄 적용된다.
+      ifr.addEventListener("load",()=>{
+        try{
+          const d=ifr.contentDocument; if(!d) return;
+          const s=d.createElement("style");
+          s.textContent=
+            "::-webkit-scrollbar{width:10px;height:10px}"+
+            "::-webkit-scrollbar-track{background:#eae4d8}"+
+            "::-webkit-scrollbar-thumb{background:#c7b48f;border-radius:5px;border:2px solid #eae4d8}"+
+            "::-webkit-scrollbar-thumb:hover{background:#b4622b}"+
+            "html{scrollbar-width:thin;scrollbar-color:#c7b48f #eae4d8}";
+          d.head.appendChild(s);
+        }catch(e){/* 교차출처 등 접근 불가 시 무시 */}
+      });
     } else {
       content.style.maxWidth=""; content.style.padding=""; $("scroll").style.overflow="auto";
       content.className="wrap md"; content.innerHTML="불러오는 중…";
