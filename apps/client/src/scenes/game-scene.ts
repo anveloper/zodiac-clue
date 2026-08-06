@@ -262,6 +262,8 @@ export class GameScene extends Phaser.Scene implements ViewContract {
   private freeLook = false;
   private spaceHeld = false;
   private rightPan = false;
+  /** 터치 한 손가락 드래그로 켜진 자유시점(모바일 화면이동). 이동키를 누르면 해제·추적 복귀. */
+  private touchPan = false;
   private followId = "";
   private followTarget?: Phaser.GameObjects.Container;
   private camSwitchTimer?: Phaser.Time.TimerEvent;
@@ -347,8 +349,16 @@ export class GameScene extends Phaser.Scene implements ViewContract {
     // 우클릭 메뉴 차단(우클릭 드래그 팬용)
     this.input.mouse?.disableContextMenu();
 
-    // 드래그 팬: 자유시점(Space) 중 또는 우클릭 드래그
+    // 드래그 팬: 자유시점(Space)·우클릭 드래그 + **터치 한 손가락 드래그**(모바일 화면이동).
     this.input.on("pointermove", (p: Phaser.Input.Pointer) => {
+      // 터치 드래그가 8px를 넘으면 자유시점 진입(추적 중단) → 손가락 따라 화면이 밀린다.
+      // 탭(제안·방 클릭)은 8px 안이라 팬으로 오인되지 않는다.
+      if (p.wasTouch && p.isDown && !this.touchPan) {
+        if (Math.abs(p.x - p.downX) + Math.abs(p.y - p.downY) > 8) {
+          this.touchPan = true;
+          this.applyFreeLook();
+        }
+      }
       if (!this.freeLook || !p.isDown) return;
       cam.scrollX -= (p.x - p.prevPosition.x) / cam.zoom;
       cam.scrollY -= (p.y - p.prevPosition.y) / cam.zoom;
@@ -403,9 +413,15 @@ export class GameScene extends Phaser.Scene implements ViewContract {
           return;
       }
       if (this.freeLook) {
-        cam.scrollX += (dx * PAN_STEP) / cam.zoom;
-        cam.scrollY += (dy * PAN_STEP) / cam.zoom;
-        return;
+        // 데스크톱 자유시점(Space/우클릭)은 방향키=팬. 터치 팬으로만 켜졌으면
+        // 방향키=이동이 우선이므로 팬을 끄고(추적 복귀) 아래 이동 처리로 내려간다.
+        if (this.spaceHeld || this.rightPan) {
+          cam.scrollX += (dx * PAN_STEP) / cam.zoom;
+          cam.scrollY += (dy * PAN_STEP) / cam.zoom;
+          return;
+        }
+        this.touchPan = false;
+        this.applyFreeLook();
       }
       // 정통 클루: 내 턴에만 이동. 이동 한도는 복도 이동만 제한
       // (방 안·잔치상 위에서는 한도 0이어도 자유 이동).
@@ -484,6 +500,15 @@ export class GameScene extends Phaser.Scene implements ViewContract {
       by -= (dh - bh) / 2;
       bh = dh;
     }
+    // 모서리 방도 화면 중앙으로 오게 상하좌우에 «절반 화면» 여백을 준다 — follow가 코너에서
+    // 클램프돼 방이 HUD 뒤에 숨던 것을 풀고, 터치 팬으로 둘러볼 여지도 준다. 보드 밖은
+    // DOM 잔디 배경이 그대로 채우므로 빈 공간(void)이 생기지 않는다.
+    const mx = dw * 0.5;
+    const my = dh * 0.5;
+    bx -= mx;
+    bw += 2 * mx;
+    by -= my;
+    bh += 2 * my;
     cam.setBounds(bx, by, bw, bh);
     // Phaser는 `preRender`에서 클램프하는데, 뷰4로 전환하면 뷰1은 **보이지 않아
     // preRender가 돌지 않는다**(그래도 update는 돈다). 뷰4가 이 카메라를 미러링하므로
@@ -580,7 +605,7 @@ export class GameScene extends Phaser.Scene implements ViewContract {
 
   /** Space 또는 우클릭 팬 상태를 합쳐 자유시점 on/off. */
   private applyFreeLook(): void {
-    this.setFreeLook(this.spaceHeld || this.rightPan);
+    this.setFreeLook(this.spaceHeld || this.rightPan || this.touchPan);
   }
 
   /** 자유시점 on/off — off 시 현재 추적 대상으로 복귀. */

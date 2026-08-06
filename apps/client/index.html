@@ -1090,11 +1090,12 @@
           background: rgba(241, 228, 208, 0.95); color: var(--wds-label-normal);
           border-color: var(--wds-line-normal);
         }
-        /* BGM 스피커는 top-right에서 «닫기 버튼·턴 배너»와 겹쳐 탭이 엉켰다(음소거 안 됨).
-           좌하단(뷰 칩 위)로 옮겨 충돌을 없앤다 — 터치는 탭=음소거로 동작한다. */
+        /* BGM 스피커: top 코너(닫기 버튼)·좌하단(방만들기 캐릭터)과 겹치던 것 → 우측 상단
+           «턴 배너 아래»의 빈 곳으로. 패널을 열면 그 아래로 가려지지만(읽는 중), 평소·방만들기엔
+           충돌 없이 뜬다. 터치는 탭=음소거. */
         .bgm-ctrl {
-          top: auto; bottom: calc(120px + var(--sa-b, 0px));
-          right: auto; left: calc(8px + var(--sa-l, 0px));
+          top: calc(150px + var(--sa-t, 0px)); bottom: auto;
+          right: calc(8px + var(--sa-r, 0px)); left: auto;
         }
         /* 폰에서 260px 고정 컬럼이 화면 폭의 2/3를 덮어 보드·턴 배너를 가렸다(§7.8 부수).
            기존 반응형은 DOM에 없는 `.hud-evi`/`.hud-log`를 잡고 있어 죽은 코드였다. */
@@ -1118,9 +1119,10 @@
         #aiPanel summary, #eviPanel .rp-head { padding-right: 58px; }
         /* 컬럼 좌측 너비 핸들은 좁은 화면에서 보드 조작과 충돌한다 */
         .rp-wresizer { display: none; }
-        /* 패널 사이 «높이 드래그바»도 폰에선 손가락 드래그가 어렵고 자리만 먹는다 → 숨긴다.
-           컬럼이 세로로 스크롤되므로 높이 조절 없이도 다 볼 수 있다(드래그바 여백 피드백). */
-        .rp-hz { display: none; }
+        /* 패널 사이 높이 드래그바 — 폰에서도 «조절되게» 두되 슬림하게(14→9px, 그립도 축소).
+           앞서 숨겼더니 "위아래 조절이 아예 안 된다"는 피드백 → 여백만 줄이고 기능은 살린다. */
+        .rp-hz { height: 9px; }
+        .rp-hz::before { width: 40px; height: 3px; }
         /* 패널 사이 간격을 폰에 맞게 좁힌다. (AI는 PC와 동일하게 컬럼의 한 섹션으로 둔다.) */
         .rp-col { gap: 6px; }
         #rpToggle { display: flex; }
@@ -1396,7 +1398,7 @@
           <div class="goal-actions">
             <button id="goalOk">알겠어요, 시작할게요</button>
           </div>
-          <div class="goal-again">좌측 상단 [?]를 누르면 다시 볼 수 있어요.</div>
+          <div class="goal-again">[?] 버튼을 누르면 다시 볼 수 있어요.</div>
         </div>
       </div>
 
