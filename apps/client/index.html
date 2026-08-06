@@ -891,10 +891,16 @@
       .rp-fold details[open] summary::before { content: "▾"; }
       .ai-chip {
         flex: none; margin-left: auto; white-space: nowrap;
+        display: inline-flex; align-items: center; gap: 6px;
         font-size: 12px; color: var(--wds-label-normal);
         background: var(--wds-bg-normal); border: 1px solid var(--wds-line-normal);
         border-radius: var(--wds-radius-chip); padding: 2px 7px;
       }
+      /* ✨♻⚙는 글리프마다 크기·베이스라인이 달라 인라인으로 두면 글자 중심이 어긋난다.
+         고정폭 박스 + 그룹 flex 세로중앙으로 세 경로의 높이를 맞춘다. */
+      .ai-chip .ai-g { display: inline-flex; align-items: center; gap: 3px; }
+      .ai-chip .ai-ic { display: inline-block; width: 1.05em; text-align: center; font-size: 11px; line-height: 1; }
+      .ai-chip .ai-sep { color: var(--wds-label-alternative); }
       .ai-chip .ai-n { color: var(--wds-label-strong); font-weight: 700; }
       /* 전 대사가 폴백일 때 — 숨기지 않고 테두리로 상태를 알린다(§4.1 장애 재발 방지). */
       .ai-chip.warn { border-color: var(--wds-primary-normal); color: var(--wds-label-strong); }

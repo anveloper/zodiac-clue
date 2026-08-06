@@ -332,10 +332,13 @@ const renderAi = (): void => {
     // 칩 문안은 ④ §4 요구사항 3의 지정본 그대로: `✨LLM 12 · ♻캐시 3 · ⚙폴백 0`.
     // ⚠ 폴백만 세지 않는다 — 세 경로를 항상 같이 보여준다. 폴백이 전부라도 숫자를
     //   가리거나 줄이지 않고, 대신 아래 note로 상태를 말로 밝힌다.
+    // 이모지를 고정폭 박스(.ai-ic)로 감싸 세 경로의 글자 중심을 맞춘다(CSS `.ai-chip` 참조).
     chip.innerHTML =
-      `✨LLM <span class="ai-n">${llm}</span> · ` +
-      `♻캐시 <span class="ai-n">${cache}</span> · ` +
-      `⚙폴백 <span class="ai-n">${fallback}</span>`;
+      `<span class="ai-g"><span class="ai-ic">✨</span>LLM<span class="ai-n">${llm}</span></span>` +
+      `<span class="ai-sep">·</span>` +
+      `<span class="ai-g"><span class="ai-ic">♻</span>캐시<span class="ai-n">${cache}</span></span>` +
+      `<span class="ai-sep">·</span>` +
+      `<span class="ai-g"><span class="ai-ic">⚙</span>폴백<span class="ai-n">${fallback}</span></span>`;
     chip.title = `✨LLM ${llm} · ♻캐시 ${cache} · ⚙폴백 ${fallback}`;
   }
   // 폰 HUD에는 상세(평균·모델) 행이 없다 → 「계측 전」을 말할 자리가 칩뿐이다.
