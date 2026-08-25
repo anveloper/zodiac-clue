@@ -98,6 +98,10 @@
     "dir": "plans/done",
     "items": [
       {
+        "path": "plans/done/25-bot-self-accuse-common-clue.md",
+        "title": "plan: 봇 자멸 고발 — 「미반증 ⇒ 정답」이 공통 단서에서 깨진다"
+      },
+      {
         "path": "plans/done/24-suggest-result-truth.md",
         "title": "plan: 제안 결과 문안을 사실로 되돌린다"
       },

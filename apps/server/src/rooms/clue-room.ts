@@ -1761,9 +1761,14 @@ export class ClueRoom extends Room<GameState> {
     if (!this.stillBot(id)) return;
     const bot = this.state.players.get(id);
     if (!bot) return;
+    // `seenOf`는 없으면 Set을 만들어 Map에 넣는 **부작용 함수**다 — 판단 한 번에 여러 번
+    // 부르지 않도록 여기서 한 번만 잡는다(아래 `eff`와 미반증 판정이 같은 것을 본다).
+    const seen = this.seenOf(id);
     const eff = (set: Set<string>): string[] => {
-      const seen = this.seenOf(id);
       const c = [...set].filter((v) => !seen.has(v));
+      // 폴백은 죽은 코드가 아니다: `eliminate()`는 이 타이머 콜백 안에서 도는데
+      // `markSeen()`은 `doSuggestion()`에서 이미 끝났다 → 턴이 회수되면 일시적으로
+      // `seen ⊄ kᶜ`인 창이 생기고, 그때 이 필터가 카테고리를 통째로 비울 수 있다.
       return c.length ? c : [...set];
     };
 
@@ -1776,11 +1781,22 @@ export class ClueRoom extends Room<GameState> {
         // 반증받은 카드는 정답 아님 → 후보에서 제거
         this.eliminate(k, result.card);
       } else {
-        // 아무도 반증 못했고 내가 3장 다 안 갖고 있으면 → 그 셋이 정답
-        const holdsAny = (this.hands.get(id) ?? []).some((c) =>
-          cardMatches(c, suggestion),
-        );
-        if (!holdsAny) {
+        // 아무도 반증 못했고 **셋 중 어느 것도 내가 이미 «정답 아님»으로 본 적이 없으면**
+        // → 그 셋이 정답.
+        //
+        // ⚠️ 손패만 보면 틀린다. 「아무도 반증 못 함」이 「정답」을 함의하려면 모든 카드가
+        // **누군가의 손패이거나 정답 봉투**여야 하는데, **공통 단서는 둘 다 아니다** —
+        // `deal()`이 딜 **전에** `deck.shift()`로 빼므로 누구의 손패에도 없고, 그래서
+        // 아무도 반증할 수 없다. 손패 검사는 그것을 통과시켜 봇이 **정답 아닌 카드로
+        // 공개 고발 → 자멸**한다(솔로 2장 + `revealCommonClue()` 추가분).
+        // `seenOf` = 내 손패 ∪ 공통 단서 ∪ 내가 받은 반증 카드 — 이 셋이 정확히
+        // 「내가 정답 아님을 아는 값」이고, 그것이 이 추론이 요구하는 전제다.
+        const seenAny = [
+          suggestion.suspect,
+          suggestion.weapon,
+          suggestion.room,
+        ].some((v) => seen.has(v));
+        if (!seenAny) {
           void this.speak(id, {
             name: bot.name,
             persona: persona(bot.suspect),

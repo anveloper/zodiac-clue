@@ -312,9 +312,13 @@ const playGame = (rng, opts, gameSeed = 0) => {
       globalRevealed.add(shown.value); // 현행 결함: 봇 전원이 공유
       dropFrom(k, shown.value);
     } else {
-      // 아무도 반증 못 했고 내가 3장 다 안 갖고 있으면 그 셋이 정답 → 고발
-      const holdsAny = hands[seat].some((c) => cardMatches(c, suggestion));
-      if (!holdsAny) {
+      // 아무도 반증 못 했고 **셋 중 어느 것도 내가 이미 «정답 아님»으로 본 적이 없으면**
+      // 그 셋이 정답 → 고발. 손패만 보면 틀린다 — 공통 단서는 **누구의 손패에도 없어서**
+      // 아무도 반증할 수 없는데 손패 검사는 그것을 통과시킨다(자멸 고발).
+      const seenAny = [suggestion.suspect, suggestion.weapon, suggestion.room].some(
+        (v) => seen[seat].has(v),
+      );
+      if (!seenAny) {
         if (seat === HUMAN && !opts.humanInstantAccuse) {
           pendingHumanAccuse = suggestion; // 자기 턴이 다시 올 때까지 못 한다
         } else {
@@ -362,6 +366,14 @@ const playGame = (rng, opts, gameSeed = 0) => {
     }
 
     // 총 제안 상한 — 도달 후 제안마다 공통 단서 1장 추가 공개, 소진되면 무승부 종료
+    //
+    // ⚠️ **서버와 순서가 다르다(알려진 미러 간극).** 서버는 `doSuggestion()` 끝에서
+    // `enforceSuggestCap()` → `revealCommonClue()`를 돌리고 판단은 그 **뒤**의
+    // `afterBotSpeak` 타이머라, 새 공통 단서가 **같은 제안의 판단에 반영**된다.
+    // 여기서는 판단 **뒤**에 공개하므로 **다음 턴부터** 반영된다.
+    // 원래 `eff()` 경로에 있던 차이이고 미반증 판정(`seenAny`)에도 같이 걸린다.
+    // 상한 도달률이 0.1%라 표본 영향은 상계돼 있어 **의도적으로 두지만**, 상한이 낮아지거나
+    // 도달률이 올라가면 먼저 이 순서를 맞춰라.
     if (opts.suggestCap && suggestCount >= opts.suggestCap) {
       if (!revealCommonClue()) break; // 무승부
     }
