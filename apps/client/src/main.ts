@@ -242,7 +242,8 @@ const addLog = (text: string, opts: LogOpts = {}): void => {
     if (orig) {
       const badge = document.createElement("span");
       badge.className = "log-badge" + (opts.disproved ? "" : " none");
-      badge.textContent = opts.disproved ? "반증됨" : "정답후보";
+      // 「정답후보」라고 쓰지 않는다 — 자기 손패 지목·공통 단서에서 거짓이다(서버 로그와 같은 사유).
+      badge.textContent = opts.disproved ? "반증됨" : "미반증";
       orig.appendChild(badge);
     }
   }
@@ -1041,9 +1042,9 @@ const wireRoom = (r: Room): void => {
         addDefinite(room.roomId, [m.card.value]);
         buildEvidence(room.roomId);
       }
-    } else {
-      addLog("🔎 아무도 반증하지 못함 — 정답 후보!", { kind: "disprove" });
     }
+    // (반증 없음 로그는 **서버가 전원에게** 브로드캐스트한다 — 여기서 또 남기면
+    //  제안자만 같은 줄을 두 번 본다. ui-copy가 이 줄을 «삭제»로 확정해 뒀다.)
     // 반증은 **나만 보는 정보**라 로그가 우측 끝에 뜬다 → 보드에도 "어느 칸을 봐야
     // 하는지"를 남긴다(계약 `pulseCell`). 이 메시지는 제안자에게만 온다.
     const v = view();
@@ -1058,7 +1059,7 @@ const wireRoom = (r: Room): void => {
       if (hits.length === 1) v.pulseCell(hits[0], "neutral");
     } else {
       const me = players.get(r.sessionId);
-      // 미반증 = 정답 후보. 제안이 일어난 방(= 내가 서 있는 방)을 경고 톤으로.
+      // 미반증 — 「정답 후보」로 단정하지 않는다(자기 손패·공통 단서에서 거짓). 제안이 일어난 방(= 내가 서 있는 방)을 경고 톤으로.
       if (me) v.pulseCell({ x: me.x, y: me.y }, "alert");
     }
   });

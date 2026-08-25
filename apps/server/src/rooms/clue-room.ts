@@ -1316,8 +1316,13 @@ export class ClueRoom extends Room<GameState> {
         disproved: true,
       });
     } else {
+      // ⚠️ 「정답 후보」라고 말하지 않는다. 그 추론의 참·거짓은 **보는 사람이 무엇을 아는지**에
+      //    달렸다 — 제안자가 자기 손패를 섞었거나(서버가 의도적으로 허용) 공통 단서가 끼면
+      //    반증이 나올 수 없고, 그때 「정답 후보」는 거짓이다. 한 문자열을 전원에게 뿌리는
+      //    자리에 추론을 넣을 수 없다. 로그는 사실만 통보하고(ui-copy §문체 «로그=사실 통보»)
+      //    추론은 각자의 증거 노트가 한다(클라 `confirmedNotAnswer()`).
       this.broadcast("log", {
-        text: "❗ 아무도 반증하지 못함 — 정답 후보!",
+        text: "❗ 아무도 반증하지 못함 — 다른 손패엔 이 3장이 한 장도 없음",
         kind: "disprove",
         sid,
         disproved: false,

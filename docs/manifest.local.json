@@ -98,6 +98,10 @@
     "dir": "plans/done",
     "items": [
       {
+        "path": "plans/done/24-suggest-result-truth.md",
+        "title": "plan: 제안 결과 문안을 사실로 되돌린다"
+      },
+      {
         "path": "plans/done/23-goal-card-endgame-line.md",
         "title": "plan: 60초 안내에 «끝내기» 한 줄 — 승리 선언 방법과 그 대가"
       },

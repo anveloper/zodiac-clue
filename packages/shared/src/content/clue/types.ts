@@ -46,7 +46,8 @@ export type SuggestEntry = {
   suspect: string;
   weapon: string;
   room: string;
-  /** 반증자 sessionId. `null`이면 아무도 반증하지 못함(정답 후보). */
+  /** 반증자 sessionId. `null`이면 아무도 반증하지 못함.
+   *  ⚠️ 「정답 후보」로 읽지 말 것 — 제안자가 자기 손패를 섞었거나 공통 단서가 끼면 거짓이다. */
   disprovedById: string | null;
   disprovedByName: string | null;
 };

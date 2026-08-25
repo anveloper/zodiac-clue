@@ -448,7 +448,7 @@
   <h4>표기 접두 기호 (고정)</h4>
   <dl class="kv">
     <dt>🎲 주사위</dt><dd>턴 시작 이동 굴림</dd>
-    <dt>🔍 제안</dt><dd>🛡 반증 · ❗ 미반증(정답 후보)</dd>
+    <dt>🔍 제안</dt><dd>🛡 반증 · ❗ 미반증</dd>
     <dt>❌ 실패·탈락</dt><dd>🎉 승리 · 🏅 최후 생존 · 🏳 무승부</dd>
     <dt>🚪 방 진입·통로</dt><dd>🔔 소환</dd>
     <dt>🃏 계략·손패</dt><dd>📢 공통 단서</dd>
@@ -475,7 +475,7 @@
         <ol>
           <li><span class="k">①</span><span><b>목표</b> — 도둑 1명 · 훔친 것 1개 · 장소 1곳을 맞히면 승리.</span></li>
           <li><span class="k">②</span><span><b>출발점</b> — 내 손패 3장은 정답이 아닙니다. 여기서부터 지워 나가세요.</span></li>
-          <li><span class="k">③</span><span><b>방법</b> — 방향키로 이동해 방에서 [추리하기]. 아무도 반증 못 한 조합이 정답 후보예요.</span></li>
+          <li><span class="k">③</span><span><b>방법</b> — 방향키로 이동해 방에서 [추리하기]. 내 제안이 반증되면 그 카드는 정답이 아니에요.</span></li>
           <li><span class="k">④</span><span><b>끝내기</b> — 확신하면 [신고하기]. 틀리면 탈락하고 반증만 남아요.</span></li>
         </ol>
         <div class="cta"><button class="g-btn">알겠어요, 시작할게요</button></div>
@@ -957,7 +957,7 @@
     <tr><td>585 <span class="tag t-tone">톤</span></td><td class="q dim">게임 시작! 정답 봉투 봉인. NPC n명 합류. ${이름} 님의 턴.</td><td class="q good">🎊 잔치 시작 — 정답 봉투 봉인 · NPC n명 합류<br>⏳ ${이름} 님의 턴 <span class="note">(2줄로 분리)</span></td><td>§2 <b>잔치 시작</b> · 한 줄 3정보는 스캔 불가</td></tr>
     <tr><td>681 <span class="tag t-tone">톤</span></td><td class="q dim">🔍 [제안] ${이름} — 도둑: … · 훔친 것: … · 장소: …</td><td class="q good">🔍 제안 — ${이름} · 용의자: … · 훔친 것: … · 장소: …</td><td>제안 단계는 <b>용의자</b> · 대괄호 제거</td></tr>
     <tr><td>724</td><td class="q dim">🛡 ${이름} 님이 반증했습니다.</td><td class="q good">🛡 반증 — ${이름} 님</td><td>표기 일관</td></tr>
-    <tr><td>733</td><td class="q">❗ 아무도 반증하지 못함 — 정답 후보!</td><td colspan="2"><span class="tag t-keep">유지</span> <span class="note">허용된 느낌표 3종 중 하나</span></td></tr>
+    <tr><td>733</td><td class="q">❗ 아무도 반증하지 못함 — 정답 후보!</td><td colspan="2"><b>❗ 아무도 반증하지 못함 — 다른 손패엔 이 3장이 한 장도 없음</b> <span class="note">2026-08-26 — 「정답 후보」는 <b>추론</b>이고 참·거짓이 보는 사람의 지식에 달렸다(자기 손패 지목·공통 단서에서 거짓). 전원 브로드캐스트에 추론을 실을 수 없다</span></td></tr>
     <tr><td>784</td><td class="q dim">🎉 ${이름} 사건 해결! 정답: … · … · …</td><td class="q good">🎉 사건 해결 — ${이름} 님<br>📜 정답 봉투 — … · … · 📍 …</td><td>결과 오버레이(§7)와 <b>같은 문자열 재사용</b></td></tr>
     <tr><td>792</td><td class="q dim">❌ [고발 실패] ${이름} 탈락(반증만 가능).</td><td class="q good">❌ 고발 실패 — ${이름} 님 탈락 · 반증만 가능</td><td>대괄호 제거</td></tr>
     <tr><td>1003</td><td class="q dim">🎉 ${이름} 최후 생존 — 승리!</td><td class="q good">🎉 최후 생존 — ${이름} 님 승리!</td><td>어순만</td></tr>
@@ -1051,7 +1051,7 @@
   <div class="scroll"><table>
     <tr><th>현재</th><th>조치</th><th>사유</th></tr>
     <tr><td class="q dim">🔎 ${이름} 님이 "${카드}" 단서로 반증 (나만 봄)</td><td class="q good">🛡 나에게 반증 — ${이름} 님 · 「${카드}」 (나만 봄)</td><td>접두 <code>🛡</code> 통일 · 「」</td></tr>
-    <tr><td class="q dim">🔎 아무도 반증하지 못함 — 정답 후보!</td><td class="bad"><b>삭제</b></td><td>서버 733이 이미 전체 브로드캐스트 → <b>제안자만 같은 줄을 2번 본다</b></td></tr>
+    <tr><td class="q dim">🔎 아무도 반증하지 못함 — 정답 후보!</td><td class="bad"><b>삭제 ✅</b><br><span class="note">2026-08-26 반영</span></td><td>서버 733이 이미 전체 브로드캐스트 → <b>제안자만 같은 줄을 2번 본다</b>. 확정 후에도 <code>main.ts</code>에 남아 있었다</td></tr>
     <tr><td class="q dim">🎉 ${이름} 정답! / ❌ ${이름} 오답</td><td class="bad"><b>삭제</b></td><td>서버 784·792와 중복</td></tr>
     <tr><td class="q dim">잔치 시작! 이동: 방향키, 방에 들어가 [제안]</td><td class="q good">🎮 이동 — 방향키 · 방에 들어가 [제안]</td><td>서버 585의 <b>잔치 시작</b>과 중복</td></tr>
     <tr><td class="q">💬 ${이름}: ${대사}</td><td><span class="tag t-keep">유지</span></td><td>§1.1 사극체 경계 표식</td></tr>
