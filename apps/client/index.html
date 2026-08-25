@@ -25,13 +25,21 @@
         --wds-line-normal: #B99B6E;
         --wds-label-strong: #33271A;
         --wds-label-normal: #4A3B2A;
-        --wds-label-alternative: #7A6752;
+        /* 2026-08-26 — #7A6752에서 내렸다. 이 토큰은 32곳이 쓰고 **전부 밝은 표면**이다
+           (.hud·.rp-panel도 rgba(255,248,239,0.9)). 최악 표면 기준으로도 AA를 넘긴다:
+           bg-normal 5.72 · bg-alternative 5.02 · tint-primary 4.96 · tint-negative 4.84.
+           이전 값은 bg-normal(4.90)만 보고 잡혀서, 실제로 쓰이는 bg-alternative 위
+           `.gi-sub`(4.31) · tint-primary 위 `.sg-n`/`.sg-combo`(4.26)가 AA 미달이었다. */
+        --wds-label-alternative: #6F5D49;
         --wds-label-assistive: #7C6850;
         --wds-primary-normal: #A85638;
         --wds-primary-strong: #8A4128;
         --wds-status-positive: #4F8054;
         --wds-status-cautionary: #D9A441;
-        --wds-status-negative: #B14343;
+        /* 2026-08-26 — #B14343에서 내렸다. tint-negative 위 `.modal-warn` 글자가
+           4.30으로 AA 미달이었다(→ 4.85). 배경으로 쓰는 `.modal .danger`의 흰 글자도
+           5.60 → 6.30으로 함께 좋아진다 — 내려서 나빠지는 사용처가 없다(전 5곳 확인). */
+        --wds-status-negative: #A83A3A;
         --wds-accent: #E3B873;
         --wds-static-white: #FFFFFF;
         /* Montage 구조값(Figma 추출·다희) — 색은 코티지코어, 구조만 채택. Large 기준을 HUD 스케일로 축소.
@@ -1176,6 +1184,24 @@
         .field label.rooms-label { min-height: 44px; }
         .mini { min-height: 44px; padding: 0 12px; }
         .room-item button { min-height: 44px; }
+        /* 2026-08-26 추가 — 위 주석의 «하나의 하한»에서 빠져 있던 셋.
+           배경음 버튼은 34×34로 화면게이트 S3가 폰 전 화면에서 잡고 있었고,
+           나머지 둘은 같은 종류인데 게이트 시야 밖이라 조용히 남아 있었다
+           (코덱스 오버레이는 계측 시 닫혀 있고, 관전 바는 탈락해야 뜬다). */
+        .bgm-icon { width: 44px; height: 44px; font-size: 18px; }
+        .codex-x { width: 44px; height: 44px; }
+        .hud-spectate button { min-height: 44px; }
+        /* 커진 배경음 버튼은 **자리도 같은 축에서** 옮긴다.
+           안전한 자리(턴 배너 아래·패널 아래 z-index)는 `max-width: 680px`에만 걸려 있었다.
+           축이 어긋나면 손가락이면서 넓은 화면(태블릿)에서 44px 버튼이 기본 위치
+           (top:12 right:12 · z-index:40)에 남아 우측 패널 우상단을 **더 넓게** 덮는다.
+           화면게이트 뷰포트는 폰·데스크톱 둘뿐이라 이 구간을 재지 않는다 — 게이트가
+           안 잡는다는 것이 안전하다는 뜻은 아니다. */
+        .bgm-ctrl {
+          top: calc(150px + var(--sa-t, 0px)); bottom: auto;
+          right: calc(8px + var(--sa-r, 0px)); left: auto;
+          z-index: 4;
+        }
       }
       /* 폰 폭에서 모달은 **카드 계열과 같은 폭**으로 선다.
          300px 고정은 390px 화면에서 좌우 45px씩을 버려 랜딩(.card 358)·결과(.end-card 359)와

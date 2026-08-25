@@ -98,6 +98,10 @@
     "dir": "plans/done",
     "items": [
       {
+        "path": "plans/done/21-a11y-gate-green.md",
+        "title": "plan: 접근성 red 게이트 해소 — 루프의 녹색 기준선"
+      },
+      {
         "path": "plans/done/20-phaser-only-pivot.md",
         "title": "plan: Phaser 단일 렌더러 전환 + 과제 문맥 정리"
       },
