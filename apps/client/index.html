@@ -22,6 +22,8 @@
         --wds-bg-normal: #FBF3E7;
         --wds-bg-elevated: #FFF8EF;
         --wds-bg-alternative: #F1E4D0;
+        /* bg-alternative의 호버 한 단. 액션 바 중립·위험 칩이 공유한다. */
+        --wds-bg-alternative-strong: #E8D8BE;
         --wds-line-normal: #B99B6E;
         --wds-label-strong: #33271A;
         --wds-label-normal: #4A3B2A;
@@ -385,7 +387,47 @@
         left: calc(16px + var(--sa-l, 0px)); top: calc(6px + var(--sa-t, 0px));
         display: flex; gap: 8px; padding: 6px;
       }
-      .hud-ctrl button { padding: 6px 11px; }
+      /* 전 버튼에 투명 테두리를 깔아 **테두리 폭을 항상 1px로** 고정한다.
+         데스크톱 `.hud-ctrl`은 flex라 폭이 내용으로 정해지는데, 테두리가 붙었다 떨어지면
+         `.is-off` ↔ 활성 전환마다 버튼 폭이 2px씩 바뀌어 **바 전체가 매 턴 흔들린다.**
+         (폰은 6칸 그리드 + `white-space: nowrap`이라 줄바꿈은 애초에 일어나지 않는다.) */
+      .hud-ctrl button { padding: 6px 11px; border: 1px solid transparent; }
+
+      /* ── 액션 바 3단 위계 ───────────────────────────────────────────
+         6개 버튼이 전부 같은 채움색이라, 오답 시 **즉시 탈락**하는 [신고하기]와
+         가장 안전한 [내 턴 종료]가 구분되지 않았다.
+         ui-copy §6.2가 «위험 스타일 = --red 계열»을 이미 확정했는데 그 규칙이
+         **모달 안 [고발한다]에만** 적용돼 있었다 — 경고가 한 발 늦었다. 진입점까지 넓힌다.
+
+         ⚠ `:not(.is-off)`는 장식이 아니다. 데스크톱 `button.is-off`(0,1,1)보다
+           `.hud-ctrl button.act-*`(0,2,1)가 강해서, 한정하지 않으면 **비활성 표기를 덮어써**
+           못 누르는 버튼이 활성으로 보인다. (`:not()`은 인자 특이도를 더하므로 현재 규칙은 0,3,1.)
+           모바일 override `.hud-ctrl button.is-off`(0,2,1)와는 **동점**이라 소스 순서로만
+           이겨 왔다 — `:not()`이 두 규칙을 상호배타로 만들어 그 우연을 규칙으로 바꾼다.
+
+         위험은 «더 눈에 띄게»가 아니라 «채움에서 내리고 종류만 표시»다 —
+         시선의 목적지는 [추리하기] 하나로 남긴다. */
+      .hud-ctrl button.act-danger:not(.is-off) {
+        /* **바탕은 중립과 같다.** 채움을 주면 안 되는 이유: 모든 플레이어는 방 밖에서
+           시작하고(`clue-room.ts` `spawnPoint` · `p.room = ""`), 그때 [추리하기]는 `.is-off`다.
+           즉 **모든 판 모든 사람의 첫 턴**에 채색된 버튼이 [신고하기] 하나만 남는다 —
+           막으려던 «1턴에 신고 눌러 탈락»의 바로 그 순간에 그 버튼을 가장 도드라지게 만드는 꼴이다.
+           이 버튼은 **커밋 지점이 아니라 진입점**이다(누르면 취소 가능한 모달이 열릴 뿐).
+           경고의 책임은 모달이 진다 — ui-copy §6.2 «경고는 모달을 열자마자 보이는 위치에 둔다 ·
+           2차 확인 다이얼로그는 만들지 않는다». 여기서는 **종류만** 표시한다. */
+        background: var(--wds-bg-alternative);
+        color: var(--wds-status-negative);
+        border-color: var(--wds-status-negative);
+      }
+      .hud-ctrl button.act-danger:not(.is-off):hover { background: var(--wds-bg-alternative-strong); }
+      /* 중립 ≠ 비활성. 테두리 + label-strong으로 «누를 수 있음»을 남긴다
+         (비활성은 테두리 없음 + label-normal + cursor: not-allowed). */
+      .hud-ctrl button.act-neutral:not(.is-off) {
+        background: var(--wds-bg-alternative);
+        color: var(--wds-label-strong);
+        border-color: var(--wds-line-normal);
+      }
+      .hud-ctrl button.act-neutral:not(.is-off):hover { background: var(--wds-bg-alternative-strong); }
       /* 상단 중앙 턴 배너.
          1440×900 실측에서 이 배너(폭 336 · 높이 71)가 보드 상단 방 명패 2개
          (`대청` 오른쪽 끝 · `후원` 왼쪽 끝)를 덮었다. 배너는 보드 위에 떠 있고
@@ -1014,8 +1056,13 @@
           letter-spacing: -0.2px; white-space: nowrap; border-radius: 8px;
         }
         /* 비활성 버튼 — 배경을 지우면 6칸의 리듬이 끊긴다. 칸은 남기고 **채도만** 뺀다. */
+        /* ⚠ `border-color`는 **transparent여야 한다.** 기본 버튼이 `border: 0`이던 시절
+           이 선언은 아무것도 그리지 않는 죽은 코드였는데, 위에서 전 버튼에 1px 투명 테두리를
+           깔면서 되살아났다. 그대로 두면 «중립 활성»과 «비활성»이 폰에서 테두리·바탕이 모두 같아져
+           (배경 대비 ≈1.01:1) 구분이 글자색 하나로 줄고, 관전 중에는 유일하게 누를 수 있는 [?]가
+           못 누르는 5개와 똑같아 보인다. 터치에는 `cursor: not-allowed`도 없다. */
         .hud-ctrl button.is-off {
-          background: rgba(241, 228, 208, 0.7); border-color: var(--wds-line-normal);
+          background: rgba(241, 228, 208, 0.7); border-color: transparent;
           color: var(--wds-label-alternative); opacity: 1;
         }
         /* D-패드는 하단 바 **위에 떠 있는 조작기**다.
@@ -1331,11 +1378,11 @@
       <!-- 액션 버튼은 disabled 대신 aria-disabled + .is-off — 클릭하면 사유를 안내한다 -->
       <div class="hud hud-ctrl">
         <button id="suggest">추리하기</button>
-        <button id="accuse">신고하기</button>
-        <button id="passage" class="is-off" aria-disabled="true">지름길로 가기</button>
-        <button id="bonus" class="is-off" aria-disabled="true">다가가기</button>
-        <button id="endTurn">내 턴 종료</button>
-        <button id="helpBtn" title="게임 목표와 조작을 다시 봅니다.">?</button>
+        <button id="accuse" class="act-danger">신고하기</button>
+        <button id="passage" class="act-neutral is-off" aria-disabled="true">지름길로 가기</button>
+        <button id="bonus" class="act-neutral is-off" aria-disabled="true">다가가기</button>
+        <button id="endTurn" class="act-neutral">내 턴 종료</button>
+        <button id="helpBtn" class="act-neutral" title="게임 목표와 조작을 다시 봅니다.">?</button>
       </div>
 
       <div class="hud hud-turn hidden" id="turnInfo"></div>

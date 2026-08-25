@@ -56,6 +56,10 @@
     "dir": "plans/done",
     "items": [
       {
+        "path": "plans/done/22-action-bar-hierarchy.md",
+        "title": "plan: 액션 바 3단 위계 — 되돌릴 수 없는 행동을 구분한다"
+      },
+      {
         "path": "plans/done/21-a11y-gate-green.md",
         "title": "plan: 접근성 red 게이트 해소 — 루프의 녹색 기준선"
       },
