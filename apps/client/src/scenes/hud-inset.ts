@@ -1,9 +1,10 @@
-// HUD(우측 패널)가 화면을 가리는 양을 계산하는 뷰 공용 헬퍼.
-// 뷰1(game-scene)·뷰2·3(iso-view)이 같은 계산을 각자 들고 있던 것을 하나로 합쳤다.
-// 뷰4(pixel-scene)는 뷰1 카메라를 미러링하므로 여기 수정이 자동 전파된다.
+// HUD(우측 패널)가 화면을 가리는 양을 계산하는 헬퍼.
+// 렌더러가 여럿이던 시절 각 뷰가 같은 계산을 따로 들고 있던 것을 하나로 합친 파일이다
+// (2026-08-25 이후 호출부는 `game-scene` 하나뿐이지만, 카메라 인셋 계산이
+//  씬 코드와 섞이지 않는 편이 읽기 쉬워 파일은 그대로 둔다).
 //
-// 근거: roadmap §7.8(인셋 가드) + §9.2(정정: null이 아니라 zero-rect가 원인 ·
-// 프레임당 강제 리플로우 제거). view-contract-spec §3 "공용 hudInset(): {right,bottom}".
+// 근거: archive/design/20260727-improvement-roadmap.md §7.8(인셋 가드) + §9.2
+// (정정: null이 아니라 zero-rect가 원인 · 프레임당 강제 리플로우 제거).
 //
 // ⚠️ §7.8이 제안한 `offsetParent === null` 가드는 이 DOM에 쓸 수 없다 —
 // `.rp-col`이 `position: fixed`이고 fixed 요소의 offsetParent는 항상 null이라

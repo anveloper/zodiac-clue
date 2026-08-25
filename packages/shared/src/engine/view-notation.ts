@@ -1,5 +1,5 @@
 // 뷰 표기 강도 — **엔진 층.** "정보가 얼마나 죽어 보이는가"는 표현이 아니라 정보다.
-// 4뷰가 같은 값을 쓴다(모션 프로파일 무관 · docs/design/20260727-view-contract-spec.md §1.2).
+// 4뷰가 같은 값을 쓴다(모션 프로파일 무관 · docs/archive/design/20260727-view-contract-spec.md §1.2).
 //
 // 원래 `packages/shared/src/view-consts.ts`(미분류 층)에 있었다. **값은 한 글자도 바꾸지 않았고**
 // 루트 배럴이 `engine/`을 그대로 재수출하므로 import 경로는 변하지 않는다.

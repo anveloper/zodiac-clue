@@ -7,29 +7,21 @@
 // 원래 `packages/shared/src/view-consts.ts`에 엔진 상수와 같은 파일에 있었다. 값·주석은
 // **한 글자도 바꾸지 않고** 옮기기만 했다 — 루트 배럴이 그대로 재수출하므로 import 경로는 변하지 않는다.
 //
-// 의존 방향은 content → engine 한 방향뿐이다(`shade`만 가져다 쓴다).
 //
 // 2026-07-29 추가 — 옛 `view-consts.ts`(미분류 층)의 9상수 중 **3개가 여기로 판정됐다**:
 // `RING_CURRENT`(§1.4 팔레트의 금색) · `SPENT_ALPHA`·`SCHEME_DESAT_KEEP`(계략 NPC 표기).
 // 나머지 6개는 주제를 모르는 표기라 `engine/view-notation.ts`로 갔다. 판정 기준은 그 파일 헤더에 있다.
 
-import { shade } from "../../engine/color";
 
-// ── §1.1 좌표계 ──────────────────────────────────────────────
-// 서버가 주는 위치 진실값은 그리드 칸 하나뿐(x,y ∈ 0..23).
-// 뷰1·뷰4 = 픽셀, 뷰2·뷰3 = 월드 유닛. 환산은 PX_PER_UNIT **하나로만** 한다.
-
-/** 1칸 = 픽셀 (뷰1·뷰4). 80 = 얼굴 프로필을 토큰으로 쓰기 위한 크기(40에선 뭉개져 이모지로 되돌렸었다). */
+// ── 좌표계 ──────────────────────────────────────────────────
+// 서버가 주는 위치 진실값은 그리드 칸 하나뿐(x,y ∈ 0..23). 렌더러가 픽셀로만 환산한다.
+//
+// 📍 2026-08-25 — 여기 있던 `CELL_UNIT`·`PX_PER_UNIT`·`pxToUnit`·`unitToPx`는
+//    **월드 유닛(뷰2·3의 Three.js 씬) 환산용**이었다. 그 뷰들을 제거하면서 사용처가 0이 됐다.
+/** 1칸 = 픽셀. 80 = 얼굴 프로필을 토큰으로 쓰기 위한 크기(40에선 뭉개져 이모지로 되돌렸었다). */
 export const CELL_PX = 80;
-/** 1칸 = 월드 유닛 (뷰2·뷰3). */
-export const CELL_UNIT = 1;
-/** 픽셀 ↔ 월드 유닛 환산 계수(유일한 환산 상수). */
-export const PX_PER_UNIT = CELL_PX / CELL_UNIT;
 
-export const pxToUnit = (px: number): number => px / PX_PER_UNIT;
-export const unitToPx = (u: number): number => u * PX_PER_UNIT;
-
-/** 보드 팔레트 단일 정의(한옥·사극 톤). 뷰1·뷰2·뷰3가 그대로 쓴다. */
+/** 보드 팔레트 단일 정의(한옥·사극 톤). */
 /**
  * 비밀 통로 표기의 밝기 — 보드를 가로지르는 선이라 **기본값은 거의 안 보여야 한다.**
  * 항상 선명하면 방·토큰보다 먼저 눈에 들어와 판을 읽는 것을 방해한다(07-28 사용자 피드백).
@@ -60,7 +52,6 @@ export const SUMMON_ANCHOR_ALPHA = 0.34;
 /**
  * 소환 앵커 아이콘 — 서버 소환 로그(`🔔 소환 — …`)와 **같은 기호**다.
  * 로그와 보드가 다른 기호를 쓰면 같은 사건이 두 개로 읽힌다.
- * 뷰4는 이모지를 쓸 수 없어(도트 문법) `pixel-glyphs.SUMMON_MARK`로 옮겨 찍는다.
  */
 export const SUMMON_ANCHOR_ICON = "🔔";
 
@@ -99,7 +90,7 @@ export const SPENT_ALPHA = 0.3;
 /**
  * 계략(미사용 NPC)에 쓰는 채도 유지율 — view-contract-spec §4.2 「채도 20%」.
  *
- * 판정: **콘텐츠.** 이름부터 대상이 계략(scheme) NPC이고, §4.2가 뷰4의 계략 크리터에
+ * 판정: **콘텐츠.** 이름부터 대상이 계략(scheme) NPC이고, §4.2가 계략 크리터에
  * 한정해 값을 정했다. 기준 A·B 모두 탈락.
  * (채도를 낮추는 **함수** `desaturate`는 순수 엔진이라 `engine/color.ts`에 있다 —
  *  엔진이 가진 것은 «어떻게 낮추는가»이고, «무엇을 얼마나 낮추는가»가 여기 있다.)
@@ -107,7 +98,7 @@ export const SPENT_ALPHA = 0.3;
 export const SCHEME_DESAT_KEEP = 0.2;
 
 export const BOARD = {
-  /** 복도 바닥 = 먹빛. 도트 뷰의 잉크(윤곽)와 같은 색이다. */
+  /** 복도 바닥 = 먹빛. */
   corridor: 0x2a2118,
   grid: 0x5a4a34,
   gridMinor: 0x453a2a,
@@ -122,7 +113,7 @@ export const BOARD = {
   gold: RING_CURRENT,
   doorTile: 0x6b4a1e,
   wood: 0x8a5a2a,
-  /** 잔디(뷰4 바닥) — 도트 뷰에서만 노출되지만 색 정의는 여기 모은다. */
+  /** 잔디(보드 바깥 바닥). */
   grass: 0x5b8c4a,
   /** 장물 상자. */
   loot: 0xc98a3a,
@@ -163,7 +154,7 @@ export const BOARD = {
 export const INIT_MIN_CELLS = 17;
 
 /**
- * 직교 뷰(뷰1·뷰4) 초기 줌. `short` = 뷰포트 짧은 변(px).
+ * 초기 줌. `short` = 뷰포트 짧은 변(px).
  * 결과는 `[minZoom, baseZoom]` 안이며, 넓은 화면에서는 정확히 `baseZoom`이다.
  */
 export const fitZoom = (
@@ -176,30 +167,3 @@ export const fitZoom = (
     Math.max(minZoom, short / (INIT_MIN_CELLS * CELL_PX)),
   );
 
-/**
- * 원근 뷰(뷰2·3) 초기 카메라 거리에 쓰는 **가로 칸 수** 목표.
- * 원근+피치(42°)라 세로는 거리의 1.5배 이상이 들어온다 — 가로만 맞추면
- * 세로는 자동으로 보드 전체를 덮는다. 16칸을 그대로 쓰면 세로 여백이 화면의 40%가 되어
- * 이번 과제 ②가 고치려는 증상을 되살리므로, 가로 목표만 낮춰 잡는다.
- */
-export const INIT_MIN_CELLS_PERSPECTIVE = 11;
-
-/**
- * 뷰4(도트) 팔레트 — `BOARD`에서 **명도만** 파생한다.
- * 새 색을 만들지 않는 것이 계약(§1.4). 도트 문법상 필요한 하이라이트/그림자는
- * `shade()` 한 단계로만 만든다.
- */
-export const PIXEL_PAL = {
-  grass1: BOARD.grass,
-  grass2: shade(BOARD.grass, -0.15),
-  grass3: shade(BOARD.grass, 0.12),
-  room: shade(BOARD.room, 0.06),
-  roomHi: shade(BOARD.room, 0.25),
-  roomEdge: shade(BOARD.roomEdge, -0.25),
-  wood: BOARD.wood,
-  woodDark: shade(BOARD.wood, -0.32),
-  gold: shade(BOARD.gold, -0.06),
-  ink: BOARD.corridor,
-  cream: shade(BOARD.room, 0.6),
-  loot: BOARD.loot,
-} as const;

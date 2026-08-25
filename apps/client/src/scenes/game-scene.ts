@@ -44,7 +44,7 @@ import {
   safeWidth,
 } from "./hud-inset";
 import { currentTiming, cvdMode } from "./view-motion";
-import { CVD_CELL, cvdCueDots } from "./pixel-glyphs";
+import { CVD_CELL, cvdCueDots } from "./cvd-glyphs";
 import { markMovedOnce } from "./move-hint";
 import {
   beginReveal,
@@ -60,11 +60,9 @@ import type {
   PassageLink,
   PulseTone,
   ViewCell,
-  ViewContract,
-  ViewId,
   ViewOutcome,
   WarpReason,
-} from "./view-contract";
+} from "./view-types";
 
 // 셀 크기 = 근접(줌 1.0) 기준 해상도. 크게 잡아 줌 1.0에서 선명하게 보이도록.
 // 값의 단일 소스는 shared의 `CELL_PX` — 여기서는 호환용으로 재수출만 한다.
@@ -244,15 +242,14 @@ const distToSeg = (
   return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
 };
 
-export class GameScene extends Phaser.Scene implements ViewContract {
-  /** 뷰1 = 2D 이모지. */
-  readonly viewId: ViewId = "2d-emoji";
-  /**
-   * Phaser 게임 인스턴스 1개 = WebGL 컨텍스트 1개. 뷰1과 뷰4가 **그 하나를 공유**하므로
-   * 두 stage가 같은 비용 1을 나눠 갖는다(§9.5 — 인스턴스를 쪼개면 컨텍스트가 는다).
-   */
-  readonly contextCost = 1;
-
+/**
+ * 이 게임의 **유일한 렌더러.** 2D 탑다운(Phaser).
+ *
+ * 2026-08-25 이전에는 `implements ViewContract`로 뷰2·3(Three.js)·뷰4(픽셀)와 계약을 공유했다.
+ * 그 셋을 제거하면서 계약도 걷어냈다 — 구현체가 하나뿐인 인터페이스는 추상화가 아니다.
+ * 남은 것은 인자로 오가는 데이터 타입뿐이다(`./view-types`).
+ */
+export class GameScene extends Phaser.Scene {
   private room!: Room;
   private tokens = new Map<string, Token>();
   private bubbles = new Map<string, BubbleRec>();
@@ -1474,7 +1471,7 @@ export class GameScene extends Phaser.Scene implements ViewContract {
    * 다만 뷰1의 1차 식별자는 이모지이므로 **얼굴을 건드리지 않고 이름표 우측**에
    * 12px 셀 하나만 붙인다 — spec §4.3이 셀 크기(8×8 도트)만 정하고 배치는
    * 뷰에 맡겼기 때문에, 가장 덜 어지러운 자리를 고른 것이다.
-   * 글리프 어휘 자체는 `pixel-glyphs.cvdCueDots` 단일 소스에서 온다.
+   * 글리프 어휘 자체는 `cvd-glyphs.cvdCueDots` 단일 소스에서 온다.
    */
   private makeCvdCue(
     suspect: string,

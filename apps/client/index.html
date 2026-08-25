@@ -348,7 +348,7 @@
            100% 고정. 이미지 실패 시 단색 갈색 폴백. */
         background: #1c1712 url("/assets/bg/grass-field.png?v=2") center / cover no-repeat;
       }
-      /* Phaser·three 캔버스 모두(뷰1~4 공통) */
+      /* Phaser 캔버스 */
       #gameScreen canvas { touch-action: none; }
       /* HUD 내부 스크롤은 세로만 허용 + 페이지로 전파 금지 */
       .rp-body, .room-list, #log, #evidence, #aiDetail {
@@ -653,30 +653,6 @@
       /* 증거 패널 안의 「내 손패」 줄 — 폰에서 플로팅 손패를 숨긴 대신 여기에 명시한다. */
       .rp-hand { display: none; }
       .rp-hand:empty { display: none !important; }
-      .hud-view {
-        left: calc(16px + var(--sa-l, 0px)); bottom: calc(72px + var(--sa-b, 0px));
-        padding: 6px 8px; position: fixed;
-      }
-      .hud-view #viewToggle { min-width: 110px; }
-      /* 제출용 빌드 — 뷰 선택기 숨김(뷰1 단일 고정). 코드·자산은 그대로 둔다.
-         되돌리려면 이 규칙만 지우면 된다. 근거: docs/design/20260730-view-selector-hide.md */
-      .hud-view { display: none !important; }
-      /* 위로 열리는 뷰 선택 드롭다운 */
-      .view-list {
-        position: absolute; left: 8px; right: 8px; bottom: calc(100% + 4px);
-        list-style: none; margin: 0; padding: 4px;
-        background: rgba(255, 248, 239, 0.97); border: 1px solid var(--wds-line-normal);
-        border-radius: 10px; box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
-        backdrop-filter: blur(3px);
-      }
-      .view-list li {
-        padding: 8px 10px; border-radius: 6px; font-size: 12px; color: var(--wds-label-normal);
-        cursor: pointer; white-space: nowrap; user-select: none;
-      }
-      .view-list li:hover { background: var(--wds-bg-alternative); color: var(--wds-label-strong); }
-      .view-list li.active { background: var(--wds-tint-primary); color: var(--wds-label-strong); }
-      .view-list li.soon { opacity: 0.5; cursor: default; }
-      .view-list li.soon:hover { background: transparent; color: var(--wds-label-normal); }
       #hand { min-height: 18px; }
       /* ── 우측 컬럼 (바닥부터 재구현) ── */
       .rp-col {
@@ -792,8 +768,8 @@
       }
 
       /* ── 터치 이동 패드 (로드맵 §7.12 T1) ─────────────────────────────
-         **DOM 레이어**다 — Phaser(뷰1·4)·Three(뷰2·3) 어느 캔버스가 떠 있든 같은
-         마크업이 같은 자리에 뜨고, 좌표 역변환이 전혀 없으므로 뷰 독립이다.
+         **DOM 레이어**다 — 캔버스 위에 같은 마크업이 같은 자리에 뜨고, 좌표 역변환이
+         전혀 없으므로 렌더러와 무관하게 성립한다.
          보내는 것은 방향 1칸(`move {dx,dy}`)뿐 — 키보드 이동과 **완전히 같은 메시지**이고
          이동 가부·벽·한도·충돌은 서버 `handleMove`가 판정한다(진실값 = 서버).
          노출 조건은 **주 포인터가 coarse**(= 손가락)일 때뿐이라 마우스 데스크톱에는
@@ -1076,20 +1052,6 @@
         /* 플로팅 AI HUD는 폰에서 **감춘다** — 보드 위를 늘 덮어 「중요하지 않은 AI 전송
            내용이 계속 보인다」는 피드백. 계측은 [증거 노트] 컬럼의 AI 패널에 그대로 있다. */
         .hud-ai { display: none; }
-        /* 뷰 선택은 조작이 아니라 **관람 설정**이다 — 게임 버튼과 같은 무게로 두면 안 된다.
-           D-패드 반대쪽(좌하단)에 작은 칩으로 놓아 하단이 좌우 대칭을 이루게 한다. */
-        .hud-view {
-          left: calc(8px + var(--sa-l, 0px));
-          bottom: calc(74px + var(--sa-b, 0px)); top: auto;
-          padding: 3px; border-radius: 10px;
-        }
-        .hud-view #viewToggle {
-          /* 관람 설정이라 **시각적으로는** 가볍게 두되, 손가락 타깃은 하한을 지킨다.
-             작게 보이는 것과 누르기 어려운 것은 다르다. */
-          min-width: 0; min-height: 44px; padding: 6px 12px; font-size: 12px;
-          background: rgba(241, 228, 208, 0.95); color: var(--wds-label-normal);
-          border-color: var(--wds-line-normal);
-        }
         /* BGM 스피커: top 코너(닫기 버튼)·좌하단(방만들기 캐릭터)과 겹치던 것 → 우측 상단
            «턴 배너 아래»의 빈 곳으로. 패널을 열면 그 아래로 가려지지만(읽는 중), 평소·방만들기엔
            충돌 없이 뜬다. 터치는 탭=음소거. */
@@ -1350,11 +1312,6 @@
         <button id="helpBtn" title="게임 목표와 조작을 다시 봅니다.">?</button>
       </div>
 
-      <div class="hud hud-view">
-        <ul id="viewList" class="view-list hidden"></ul>
-        <button id="viewToggle" title="화면 방식 선택">뷰1 · 2D ▲</button>
-      </div>
-
       <div class="hud hud-turn hidden" id="turnInfo"></div>
       <!-- 현재 차례 얼굴 배지 — 순서 스트립 «밖»의 독립 HUD(좌상단) -->
       <div class="hud hud-turnface hidden" id="turnFace"></div>
@@ -1373,11 +1330,11 @@
 
       <div id="diceOverlay" class="dice-overlay hidden"></div>
 
-      <!-- 뷰 청크 로딩 화면 — 오버레이 버스 `interstitial`(60) 슬롯이 단독 소유.
+      <!-- 렌더러 청크 로딩 화면 — 오버레이 버스 `interstitial`(60) 슬롯이 단독 소유.
            코드 스플리팅(§9.1)으로 생긴 "받는 동안" 화면이 비지 않게 한다. -->
       <div id="viewLoad" class="vl-overlay hidden" role="status" aria-live="polite">
         <div class="vl-card">
-          <div id="vlTitle" class="vl-title">뷰1 · 2D</div>
+          <div id="vlTitle" class="vl-title">게임 화면</div>
           <div class="vl-msg">불러오는 중…</div>
           <div class="vl-bar"><i></i></div>
         </div>
