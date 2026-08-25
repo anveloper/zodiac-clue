@@ -56,6 +56,10 @@
     "dir": "plans/done",
     "items": [
       {
+        "path": "plans/done/23-goal-card-endgame-line.md",
+        "title": "plan: 60초 안내에 «끝내기» 한 줄 — 승리 선언 방법과 그 대가"
+      },
+      {
         "path": "plans/done/22-action-bar-hierarchy.md",
         "title": "plan: 액션 바 3단 위계 — 되돌릴 수 없는 행동을 구분한다"
       },

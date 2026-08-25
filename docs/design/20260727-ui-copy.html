@@ -397,7 +397,7 @@
     <tr><td>턴 배너 상태줄</td><td><b>28자</b></td><td><code>.hud-turn</code>이 <code>white-space:nowrap</code></td></tr>
     <tr><td>결과 제목</td><td><b>16자</b></td><td><code>.end-title</code> 26px</td></tr>
     <tr><td>결과 부제</td><td><b>44자</b></td><td><code>.end-sub</code> 1~2행</td></tr>
-    <tr><td>목표 카드 1줄</td><td><b>32자</b></td><td>380px 카드 안에서 2행 금지</td></tr>
+    <tr><td>목표 카드 1줄</td><td><b>27자</b>(실측)</td><td><b>4줄</b> 카드. 폰 390 가용폭 306px = 순한글 27자. ⚠️ ②(33)·③(44)은 이미 초과라 2행으로 접힌다 — 카드는 넘치지 않으나 «2행 금지»는 이미 깨져 있다</td></tr>
     <tr><td>랜딩 <code>.msg</code></td><td><b>40자</b></td><td><code>min-height:16px</code> 1행</td></tr>
     <tr><td><b>NPC 대사 — 제안</b></td><td><b>25자</b></td><td>코드 <code>LINE_BUDGET_SUGGEST</code>. 봇 1턴 = <code>npcDelay</code>+<code>BOT_ACT_GAP</code>+<code>bubbleLifeMs(len)</code> ≤ 4s 역산(④ §2.3)</td></tr>
     <tr><td><b>NPC 대사 — 고발·계략</b></td><td><b>40자</b></td><td>코드 <code>LINE_MAX</code>. 홀드 타이머가 없어 클라이맥스 대사의 캐릭터색을 남긴다</td></tr>
@@ -475,14 +475,19 @@
         <ol>
           <li><span class="k">①</span><span><b>목표</b> — 도둑 1명 · 훔친 것 1개 · 장소 1곳을 맞히면 승리.</span></li>
           <li><span class="k">②</span><span><b>출발점</b> — 내 손패 3장은 정답이 아닙니다. 여기서부터 지워 나가세요.</span></li>
-          <li><span class="k">③</span><span><b>방법</b> — 방에 들어가 [제안]. 아무도 반증 못 한 조합이 정답 후보예요.</span></li>
+          <li><span class="k">③</span><span><b>방법</b> — 방향키로 이동해 방에서 [추리하기]. 아무도 반증 못 한 조합이 정답 후보예요.</span></li>
+          <li><span class="k">④</span><span><b>끝내기</b> — 확신하면 [신고하기]. 틀리면 탈락하고 반증만 남아요.</span></li>
         </ol>
         <div class="cta"><button class="g-btn">알겠어요, 시작할게요</button></div>
-        <p class="re">좌측 상단 [?]를 누르면 다시 볼 수 있어요.</p>
+        <p class="re">[?] 버튼을 누르면 다시 볼 수 있어요.</p>
       </div>
       <div class="tipwrap" style="justify-content:center">
         <div class="box good" style="margin:0">
           <b>② 가 이 카드의 존재 이유다.</b> 순서를 바꾸지 말 것.<br>
+          <b style="color:var(--gold)">④ 신설 2026-08-26.</b> 앞의 3줄은 «어떻게 이기는가»를 말하지 않았다 —
+          ①이 「맞히면 승리」라고만 하고 그 선언을 어느 버튼으로 하는지도, 틀리면 어떻게 되는지도 빠져 있었다.
+          「탈락」에서 끊지 않고 <b>「반증만 남아요」까지</b> 말하는 이유는, 오답 고발의 실제 대가가
+          «쫓겨남»이 아니라 «남은 판 내내 앉아서 반증만 하는 것»이기 때문이다.<br>
           <span class="note">현재 화면 어디에도 "내 카드는 정답이 아니다"라는 추리의 출발점이 없다. 손패는 <code>잡채, 서재, 뱀 무녀</code>라고만 적혀 있어, 처음 보는 사람에게는 그냥 받은 카드 3장이다.</span>
         </div>
         <div class="box" style="margin:0">

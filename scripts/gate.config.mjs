@@ -443,7 +443,7 @@ export const SCREEN = {
       // 모달이 뜬 동안 **뒤가 가려지는 것은 정상**이다. 그래서 보호 대상은 모달 자신뿐이다.
       protect: [
         { sel: "#goalOk", why: "안내를 닫는 유일한 버튼. 가려지면 게임에 못 들어간다" },
-        { sel: "#goalCard .goal-lines div", min: 3, why: "규칙 3줄 — 45초 심사의 본문" },
+        { sel: "#goalCard .goal-lines div", min: 4, why: "규칙 4줄 — 온보딩 본문. min이라 3으로 두면 ④가 가려져도 통과한다" },
       ],
       pairs: [["#goalOk", ".goal-lines", "확인 버튼이 본문을 덮으면 규칙을 못 읽는다"]],
       touchExempt: [],
