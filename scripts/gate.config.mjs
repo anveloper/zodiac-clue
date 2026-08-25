@@ -1,7 +1,8 @@
 // 회귀 게이트 설정 — **수치는 전부 여기 한 곳에만 있다.**
 //
-// 근거 문서: docs/design/20260727-improvement-roadmap.md §9.1(번들)·§9.6(수용 게이트)
-//           docs/design/20260727-execution-plan.md §2(08-02 기준선 / 08-04 통과)·§6(일일 체크포인트)
+// 근거 문서: docs/archive/design/20260727-improvement-roadmap.md §9.1(번들)·§9.6(수용 게이트)
+//           docs/archive/design/20260727-execution-plan.md §2(08-02 기준선 / 08-04 통과)·§6(일일 체크포인트)
+//           ※ 위 둘은 2026-08-25 archive/로 이관됐다. 현행 우선순위는 docs/design/20260825-roadmap-1y.md
 //           docs/design/20260720-ai-tech-doc.md §3(환각 검증)
 //
 // ⚠ 이 파일은 **판정 기준**만 담는다. "지금 값이 얼마인가"(기준선)는
@@ -50,7 +51,7 @@ export const ITEMS = {
   },
   gpu: {
     id: "gpu",
-    label: "GPU 자원 정적 계측 (roadmap §9.3)",
+    label: "GPU 자원 정적 계측 (Phaser 텍스처·dispose)",
     quick: true,
     why: "정적 스캔이라 0.05초. 공짜인 검사를 빼면 quick의 신뢰도만 떨어진다.",
   },
@@ -62,12 +63,11 @@ export const ITEMS = {
   },
   screen: {
     id: "screen",
-    label: "화면 게이트 (겹침·스크롤·터치·뷰간HUD·글자크기·대비·목록배지·컬럼배분)",
+    label: "화면 게이트 (겹침·스크롤·터치·글자크기·대비·목록배지·컬럼배분)",
     quick: false,
     // 근거(실측 ≈54s · `--full` ≈69s): Colyseus 서버 + Vite + Chrome 기동은 한 번뿐이고
     //       (셋 다 끝까지 재사용한다) 나머지는 전부 화면 비용이다.
     //         · 정적 화면 1.6~1.9s × 12회
-    //         · 뷰2·4 전환 2.5~3.4s × 2회 (three/pixel 청크를 실제로 받는다)
     //         · 결과 화면 6인 실판 세션 17s 1회 → 종료 오버레이 **4행 6장**
     //         · S7 공개방 목록 배지 +8s — 앞 두 시점(대기 중·정원 초과)은 위 세션에
     //           얹혀 돌아 비용이 0에 가깝고, «종료됨» 한 행만 3막(사람 5 + NPC 1)이
@@ -86,13 +86,16 @@ export const ITEMS = {
 };
 
 /**
- * §9.6 런타임 게이트 — **이 러너로는 측정할 수 없다.**
- * 뷰1→2→3→4→1 10회 순회 후 `renderer.info.memory` ±5 는 살아 있는 WebGL 컨텍스트가 필요하다.
- * 따라서 항상 `SKIP`으로 **명시 출력**한다(은폐된 미측정 금지 — §9.6의 취지).
+ * 런타임 자원 게이트 — **이 러너로는 측정할 수 없다.**
+ * 자원 카운터(±5)는 살아 있는 WebGL 컨텍스트가 필요하다.
+ * 따라서 항상 `SKIP`으로 **명시 출력**한다(은폐된 미측정 금지).
+ *
+ * 📍 2026-08-25 — 원래 왕복 축이 «뷰1→2→3→4→1 10회 순회»였다. 뷰가 하나가 된 지금
+ *    자원이 쌓일 수 있는 유일한 왕복은 **리매치**다(절차는 `--print-runtime-gate`).
  */
 export const RUNTIME_GATE = {
   id: "runtime",
-  label: "§9.6 런타임 수용 게이트 (뷰 10회 순회 ±5)",
+  label: "런타임 자원 수용 게이트 (리매치 10회 ±5)",
   reason:
     "브라우저 WebGL 컨텍스트가 필요해 CLI로 측정 불가. " +
     "절차: node scripts/gate-gpu-baseline.mjs --print-runtime-gate",
@@ -214,13 +217,15 @@ export const DOC_CHECKS = [
   },
   {
     id: "D4",
-    label: "CELL_PX / PX_PER_UNIT — 코드 ↔ view-contract-spec §1.1",
+    label: "CELL_PX — 코드 ↔ (아카이브) view-contract-spec §1.1",
     kind: "code-vs-doc",
-    why: "4뷰 좌표 환산의 유일한 상수. 문서가 «1칸 = CELL_PX 40 … PX_PER_UNIT(40)»으로 값을 박아뒀다.",
+    why:
+      "칸 크기의 유일한 상수. 문서가 «1칸 = CELL_PX 80»으로 값을 박아뒀다. " +
+      "짝이던 PX_PER_UNIT(월드 유닛 환산)은 뷰2·3 제거와 함께 2026-08-25에 사라졌다.",
     // 좌표계 상수는 클루 보드에서 나온 값이라 `content/clue/view-board.ts`로 옮겨졌다(같은 문서 §1.2-⑤).
     code: [{ name: "CELL_PX", file: "packages/shared/src/content/clue/view-board.ts", re: /^export const CELL_PX = (\d+);/m }],
     doc: {
-      file: "docs/design/20260727-view-contract-spec.md",
+      file: "docs/archive/design/20260727-view-contract-spec.md",
       re: /1칸\s*=\s*`?CELL_PX`?\s*\*{0,2}(\d+)/,
       names: ["CELL_PX"],
     },
@@ -243,14 +248,11 @@ export const DOC_CHECKS = [
 // 랜딩·대기실에서는 정상이다(카드가 뷰포트보다 길 수 있다). 한 기준을 전 화면에
 // 밀어붙이면 곧 아무도 못 믿는 게이트가 된다.
 
-// ── 게임 화면(HUD) 기대값 — 뷰1~뷰4가 **공유**한다 ──────────────────
+// ── 게임 화면(HUD) 기대값 ────────────────────────────────────────
 //
-// 4뷰는 캔버스만 다르고 HUD는 **같은 DOM 한 벌**이다(index.html §③ — `.hud-*`는
-// `#gameScreen` 직속이고 `#game`(Phaser)·three 캔버스는 그 아래에 깔린다).
-// 그래서 겹침·스크롤·터치 타깃의 기대값도 한 벌이어야 한다 — 뷰마다 다른 기준을 쓰면
-// "뷰3에서만 났던 사고"를 뷰1 기준으로 봐주는 일이 생긴다.
-// 아래 두 상수를 `game` / `game-v2` / `game-v3` / `game-v4`가 그대로 공유하는 것이
-// **"HUD가 뷰와 무관하다"는 주장을 게이트가 실제로 검증한다**는 뜻이다.
+// HUD는 캔버스 위에 얹힌 **DOM 한 벌**이다(index.html §③ — `.hud-*`는 `#gameScreen`
+// 직속이고 Phaser 캔버스는 그 아래에 깔린다). 겹침·스크롤·터치 타깃은 전부 이 DOM 층의
+// 성질이라 캔버스가 무엇을 그리든 기대값은 하나다.
 const GAME_PROTECT = [
   {
     sel: ".hud-ctrl button",
@@ -259,7 +261,6 @@ const GAME_PROTECT = [
       "액션 바 6개. **07-28 실기에서 [제안] 말고 5개가 턴 배너에 가려졌다.** " +
       "존재·크기·visibility는 그때도 전부 정상이었다 — 여기서는 실제 히트 테스트로 본다",
   },
-  { sel: "#viewToggle", why: "뷰 전환 진입점(제출물 ③의 4뷰 시연 경로)" },
   { sel: "#turnInfo", why: "지금 누구 턴인가 — 가려지면 판 진행을 못 읽는다" },
   { sel: "#rpToggle", optional: true, why: "우측 패널 토글(폰에서만 뜬다)" },
   { sel: ".hud-dpad .dp", min: 4, optional: true, why: "터치 이동 패드(coarse에서만 렌더)" },
@@ -268,47 +269,9 @@ const GAME_PAIRS = [
   ["#turnInfo", ".hud-ctrl", "**07-28 사고 그 자체.** 턴 배너가 액션 바를 덮었다"],
   ["#turnInfo", ".hud-hand", "배너가 손패를 덮으면 «내 3장»을 못 본다"],
   [".hud-ctrl", ".hud-dpad", "액션 바와 D-패드가 겹치면 이동 중 오조작"],
-  [".hud-ctrl", ".hud-view", "액션 바와 뷰 전환 칩"],
   [".hud-hand", ".hud-dpad", "손패와 D-패드"],
   ["#rightPanel", ".hud-ctrl", "우측 컬럼이 액션 바를 덮으면 아무 행동도 못 한다"],
 ];
-
-/**
- * 뷰2·3·4 화면 정의를 뷰1에서 **파생**시킨다.
- *
- * 왜 캔버스를 재지 않는가: 이 게이트의 세 판정(S1 겹침 · S2 스크롤 · S3 터치 타깃)은
- * 전부 **DOM/HUD 레이어**의 성질이다. 헤드리스 WebGL이 실기와 다를 수 있다는 것은
- * **캔버스 픽셀**에 대한 이야기이고, 그것은 애초에 이 게이트의 판정 대상이 아니다.
- * → 뷰를 실제로 전환한 뒤 **HUD만** 다시 잰다.
- *
- * 왜 그래도 재야 하는가: 뷰2·3은 three 캔버스가 `#gameScreen` 위에 얹히고
- * `hud-inset.ts`가 우측 컬럼 폭만큼 인셋을 잡는다 — HUD의 **위치가 달라질 여지**가 있다.
- * "같은 DOM이니 같을 것"은 가설이고, 게이트는 그 가설을 검증하는 자리다.
- */
-const viewScreen = (viewIndex, id, label, tier) => ({
-  id,
-  label,
-  // 뷰1 게임 화면과 **완전히 같은 진입**(솔로 즉시 진입) 후 드롭다운으로 전환한다.
-  url: "/?solo=1&demo=1",
-  steps: [],
-  ready:
-    "!document.getElementById('gameScreen').classList.contains('hidden')" +
-    " && !document.getElementById('turnInfo').classList.contains('hidden')",
-  /** 준비 후 `#viewList li[viewIndex]`를 클릭한다. 실패하면 FAIL이 아니라 SKIP(사유 인쇄). */
-  view: viewIndex,
-  /**
-   * 기본 모드에서 도는 뷰포트. 뷰 전환은 **청크를 새로 받아야 해서** 한 화면이
-   * 3.4초(뷰2)까지 간다 — 뷰포트 2종을 다 돌면 뷰 3종만으로 +12초다.
-   * 폰을 남긴 이유: S3(44px 터치 하한)가 폰에서만 판정되므로 **정보량이 더 크다**.
-   * 데스크톱은 `--full`에서 돈다(기본에서 빠진 것은 SKIP + 사유로 항상 인쇄된다).
-   */
-  viewportsDefault: ["phone"],
-  vscroll: "locked",
-  protect: GAME_PROTECT,
-  pairs: GAME_PAIRS,
-  touchExempt: [],
-  tier,
-});
 
 export const SCREEN = {
   /** 손가락 타깃 하한(px). 근거: Apple HIG 44pt · index.html §터치 T1이 이미 쓰는 값. */
@@ -383,26 +346,6 @@ export const SCREEN = {
   minOverlapEdgePx: 4,
   /** 세로 스크롤 허용 오차(px). 서브픽셀 반올림. */
   scrollTolPx: 1,
-  /**
-   * 뷰1 대비 HUD 상자가 움직여도 되는 폭(px) — S4.
-   * 4뷰의 HUD는 **같은 DOM 한 벌**이라 원칙적으로 0이어야 한다. 2px을 준 것은
-   * 캔버스 크기 변화가 만드는 서브픽셀 반올림(`rect`는 정수 반올림해 담는다)만
-   * 흡수하기 위해서다 — «우측 컬럼 인셋» 같은 진짜 이동(수십 px)은 그대로 걸린다.
-   */
-  hudShiftTolPx: 2,
-  /**
-   * S4에서 **크기 비교만 면제**하는 선택자(위치 x·y는 그대로 비교한다).
-   * 사유 없이는 추가하지 마라 — 면제 하나가 «뷰마다 HUD가 다르다»를 통째로 가린다.
-   */
-  hudShiftSizeExempt: [
-    {
-      sel: "#viewToggle",
-      why:
-        "이 버튼의 라벨이 **현재 뷰 이름 그 자체**다(«뷰1 · 2D ▲» → «뷰2 · 2.5D ▲»). " +
-        "글자가 바뀌니 폭이 바뀌는 것이 정상이고, 그것이 바로 이 버튼이 하는 일이다. " +
-        "왼쪽 고정이라 **위치(x·y)는 바뀌면 안 되고**, 그쪽은 계속 비교한다.",
-    },
-  ],
   /** 화면 하나가 준비 상태에 도달할 때까지 기다리는 상한(ms). 넘으면 SKIP(판정 불가). */
   readyTimeoutMs: 25_000,
   /** 준비 후 레이아웃이 멎기를 기다리는 시간(ms). */
@@ -441,7 +384,9 @@ export const SCREEN = {
         { sel: "#codeInput", why: "코드 입력칸" },
         { sel: "#refreshRooms", why: "공개방 새로고침" },
         { sel: "#visSeg .seg-btn", min: 2, why: "공개/비공개 선택" },
-        { sel: ".ai-links a", min: 3, why: "제출물 문서로 가는 유일한 링크(심사자 동선)" },
+        // 📍 2026-08-25 제거 — `.ai-links`(랜딩 → 과제 제출물 문서 링크)는 **DOM에 이미 없다.**
+        //    과제 종료로 «심사자 동선»이라는 근거도 사라졌다. 대상 없는 보호 항목은
+        //    매 실행 FAIL을 찍어 게이트 전체의 신뢰도를 갉아먹는다.
       ],
       pairs: [
         ["#createBtn", ".join-row", "«방 만들기»와 «초대 코드» 줄이 겹치면 둘 다 오조작"],
@@ -484,14 +429,8 @@ export const SCREEN = {
       pairs: GAME_PAIRS,
       touchExempt: [],
     },
-    // ── 뷰2·3·4 — 같은 HUD, 다른 캔버스 ──
-    // 기본 모드는 뷰2(three)·뷰4(pixel)만 돈다. 이 둘이 **렌더 계열 2종**을 다 덮기
-    // 때문이다(three 캔버스가 얹히는 경우 · Phaser 씬만 갈아 끼우는 경우).
-    // 뷰3은 뷰2와 **같은 IsoView 인스턴스**에 `setAssets(true)`만 다르다 — HUD 레이어에
-    // 대해서는 뷰2와 구조가 같아 기본 모드에서 빼도 새로 잃는 것이 없다. `--full`에서 돈다.
-    viewScreen(1, "game-v2", "게임 뷰2 · 2.5D(three-emoji) — HUD만", "default"),
-    viewScreen(2, "game-v3", "게임 뷰3 · 에셋(three-asset) — HUD만", "full"),
-    viewScreen(3, "game-v4", "게임 뷰4 · 도트(pixel) — HUD만", "default"),
+    // 📍 2026-08-25 — 여기 있던 뷰2·3·4 HUD 화면 3종(`viewScreen(…)`)이 사라졌다.
+    //    렌더러가 하나면 «뷰를 바꿔도 HUD가 그대로인가»라는 질문 자체가 성립하지 않는다.
     {
       id: "goal-modal",
       label: "게임 + 60초 안내 카드(모달)",

@@ -1,13 +1,18 @@
-// GPU 자원 회귀 게이트 — 정적 계측 (roadmap §9.3 · §9.6)
+// GPU 자원 회귀 게이트 — 정적 계측
 //
 // 왜 정적인가:
-//   §9.6이 정의한 수용 게이트는 "뷰1→2→3→4→1 10회 순회 후 `renderer.info.memory`가
-//   초기값 ±5 이내"다. 이 값은 **살아 있는 WebGL 컨텍스트**에서만 나온다.
-//   CI/에이전트 환경에는 브라우저가 없으므로 그 수치는 이 스크립트가 만들 수 없다.
-//   → 대신 **누수가 생길 수 있는 코드 구조**를 센다. 두 지표는 다음 관계로 묶인다.
-//        런타임 카운터 우상향 ⟸ (매 오브젝트마다 새 geometry/material) ∧ (dispose 0건)
-//     그래서 "공유 지오메트리로 상수화됐는가 · dispose가 배선됐는가"를 통과 조건으로 둔다.
-//   런타임 수치는 `--print-runtime-gate`가 출력하는 절차로 **사람이 1회** 측정한다.
+//   런타임 수치(`renderer.info.memory`)는 **살아 있는 WebGL 컨텍스트**에서만 나온다.
+//   CI/에이전트 환경에는 브라우저가 없으므로 이 스크립트가 만들 수 없다.
+//   → 대신 **누수가 생길 수 있는 코드 구조**를 센다.
+//
+// 📍 2026-08-25 축소 — 원래 이 게이트의 축은 "뷰1→2→3→4→1 10회 순회 후 자원 카운터가
+//    ±5 이내"였고, 검사 4개 중 3개(G1 three 런타임 geometry · G2 dispose · G3 THREE.Cache)가
+//    **Three.js 전용**이었다. 뷰2·3·4를 제거하면서 그 셋은 **잴 대상이 사라졌다** —
+//    측정 대상이 없는 검사를 PASS로 남기면 «검사했다»는 거짓 신호가 된다.
+//    남긴 것은 렌더러가 하나여도 여전히 성립하는 두 축이다:
+//      · Phaser 절차 텍스처(`generateTexture`)는 TextureManager에 **영구 등록**된다.
+//      · 씬 종료 경로에 `dispose()`가 배선돼 있는가(타이머·트윈·텍스처 회수).
+//    근거: docs/design/20260825-roadmap-1y.md §1.2
 //
 // 실행: node scripts/gate-gpu-baseline.mjs [--json] [--print-runtime-gate]
 // 종료코드: 0 통과 / 1 실패(누수 구조 잔존)
@@ -18,20 +23,14 @@ import { dirname, join, relative } from "node:path";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
-/** 계측 대상 — 뷰1~4 렌더러 + three 자원 헬퍼. */
+/** 계측 대상 — 이 게임의 유일한 렌더러. */
 const TARGETS = [
-  { file: "apps/client/src/scenes/game-scene.ts", view: "뷰1 2d-emoji", engine: "phaser" },
-  { file: "apps/client/src/scenes/iso-view.ts", view: "뷰2·3 three-*", engine: "three" },
-  { file: "apps/client/src/scenes/pixel-scene.ts", view: "뷰4 pixel", engine: "phaser" },
-  { file: "apps/client/src/scenes/three-res.ts", view: "(공용 three 자원)", engine: "three" },
+  { file: "apps/client/src/scenes/game-scene.ts", view: "2d-emoji", engine: "phaser" },
 ];
 
 const RE = {
-  geometry: /new\s+THREE\.[A-Za-z0-9_]*Geometry\s*\(/g,
-  material: /new\s+THREE\.[A-Za-z0-9_]*Material\s*\(/g,
-  texture: /new\s+THREE\.(?:Canvas|Data|Video|Compressed)?Texture\s*\(/g,
   dispose: /\.dispose\s*\(\s*\)/g,
-  // Phaser 절차적 텍스처(뷰4 잔디 등) — 텍스처 매니저에 영구 등록된다.
+  // Phaser 절차적 텍스처 — 텍스처 매니저에 영구 등록된다.
   phaserTexGen: /\.generateTexture\s*\(/g,
   phaserTexRemove: /textures\.remove\s*\(/g,
   // 타자기 setText = 매 틱 캔버스 재렌더 + 텍스처 재업로드(§9.3 뷰1 부수).
@@ -102,43 +101,23 @@ for (const t of TARGETS) {
 };
 
 // ── 게이트 판정 ────────────────────────────────────────────
-const three = report.filter((r) => !r.missing && r.engine === "three");
 const all = report.filter((r) => !r.missing);
 const sum = (rs, k, f) => rs.reduce((a, r) => a + r.metrics[k][f], 0);
 
-const geoRuntime = sum(three, "geometry", "runtime");
-const geoShared = sum(three, "geometry", "shared");
 const disposeCalls = sum(all, "dispose", "total");
-const cacheEnabled = /THREE\.Cache\.enabled\s*=\s*true/.test(
-  three.map((r) => readFileSync(join(ROOT, r.file), "utf8")).join("\n"),
-);
 const phaserGen = sum(all, "phaserTexGen", "total");
 const phaserRemove = sum(all, "phaserTexRemove", "total");
 
 const checks = [
   {
-    id: "G1 three 런타임 geometry 생성",
-    got: geoRuntime,
-    want: "0 (전부 모듈 공유 상수)",
-    pass: geoRuntime === 0,
-    why: "토큰·NPC마다 새 geometry를 만들면 왕복마다 GPU에 쌓인다(§9.3).",
-  },
-  {
-    id: "G2 dispose() 호출",
+    id: "G1 dispose() 배선",
     got: disposeCalls,
     want: "> 0",
     pass: disposeCalls > 0,
-    why: "Three는 geometry/material/texture를 GC하지 않는다. 0건이면 확정 누수(§9.3).",
+    why: "씬 종료 경로에 회수가 없으면 타이머·트윈·절차 텍스처가 그대로 남는다.",
   },
   {
-    id: "G3 THREE.Cache.enabled",
-    got: cacheEnabled ? "true" : "미설정",
-    want: "true",
-    pass: cacheEnabled,
-    why: "뷰3 재진입마다 같은 SVG 10장을 재디코드+GPU 재업로드(§9.3).",
-  },
-  {
-    id: "G4 Phaser 절차 텍스처 회수",
+    id: "G2 Phaser 절차 텍스처 회수",
     got: `${phaserGen}건 생성 / ${phaserRemove}건 제거`,
     want: "제거 ≥ 생성",
     pass: phaserRemove >= phaserGen,
@@ -151,7 +130,7 @@ const args = new Set(process.argv.slice(2));
 if (args.has("--json")) {
   console.log(JSON.stringify({ report, checks }, null, 2));
 } else {
-  console.log("── GPU 자원 정적 계측 (roadmap §9.3 · §9.6) ──────────────");
+  console.log("── GPU 자원 정적 계측 (Phaser) ────────────────────────────");
   for (const r of report) {
     if (r.missing) {
       console.log(`\n${r.view.padEnd(16)} ${relative(ROOT, r.file)}  ⚠ 파일 없음`);
@@ -159,28 +138,12 @@ if (args.has("--json")) {
     }
     const m = r.metrics;
     console.log(`\n${r.view}  (${r.file}, ${r.loc}행)`);
-    if (r.engine === "three") {
-      console.log(
-        `  geometry  공유 ${m.geometry.shared} / 런타임 ${m.geometry.runtime}` +
-          `   material 공유 ${m.material.shared} / 런타임 ${m.material.runtime}` +
-          `   texture ${m.texture.total}`,
-      );
-    }
     console.log(
       `  dispose() ${m.dispose.total}건` +
-        (r.engine === "phaser"
-          ? `   generateTexture ${m.phaserTexGen.total} / textures.remove ${m.phaserTexRemove.total}` +
-            `   setText ${m.setText.total} / 마스크 타자기 ${m.maskedType.total}`
-          : ""),
+        `   generateTexture ${m.phaserTexGen.total} / textures.remove ${m.phaserTexRemove.total}` +
+        `   setText ${m.setText.total} / 마스크 타자기 ${m.maskedType.total}`,
     );
   }
-
-  // 공유 상수화의 귀결: three 쪽 고유 BufferGeometry 수가 **보드/액터 수와 무관**해진다.
-  // (= 공유 상수 N + GridHelper 자체 1 + THREE.Sprite 모듈 전역 1)
-  console.log(
-    `\n▸ three 고유 geometry 상한 = ${geoShared} 공유 + 1 GridHelper + 1 Sprite전역` +
-      ` = ${geoShared + 2}개 — 방 9개·토큰 6개·NPC 6개와 **무관**하게 고정.`,
-  );
 
   console.log("\n── 게이트 ─────────────────────────────────────────────");
   for (const c of checks) {
@@ -191,17 +154,17 @@ if (args.has("--json")) {
 
 if (args.has("--print-runtime-gate")) {
   console.log(`
-── 런타임 게이트 (§9.6) — 브라우저에서 사람이 1회 측정 ──────────
+── 런타임 게이트 — 브라우저에서 사람이 1회 측정 ──────────────────
 이 스크립트로는 측정 불가(WebGL 컨텍스트 필요). 절차:
- 1) pnpm dev → /?solo=1 진입 → 뷰2로 한 번 들어간다(IsoView 생성 시점)
+ 1) pnpm dev → /?solo=1 진입 → 판을 시작한다
  2) DevTools 콘솔에서 기준선 스냅샷
-      const base = __zcIso.debugInfo()   // { geometries, textures, programs, calls, triangles }
-    (__zcIso 는 IsoView 생성자가 걸어두는 계측 훅 — main.ts 수정 없이 읽힌다)
- 3) 뷰 드롭다운으로 뷰1→2→3→4→1 을 10회 순회
- 4) const after = __zcIso.debugInfo()
-    → after.geometries - base.geometries, after.textures - base.textures 가
-      각각 **±5 이내**면 §9.3 통과
- 5) 뷰2·3에서 game.loop.actualFps ≈ 0 (Phaser 루프 정지)은 §9.2 담당(별도 작업)
+      const t = __zcGame.renderer                 // Phaser.Renderer.WebGL.WebGLRenderer
+      const base = { tex: __zcGame.textures.list && Object.keys(__zcGame.textures.list).length }
+    (__zcGame 은 enterGame()이 걸어두는 계측 훅)
+ 3) 판을 끝까지 진행 → [다시 하기]로 리매치를 10회 반복한다
+    (뷰 순회가 사라진 지금, 자원이 쌓일 수 있는 유일한 왕복은 **리매치**다)
+ 4) 같은 스냅샷을 다시 떠 텍스처 수가 **±5 이내**면 통과
+ 5) 프레임은 __zcGame.loop.actualFps 로 함께 확인한다
 `);
 }
 

@@ -214,7 +214,7 @@ for (const id of ORDER) {
   });
 }
 
-// §9.6 런타임 게이트 — 이 러너로는 원리적으로 측정 불가. 항상 명시한다.
+// 런타임 자원 게이트 — 이 러너로는 원리적으로 측정 불가. 항상 명시한다.
 results.push({
   id: RUNTIME_GATE.id,
   label: RUNTIME_GATE.label,

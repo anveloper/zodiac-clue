@@ -24,7 +24,6 @@
  *                  가로 스크롤은 어느 화면에서도 사고다 — 전 화면 공통으로 잠근다.
  *   S3 터치 타깃   `pointer: coarse` 에뮬레이션에서 조작 가능한 요소의 최소 변 ≥ 44px.
  *                  숨김·비활성·문서 밖은 제외하고, **제외한 개수도 인쇄한다.**
- *   S4 뷰 간 HUD   뷰2·3·4로 **실제 전환**한 뒤 뷰1과 HUD 상자를 대조한다.
  *                  4뷰는 캔버스만 다르고 HUD는 같은 DOM 한 벌이라는 것이 **가설**이고,
  *                  이 검사가 그 가설을 실측으로 확인한다(어긋나면 그 자체가 결함).
  *                  캔버스 픽셀은 재지 않는다 — 헤드리스 WebGL은 실기 GPU가 아니다.
@@ -1122,39 +1121,6 @@ const openScreen = async (screen, vp, faultJs) => {
       return { unreachable: `준비 조건 미충족: ${screen.ready}`, close };
     await sleep(SCREEN.settleMs);
 
-    // ── 뷰 전환(뷰2·3·4) ──
-    // 전환은 **실제 UI 조작**으로만 한다: 좌하단 드롭다운의 n번째 항목을 클릭한다.
-    // 전환 실패(청크 로드 실패·WebGL 컨텍스트 없음)는 **FAIL이 아니라 SKIP**이다 —
-    // 그건 앱 화면의 결함이 아니라 «이 환경에서 재지 못했다»이기 때문이다.
-    if (typeof screen.view === "number") {
-      const li = `document.querySelectorAll('#viewList li')[${screen.view}]`;
-      const n = await evalIn(sid, `document.querySelectorAll('#viewList li').length`);
-      if (n <= screen.view)
-        return { skip: `뷰 드롭다운 항목이 ${n}개뿐이라 #${screen.view}를 못 고른다`, close };
-      const want = String(await evalIn(sid, `${li}.textContent`));
-      await evalIn(sid, `${li}.click()`);
-      // 전환 완료의 정의: ① 드롭다운 항목에 `.active`가 붙고(applyStage가 마지막에 한다)
-      //                  ② 버튼 라벨이 그 뷰가 되고 ③ 청크 로딩 오버레이가 닫혔다.
-      // 청크를 못 받으면 `setStage`가 **뷰1로 되돌린다** → ①이 영원히 붙지 않는다 → SKIP.
-      const ok = await waitFor(
-        sid,
-        `${li}.classList.contains('active')` +
-          ` && document.getElementById('viewToggle').textContent.indexOf(${JSON.stringify(want)}) === 0` +
-          " && document.getElementById('viewLoad').classList.contains('hidden')",
-        SCREEN.readyTimeoutMs,
-      );
-      if (!ok) {
-        const now = await evalIn(sid, "document.getElementById('viewToggle').textContent").catch(() => "?");
-        return {
-          skip:
-            `«${want}»로 전환되지 않았다(현재 «${now}»). 청크 로드 실패 또는 WebGL 컨텍스트 없음 — ` +
-            "헤드리스 WebGL은 `--enable-unsafe-swiftshader`가 필요하다(이 게이트는 이미 켠다)",
-          close,
-        };
-      }
-      await sleep(SCREEN.settleMs);
-    }
-
     if (faultJs) await evalIn(sid, faultJs);
 
     // 캡처는 **뷰포트만** 찍는다. 전체 페이지 캡처는 밀려 올라간 화면을 정상으로 렌더한다.
@@ -2159,51 +2125,9 @@ const judgeRightColumn = (rc, baseline) => {
   };
 };
 
-/** 뷰1 대비 HUD 상자 이동 비교용 — 보호 대상의 rect를 키로 뽑는다. */
-const hudRectMap = (data) => {
-  const m = new Map();
-  for (const p of data.protect)
-    p.items.forEach((it, i) => m.set(`${p.sel}[${i}]`, it.rect));
-  return m;
-};
-
-/**
- * S4 — 뷰 간 HUD 동일성.
- * 4뷰는 같은 HUD DOM 한 벌을 공유한다. 그런데 뷰2·3은 three 캔버스가 위에 얹히고
- * `hud-inset.ts`가 인셋을 잡으므로 **위치가 달라질 여지**가 있다. 달라졌다면 그것
- * 자체가 결함이다(같은 화면이 뷰에 따라 다른 자리에 있다 = 조작 위치가 흔들린다).
- * "같은 DOM이니 같을 것"은 가설이고, 게이트는 그 가설을 실측으로 확인하는 자리다.
- */
-const judgeHudShift = (base, data) => {
-  if (!base)
-    return { id: "S4", status: "SKIP", detail: "뷰1 기준선이 없다(`--only`로 뷰1을 뺐다) — 대조 불가", lines: [] };
-  const now = hudRectMap(data);
-  const moved = [];
-  for (const [k, b] of base) {
-    const n = now.get(k);
-    if (!n) {
-      moved.push(`✗ ${k} — 뷰1에는 있고 이 뷰에는 없다`);
-      continue;
-    }
-    // 크기 면제(사유는 gate.config.mjs `hudShiftSizeExempt`) — **위치는 면제하지 않는다.**
-    const sizeFree = SCREEN.hudShiftSizeExempt.some((e) => k.startsWith(`${e.sel}[`));
-    const d = sizeFree
-      ? Math.max(Math.abs(n.x - b.x), Math.abs(n.y - b.y))
-      : Math.max(Math.abs(n.x - b.x), Math.abs(n.y - b.y), Math.abs(n.w - b.w), Math.abs(n.h - b.h));
-    if (d > SCREEN.hudShiftTolPx)
-      moved.push(`✗ ${k} — 뷰1 (${b.x},${b.y} ${b.w}×${b.h}) → 이 뷰 (${n.x},${n.y} ${n.w}×${n.h})`);
-  }
-  const exempt = SCREEN.hudShiftSizeExempt.map((e) => e.sel).join(", ");
-  return {
-    id: "S4",
-    status: moved.length ? "FAIL" : "PASS",
-    detail: moved.length
-      ? `뷰1 대비 HUD 상자 ${moved.length}개가 ${SCREEN.hudShiftTolPx}px 넘게 움직였다 — 같은 DOM인데 자리가 다르다`
-      : `뷰1과 HUD 상자 ${base.size}개가 ${SCREEN.hudShiftTolPx}px 이내로 동일 — «HUD는 뷰와 무관»이 실측으로 성립` +
-        ` (크기만 면제: ${exempt})`,
-    lines: moved,
-  };
-};
+// 📍 2026-08-25 — 여기 있던 `hudRectMap`/`judgeHudShift`(S4 «뷰 간 HUD 동일성»)가 사라졌다.
+//    S4는 «뷰를 바꿔도 같은 HUD가 같은 자리에 있는가»를 재는 검사였고, 렌더러가 하나가 되면서
+//    비교 대상이 없어졌다. 측정 대상이 없는 검사를 PASS로 남기면 «검사했다»는 거짓 신호가 된다.
 
 const inTier = (tier) => OPT.full || (tier ?? "default") === "default";
 const wanted = (id) => !OPT.only.length || OPT.only.includes(id);
@@ -2276,21 +2200,6 @@ const FAULTS = [
     js: `(() => {
       const b = document.getElementById('endTurn');
       b.style.cssText = 'min-height:0;height:20px;width:20px;padding:0;font-size:8px';
-      return 'injected';
-    })()`,
-  },
-  {
-    id: "F5-뷰간HUD이동",
-    expect: "S4",
-    screen: "game-v2", // 뷰1이 아니라 **뷰2**에 주입해야 «뷰 간 차이»가 된다
-    signature: /#turnInfo/,
-    why:
-      "뷰2에서만 턴 배너를 인라인 `transform`으로 밀어낸다(중앙 정렬 transform을 덮으므로 " +
-      "실제 이동량은 40px보다 크다) — 같은 HUD DOM인데 뷰에 따라 자리가 다른 상태. " +
-      "«뷰2·3은 three 캔버스라 HUD 위치가 달라질 수 있다»가 실제로 일어났을 때의 모양이다",
-    js: `(() => {
-      const e = document.getElementById('turnInfo');
-      e.style.transform = 'translate(40px, 40px)';
       return 'injected';
     })()`,
   },
@@ -2382,8 +2291,7 @@ if (OPT.selfTest) {
   const vp = SCREEN.viewports.find((v) => v.id === "phone");
   const scr = (id) => SCREEN.screens.find((s) => s.id === id);
   const rows = [];
-  /** 화면 하나를 열고 판정한다(뷰 화면이면 S4까지 붙인다). */
-  let hudBaseST = null;
+  /** 화면 하나를 열고 판정한다. */
   const run = async (screen, faultJs) => {
     const r = await openScreen(screen, vp, faultJs);
     if (r.unreachable || r.skip) {
@@ -2391,8 +2299,6 @@ if (OPT.selfTest) {
       return { fail: r.unreachable ?? r.skip };
     }
     const checks = judge(screen, vp, r.data);
-    if (screen.id === "game" && !faultJs) hudBaseST = hudRectMap(r.data);
-    else if (typeof screen.view === "number") checks.push(judgeHudShift(hudBaseST, r.data));
     await r.close();
     return { checks };
   };
@@ -2416,7 +2322,7 @@ if (OPT.selfTest) {
     });
     return r.checks;
   };
-  // 뷰1 기준선을 먼저 만든다 — S4의 대조 기준(`hudBaseST`)이 여기서 생긴다.
+  // 결함 주입 전 기준선 — 「FAIL이 결함 때문」이라고 말하려면 무결 상태의 통과가 먼저다.
   await baselineOf("game");
   /** 한 검사의 판정 문장 전부(요약 + 위반 줄). 지문 대조용. */
   const violations = (checks, id) => {
@@ -2652,8 +2558,6 @@ if (OPT.selfTest) {
 
 // ── 본 실행 ─────────────────────────────────────────────────────────
 const results = [];
-/** 뷰포트별 뷰1 HUD 상자 — 뷰2·3·4가 «같은 HUD»인지 대조할 기준선. */
-const hudBase = new Map();
 const runStart = Date.now();
 /**
  * 기본 모드에서 **의도적으로 뺀** 것. «도달 실패»가 아니므로 종료코드를 흔들지 않지만
@@ -2676,7 +2580,7 @@ for (const vp of viewports) {
         screen: screen.id,
         label: screen.label,
         vpLabel: vp.label,
-        why: `기본 대상은 이 화면을 ${screen.viewportsDefault.join("·")} 뷰포트로만 잰다(뷰 전환은 청크 로드라 비싸다) — \`--full\`에서 돈다`,
+        why: `기본 대상은 이 화면을 ${screen.viewportsDefault.join("·")} 뷰포트로만 잰다 — \`--full\`에서 돈다`,
       });
       continue;
     }
@@ -2697,8 +2601,6 @@ for (const vp of viewports) {
       continue;
     }
     const checks = judge(screen, vp, r.data);
-    if (screen.id === "game") hudBase.set(vp.id, hudRectMap(r.data));
-    else if (typeof screen.view === "number") checks.push(judgeHudShift(hudBase.get(vp.id), r.data));
     await r.close();
     results.push({
       screen: screen.id,
