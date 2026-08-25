@@ -1,10 +1,14 @@
 # zodiac-clue
 
 웹 멀티플레이 추리 게임. **게임 주제는 가변**이며, 재사용 가능한 **"게임 엔진"**과 교체 가능한 **"게임 콘텐츠(주제)"**를 분리해 개발한다.
-배경·목표·로드맵: `docs/design/20260720-engine-and-workflow-plan.md` (사람용 `.html` 동봉).
+배경·목표: `docs/design/20260720-engine-and-workflow-plan.md` · 우선순위: `docs/design/20260825-roadmap-1y.md` (사람용 `.html` 동봉).
+
+> **문맥 (2026-08-25)** — NHN NAN 2026 사전과제로 시작했으나 과제는 종료됐다. 이 저장소는 이제 **1년 목표의 실제 게임 개발**이다.
+> 과제 시기 문서는 `docs/archive/`에 동결 — **현재 상태의 출처가 아니다.** 그 문서들의 «현황·마감·수치»를 근거로 삼지 마라.
 
 ## 스택
-- pnpm 모노레포: `apps/server`(Colyseus/TS) · `apps/client`(Phaser 2D + Three.js 2.5D + Vite/TS) · `packages/shared`(공용 타입·데이터)
+- pnpm 모노레포: `apps/server`(Colyseus/TS) · `apps/client`(Phaser 2D + Vite/TS) · `packages/shared`(공용 타입·데이터)
+- **렌더러는 Phaser 하나다.** Three.js 2.5D·픽셀 뷰는 2026-08-25 제거했고 **3D는 하지 않는다** — 되살리지 마라(근거: `docs/plans/active/20-phaser-only-pivot.md`).
 - 실행: `pnpm dev` (서버 `:2567` + 클라 `:5173`) · 검증: `pnpm -r typecheck`, `pnpm --filter @zodiac-clue/client build`
 
 ## 개발 워크플로우 (모든 AI 도구 공통)
@@ -25,6 +29,7 @@
 ## 커밋
 - Conventional Commits. 파일은 기능별로 묶어서 커밋. **AI 협력 문구는 제외.**
 
-## 기획 아카이브 (docs/planning)
-- 구 `nan-2026` 워크스페이스에서 이관한 **상류 문서**: NHN 공고 분석, 게임 아이디어 후보, 엔진 비교, 회의록, 원페이저. "왜 이 게임인지"의 근거·의사결정 히스토리.
-- 상세 출처·구성: `docs/planning/README.md`.
+## 아카이브 (docs/archive)
+- 과제 시기 문서 동결분: 제출물 3종, 상류 리서치(NHN 공고 분석·아이디어·엔진 비교·회의록), 마감 로드맵·실행계획, 폐기된 4뷰 계약.
+- 용도는 **"왜 이 선택을 했고 무엇을 기각했는지"** 조회 하나뿐 — 이미 기각한 선택지를 근거 없이 되살리지 않기 위함이다.
+- 상세 구성·읽는 규칙: `docs/archive/README.md`.

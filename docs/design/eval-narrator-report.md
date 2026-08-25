@@ -29,7 +29,7 @@
 ```json
 {
   "tool": "eval-narrator",
-  "spec": "docs/submission/20260720-ai-tech-doc.md §3",
+  "spec": "docs/design/20260720-ai-tech-doc.md §3",
   "mode": "offline",
   "seed": 20260728,
   "generatedAt": "2026-08-01T03:27:11.139Z",

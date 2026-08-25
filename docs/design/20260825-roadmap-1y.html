@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>1년 로드맵 — 프로토타입에서 실제 게임으로</title>
+<style>
+  :root{
+    --bg:#16130f; --card:#211c16; --edge:#3a3126; --ink:#f0e9dc; --dim:#a89778;
+    --gold:#f0d9a8; --accent:#b4622b;
+    --red:#e0736b; --green:#7ee29a; --amber:#e0c25a; --blue:#7ec8e0; --violet:#b79ae0;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);line-height:1.65;
+    font-family:system-ui,-apple-system,"Apple SD Gothic Neo",sans-serif;}
+  .wrap{max-width:960px;margin:0 auto;padding:32px 20px 80px}
+
+  h1{color:var(--gold);font-size:27px;margin:0 0 6px;letter-spacing:-.01em}
+  .sub{color:var(--dim);font-size:13px;margin:0 0 6px}
+  .src{color:#8f8574;font-size:12px;margin:0 0 22px}
+  .src code{font-size:11.5px}
+  h2{color:var(--gold);font-size:19px;margin:52px 0 12px;padding-bottom:7px;border-bottom:1px solid var(--edge)}
+  h2 .n{color:var(--accent);font-variant-numeric:tabular-nums;margin-right:9px}
+  h3{font-size:15px;margin:26px 0 8px;color:var(--ink)}
+  h4{font-size:12px;margin:18px 0 6px;color:var(--dim);font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+  p,li{font-size:14px}
+  ul,ol{padding-left:20px;margin:8px 0}
+  li{margin:4px 0}
+  a{color:#e0a35a}
+  code{background:#2c2519;border:1px solid var(--edge);border-radius:4px;padding:1px 5px;font-size:12.5px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  strong,b{color:var(--gold)}
+
+  .lead{background:#2b2013;border:1px solid #7c6238;border-radius:9px;padding:13px 17px;font-size:13.5px;margin:16px 0}
+  .note{font-size:12.5px;color:var(--dim)}
+  .box{background:var(--card);border:1px solid var(--edge);border-radius:10px;padding:15px 19px;margin:14px 0}
+  .box.crit{border-left:3px solid var(--red)}
+  .box.warn{border-left:3px solid var(--amber)}
+  .box.info{border-left:3px solid var(--blue)}
+  .box.good{border-left:3px solid var(--green)}
+  .box h3{margin-top:0}
+
+  .toc{display:flex;flex-wrap:wrap;gap:6px;margin:20px 0 4px}
+  .toc a{text-decoration:none;background:#2c2519;border:1px solid var(--edge);border-radius:20px;
+    padding:4px 13px;font-size:12.5px;color:var(--dim)}
+  .toc a:hover{color:var(--gold);border-color:#6b5838}
+
+  .scroll{overflow-x:auto;border-radius:8px;-webkit-overflow-scrolling:touch}
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13px;min-width:520px}
+  th,td{border:1px solid var(--edge);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:#2c2519;color:var(--gold);white-space:nowrap}
+
+  /* ── 분기 타임라인 ── */
+  .tl{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:11px;margin:18px 0 6px}
+  .tl .q{background:var(--card);border:1px solid var(--edge);border-top:3px solid var(--accent);
+    border-radius:10px;padding:13px 15px}
+  .tl .q .qk{color:var(--gold);font-size:13px;font-weight:700;display:block}
+  .tl .q .qw{color:var(--dim);font-size:11.5px;display:block;margin:2px 0 7px;font-variant-numeric:tabular-nums}
+  .tl .q .qd{font-size:12.5px;line-height:1.55;display:block}
+  .tl .q.q1{border-top-color:var(--blue)}
+  .tl .q.q2{border-top-color:var(--green)}
+  .tl .q.q3{border-top-color:var(--amber)}
+  .tl .q.q4{border-top-color:var(--violet)}
+
+  /* ── 전/후 대조 ── */
+  .ba{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin:14px 0}
+  .ba .side{background:var(--card);border:1px solid var(--edge);border-radius:10px;padding:13px 16px}
+  .ba .side.was{border-left:3px solid #6b5838}
+  .ba .side.now{border-left:3px solid var(--green)}
+  .ba .side h4{margin-top:0}
+  .ba .side ul{margin:6px 0 0;padding-left:18px}
+  .ba .side li{font-size:12.5px}
+
+  .tag{display:inline-block;font-size:11px;border-radius:5px;padding:1px 7px;margin-left:6px;
+    border:1px solid var(--edge);background:#2c2519;color:var(--dim);vertical-align:middle}
+  .tag.drop{border-color:#7a3a34;background:#3a201d;color:#e8a49c}
+  .tag.keep{border-color:#3a6b48;background:#1d2f22;color:#9ce0b2}
+  .tag.new{border-color:#7c6238;background:#2b2013;color:var(--gold)}
+
+  .verdict{background:#1d2119;border:1px solid #3f5240;border-left:3px solid var(--green);
+    border-radius:8px;padding:10px 14px;margin:10px 0 0;font-size:12.5px}
+  .verdict b{color:#9ce0b2}
+
+  hr{border:0;border-top:1px solid var(--edge);margin:40px 0}
+  footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--edge);font-size:12px;color:var(--dim)}
+
+  @media (max-width:640px){ .ba{grid-template-columns:1fr} }
+
+  /* ── 인쇄: 라이트 팔레트 강제 ─────────────────── */
+  @media print{
+    :root{
+      --bg:#fff; --card:#fafaf7; --edge:#c9c2b4; --ink:#1a1712; --dim:#4d463b;
+      --gold:#6b4a12; --accent:#8a4416;
+      --red:#9c2f27; --green:#1f6b38; --amber:#7a5a10; --blue:#1d4f6b; --violet:#523a7a;
+    }
+    @page{size:A4;margin:14mm}
+    body{background:#fff;color:#1a1712;font-size:10.5pt;line-height:1.5}
+    .wrap{max-width:none;padding:0}
+    h1{color:#6b4a12} h2{color:#6b4a12;border-bottom-color:#c9c2b4}
+    h2,h3,h4{break-after:avoid}
+    table,.box,.tl .q,.ba .side,.verdict{break-inside:avoid}
+    th{background:#eee8dc!important;color:#3d2c0c!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    td,th{border-color:#c9c2b4}
+    code{background:#f0ece3;border-color:#d3ccbc;color:#3a2f1c}
+    .toc{display:none}
+    .lead{background:#f7f1e2;border-color:#c9ab6b;color:#3a2f1c}
+    .box,.tl .q,.ba .side{background:#fafaf7;border-color:#c9c2b4}
+    .verdict{background:#f1f6f1!important;border-color:#a9c4ad!important}
+    .tag{background:#f0ece3!important;color:#3a2f1c!important;border-color:#b5a888}
+    a{color:#1d4f6b;text-decoration:underline}
+    a[href^="http"]::after{content:" (" attr(href) ")";font-size:8.5pt;color:#4d463b}
+    footer{color:#4d463b}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>1년 로드맵 — 프로토타입에서 실제 게임으로</h1>
+  <p class="sub">zodiac-clue · 2026-08-25 <span class="tag new">신설</span></p>
+  <p class="src">
+    대체 대상: <code>archive/design/20260727-improvement-roadmap</code>(마감 기준 결함 목록) ·
+    <code>archive/design/20260727-execution-plan</code>(마감 일정)<br />
+    상위: <code>20260720-engine-and-workflow-plan.md</code> §1.4 ·
+    진행: <code>docs/plans/active/20-phaser-only-pivot.md</code> ·
+    AI 압축본: <code>20260825-roadmap-1y.md</code>
+  </p>
+
+  <div class="toc">
+    <a href="#s0">0. 결론 먼저</a>
+    <a href="#s1">1. 과제 종료가 바꾼 것</a>
+    <a href="#s2">2. 분기별</a>
+    <a href="#s3">3. 하지 않을 것</a>
+    <a href="#s4">4. 측정</a>
+    <a href="#s5">5. 아카이브</a>
+  </div>
+
+  <h2 id="s0"><span class="n">0</span>결론 먼저</h2>
+
+  <div class="lead">
+    과제가 끝나면서 <b>이 저장소를 지배하던 두 제약이 동시에 사라졌다</b> — 「08-10 마감」과 「08-01 이후 진실값 변경 금지」.
+    그 두 제약이 미뤄 둔 일이 전부 지금 열린다. 반대로 그 두 제약이 <b>정당화하던 것들도 함께 사라진다</b>:
+    심사 앵글용 4뷰 · 촬영용 카메오 · 제출물 문서.
+    <br /><br />
+    <b>로드맵의 절반은 만드는 목록이고, 나머지 절반은 걷어내는 목록이다.</b>
+  </div>
+
+  <p>프로토타입과 «게임»의 차이는 기능 개수가 아니다. 지금 이 저장소에 없는 것은 셋뿐이다.</p>
+
+  <div class="scroll"><table>
+    <tr><th>없는 것</th><th>증상</th><th style="white-space:nowrap">다루는 분기</th></tr>
+    <tr>
+      <td><b>혼자 들어왔을 때<br />판이 서는 경로</b></td>
+      <td>접속자 1명이면 NPC 5인과 도는데, <b>그 판이 재미있는지 잰 적이 없다.</b></td>
+      <td>Q2</td>
+    </tr>
+    <tr>
+      <td><b>다시 올 이유</b></td>
+      <td>판이 끝나면 남는 것이 0. 전적·진행·해금 전부 없다.</td>
+      <td>Q3</td>
+    </tr>
+    <tr>
+      <td><b>«엔진»이라는<br />주장의 근거</b></td>
+      <td><code>20260729-mafia-content-design.md</code> §0 — <b>「분리는 성립하지 않는다」 · 오염 11건.</b></td>
+      <td>Q1 · Q4</td>
+    </tr>
+  </table></div>
+
+  <h2 id="s1"><span class="n">1</span>과제 종료가 바꾼 것</h2>
+
+  <div class="ba">
+    <div class="side was">
+      <h4>해제된 제약</h4>
+      <ul>
+        <li><b>코드 동결 해제</b> — <code>plans/hold/02</code>의 재개 조건 ①(08-08 동결 해제)이 <b>자동 충족</b>.
+            남은 조건은 ② 「통합 주행 확보」 하나다.</li>
+        <li><b>진실값 변경 가능</b> — 승패 판정이 <code>advanceTurn()</code> 한복판에 인라인된 문제를 이제 건드릴 수 있다.</li>
+      </ul>
+    </div>
+    <div class="side now">
+      <h4>사라진 정당화</h4>
+      <ul>
+        <li><b>4뷰 렌더러</b> — 존재 이유가 «개발 진화를 심사 콘텐츠로»였다.
+            심사가 없으면 순수 유지비다.</li>
+        <li><b>촬영·제출 문서</b> — <code>docs/archive/</code>로 동결(삭제 아님, §5).</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="box crit">
+    <h3>4뷰의 실제 비용 <span class="tag drop">제거</span></h3>
+    <p style="margin:0"><code>archive/design/20260730-view-selector-hide.md</code>가 이미 기록했다 —
+      「뷰마다 코드를 <b>3중으로</b> 손대야 했고, 그 과정에서 뷰4에 <code>myId</code>가 없던 것을 발견·수정」.
+      그리고 프로덕션은 <b>그 시점부터 <code>.hud-view</code> 숨김으로 뷰1 고정</b>이었다.
+      즉 <b>아무도 쓰지 않은 렌더러 코드 약 3,300줄</b>을 유지해 왔다는 뜻이다.</p>
+  </div>
+
+  <div class="box good">
+    <h3>그대로 유지되는 것 <span class="tag keep">유지</span></h3>
+    <p style="margin:0">주제(호랑이 생신 잔치·십이지)와 이름. <b>결정론 규칙엔진 / LLM 표현 분리 원칙</b>
+      — 이 저장소에서 가장 잘 지켜진 규약이다. 그리고 <b>게이트 문화</b>(<code>pnpm verify</code>):
+      근거 없는 «좋아졌다»를 막는 유일한 장치다.</p>
+  </div>
+
+  <h2 id="s2"><span class="n">2</span>분기별</h2>
+
+  <div class="tl">
+    <div class="q q1"><span class="qk">Q1 · 기반 정리</span><span class="qw">~2026-11</span>
+      <span class="qd">안전망부터. <b>이 분기에 새 기능은 없다.</b></span></div>
+    <div class="q q2"><span class="qk">Q2 · 혼자서도 성립</span><span class="qw">~2027-02</span>
+      <span class="qd">접속자 1명일 때 게임이 되는가. <b>최대 리스크.</b></span></div>
+    <div class="q q3"><span class="qk">Q3 · 다시 올 이유</span><span class="qw">~2027-05</span>
+      <span class="qd">판이 끝난 뒤에 남는 것. 여기서 처음 계정이 필요하다.</span></div>
+    <div class="q q4"><span class="qk">Q4 · 엔진임을 증명</span><span class="qw">~2027-08</span>
+      <span class="qd">두 번째 콘텐츠를 얹는다. Q1이 진짜였는지의 시험.</span></div>
+  </div>
+
+  <h3>Q1 (~2026-11) — 기반 정리 · 「안전망부터」</h3>
+  <ol>
+    <li><b>통합 주행 확보</b> — <code>hold/02</code> 재개 조건 ②. <code>scripts/gate-screen.mjs</code>의 실판 픽스처
+      (6인 클루 → 결과 화면)를 리팩터 전후 대조용 기준선으로 승격.</li>
+    <li><b>렌더러 단일화</b> — 뷰2·3·4 제거. 부수 효과로 오염 11건 중 ③
+      (<code>ViewContract</code>가 좌표 없는 액터를 표현 못 함 · 렌더러 3곳이 우회)이 <b>문제 자체로 소멸</b>한다.</li>
+    <li><b>엔진 코어 추출 착수</b> — <code>BaseGameRoom</code> · 종료 8단계 3벌 복붙 → <code>endGame()</code> ·
+      행동 자격 술어 <code>canAct()</code>. 규모 실측 = 신규 2,700~3,900줄 · 이동/수정 700줄 · 4~8 작업일.</li>
+    <li><b>환경 정리</b> — <code>three</code>·<code>@types/three</code> 제거, 번들 기준선 재설정, <code>gate.baseline.json</code> 갱신.</li>
+  </ol>
+
+  <div class="box warn">
+    <p style="margin:0">⚠️ <code>sim-balance.mjs</code>는 <b>정적 import 0건의 자립 미러</b>라
+      <b>서버 리팩터에 숫자 하나 반응하지 않는다</b>(07-29 재확인). 이것을 안전망으로 착각하면 안 된다 —
+      1번 작업이 필요한 이유가 정확히 이것이다.</p>
+  </div>
+  <p class="verdict"><b>분기 종료 판정</b> — 리팩터 전후로 <code>gate:screen:full</code>이 동일 결과를 낸다 ·
+    클라 번들이 뷰 청크만큼 줄었다.</p>
+
+  <h3>Q2 (~2027-02) — 혼자서도 성립</h3>
+  <p class="note">실게임화의 최대 리스크는 여기다 — 멀티 추리 게임은 사람이 없으면 죽는다.</p>
+  <ol>
+    <li><b>NPC 난이도 축</b> — 지금 NPC는 «좌석별 시야 + 규칙 추리» 한 가지뿐. 쉬움/보통/어려움을
+      <b>정보량이 아니라 추론 깊이</b>로 나눈다(시야를 넓히는 방식은 치팅으로 읽힌다).</li>
+    <li><b>1인 판 밸런스 측정</b> — <code>sim-balance.mjs</code>에 「사람 1 + NPC 5」 구성 추가.
+      이 구성의 승률·판 길이는 <b>측정된 적이 없다.</b></li>
+    <li><b>튜토리얼/온보딩</b> — 제안–반증–고발 3단계를 첫 판에서 가르친다. 이탈 지점 추정 1순위.</li>
+    <li><b>매칭</b> — 공개방 목록(5초 폴링)은 방이 0개일 때 빈 화면이다. 「빈 방이면 NPC 판으로 바로 시작」 경로.</li>
+  </ol>
+  <p class="verdict"><b>분기 종료 판정</b> — 신규 유입이 도움 없이 첫 판을 끝까지 마친다
+    (스크린 게이트에 온보딩 픽스처를 추가해 회귀 방어).</p>
+
+  <h3>Q3 (~2027-05) — 다시 올 이유</h3>
+  <ol>
+    <li><b>계정·영속</b> — 지금 재접속은 «탭 기준»이라 탭을 닫으면 끝이다. 최소 식별자 + 전적 저장.</li>
+    <li><b>전적·통계</b> — 승률, 평균 고발 라운드, 자주 쓰는 십이지. 클루형 게임에서 <b>가장 값싼 리텐션 장치</b>.</li>
+    <li><b>계략 다양화</b> — <code>plans/active/09-helper-npcs.md</code>의 미완 축.
+      지금 고정 NPC는 엿보기 + 이동 보너스 2종뿐.</li>
+    <li><b>시즌/이벤트 콘텐츠</b> — 주제를 안 바꾸고 판을 바꾸는 방법(맵 변형·특수 룰).</li>
+  </ol>
+  <p class="verdict"><b>분기 종료 판정</b> — 재방문율을 <b>잴 수 있다</b>(= 지표가 존재한다). 지금은 잴 수단조차 없다.</p>
+
+  <h3>Q4 (~2027-08) — 엔진임을 증명</h3>
+  <ol>
+    <li><b>마피아 얹기</b> — 설계는 <code>20260729-mafia-content-design.md</code>에 이미 있다
+      (§4 판 스펙 · §6 밸런스 실측 · §7 구조화 발언 스키마).</li>
+    <li><b>오염 11건 잔여분 해소</b> — 특히 ① 동기화 스키마가 클루 전용
+      ② LLM 표현·환각 검증기가 3카테고리에 결속.</li>
+    <li><b>판정</b> — 마피아가 붙으면 «엔진»이고, 안 붙으면 이 저장소는 «클루 게임 하나»다.
+      <b>둘 중 하나로 결론을 낸다.</b></li>
+  </ol>
+  <div class="box warn">
+    <p style="margin:0">⚠️ 설계 §9 R3이 <b>Colyseus 스키마 상속을 회피</b>하기로 했다(독립 <code>MafiaState</code>).
+      「정의 하나로 전부 교체」가 스키마 층에서도 성립하는지는 <b>실험 전까지 미확인</b>이다.</p>
+  </div>
+
+  <h2 id="s3"><span class="n">3</span>지금 하지 않기로 한 것</h2>
+  <div class="scroll"><table>
+    <tr><th>항목</th><th>이유</th></tr>
+    <tr><td><b>3D / 2.5D</b> <span class="tag drop">제거</span></td><td>owner 결정(2026-08-25). 되살리지 않는다.</td></tr>
+    <tr><td><b>픽셀 뷰(뷰4)</b> <span class="tag drop">제거</span></td>
+        <td>아트 디렉션 후보로는 유효하나, 두 렌더러를 동시 유지할 이유가 없다.
+            필요해지면 <b>뷰1을 바꾸는</b> 방식으로 간다.</td></tr>
+    <tr><td><b>TTS(음성)</b></td><td>표현 레이어 확장. Q2의 「혼자서도 성립」이 먼저다.</td></tr>
+    <tr><td><b>결제·수익화</b></td><td>리텐션 지표가 없는 상태의 수익화는 <b>측정 불가</b>.</td></tr>
+    <tr><td><b>네이티브/앱</b></td><td>웹에서 판이 서는 것이 선행.</td></tr>
+  </table></div>
+
+  <h2 id="s4"><span class="n">4</span>측정</h2>
+  <p>로드맵의 각 분기는 <b>게이트로 방어된다</b> — 게이트가 없는 항목은 「했다」고 말할 수 없다(저장소 규약).</p>
+  <div class="box info">
+    <h4>현행</h4>
+    <p style="margin:0 0 10px"><code>bundle</code> 번들 예산 · <code>sim</code> 밸런스 · <code>gpu</code> 성능 기준선 ·
+      <code>docs</code> 문서·코드 상수 정합 · <code>screen</code> 실판 스크린 · <code>narrator</code> LLM 대사 계약</p>
+    <h4>추가 예정</h4>
+    <p style="margin:0">Q1 <b>리팩터 전후 대조</b>(screen 픽스처 승격) · Q2 <b>1인 판 구성</b>(sim) ·
+      Q3 <b>리텐션 지표</b>(신설)</p>
+  </div>
+
+  <h2 id="s5"><span class="n">5</span>아카이브를 삭제하지 않는 이유</h2>
+  <div class="lead">
+    1년짜리 개발에서 가장 비싼 실수는 <b>이미 기각한 선택지를 근거 없이 되살리는 것</b>이다.
+    <code>docs/archive/</code>는 그 재발 방지 장치다.
+    <br /><br />
+    단, 거기 적힌 <b>현황·마감·수치는 2026-08-10 기준</b>이며 <b>현재 상태의 출처가 아니다.</b>
+    읽는 규칙은 <code>docs/archive/README.md</code>.
+  </div>
+
+  <footer>
+    zodiac-clue · 1년 로드맵 · 2026-08-25 작성 ·
+    AI 압축본 <code>20260825-roadmap-1y.md</code> 동봉(이 문서와 같은 내용, 다른 밀도)
+  </footer>
+
+</div>
+</body>
+</html>

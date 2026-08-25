@@ -1,48 +1,15 @@
 [
   {
-    "label": "📤 제출물",
-    "dir": "submission",
-    "items": [
-      {
-        "title": "① 빌드 + 소스 (GitHub)",
-        "url": "https://github.com/anveloper/zodiac-clue",
-        "external": true
-      },
-      {
-        "title": "② 플레이 영상 (YouTube)",
-        "url": "https://youtu.be/s-YfjsEzDHk",
-        "external": true
-      },
-      {
-        "path": "submission/03-game-intro.html",
-        "title": "③ 게임 소개"
-      },
-      {
-        "path": "submission/04-ai-tech.html",
-        "title": "④ AI 활용 기술 문서 (요약)"
-      },
-      {
-        "path": "submission/05-team-roles.html",
-        "title": "⑤ 팀원 롤"
-      }
-    ]
-  },
-  {
     "label": "📐 설계",
     "dir": "design",
     "items": [
       {
-        "path": "design/game-intro.html",
-        "title": "게임 소개 (전체판)"
+        "path": "design/20260825-roadmap-1y.html",
+        "title": "1년 로드맵 — 프로토타입에서 실제 게임으로"
       },
       {
         "path": "design/20260729-mafia-content-design.html",
         "title": "마피아 콘텐츠 설계 + 엔진/콘텐츠 경계 실측",
-        "private": true
-      },
-      {
-        "path": "design/20260728-video-storyboard.html",
-        "title": "플레이 영상 촬영 콘티",
         "private": true
       },
       {
@@ -51,22 +18,8 @@
         "private": true
       },
       {
-        "path": "design/20260727-view-contract-spec.html",
-        "title": "4뷰 표기 계약 명세"
-      },
-      {
         "path": "design/20260727-ui-copy.html",
         "title": "UI 문안(카피) 명세 — 호랑이 생신 잔치"
-      },
-      {
-        "path": "design/20260727-improvement-roadmap.html",
-        "title": "기획 개선 로드맵",
-        "private": true
-      },
-      {
-        "path": "design/20260727-execution-plan.html",
-        "title": "통합 실행 계획서 D-14",
-        "private": true
       },
       {
         "path": "design/20260720-engine-and-workflow-plan.html",
@@ -118,21 +71,6 @@
         "private": true
       },
       {
-        "path": "plans/active/19-gecko-ui-backlog.md",
-        "title": "19 — 게코 브랜치 UI 백로그 (07-30~)",
-        "private": true
-      },
-      {
-        "path": "plans/active/18-cameo-helper-npcs.md",
-        "title": "18 — 팀 카메오 계략 NPC (쿼카 · 안드로이드) (07-30)",
-        "private": true
-      },
-      {
-        "path": "plans/active/12-view-evolution-stages.md",
-        "title": "plan: 뷰 진화 단계 선택기 (개발 진화를 기능으로)",
-        "private": true
-      },
-      {
         "path": "plans/active/11-asset-concept-pipeline.md",
         "title": "plan: 에셋 파이프라인 + 12지신 컨셉 + 이미지 프롬프트",
         "private": true
@@ -159,6 +97,10 @@
     "label": "✅ 플랜 · 완료",
     "dir": "plans/done",
     "items": [
+      {
+        "path": "plans/done/20-phaser-only-pivot.md",
+        "title": "plan: Phaser 단일 렌더러 전환 + 과제 문맥 정리"
+      },
       {
         "path": "plans/done/17-button-labels-and-intro-rebalance.md",
         "title": "17 — 액션 버튼 라벨 교체 + 제출물 ③ 분량 재배분 (07-30)"
@@ -269,6 +211,103 @@
       {
         "path": "logs/20260719-lobby-character-reconnect.md",
         "title": "20260719 — 메인 로비 흐름 (캐릭터 선택·초대 링크·대기실·세션 유지)"
+      }
+    ]
+  },
+  {
+    "label": "📦 아카이브 안내",
+    "dir": "archive",
+    "items": [
+      {
+        "path": "archive/README.md",
+        "title": "docs/archive — 해커톤(NHN NAN 2026) 시기 문서"
+      }
+    ]
+  },
+  {
+    "label": "📦 아카이브 · 과제 제출물",
+    "dir": "archive/submission",
+    "items": [
+      {
+        "title": "플레이 영상 (YouTube · 2026-08 제출본)",
+        "url": "https://youtu.be/s-YfjsEzDHk",
+        "external": true
+      },
+      {
+        "path": "archive/submission/03-game-intro.html",
+        "title": "③ 게임 소개"
+      },
+      {
+        "path": "archive/submission/04-ai-tech.html",
+        "title": "④ AI 활용 기술 문서 (요약)"
+      },
+      {
+        "path": "archive/submission/05-team-roles.html",
+        "title": "⑤ 팀원 롤"
+      }
+    ]
+  },
+  {
+    "label": "📦 아카이브 · 설계",
+    "dir": "archive/design",
+    "items": [
+      {
+        "path": "archive/design/20260727-execution-plan.html",
+        "title": "통합 실행 계획서 D-14",
+        "private": true
+      },
+      {
+        "path": "archive/design/20260727-improvement-roadmap.html",
+        "title": "기획 개선 로드맵",
+        "private": true
+      },
+      {
+        "path": "archive/design/20260727-view-contract-spec.html",
+        "title": "4뷰 표기 계약 명세"
+      },
+      {
+        "path": "archive/design/20260728-team-roles.md",
+        "title": "제출물 ⑤ — 팀원 롤 기술서 (초안)",
+        "private": true
+      },
+      {
+        "path": "archive/design/20260728-video-storyboard.html",
+        "title": "플레이 영상 촬영 콘티",
+        "private": true
+      },
+      {
+        "path": "archive/design/20260730-view-selector-hide.md",
+        "title": "뷰 선택기 숨김 — 제출용 빌드는 뷰1(2D) 단일 고정"
+      },
+      {
+        "path": "archive/design/game-intro.html",
+        "title": "게임 소개 (전체판)"
+      },
+      {
+        "path": "archive/design/submission-checklist.md",
+        "title": "제출물 체크리스트 (NHN NAN 2026 사전과제, 마감 2026-08-10)",
+        "private": true
+      }
+    ]
+  },
+  {
+    "label": "📦 아카이브 · 플랜",
+    "dir": "archive/plans",
+    "items": [
+      {
+        "path": "archive/plans/19-gecko-ui-backlog.md",
+        "title": "19 — 게코 브랜치 UI 백로그 (07-30~)",
+        "private": true
+      },
+      {
+        "path": "archive/plans/18-cameo-helper-npcs.md",
+        "title": "18 — 팀 카메오 계략 NPC (쿼카 · 안드로이드) (07-30)",
+        "private": true
+      },
+      {
+        "path": "archive/plans/12-view-evolution-stages.md",
+        "title": "plan: 뷰 진화 단계 선택기 (개발 진화를 기능으로)",
+        "private": true
       }
     ]
   }

@@ -1,6 +1,9 @@
 // docs/ 트리를 훑어 마니페스트 2종 생성 (문서 브라우저 좌측 트리용).
 // 규칙: design 폴더는 .html(수기 디자인)만, plans/logs는 .md만.
 //
+// ⚠️ `readdirSync`는 **재귀하지 않는다.** `archive/planning/{brainstorming,meetings}` 같은 중첩은
+//    목록에 잡히지 않는다 — 그 디렉토리는 비공개(docs-private.mjs)라 종전에도 트리에 없었다.
+//
 // ── 왜 2종인가 ────────────────────────────────────────────────
 //   docs/manifest.json        **공개본.** 내부 문서(scripts/docs-private.mjs)를 뺀 목록.
 //                             배포 산출물에 복사된다. 지금까지와 동일한 내용이다.
@@ -16,25 +19,25 @@ import { join } from "node:path";
 import { isPrivateDocPath, LOCAL_MANIFEST } from "./docs-private.mjs";
 
 const GROUPS = [
-  // 제출물 탭 = **심사에 내는 5종 그대로** ①~⑤ 순서.
-  //  ①②는 파일이 아니라 외부 링크(빌드·영상)라 `links`로 맨 위에 주입한다(새 탭). ③④⑤만 로컬 문서.
-  //  장문 원본·콘티·체크리스트는 design/으로 옮겼다(작업 문서지 제출물이 아니다).
-  {
-    dir: "submission",
-    label: "📤 제출물",
-    ext: "pair",
-    links: [
-      { title: "① 빌드 + 소스 (GitHub)", url: "https://github.com/anveloper/zodiac-clue" },
-      { title: "② 플레이 영상 (YouTube)", url: "https://youtu.be/s-YfjsEzDHk" },
-    ],
-    order: ["03-game-intro", "04-ai-tech", "05-team-roles"],
-  },
   { dir: "design", label: "📐 설계", ext: ".html" },
   { dir: "assets", label: "🎨 에셋·컨셉", ext: "pair" },
   { dir: "plans/active", label: "🗂 플랜 · 진행", ext: ".md" },
   { dir: "plans/hold", label: "⏸ 플랜 · 보류", ext: ".md" },
   { dir: "plans/done", label: "✅ 플랜 · 완료", ext: ".md" },
   { dir: "logs", label: "📓 개발일지", ext: ".md" },
+  // ── 아카이브(2026-08-25) — 해커톤 시기 문서. **현재 상태의 출처가 아니다.**
+  //    맨 아래에 두고 라벨에 📦를 붙여 현행 문서와 시각적으로 가른다.
+  //    `archive` 그룹은 README 한 장(= 아카이브 안내)만 잡힌다 — 하위 디렉토리는 별도 그룹이다.
+  { dir: "archive", label: "📦 아카이브 안내", ext: ".md" },
+  {
+    dir: "archive/submission",
+    label: "📦 아카이브 · 과제 제출물",
+    ext: "pair",
+    links: [{ title: "플레이 영상 (YouTube · 2026-08 제출본)", url: "https://youtu.be/s-YfjsEzDHk" }],
+    order: ["03-game-intro", "04-ai-tech", "05-team-roles"],
+  },
+  { dir: "archive/design", label: "📦 아카이브 · 설계", ext: "pair" },
+  { dir: "archive/plans", label: "📦 아카이브 · 플랜", ext: ".md" },
 ];
 
 // pair 모드: 같은 basename의 .html이 있으면 .html만, 없으면 .md.

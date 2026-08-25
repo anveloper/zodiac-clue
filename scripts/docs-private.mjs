@@ -7,21 +7,23 @@
 
 /** 디렉토리 단위 제외 (docs/ 기준 상대 경로 접두) */
 export const PRIVATE_DIRS = [
-  "planning", // 상류 리서치·회의록 (NHN 매출 분석·상금 계산 등)
+  "archive/planning", // 상류 리서치·회의록 (NHN 매출 분석·상금 계산 등) — 2026-08-25 archive/로 이관
+  "archive/plans", // 취소·동결된 플랜 = 미완 목록
   "plans/active", // 진행 중 작업 = 미완 목록
   "plans/hold", // 보류 목록
 ];
 
 /** 파일 단위 제외 (docs/ 기준 상대 경로, 확장자 제외한 basename 매칭) */
 export const PRIVATE_FILES = [
-  // ⑤ 팀원 롤(submission/05-team-roles)은 **공개**로 둔다 — 제출물 5종을 목록에 모두 노출한다는
+  // ⑤ 팀원 롤(archive/submission/05-team-roles)은 **공개**로 둔다 — 제출물 5종을 목록에 모두 노출한다는
   // 결정(2026-08-06). 실명은 「팀원 롤 문서」에만 허용되는 예외라 규칙과 충돌하지 않는다.
-  "design/submission-checklist", // 미제작 항목·심사 프로세스 메모
-  "design/20260728-team-roles", // ⑤ 초안(미확정·[확인 필요] 포함)
-  "design/20260728-video-storyboard", // 미구현 기능 표시가 드러남
-  "design/20260727-improvement-roadmap", // 자기 결함 목록
+  // 2026-08-25 이관: 아래 5건은 docs/design/ → docs/archive/design/ 으로 옮겼다.
+  "archive/design/submission-checklist", // 미제작 항목·심사 프로세스 메모
+  "archive/design/20260728-team-roles", // ⑤ 초안(미확정·[확인 필요] 포함)
+  "archive/design/20260728-video-storyboard", // 미구현 기능 표시가 드러남
+  "archive/design/20260727-improvement-roadmap", // 자기 결함 목록
+  "archive/design/20260727-execution-plan", // 남은 일정·컷라인
   "design/20260729-mafia-content-design", // 오염 지점 11건 = 자기 결함 목록. 표제도 «분리는 성립하지 않는다»다
-  "design/20260727-execution-plan", // 남은 일정·컷라인
   "plans/done/13-execution-plan-merge", // 위 두 문서를 경로로 지목하는 작업 기록
   "design/20260728-agent-loop-workflow", // 내부 작업 절차(런북) — 산출물이 아니다
 ];

@@ -195,7 +195,7 @@
   </div>
 
   <h3>0.1 무엇이 load-bearing인가</h3>
-  <p>상류 정의(<code>docs/planning/brainstorming/20260714-game-ideas.md</code>)는 <b>“AI 없으면 게임이 성립 안 되는 설계”</b>를 요구한다.
+  <p>상류 정의(<code>docs/archive/planning/brainstorming/20260714-game-ideas.md</code>)는 <b>“AI 없으면 게임이 성립 안 되는 설계”</b>를 요구한다.
      이 프로젝트에서 그 조건을 지는 것은 <b>에이전트 계층</b>이다.</p>
   <ul>
     <li>07-18 회의에서 <b>“심사자는 링크를 눌러 혼자 플레이한다”</b>는 제약이 확정됐다.
@@ -325,7 +325,7 @@
        사람은 자기에게 보인 카드만 안다.</del> <span class="badge b-green">2026-07-28 해소</span></p>
     <p class="s13"><b>조치(구현 완료)</b> — 룸 전역 필드를 삭제하고 좌석별 <code>seenNotSolution</code>으로 분리했다.
        수렴은 <b>공개 정보만 쓰는 추론</b>(“패스한 사람은 그 3장을 안 가짐”)으로 대체 — 사람도 로그로 도달 가능하므로 비대칭이 아니다.
-       시뮬 3,000판에서 사람 승률 <b>2.3% → 15.4%</b>(이 항목 단독 기여). 근거: <code>../design/20260727-improvement-roadmap.md</code> §1.1 · §7.5</p>
+       시뮬 3,000판에서 사람 승률 <b>2.3% → 15.4%</b>(이 항목 단독 기여). 근거: <code>../archive/design/20260727-improvement-roadmap.md</code> §1.1 · §7.5</p>
   </div>
   <div class="card good">
     <h4><span class="badge b-green">결함 b · 해소</span>봇은 수학적으로 오답 고발이 불가능하다 <span class="pill">밸런스</span></h4>
@@ -599,7 +599,8 @@
      뷰4에도 타자기가 들어갔고(<code>scenes/typewriter.ts</code> 공용) <code>3200</code> 인라인은 삭제됐다.
      고정 <code>SPEAK_HOLD</code>(2400)는 폐기하고 서버가 실제 방송한 문장으로 <code>bubbleLifeMs(line)</code>을 계산한다(§6.1)
      — <b>정합을 문서가 아니라 코드가 보증한다.</b> 표기 계약 자체도 <code>implements ViewContract</code>로 잠겼다(렌더러 3종 × 15메서드).
-     설계·현황: <code>../design/20260727-view-contract-spec.md</code></p>
+     설계·현황: <code>../archive/design/20260727-view-contract-spec.md</code><br />
+       <b style="color:#e0736b">⛔ 2026-08-25 정정</b> — 렌더러는 뷰1(Phaser) 하나로 줄었고 <code>ViewContract</code>는 폐기됐다. 위 서술은 과제 시기 기준이다.</p>
 
   <!-- ══════ 3 ══════ -->
   <h2 id="s3">3. 환각 검증 프로토콜</h2>
@@ -982,8 +983,8 @@
     </tr>
     <tr>
       <td class="dim">↳ <b>서브에이전트 병렬 검수</b></td><td>심사축·플레이경험·4뷰디자인 동시 실코드 검수</td>
-      <td><code>../design/20260727-improvement-roadmap.md</code> §7 — 라이브 실접속 실측(폴백 5/5) ·
-        규칙 포팅 1만 판 시뮬(사람 승률 3.9%) · <code>../design/20260727-view-contract-spec.md</code></td>
+      <td><code>../archive/design/20260727-improvement-roadmap.md</code> §7 — 라이브 실접속 실측(폴백 5/5) ·
+        규칙 포팅 1만 판 시뮬(사람 승률 3.9%) · <code>../archive/design/20260727-view-contract-spec.md</code></td>
       <td><b>검수 결과의 채택/기각.</b> D-14 신규 기능(자유 심문) 구현은 <b class="no">사람이 기각</b> (§8)</td>
     </tr>
     <tr>

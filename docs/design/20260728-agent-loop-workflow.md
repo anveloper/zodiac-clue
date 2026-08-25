@@ -73,7 +73,7 @@ brief에 `**중복 제안 금지. 이 위에서 더 나아간 것 / 빠진 것 /
 - 문서 갱신(`.md`/`.html` 짝)은 **오케스트레이터가 통합 시점에** 한다 — 에이전트마다 같은 문서를 고치면 충돌한다.
 
 ### 3.2 작업 큐
-`docs/design/20260727-execution-plan.md`의 날짜별 순서가 큐다.
+`docs/design/20260825-roadmap-1y.md`의 분기 순서가 큐다(구 `archive/design/20260727-execution-plan.md`).
 **의존성 위반 금지** — 계획서가 명시한 선행 조건(예: `ZODIAC_COLOR` → 뷰4 실루엣,
 `hudInset` 가드 → 패널 추가, 타이머 프리미티브 인자화 → 턴 클럭)을 건너뛰면 같은 파일을 두 번 연다.
 
@@ -108,7 +108,7 @@ brief에 `**중복 제안 금지. 이 위에서 더 나아간 것 / 빠진 것 /
 
 ### 4.1 라운드 절차
 1. **현황 파악** — `brief.md`·`ledger.md` 읽기 + `git log --oneline -6` + `git status --short`.
-2. **작업 선택** — 큐는 `docs/design/20260727-execution-plan.md`의 날짜별 순서.
+2. **작업 선택** — 큐는 `docs/design/20260825-roadmap-1y.md`의 분기 순서(구 `archive/design/20260727-execution-plan.md`).
    **의존성이 풀린 항목만** 고른다(§3.2). 근거는 `20260727-improvement-roadmap.md`의 해당 절.
 3. **에이전트 3개 병렬** — §3.1 스코프로 파일이 겹치지 않게 배정. 각 에이전트에게
    `brief.md`를 **인라인 전달** + 맡은 항목의 근거 문서 절 번호.

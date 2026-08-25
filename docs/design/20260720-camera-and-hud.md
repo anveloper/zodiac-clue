@@ -33,15 +33,18 @@
 - **마우스 팬(구현 추가)**: 우클릭/휠클릭 드래그로 화면 이동(Space 없이). 컨텍스트메뉴 차단. 모든 뷰 단계(뷰1/2/3) 공통.
 - **조작 안내**: 최초 진입 시 하단 얇은 바 — 이동(WASD/방향키/ㅈㅁㄴㅇ) · 줌(휠) · 화면이동(우클릭드래그/Space) · 입구로 진입 후 제안/고발.
 
-## ~~2.5D 시점 토글~~ → 뷰 진화 단계 선택기 (구현 갱신 · Phaser + Three.js)
-<!-- 갱신 2026-07-22: 바이너리 토글 → 순서형 4단계 + 위로 열리는 드롭다운 UI -->
-- 좌하단 **위로 열리는 드롭다운**으로 단계 직접 선택(순환 아님): 뷰1 `2d-emoji`(Phaser 탑다운) · 뷰2 `three-emoji`(Three.js 빌보드) · 뷰3 `three-asset`(Three.js + 에셋 아트) · 뷰4 `pixel`(Phaser 도트풍). 버튼엔 현재 뷰 표시(`뷰N · 라벨 ▲`), 새 단계는 `STAGES` 배열에 push만 하면 편입(뷰5+ 3D 등). 서버·HUD·입력 규칙 무변경(렌더러만 교체). ~~좌하단 [2.5D] 버튼으로 2D↔2.5D 즉시 전환~~
-- 서버 상태가 정수 그리드라 렌더 독립 → three는 `(gx,gy)→(x,0,z)` 매핑만. **활성 뷰만 입력 처리**. **`#game`(Phaser)은 절대 숨기지 않고** three 캔버스를 위에 얹어 가리기만(z-index: Phaser 0 < 캔버스 2 < 버블 3 < HUD 5) → 뷰1 복귀 시 빈 화면이 되던 버그 방지. 뷰1=GameScene / 뷰4=PixelScene은 `sys.setVisible`로 전환.
-- three 사양(`scenes/iso-view.ts`): 카메라 피치 42°, 휠 줌(dist 9~34, 초기 17), 현재 턴 추적+지연 팬+패널 인셋, 방=낮은 박스(깊이감)·문(발광 타일+문기둥+"입구"), 토큰/장물/계략=빌보드 스프라이트, 말풍선=DOM 오버레이(3D 투영).
-- **뷰3(에셋)**: `setAssets(true)`가 이모지를 `/assets/...` 정면 아트로, 방 바닥을 텍스처로 교체(TextureLoader, 실패 시 이모지/단색 폴백). placeholder는 `scripts/gen-placeholder-assets.mjs`가 생성.
-- **뷰4(도트풍)**: `PixelScene`(신규) — 탑다운 픽셀 오버레이. 절차적 잔디 타일·픽셀 룸/문·도트 크리터·장물 상자(외부 에셋 0). GameScene이 입력·카메라·로직 담당(뷰4에선 invisible), PixelScene은 카메라 미러링 + 상태 동기화. 풍문상회 스타일 참고, 추후 픽셀 타일셋 업그레이드.
-- ~~선호 시점은 `localStorage(zc_view)` 저장.~~ **복원 없음 — 매 진입 시 항상 뷰1에서 시작**(진화 서사를 처음부터). 자세히는 `docs/plans/active/12-view-evolution-stages.md`.
-- 주의: three 추가로 클라 번들 증가(추후 동적 import 스플릿 여지).
+## ~~2.5D 시점 토글~~ ~~→ 뷰 진화 단계 선택기~~ → **폐기 · 단일 렌더러** (2026-08-25)
+
+> ⛔ **이 절의 내용은 전부 제거됐다.** 렌더러는 뷰1(`2d-emoji`, Phaser `GameScene`) 하나다.
+> 근거: `docs/plans/active/20-phaser-only-pivot.md` · `docs/design/20260825-roadmap-1y.md` §1.2
+> 이관된 원 설계: `docs/archive/plans/12-view-evolution-stages.md`(취소) · `docs/archive/design/20260730-view-selector-hide.md`
+
+- 제거된 것: 뷰2 `three-emoji` · 뷰3 `three-asset`(Three.js `IsoView`) · 뷰4 `pixel`(Phaser `PixelScene`) ·
+  `STAGES` 배열 · 좌하단 드롭다운(`#viewToggle`/`#viewList`) · `three`·`@types/three` 의존성.
+- **남은 것은 이 문서의 나머지 절 전부** — 탑뷰 추적 카메라·줌·마우스 팬·플로팅 HUD는 뷰1의 사양이고 그대로 유효하다.
+- 제거 이유: 존재 이유가 «개발 진화를 심사 콘텐츠로»였는데 심사가 사라졌다. 그 사이 프로덕션은 이미
+  `.hud-view` 숨김으로 뷰1 고정이었다 → **아무도 쓰지 않는 렌더러 3종을 유지하고 있었다.**
+- 3D는 하지 않는다(owner 결정). 도트풍이 필요해지면 **뷰를 늘리지 않고 뷰1을 바꾼다.**
 
 ## 주의
 - 자유시점과 이동키 충돌: 자유시점 활성 중에는 `room.send("move")` 억제.

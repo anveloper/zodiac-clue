@@ -1,43 +1,11 @@
 [
   {
-    "label": "📤 제출물",
-    "dir": "submission",
-    "items": [
-      {
-        "title": "① 빌드 + 소스 (GitHub)",
-        "url": "https://github.com/anveloper/zodiac-clue",
-        "external": true
-      },
-      {
-        "title": "② 플레이 영상 (YouTube)",
-        "url": "https://youtu.be/s-YfjsEzDHk",
-        "external": true
-      },
-      {
-        "path": "submission/03-game-intro.html",
-        "title": "③ 게임 소개"
-      },
-      {
-        "path": "submission/04-ai-tech.html",
-        "title": "④ AI 활용 기술 문서 (요약)"
-      },
-      {
-        "path": "submission/05-team-roles.html",
-        "title": "⑤ 팀원 롤"
-      }
-    ]
-  },
-  {
     "label": "📐 설계",
     "dir": "design",
     "items": [
       {
-        "path": "design/game-intro.html",
-        "title": "게임 소개 (전체판)"
-      },
-      {
-        "path": "design/20260727-view-contract-spec.html",
-        "title": "4뷰 표기 계약 명세"
+        "path": "design/20260825-roadmap-1y.html",
+        "title": "1년 로드맵 — 프로토타입에서 실제 게임으로"
       },
       {
         "path": "design/20260727-ui-copy.html",
@@ -87,6 +55,10 @@
     "label": "✅ 플랜 · 완료",
     "dir": "plans/done",
     "items": [
+      {
+        "path": "plans/done/20-phaser-only-pivot.md",
+        "title": "plan: Phaser 단일 렌더러 전환 + 과제 문맥 정리"
+      },
       {
         "path": "plans/done/17-button-labels-and-intro-rebalance.md",
         "title": "17 — 액션 버튼 라벨 교체 + 제출물 ③ 분량 재배분 (07-30)"
@@ -192,6 +164,57 @@
       {
         "path": "logs/20260719-lobby-character-reconnect.md",
         "title": "20260719 — 메인 로비 흐름 (캐릭터 선택·초대 링크·대기실·세션 유지)"
+      }
+    ]
+  },
+  {
+    "label": "📦 아카이브 안내",
+    "dir": "archive",
+    "items": [
+      {
+        "path": "archive/README.md",
+        "title": "docs/archive — 해커톤(NHN NAN 2026) 시기 문서"
+      }
+    ]
+  },
+  {
+    "label": "📦 아카이브 · 과제 제출물",
+    "dir": "archive/submission",
+    "items": [
+      {
+        "title": "플레이 영상 (YouTube · 2026-08 제출본)",
+        "url": "https://youtu.be/s-YfjsEzDHk",
+        "external": true
+      },
+      {
+        "path": "archive/submission/03-game-intro.html",
+        "title": "③ 게임 소개"
+      },
+      {
+        "path": "archive/submission/04-ai-tech.html",
+        "title": "④ AI 활용 기술 문서 (요약)"
+      },
+      {
+        "path": "archive/submission/05-team-roles.html",
+        "title": "⑤ 팀원 롤"
+      }
+    ]
+  },
+  {
+    "label": "📦 아카이브 · 설계",
+    "dir": "archive/design",
+    "items": [
+      {
+        "path": "archive/design/20260727-view-contract-spec.html",
+        "title": "4뷰 표기 계약 명세"
+      },
+      {
+        "path": "archive/design/20260730-view-selector-hide.md",
+        "title": "뷰 선택기 숨김 — 제출용 빌드는 뷰1(2D) 단일 고정"
+      },
+      {
+        "path": "archive/design/game-intro.html",
+        "title": "게임 소개 (전체판)"
       }
     ]
   }

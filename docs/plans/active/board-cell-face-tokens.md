@@ -11,7 +11,7 @@
 - 줌 재조정(뷰1): `MIN_ZOOM 0.3 → 0.4` (보드 1920 × 0.4 = 768 ≈ 화면 53% → «20%까지 축소» 해소). `INIT 1.0`·`MAX 1.25` 유지(셀 80 → 화면 80px, 얼굴 ≈64px = 정상). 눈으로 보고 미세조정.
 
 ## 게이트/스펙 동기화 (필수)
-- `docs/design/20260727-view-contract-spec.md`: "CELL_PX 40 / PX_PER_UNIT(40) / CELL 40" → 80. (게이트 D4가 코드↔문서 대조)
+- `docs/archive/design/20260727-view-contract-spec.md`: "CELL_PX 40 / PX_PER_UNIT(40) / CELL 40" → 80. (게이트 D4가 코드↔문서 대조)
 
 ## 파급
 | 대상 | 처리 |

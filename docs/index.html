@@ -113,6 +113,9 @@
   .groups a:hover { color:var(--gold); border-color:#6b5838; }
   .groups b { color:var(--gold); font-weight:700; }
   .home-note { margin-top:22px; padding-top:14px; border-top:1px solid var(--edge); font-size:12.5px; }
+  .home-card p.pivot { background:#2b2013; border:1px solid #7c6238; border-radius:9px;
+    padding:11px 15px; font-size:13px; color:#e3d6bd; margin:14px 0 4px; }
+  .home-card p.pivot b { color:var(--gold); }
 
   @media (max-width:760px) {
     .sidebar { position:fixed; left:0; top:0; bottom:0; z-index:30; transform:translateX(-100%);
@@ -165,6 +168,7 @@
   .home-card { background:var(--card) !important; border-color:var(--edge) !important; }
   .home-card h1 { color:var(--gold) !important; } .home-card p { color:var(--dim) !important; }
   .home-card h2 { color:var(--gold) !important; }
+  .home-card p.pivot { background:#f7f1e2 !important; border-color:#c9ab6b !important; color:#3a2f1c !important; }
   .feat a, .groups a { background:#f4f0e6 !important; border-color:var(--edge) !important; }
   .feat .k, .groups b { color:#5b430f !important; } .feat .d { color:var(--dim) !important; }
   .feat a, .groups a { break-inside:avoid; page-break-inside:avoid; }
@@ -276,18 +280,18 @@
   // 여기에 내부 문서 경로를 적어도 공개 사이트에서는 카드 자체가 사라진다(죽은 링크 0).
   // 즉 이 목록은 "링크 후보"이지 "공개 선언"이 아니다.
   const FEATURED=[
-    {path:"submission/03-game-intro.html",           k:"게임 소개",        d:"목표 · 조작 · 종료 조건 · 실행 방법. 처음이라면 여기부터."},
-    {path:"submission/04-ai-tech.html",              k:"AI 활용 기술 문서", d:"결정론 진실 계층 / LLM 표현 계층 분리 · 환각 검증 · 관측 가능성."},
+    {path:"design/20260825-roadmap-1y.html",         k:"1년 로드맵",        d:"프로토타입 → 실제 게임. 분기 목표와 «하지 않을 것». 지금은 여기부터."},
+    {path:"design/20260720-ai-tech-doc.html",        k:"AI 활용 기술 문서", d:"결정론 진실 계층 / LLM 표현 계층 분리 · 환각 검증 · 관측 가능성."},
     {path:"design/20260727-ui-copy.html",            k:"UI 문안 명세",      d:"화면에 나오는 한국어 문장 전부의 단일 출처. 조사 회피 6규칙."},
-    {path:"design/20260727-view-contract-spec.html", k:"뷰 계약",           d:"렌더러 4종이 공유하는 ViewContract — 표현 계층은 뷰를 모른다."},
     {path:"design/20260720-engine-and-workflow-plan.html", k:"엔진 · 워크플로", d:"재사용 엔진과 교체 가능한 게임 콘텐츠를 나눈 배경."},
+    {path:"archive/README.md",                       k:"📦 아카이브 안내",   d:"해커톤 시기 문서를 왜 남겼고 어떻게 읽어야 하는가. 현재 상태의 출처가 아니다."},
   ];
 
   function showHome(){
     setActive(null); $("crumb").textContent="문서 대시보드"; $("rawLink").style.display="none";
     const paths=new Set(flat().filter(x=>x.path).map(x=>x.path));
     const priv=flat().filter(x=>x.private);
-    const total=flat().filter(x=>!x.private).length; // 외부 링크(path 없음)도 제출물로 셈
+    const total=flat().filter(x=>!x.private).length; // 외부 링크(path 없음)도 한 건으로 셈
     const feat=FEATURED.filter(f=>paths.has(f.path))
       .map(f=>`<a href="#${f.path}"><span class="k">${f.k}</span><span class="d">${f.d}</span></a>`).join("");
     const groups=manifest.map(g=>`<a href="#" data-g="${g.dir}">${g.label} <b>${g.items.length}</b></a>`).join("");
@@ -302,6 +306,9 @@
     $("content").innerHTML=`<div class="home-card">
       <h1>🐯 zodiac-clue 문서</h1>
       <p>호랑이 생신 잔치 · 십이지 손님 중 도둑을 찾는 웹 멀티 추리 게임. 빈자리는 AI NPC가 채웁니다.</p>
+      <p class="pivot">📌 <b>2026-08-25</b> — NHN NAN 2026 사전과제로 시작했으나 과제는 종료됐습니다.
+        이제 <b>1년 목표의 실제 게임 개발</b>입니다. 과제 시기 문서는 <b>📦 아카이브</b>에 동결돼 있으며
+        <b>현재 상태의 출처가 아닙니다.</b> 렌더러도 <b>Phaser 2D 하나</b>로 정리했습니다(Three.js 2.5D·픽셀 뷰 제거).</p>
       <p class="live">🎮 라이브: <a href="https://zodiac-clue.site" target="_blank">zodiac-clue.site</a>
         &nbsp;·&nbsp; <a href="https://zodiac-clue.vercel.app" target="_blank">vercel.app(별칭)</a>
         &nbsp;·&nbsp; <a href="https://github.com/anveloper/zodiac-clue" target="_blank">GitHub</a></p>
