@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>플레이 영상 촬영 콘티 — zodiac-clue</title>
+<style>
+  :root {
+    --bg:#16130f; --card:#211c16; --edge:#3a3126; --ink:#f0e9dc; --dim:#a89778;
+    --gold:#f0d9a8; --accent:#b4622b;
+    --red:#e0736b; --green:#7ee29a; --amber:#e0c25a; --blue:#7ec8e0;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink);
+    font-family: system-ui,-apple-system,"Apple SD Gothic Neo",sans-serif; line-height:1.6; }
+  .wrap { max-width:960px; margin:0 auto; padding:32px 20px 80px; }
+
+  h1 { color:var(--gold); font-size:26px; margin:0 0 6px; }
+  h2 { color:var(--gold); font-size:19px; margin:38px 0 12px;
+       border-bottom:1px solid var(--edge); padding-bottom:6px; }
+  h3 { font-size:15px; margin:22px 0 8px; color:var(--ink); }
+  p, li { font-size:14px; }
+  a { color:#e0a35a; }
+  code { background:#2c2519; border:1px solid var(--edge); border-radius:4px;
+         padding:1px 5px; font-size:12.5px; }
+  b, strong { color:#fff8ec; }
+
+  .scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; margin:10px 0; }
+  table { width:100%; min-width:520px; border-collapse:collapse; font-size:13px; }
+  th, td { border:1px solid var(--edge); padding:8px 10px; text-align:left; vertical-align:top; }
+  th { background:#2c2519; color:var(--gold); font-weight:600; white-space:nowrap; }
+
+  .card { background:var(--card); border:1px solid var(--edge); border-radius:10px;
+          padding:16px 20px; margin:14px 0; }
+  .lead { background:#2b2013; border:1px solid #7c6238; border-radius:8px;
+          padding:12px 16px; font-size:13.5px; }
+
+  .metastrip { display:flex; flex-wrap:wrap; gap:8px; margin:14px 0 4px; }
+  .chip { background:#2c2519; border:1px solid var(--edge); border-radius:999px;
+          padding:4px 12px; font-size:12.5px; color:var(--ink); white-space:nowrap; }
+  .chip b { color:var(--gold); }
+
+  /* ── 0. 경계 (가장 먼저 눈에) ───────────────────── */
+  .gate { border:2px solid var(--accent); border-radius:12px; background:#241a12;
+          padding:18px 20px 20px; margin:22px 0 8px; }
+  .gate .tag { display:inline-block; background:var(--accent); color:#fff;
+               font-size:12px; font-weight:700; padding:3px 10px; border-radius:6px;
+               letter-spacing:.02em; }
+  .gate h2 { margin:12px 0 4px; border:0; padding:0; font-size:20px; }
+  .rule { margin:16px 0 4px; text-align:center; background:#1b1610;
+          border:1px dashed #7c6238; border-radius:10px; padding:16px 14px; }
+  .rule .q { color:var(--gold); font-size:20px; font-weight:700; line-height:1.45; }
+  .rule .a { margin-top:10px; font-size:14px; }
+  .rule .a span { display:inline-block; margin:0 8px; }
+  .yes { color:var(--green); font-weight:700; }
+  .no { color:var(--red); font-weight:700; }
+
+  .ok-row td:first-child, .ok-row th:first-child { border-left:3px solid var(--green); }
+  .no-row td:first-child { border-left:3px solid var(--red); background:#2a1614; }
+  .no-row td { background:#241614; }
+  .warn-row td:first-child { border-left:3px solid var(--amber); }
+  .mark { font-weight:700; white-space:nowrap; }
+  .mark.o { color:var(--green); } .mark.x { color:var(--red); } .mark.w { color:var(--amber); }
+
+  /* ── 타임라인 ───────────────────────────────── */
+  .tl { margin:14px 0 6px; }
+  .tl-bar { display:flex; width:100%; height:52px; border:1px solid var(--edge);
+            border-radius:8px; overflow:hidden; }
+  .tl-seg { display:flex; flex-direction:column; align-items:center; justify-content:center;
+            border-right:1px solid #16130f; color:#1a150f; font-size:12px; line-height:1.25;
+            text-align:center; padding:2px; overflow:hidden; }
+  .tl-seg:last-child { border-right:0; }
+  .tl-seg .k { font-weight:800; font-size:15px; }
+  .tl-seg .s { font-size:11px; opacity:.82; }
+  .segA { background:#f0d9a8; } .segB { background:#d9a86e; } .segC { background:#7ec8e0; }
+  .segD { background:#b9a4e0; } .segE { background:#7ee29a; } .segF { background:#e0736b; }
+  .tl-ticks { display:flex; justify-content:space-between; font-size:11.5px;
+              color:var(--dim); margin-top:5px; padding:0 2px; }
+  .tl-title { font-size:13px; margin:0 0 8px; }
+  .tl-title .badge { font-size:11.5px; padding:2px 8px; border-radius:5px; margin-right:8px;
+                     font-weight:700; }
+  .b-main { background:var(--accent); color:#fff; }
+  .b-safe { background:#2c4a52; color:var(--blue); border:1px solid #3f6b76; }
+
+  /* ── 클립 카드 ──────────────────────────────── */
+  .clip { background:var(--card); border:1px solid var(--edge); border-radius:12px;
+          margin:16px 0; overflow:hidden; }
+  .clip-hd { display:flex; align-items:baseline; gap:12px; flex-wrap:wrap;
+             padding:12px 18px; background:#2c2519; border-bottom:1px solid var(--edge); }
+  .clip-hd .letter { font-size:24px; font-weight:800; line-height:1; }
+  .clip-hd .name { font-size:16px; font-weight:700; color:var(--gold); }
+  .clip-hd .time { margin-left:auto; font-size:12.5px; color:var(--ink);
+                   background:#16130f; border:1px solid var(--edge); border-radius:6px;
+                   padding:3px 10px; white-space:nowrap; }
+  .lA { color:#f0d9a8; } .lB { color:#d9a86e; } .lC { color:#7ec8e0; }
+  .lD { color:#b9a4e0; } .lE { color:#7ee29a; } .lF { color:#e0736b; }
+
+  .clip-body { padding:4px 18px 16px; }
+  .row { display:grid; grid-template-columns:88px 1fr; gap:14px;
+         padding:12px 0; border-bottom:1px dashed #332b21; }
+  .row:last-child { border-bottom:0; }
+  .row .lab { font-size:12px; font-weight:700; color:var(--gold); padding-top:2px;
+              letter-spacing:.02em; }
+  .row .val { font-size:13.5px; }
+  .row.sub .lab { color:var(--blue); }
+  .row.alt .lab { color:var(--dim); }
+  .cap { display:block; background:#1a1611; border-left:3px solid var(--gold);
+         border-radius:0 6px 6px 0; padding:6px 12px; margin:5px 0; font-size:13.5px; }
+  .cap::before { content:"자막 "; color:var(--dim); font-size:11px; }
+  .cap.deny { border-left-color:var(--red); }
+
+  .pre { display:inline-block; background:#3a2a14; border:1px solid #7c6238; color:var(--amber);
+         border-radius:6px; padding:2px 9px; font-size:12px; font-weight:700; margin:0 4px 4px 0; }
+  .pre.must { background:#3a1a16; border-color:#8a3b33; color:var(--red); }
+
+  /* ── 체크리스트 ─────────────────────────────── */
+  .step { background:var(--card); border:1px solid var(--edge); border-radius:10px;
+          padding:14px 18px; margin:12px 0; }
+  .step > .st-hd { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;
+                   margin-bottom:8px; }
+  .st-hd .no { background:var(--accent); color:#fff; font-weight:800; font-size:12.5px;
+               border-radius:6px; padding:2px 9px; }
+  .st-hd .ti { font-size:15px; font-weight:700; color:var(--gold); }
+  .st-hd .mi { font-size:12px; color:var(--dim); margin-left:auto; }
+  .chk { list-style:none; padding:0; margin:0; }
+  .chk li { display:flex; gap:10px; align-items:flex-start; padding:6px 0;
+            border-bottom:1px dashed #2c2519; font-size:13.5px; }
+  .chk li:last-child { border-bottom:0; }
+  .chk input[type=checkbox] { width:17px; height:17px; margin:3px 0 0; flex:0 0 auto;
+                              accent-color:var(--accent); cursor:pointer; }
+  .chk label { cursor:pointer; }
+  .chk input:checked + label { color:var(--dim); text-decoration:line-through; }
+
+  .split { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  @media (max-width:720px) {
+    .split { grid-template-columns:1fr; }
+    .row { grid-template-columns:1fr; gap:2px; }
+    .tl-seg .s { display:none; }
+  }
+  .vs { text-align:center; color:var(--dim); font-size:13px; margin:4px 0 0; }
+  .panel { border-radius:10px; padding:14px 16px; }
+  .p-main { background:#241a12; border:1px solid var(--accent); }
+  .p-safe { background:#151f22; border:1px solid #3f6b76; }
+  .panel h4 { margin:0 0 6px; font-size:15px; }
+  .p-main h4 { color:var(--gold); } .p-safe h4 { color:var(--blue); }
+  .panel ul { padding-left:18px; margin:8px 0 0; }
+  .panel li { font-size:13px; }
+
+  .danger { background:#241614; border:1px solid #8a3b33; border-radius:10px;
+            padding:14px 18px; margin:14px 0; }
+  .danger h3 { color:var(--red); margin:0 0 6px; }
+  .danger table th { background:#3a1a16; color:#ffb3ab; }
+
+  .tree { list-style:none; padding:0; margin:8px 0 0; }
+  .tree li { border-left:3px solid var(--edge); padding:8px 0 8px 14px; margin:0 0 8px;
+             font-size:13.5px; }
+  .tree li.t-red { border-left-color:var(--red); }
+  .tree li.t-amber { border-left-color:var(--amber); }
+  .tree li.t-blue { border-left-color:var(--blue); }
+  .tree .when { display:block; font-weight:700; color:var(--gold); font-size:13.5px; }
+
+  .toc { display:flex; flex-wrap:wrap; gap:6px; margin:16px 0 0; }
+  .toc a { background:#2c2519; border:1px solid var(--edge); border-radius:6px;
+           padding:5px 11px; font-size:12.5px; text-decoration:none; color:var(--ink); }
+  .toc a:hover { border-color:var(--gold); color:var(--gold); }
+  .foot { color:var(--dim); font-size:12.5px; margin-top:40px;
+          border-top:1px solid var(--edge); padding-top:12px; }
+  .kv { font-size:13.5px; margin:6px 0; }
+  .kv b { color:var(--gold); }
+
+/* ══════════ PDF 인쇄(브라우저 인쇄 → PDF 저장) ══════════ */
+@media print {
+  @page { size: A4; margin: 14mm; }
+  :root { --bg:#fff; --panel:#fff; --card:#faf7f0; --edge:#c7bba4; --ink:#1a1712; --dim:#4f4738;
+          --gold:#5b430f; --accent:#8a4718;
+          --red:#a1281e; --green:#1d6b3a; --amber:#8a5b0a; --blue:#14506b; --violet:#523a7a; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; background:#fff !important; }
+  body { background:#fff !important; color:var(--ink) !important; line-height:1.5; }
+  .wrap { max-width:none !important; padding:0 0 8mm !important; }
+  h1 { color:var(--gold) !important; }
+  h2 { color:var(--gold) !important; border-bottom-color:var(--edge) !important; margin-top:22px; }
+  h3, h4 { color:var(--ink) !important; }
+  h1, h2, h3, h4 { break-after:avoid; page-break-after:avoid; }
+  p, li, td, dd, dt, summary { color:var(--ink) !important; }
+  .sub, .note, .dim, .legend span, .src, .foot { color:var(--dim) !important; }
+  code, kbd, .pill, .chip { background:#f1ece0 !important; color:#2c2519 !important; border:1px solid var(--edge) !important; }
+  pre { background:#f7f4ec !important; color:#1a1712 !important; border:1px solid var(--edge) !important;
+        white-space:pre-wrap !important; word-break:break-word; }
+  pre code { background:none !important; border:0 !important; color:#1a1712 !important; }
+  .card { background:var(--card) !important; border-color:var(--edge) !important; }
+  .lead { background:#fdf6e4 !important; border-color:#b08b3e !important; color:#1a1712 !important; }
+  table { min-width:0 !important; width:100% !important; }
+  th, td { border-color:var(--edge) !important; word-break:break-word; }
+  th { background:#efe8d8 !important; color:var(--gold) !important; position:static !important; }
+  a { color:#0b4a8f !important; text-decoration:underline; }
+  a[href^="http"]::after { content:" (" attr(href) ")"; font-size:10px; color:#4f4738; word-break:break-all; }
+  a[href^="#"]::after { content:""; }
+  .scroll { overflow:visible !important; }
+  .card, .box, pre, table, tr, li, .lead, .stat { break-inside:avoid; page-break-inside:avoid; }
+  * { scrollbar-width:none !important; }
+  ::-webkit-scrollbar { display:none !important; }
+
+  /* 이 문서 고유 — 촬영 콘티. 타임라인 색띠는 '구간 식별'이 내용이라 원색 강제 인쇄. */
+  b, strong { color:#1a1712 !important; }
+  .toc { display:none !important; }
+  .yes { color:#1d6b3a !important; } .no { color:#a1281e !important; }
+  .mark.o { color:#1d6b3a !important; } .mark.x { color:#a1281e !important; } .mark.w { color:#8a5b0a !important; }
+  .gate { background:#fdf6e4 !important; border-color:var(--accent) !important; break-inside:avoid; page-break-inside:avoid; }
+  .gate .tag { background:var(--accent) !important; color:#fff !important;
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .gate h2 { color:var(--gold) !important; }
+  .rule { background:#faf7f0 !important; border-color:#b08b3e !important; break-inside:avoid; page-break-inside:avoid; }
+  .rule .q { color:#5b430f !important; }
+  .metastrip .chip b { color:#5b430f !important; }
+  /* 타임라인 색띠 — 원색 유지 (배경은 밝은 파스텔, 글자는 어두움) */
+  .tl-bar, .tl-seg { -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
+  .tl-bar { border-color:var(--edge) !important; break-inside:avoid; page-break-inside:avoid; }
+  .tl-seg { border-right-color:#fff !important; color:#1a150f !important; }
+  .tl-ticks { color:var(--dim) !important; }
+  .tl-title .badge { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .b-main { background:var(--accent) !important; color:#fff !important; }
+  .b-safe { background:#e2eef4 !important; color:#14506b !important; border-color:#a3c2d1 !important; }
+  .clip { background:var(--card) !important; border-color:var(--edge) !important; break-inside:avoid; page-break-inside:avoid; }
+  .clip-hd { background:#efe8d8 !important; border-bottom-color:var(--edge) !important; }
+  .clip-hd .name { color:var(--gold) !important; }
+  .clip-hd .time { background:#fff !important; border-color:var(--edge) !important; color:var(--ink) !important; }
+  .lA { color:#7a5209 !important; } .lB { color:#8a4718 !important; } .lC { color:#14506b !important; }
+  .lD { color:#523a7a !important; } .lE { color:#1d6b3a !important; } .lF { color:#a1281e !important; }
+  .row { border-bottom-color:#ded4c0 !important; }
+  .row .lab { color:#5b430f !important; }
+  .row.sub .lab { color:#14506b !important; } .row.alt .lab { color:var(--dim) !important; }
+  .cap { background:#f7f2e6 !important; border-left-color:#b08b3e !important; color:var(--ink) !important; }
+  .cap.deny { border-left-color:#a1281e !important; }
+  .cap::before { color:var(--dim) !important; }
+  .pre { background:#fbf0d8 !important; border-color:#d6bb85 !important; color:#7a5209 !important; }
+  .pre.must { background:#fbe6e2 !important; border-color:#d7a79d !important; color:#8f2418 !important; }
+  .ok-row td:first-child, .ok-row th:first-child { border-left-color:#1d6b3a !important; }
+  .no-row td:first-child { border-left-color:#a1281e !important; background:#f8e3e0 !important; }
+  .no-row td { background:#fbeeec !important; }
+  .warn-row td:first-child { border-left-color:#8a5b0a !important; }
+  .step { background:var(--card) !important; border-color:var(--edge) !important; break-inside:avoid; page-break-inside:avoid; }
+  .st-hd .no { background:var(--accent) !important; color:#fff !important;
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .st-hd .ti { color:var(--gold) !important; } .st-hd .mi { color:var(--dim) !important; }
+  .chk li { border-bottom-color:#ded4c0 !important; }
+  .panel { break-inside:avoid; page-break-inside:avoid; }
+  .p-main { background:#fdf6e4 !important; border-color:var(--accent) !important; }
+  .p-safe { background:#eef5f9 !important; border-color:#a3c2d1 !important; }
+  .p-main h4 { color:var(--gold) !important; } .p-safe h4 { color:#14506b !important; }
+  .danger { background:#fbeeec !important; border-color:#c58c85 !important; break-inside:avoid; page-break-inside:avoid; }
+  .danger h3 { color:#a1281e !important; }
+  .danger table th { background:#f6ddd9 !important; color:#8f2418 !important; }
+  .tree li { border-left-color:var(--edge) !important; }
+  .tree li.t-red { border-left-color:#a1281e !important; }
+  .tree li.t-amber { border-left-color:#8a5b0a !important; }
+  .tree li.t-blue { border-left-color:#14506b !important; }
+  .tree .when { color:var(--gold) !important; }
+  .vs, .foot { color:var(--dim) !important; }
+  .foot { border-top-color:var(--edge) !important; }
+  .kv b { color:var(--gold) !important; }
+  .split { display:block !important; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>🎬 제출물 ② 플레이 영상 촬영 콘티</h1>
+  <p style="margin:0 0 2px;font-size:14.5px;">화면 옆에 띄워두고 <b>순서대로 짚어가며 촬영</b>하는 실무 문서.</p>
+  <div class="metastrip">
+    <span class="chip"><b>목표</b> 55초 (요건 30~60초)</span>
+    <span class="chip"><b>구성</b> 실플레이 클립 6개 컷 편집</span>
+    <span class="chip"><b>오디오</b> 무음 + 자막</span>
+    <span class="chip"><b>원테이크</b> 아님</span>
+    <span class="chip"><b>작성</b> 2026-07-27</span>
+  </div>
+  <nav class="toc">
+    <a href="#audit" style="background:#3a1a16;border-color:#8a3b33;color:#ffb3ab;font-weight:700">🔴 07-29 실측 정정</a>
+    <a href="#dayof" style="background:#3a1a16;border-color:#8a3b33;color:#ffb3ab;font-weight:700">📋 촬영 당일 순서</a>
+    <a href="#gate">⛔ 허용/금지 경계</a>
+    <a href="#env">🖥 환경 고정값</a>
+    <a href="#timeline">📊 타임라인</a>
+    <a href="#clips">🎞 클립 A~F</a>
+    <a href="#takes">🔀 안전 vs 본</a>
+    <a href="#steps">✅ 촬영 순서 S0~S7</a>
+    <a href="#retake">🚨 재촬영 트리거</a>
+    <a href="#edit">✂️ 편집·업로드</a>
+    <a href="#fallback">🧭 폴백 트리</a>
+  </nav>
+
+  <!-- ═══════════ 0′. 07-29 실측 정정 ═══════════ -->
+  <section id="audit">
+  <div class="danger">
+    <span class="tag" style="background:#3a1a16;border-color:#8a3b33;color:#ffb3ab">아래 컷 시트보다 이 절이 우선한다</span>
+    <h3>0′. 07-29 리허설 실측 정정</h3>
+    <p style="margin:2px 0 0;font-size:14px">
+      콘티는 07-27~28에 쓰였고 그 뒤 화면이 여러 번 바뀌었다. 07-29에 <b>전 컷을 헤드리스로 실제 밟아 본 결과
+      13곳이 화면과 어긋난다.</b> 촬영일에 발견하면 그날이 통째로 날아가므로 여기 먼저 적는다.
+    </p>
+  </div>
+
+  <h3 style="color:var(--red)">0′.1 촬영을 막을 수 있는 것 2건</h3>
+  <div class="danger">
+    <h3>🔴 Gemini 무료 쿼터 소진</h3>
+    <p style="font-size:13.5px;margin:0 0 8px">
+      07-29 기준 <b>HTTP 429 <code>RESOURCE_EXHAUSTED · limit: 500</code></b>(일일). 2판 실측 <b>LLM 4 / 폴백 51</b>.
+      한 판이 <b>40~60콜</b>을 먹으므로 <b>하루 8~12판이 한계</b>다.
+    </p>
+    <ul class="tree">
+      <li class="t-red"><span class="when">촬영 전</span> 생존 확인 1회(S0-2). <b>200이면 LLM 자막 · 429면 컷 C는 대체 자막으로 지금 확정</b> — 판단을 촬영 뒤로 미루지 않는다.</li>
+      <li class="t-red"><span class="when">리허설</span> 반드시 <code>AI_NARRATE=off</code>로 별도 기동. <b>쿼터를 리허설에 쓰면 본 테이크가 폴백이 된다.</b></li>
+    </ul>
+  </div>
+  <div class="danger">
+    <h3>🔴 판 중반 로그 패널 붕괴 — 컷 B·C·D의 무대가 사라진다</h3>
+    <p style="font-size:13.5px;margin:0 0 8px">
+      우측 컬럼이 <code>AI 대사 → 증거 노트 → 제안 기록표 → 기록</code> 세로 스택인데
+      <b>제안 기록표가 자라 로그를 밀어낸다.</b> 900px 높이에서 로그 몫이 <b>72px · 가시 0줄</b>.
+    </p>
+    <p style="font-size:13.5px;margin:0">
+      회피는 <b>조작 하나</b>다 — 「제안 기록표」 제목을 <b>한 번 클릭</b>하면 로그가 72 → <b>299px·6줄</b>,
+      AI 대사까지 접으면 <b>458px·9줄</b>(실제 마우스 클릭으로 검증).
+    </p>
+  </div>
+  <div class="danger">
+    <h3>⚠️ 컷 순서가 바뀐다</h3>
+    <p style="font-size:13.5px;margin:0">
+      콘티는 계략(D)을 4번째(0:29)에 두지만 <b>실제로는 제일 먼저 찍어야 한다</b> —
+      제안이 3~4건 쌓이면 로그 패널이 죽어 그 뒤로는 B·C·D를 못 찍는다.
+    </p>
+  </div>
+
+  <h3 style="color:var(--red)">0′.2 콘티가 화면과 어긋나는 곳 13건</h3>
+  <div class="scroll"><table>
+    <tr><th>콘티</th><th>콘티가 말하는 것</th><th>실제 화면</th></tr>
+    <tr class="no-row"><td>§2.A 51</td><td>랜딩 <b>[혼자 바로 시작]</b> 버튼</td><td><b>그런 버튼 없다.</b> <code>?solo=1</code> 딥링크뿐(<code>main.ts:2701</code>)</td></tr>
+    <tr class="no-row"><td>§2.A 52</td><td>(목표 카드 언급 없음)</td><td>첫 진입에 <b><code>🐯 60초 안내</code> 카드가 주사위 앞을 막는다.</b> <code>?demo=1</code>이면 안 뜬다</td></tr>
+    <tr class="no-row"><td>§2.B 57</td><td>로그의 파란 <code>🔍 [제안]</code> · <code>반증됨</code> 배지</td><td><b>제안은 로그에 안 남고 「제안 기록표」로 간다.</b> 로그엔 <code>🔎 … 반증 (나만 봄)</code> 한 줄</td></tr>
+    <tr class="warn-row"><td>§2.C 63</td><td>칩 <code>✨LLM 2 · ⚙폴백 0</code></td><td><b>3항목</b>이다 — <code>✨LLM n · ♻캐시 n · ⚙폴백 n</code></td></tr>
+    <tr class="no-row"><td>§2.C 64</td><td>"✅ 라이브 LLM 동작(12/12 폴백 0)"</td><td><b>07-29 현재 429.</b> 이 문장을 믿고 촬영하면 안 된다</td></tr>
+    <tr class="warn-row"><td>§2.D 69</td><td><code>🃏 … 계략(엿보기 2·이동 +5)</code></td><td><code>🃏 계략 — {이름} · {NPC}에게서 엿보기 2 · 이동 <b>+6</b></code></td></tr>
+    <tr class="ok-row"><td>§2.D 70</td><td>"주사위 눈이 큰 턴을 기다려라"</td><td><b>9 이상 한 번이면 1턴에 도달</b>(방 안 통과가 무료). 실측 <b>4초</b></td></tr>
+    <tr class="warn-row"><td>§2.E 75</td><td>"말 위치는 그대로인 채 표현만"</td><td>좌표는 유지되나 <b>뷰2·3은 카메라가 크게 당겨진다</b> → 이 자막은 쓰지 말 것</td></tr>
+    <tr class="ok-row"><td>§2.E 76</td><td>🔶 선행 = PLACEHOLDER 제거</td><td><b>이미 제거됨</b>(07-28). 선행 0건</td></tr>
+    <tr class="no-row"><td>§2.F 81</td><td><code>🎉 승리!</code></td><td>제목은 <b><code>🎉 사건 해결!</code></b>. <b>자막을 «승리!»로 쓰면 화면과 어긋난다</b></td></tr>
+    <tr class="ok-row"><td>§2.B/D 58·70</td><td>🔶 선행 = 장소 고정행·소환 FX·즉시고발</td><td><b>전부 구현 완료.</b> 🔶 모두 해소</td></tr>
+    <tr class="warn-row"><td>§3 103</td><td>"AI 칩·소환 FX는 한 글자도 언급 말 것"</td><td><b>둘 다 살아 있다.</b> 과도한 제약</td></tr>
+    <tr class="warn-row"><td>§1 32·33</td><td>컬럼 320px · 증거노트 300px 드래그</td><td>되지만 리사이저가 <b>실제로 잡히는 폭 8px</b>이고, <b>진짜 문제는 제안 기록표</b>다</td></tr>
+  </table></div>
+
+  <h3 style="color:var(--green)">0′.3 확인된 것 — 그대로 가도 되는 컷</h3>
+  <p style="font-size:13.5px">
+    주사위 6프레임 + <code>이동 N칸</code> · 턴 배너 문안 <b>문자 그대로 일치</b> · 제안 모달의
+    <code>장소 · 현재 방 · 고정</code> 고정행 · 소환 워프 · NPC 말풍선·타자기 · 계략 귓속말 + 증거노트 자동
+    취소선 · 뷰 4연속 전환(300~650ms, 로딩 없음, <code>PLACEHOLDER</code> 없음) · 턴 순서 원형 ·
+    고발 모달 3열 · [다시 하기] 즉시 새 판 · 대기실 12캐릭터 도감.
+  </p>
+
+  <h3 style="color:var(--amber)">0′.4 못 잰 것 — 통과로 세지 않는다</h3>
+  <ul class="tree">
+    <li class="t-amber"><span class="when">솔로에서 사람이 이기는 결말을 못 찍었다</span>
+      실측 3판 모두 NPC가 먼저 맞혔다(<code>🔍 사건 종결</code>). 승리 화면 자체는 화면 게이트와 같은
+      방식으로 도달해 확인했으나, <b>촬영 당일 솔로 판에서 사람이 이길 확률은 재지 못했다.</b></li>
+    <li class="t-amber"><span class="when">컷 C의 «말투 다른 두 캐릭터 연속 턴»을 확인하지 못했다</span>
+      쿼터 소진으로 LLM 대사 표본이 4건뿐이라 말투 대비를 판단할 수 없었다.</li>
+  </ul>
+
+  <h3 style="color:var(--dim)">0′.5 촬영과 무관하게 남은 결함 2건 (기록만)</h3>
+  <ul class="tree">
+    <li><span class="when">뷰2·3에서 방 이름표가 우측 컬럼 위로 넘어온다</span> 「별당」 라벨 x≈1330. §6 재촬영 트리거에 없던 새 결함.</li>
+    <li><span class="when">컬럼 폭 리사이저의 오른쪽 절반을 형제 패널이 덮는다</span> 로직은 정상, 스택 순서 문제.</li>
+  </ul>
+  </section>
+
+  <!-- ═══════════ 4′. 촬영 당일 순서 ═══════════ -->
+  <section id="dayof">
+  <div class="danger">
+    <span class="tag" style="background:#3a1a16;border-color:#8a3b33;color:#ffb3ab">§5 체크리스트보다 이것을 따른다</span>
+    <h3>4′. 촬영 당일 순서 — 07-29 실측판</h3>
+    <p style="margin:2px 0 0;font-size:14px">전부 실제 빌드에서 밟아 본 값이다. <b>「해보면 알겠지」를 남기지 않는다.</b></p>
+  </div>
+  <ul class="tree">
+    <li class="t-red"><span class="when">S0. 준비 (15분)</span>
+      창 <b>1600×900</b>·확대 100%(실측 기준값), 터미널은 프레임 밖.<br>
+      🔴 <b>LLM 생존 확인을 1회 실행하고 그 결과로 컷 C를 지금 확정한다</b> —
+      <code>gemini-flash-lite-latest</code>에 ping 1회, <b>200이면 LLM 자막 · 429면 대체 자막</b>.<br>
+      🔴 <b>리허설은 <code>AI_NARRATE=off</code>로 별도 기동.</b> 리허설 1판으로 뷰4 예열하되
+      <b>브라우저 프로필은 그대로</b> 본 테이크에 쓴다(목표 카드 재노출 방지).</li>
+    <li class="t-blue"><span class="when">S1. 컷 A (10초) — 진입</span>
+      <code>?solo=1</code>을 넣은 상태에서 녹화 시작. 첫 진입이면 <code>🐯 60초 안내</code>가 먼저 뜬다 —
+      <b>(권장)</b> 1.5초 보여주고 [확인](닫으면 대기하던 주사위가 이어 굴러간다), 또는 <code>?solo=1&amp;demo=1</code>.<br>
+      진입 약 3초 뒤 주사위가 사라진다 → <code>↑</code> 6번(1.1초). <b>총 4.1초.</b> 필요한 눈 <b>3 이상</b>.</li>
+    <li class="t-red"><span class="when">S2. 컷 D (8초) — 계략 ※ 제일 먼저</span>
+      <b>첫 턴 주사위가 9 이상이면 그 자리에서 모서리 계략 NPC로</b>(실측 1턴·4초).
+      <code>[계략]</code> → 귓속말 + 로그 2줄 + 증거노트 취소선이 <b>한 프레임에</b>.<br>
+      ⚠️ 봇이 내 캐릭터를 제안하면 내 말이 <b>소환</b>된다 → 그 테이크는 버리고 다시.</li>
+    <li class="t-blue"><span class="when">S3. 컷 B (10초) — 제안·반증</span>
+      🔴 <b>자막을 «로그»에 걸지 말 것.</b> 반증은 「제안 기록표」 행의 <code>🛡 {반증자}</code>에서 읽힌다.
+      <b>크롭 대상은 「제안 기록표」 패널.</b></li>
+    <li class="t-red"><span class="when">S4. 컷 C (9초) — NPC 대사</span>
+      🔴 <b>먼저 「제안 기록표」 제목을 한 번 클릭해 접는다</b> → 로그 6줄. AI 대사까지 접으면 9줄.<br>
+      ⚠️ 칩에 <code>⚙폴백</code>만 오르면 <b>LLM 자막 금지</b>. 칩은 3항목이다.</li>
+    <li class="t-amber"><span class="when">S5. 컷 E (9초) — 뷰 4연속</span>
+      <b>내 턴에</b> 드롭다운 → 뷰1→2→3→4를 2초 간격.
+      ⚠️ 뷰2·3에서 <b>「별당」 라벨이 우측 패널을 침범</b>하면 카메라를 왼쪽으로 팬해 다시.
+      ⚠️ <b>«말 위치는 그대로» 자막은 쓰지 않는다.</b></li>
+    <li class="t-blue"><span class="when">S6. 컷 F (9초) — 결말</span>
+      솔로 1판 실측 <b>~90초 · NPC 15제안</b>. 반복은 [다시 하기].
+      🔴 오버레이 제목은 <b><code>🎉 사건 해결!</code></b> — <b>«승리!»로 쓰면 화면과 어긋난다.</b>
+      못 뽑으면 대체 컷 ①(<code>🔍 사건 종결</code>)이 <b>실측으로 자주 나온다</b>.</li>
+    <li><span class="when">S7. 마감</span>
+      원본 전량 보관 · 타임코드 정리 · <b>자막 문안을 §0′.2로 교정한 뒤</b> 편집.</li>
+  </ul>
+  </section>
+
+  <!-- ═══════════ 0. 경계 ═══════════ -->
+  <section id="gate">
+  <div class="gate">
+    <span class="tag">촬영 전 반드시 · 요건 위반 방지</span>
+    <h2>0. 허용 / 금지 경계 — 이 절이 성실성 증거다</h2>
+    <p style="margin:2px 0 0;font-size:14px;">
+      조항: <b>"실제 플레이 화면만 · AI 합성 / 타인 영상 금지"</b>
+    </p>
+
+    <div class="rule">
+      <div class="q">"녹화를 멈추고 다시 켜도<br>같은 일이 일어나는가?"</div>
+      <div class="a">
+        <span><span class="yes">예 → 허용</span> (표시 계층)</span>
+        <span><span class="no">아니오 → 금지</span> (진실값 개입)</span>
+      </div>
+    </div>
+
+    <div class="scroll">
+    <table>
+      <thead><tr><th style="width:34%">항목</th><th style="width:12%">판정</th><th>근거</th></tr></thead>
+      <tbody>
+        <tr class="ok-row"><td>컷 편집 (클립 이어붙이기·하드컷)</td><td><span class="mark o">✅ 허용</span></td>
+            <td>금지 대상은 <b>합성·타인 영상</b>. 편집 자체는 금지어에 없다</td></tr>
+        <tr class="ok-row"><td>자막 (후처리 텍스트 오버레이)</td><td><span class="mark o">✅ 허용</span></td>
+            <td>화면 픽셀을 대체하지 않음. <b>③ 문서와 영상 설명란에 "자막은 후처리"를 1줄 명시</b></td></tr>
+        <tr class="ok-row"><td>크롭 · 확대</td><td><span class="mark o">✅ 허용</span></td>
+            <td>실제 녹화 픽셀 범위 내. 없던 화면을 만들지 않음</td></tr>
+        <tr class="ok-row"><td>표시 계층 조작<br><span style="color:var(--dim);font-size:12px;">우측 컬럼 폭 드래그 · 증거노트 높이 드래그 · 뷰 드롭다운 · 턴 순서 원형 열기 · 브라우저 확대</span></td>
+            <td><span class="mark o">✅ 허용</span></td>
+            <td><b>전부 게임에 실제로 존재하는 사용자 조작</b></td></tr>
+        <tr class="ok-row"><td>반복 촬영 ([다시 하기]로 여러 판)</td><td><span class="mark o">✅ 허용</span></td>
+            <td>각 테이크가 실제 플레이. 좋은 테이크 선택은 편집 영역</td></tr>
+        <tr class="warn-row"><td>BGM · 나레이션</td><td><span class="mark w">⚠️ 안 넣음</span></td>
+            <td><b>무음 + 자막으로 확정.</b> 판단 여지를 남기지 않는다</td></tr>
+        <tr class="no-row"><td><b>주사위 · 정답 · NPC 판정 개입</b></td><td><span class="mark x">❌ 절대 금지</span></td>
+            <td>손대는 순간 <b>"실제 플레이 화면"이 아니다</b></td></tr>
+        <tr class="no-row"><td>DevTools 상태 주입</td><td><span class="mark x">❌ 금지</span></td>
+            <td>위와 동일 — 진실값 개입</td></tr>
+        <tr class="no-row"><td>가짜 HUD · 목업 합성</td><td><span class="mark x">❌ 금지</span></td>
+            <td>조항 정면 위반</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <div class="lead" style="margin-top:14px;">
+      <b>자막 정직성 규칙</b> — 화면에 <b>실제로 찍힌 것만</b> 주장한다.
+      <b style="color:var(--red)">LLM 배지가 안 찍혔으면 자막에 "LLM"을 쓰지 않는다</b> (→ 클립 C 대체 자막).
+    </div>
+  </div>
+  </section>
+
+  <!-- ═══════════ 1. 환경 ═══════════ -->
+  <h2 id="env">1. 촬영 환경 고정값 <span style="font-size:13px;color:var(--dim);">— 모든 클립 공통 · S0에서 세팅</span></h2>
+  <div class="scroll">
+  <table>
+    <thead><tr><th style="width:20%">항목</th><th style="width:32%">값</th><th>이유</th></tr></thead>
+    <tbody>
+      <tr><td>해상도</td><td><b>1920×1080 / 60fps</b></td><td>YouTube 기본. 업스케일 금지</td></tr>
+      <tr><td>브라우저 창</td><td><b>1600×900 고정</b>, 확대 100%</td>
+          <td>680px 미만 반응형 분기에 걸리면 HUD 레이아웃이 달라져 <b>클립 간 불일치</b></td></tr>
+      <tr><td>우측 컬럼 폭</td><td>드래그로 <b>320px</b></td><td>로그 문장 줄바꿈 방지 (표시 계층 조작이라 허용)</td></tr>
+      <tr><td>증거 노트 높이</td><td>드래그로 <b>300px</b></td><td>3그룹이 한 화면에</td></tr>
+      <tr><td>마우스 커서</td><td>표시</td><td>사람이 조작 중임의 증거</td></tr>
+      <tr><td>오디오</td><td><b>무음</b></td><td>0절 확정</td></tr>
+      <tr><td>서버</td><td>로컬 <code>pnpm dev</code> 또는 라이브 중<br><b>LLM이 실제 동작하는 쪽</b></td>
+          <td>로컬 실행도 실제 플레이. 단 <b style="color:var(--red)">터미널·콘솔은 절대 프레임에 넣지 않는다</b></td></tr>
+      <tr><td>파일명</td><td><code>zc-&lt;take&gt;-&lt;clip&gt;-&lt;n&gt;.mov</code></td>
+          <td>원본 전량 보관 (<code>~/zodiac-rec/</code>, 저장소 커밋 금지)</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <!-- ═══════════ 2. 타임라인 ═══════════ -->
+  <h2 id="timeline">2. 55초 타임라인</h2>
+
+  <div class="tl">
+    <p class="tl-title"><span class="badge b-main">본 테이크</span> 선행 개선 완료 후 · 총 <b>55초</b></p>
+    <div class="tl-bar">
+      <div class="tl-seg segA" style="width:18.2%"><span class="k">A</span><span class="s">진입 10s</span></div>
+      <div class="tl-seg segB" style="width:18.2%"><span class="k">B</span><span class="s">제안·반증 10s</span></div>
+      <div class="tl-seg segC" style="width:16.4%"><span class="k">C</span><span class="s">NPC·AI 9s</span></div>
+      <div class="tl-seg segD" style="width:14.5%"><span class="k">D</span><span class="s">계략 8s</span></div>
+      <div class="tl-seg segE" style="width:16.4%"><span class="k">E</span><span class="s">뷰 4연속 9s</span></div>
+      <div class="tl-seg segF" style="width:16.4%"><span class="k">F</span><span class="s">고발 승리 9s</span></div>
+    </div>
+    <div class="tl-ticks">
+      <span>0:00</span><span>0:10</span><span>0:20</span><span>0:29</span>
+      <span>0:37</span><span>0:46</span><span>0:55</span>
+    </div>
+  </div>
+
+  <div class="tl" style="margin-top:22px;">
+    <p class="tl-title"><span class="badge b-safe">안전 테이크</span> 선행 개선 0건 · 현재 코드 그대로 · 총 <b>52초</b></p>
+    <div class="tl-bar" style="height:44px;opacity:.92;">
+      <div class="tl-seg segA" style="width:23.1%"><span class="k">A′</span><span class="s">대기실 12s</span></div>
+      <div class="tl-seg segB" style="width:19.2%"><span class="k">B′</span><span class="s">로그 10s</span></div>
+      <div class="tl-seg segC" style="width:17.3%"><span class="k">C′</span><span class="s">대사 9s</span></div>
+      <div class="tl-seg segD" style="width:17.3%"><span class="k">D′</span><span class="s">계략 9s</span></div>
+      <div class="tl-seg segE" style="width:23.1%"><span class="k">E′</span><span class="s">뷰+원형 12s</span></div>
+    </div>
+    <div class="tl-ticks">
+      <span>0:00</span><span>0:12</span><span>0:22</span><span>0:31</span><span>0:40</span><span>0:52</span>
+    </div>
+    <p style="font-size:12.5px;color:var(--dim);margin:6px 0 0;">
+      F(승리) 없음 — E′를 12초로 늘려 메운다.
+    </p>
+  </div>
+
+  <!-- ═══════════ 안전 vs 본 ═══════════ -->
+  <h2 id="takes">3. 안전 테이크 vs 본 테이크 <span style="font-size:13px;color:var(--dim);">— 이 문서의 핵심 설계</span></h2>
+  <div class="split">
+    <div class="panel p-safe">
+      <h4>🛟 안전 테이크 (52초)</h4>
+      <div class="kv"><b>언제</b> 08-01까지 · 선행 개선 미완</div>
+      <div class="kv"><b>목적</b> 요건 ②를 <b>먼저 충족</b>해 심사 제외 리스크 0</div>
+      <div class="kv"><b>선행 작업</b> 0건 (권장 40분: 조사 헬퍼 + PLACEHOLDER 제거)</div>
+      <div class="kv"><b>세션</b> ≈ 90분</div>
+      <ul>
+        <li>지금 <b>확실히 찍히는 것만</b> 담는다</li>
+        <li><b>미구현 기능을 자막으로 암시하지 않는다</b> (원클릭 진입·AI 칩·소환 FX는 한 글자도)</li>
+        <li>4단계 진입 약점을 <b>캐릭터 도감 쇼케이스</b>로 전환</li>
+        <li>보드가 아니라 <b>로그 패널 중심</b></li>
+        <li>승리 컷은 <b>처음부터 넣지 않는다</b> → 턴 순서 원형으로 마무리</li>
+        <li>자막 총 <b>6장</b></li>
+      </ul>
+    </div>
+    <div class="panel p-main">
+      <h4>🎯 본 테이크 (55초)</h4>
+      <div class="kv"><b>언제</b> 선행 개선 완료 후 · 교체 업로드</div>
+      <div class="kv"><b>목적</b> 게임의 강점(소환 FX·LLM·승리)까지 담기</div>
+      <div class="kv"><b>선행 작업</b> 🔶 5건 · 🔴 1건 (아래 클립 카드 참조)</div>
+      <div class="kv"><b>세션</b> ≈ 150분 (F 반복 포함)</div>
+      <ul>
+        <li>클립 A~F 전부. F(승리)가 <b>가장 확률이 낮다</b> — 마지막에 몰아서</li>
+        <li>LLM 자막은 <b>✨ 칩이 실제로 올라갈 때만</b></li>
+        <li>안전 테이크를 <b>버리지 않는다</b> — 교체 실패 시 그대로 유지</li>
+      </ul>
+    </div>
+  </div>
+  <p class="vs">두 버전이 있다는 것 자체가 설계다. <b>안전 테이크를 먼저 올려두고</b> 본 테이크로 갈아끼운다.</p>
+
+  <div class="lead" style="margin-top:14px;">
+    <b>안전 테이크 회피 목록</b> (표시 계층 선택만 사용) —
+    ① 소환 로그 <code>호랑이 대감가 대청마루(으)로</code>가 B′ 프레임에 오면 재촬영
+    <span style="color:var(--amber)">(또는 조사 헬퍼 30분 선작업이 훨씬 싸다 — 안전 테이크 전 유일하게 권장)</span> ·
+    ② 뷰3 <code>PLACEHOLDER</code> 배지 → E′에서 뷰3 체류 1초 이하 (10분 제거 작업 권장) ·
+    ③ 승리 컷 미포함.
+  </div>
+
+  <!-- ═══════════ 클립 카드 ═══════════ -->
+  <h2 id="clips">4. 본 테이크 클립 카드 A~F</h2>
+  <p style="font-size:13px;margin:0 0 4px;">
+    <span class="pre">🔶 선행조건</span> 없으면 대체 컷으로 진행 가능 &nbsp;·&nbsp;
+    <span class="pre must">🔴 필수 선행</span> 없으면 그 자막 자체를 쓸 수 없다
+  </p>
+
+  <!-- A -->
+  <div class="clip">
+    <div class="clip-hd">
+      <span class="letter lA">A</span><span class="name">진입</span>
+      <span class="time">0:00 – 0:10 · 10s</span>
+    </div>
+    <div class="clip-body">
+      <div class="row"><div class="lab">화면</div><div class="val">
+        랜딩 카드 → <b>[혼자 바로 시작]</b> → <code>#diceOverlay</code> 주사위 2개 6프레임 굴림 →
+        <code>이동 N칸</code> → 방향키 이동 → 🚪 입구로 방 진입 →
+        상단 <code>🎲 내 턴 · 남은 이동 N칸 · 방에서 [제안]</code>
+      </div></div>
+      <div class="row sub"><div class="lab">촬영 조건</div><div class="val">
+        <span class="pre">🔶 원클릭 솔로 진입 (로드맵 §1.6)</span> 미구현이면 안전 테이크 A′ 사용.<br>
+        시작 위치 중앙 잔치상 → 최근접 방은 <b>대청마루(문 11,5)</b> 또는 <b>행랑채(문 11,18)</b>, 이동 2~4칸이면 도달.<br>
+        주사위 오버레이는 확정 후 <b>1.9초</b>에 사라진다 → <b>굴림~방 진입을 끊지 말고 한 번에</b> 녹화.
+      </div></div>
+      <div class="row"><div class="lab">자막</div><div class="val">
+        <span class="cap">설치·로그인 없이 링크 한 번</span>
+        <span class="cap">빈 자리는 AI NPC 5명이 채웁니다</span>
+      </div></div>
+      <div class="row alt"><div class="lab">대체 컷</div><div class="val">
+        주사위 눈이 낮아 방까지 못 가면 <b>리매치로 재시작</b>. 그래도 안 되면 [턴 종료] 후 다음 턴 주사위부터 —
+        <b>주사위를 다시 굴리는 것은 게임 규칙 안의 행위</b>라 허용.
+      </div></div>
+    </div>
+  </div>
+
+  <!-- B -->
+  <div class="clip">
+    <div class="clip-hd">
+      <span class="letter lB">B</span><span class="name">제안과 반증</span>
+      <span class="time">0:10 – 0:20 · 10s</span>
+    </div>
+    <div class="clip-body">
+      <div class="row"><div class="lab">화면</div><div class="val">
+        <code>[제안]</code> → 모달(용의자 / 훔친 것 / <b>장소: 대청마루 고정</b>) → 확인 →
+        용의자·장물 토큰이 소환 앵커로 <b>워프</b> → 로그에 파란 <code>🔍 [제안]</code> →
+        보라 <code>🛡 … 반증했습니다</code> + 원 제안 줄에 <code>반증됨</code> 배지
+      </div></div>
+      <div class="row sub"><div class="lab">촬영 조건</div><div class="val">
+        <span class="pre">🔶 장소 고정행 + 소환 FX (§2.2)</span>
+        방 안이어야 버튼 활성. <b>반증이 뜨는 조합</b>을 고를 것(자기 손패에 없는 카드).<br>
+        미반증(<code>❗ 정답 후보!</code>)이 뜨면 그 테이크는 <b style="color:var(--amber)">클립 F 소재로 따로 보관</b>하고 B는 재촬영.
+      </div></div>
+      <div class="row"><div class="lab">자막</div><div class="val">
+        <span class="cap">방에 들어가 제안하면</span>
+        <span class="cap">지목한 용의자와 장물이 그 방으로 소환됩니다</span>
+        <span class="cap">반증은 시계방향 첫 사람만</span>
+      </div></div>
+      <div class="row alt"><div class="lab">대체 컷</div><div class="val">
+        소환 FX 미구현이면 <b>로그 패널 클로즈업</b>으로 전환 (크롭만 사용).
+      </div></div>
+    </div>
+  </div>
+
+  <!-- C -->
+  <div class="clip">
+    <div class="clip-hd">
+      <span class="letter lC">C</span><span class="name">NPC 대사와 AI 계층</span>
+      <span class="time">0:20 – 0:29 · 9s</span>
+    </div>
+    <div class="clip-body">
+      <div class="row"><div class="lab">화면</div><div class="val">
+        봇 턴 2연속, 말투가 다른 두 캐릭터
+        (예 🐯 <code>어험— …감히 누구 앞이라고!</code> / 🐑 <code>저, 저기… …아니면 말고요.</code>)의
+        말풍선이 <b>55ms 타자기</b>로 찍힘 + AI 카운터 칩 <code>✨LLM 2 · ⚙폴백 0</code> 증가
+      </div></div>
+      <div class="row sub"><div class="lab">촬영 조건</div><div class="val">
+        <span class="pre" style="border-color:#7ee29a;color:#7ee29a">✅ 선행 해소(07-28) — 라이브 LLM 동작 확인 12/12</span>
+        <span class="pre">🔶 AI 칩 기본 노출 (§7.7)</span><br>
+        <b style="color:var(--red)">폴백 상태로 찍고 자막에 LLM이라 쓰면 허위 주장이다.</b><br>
+        말투 대비가 큰 2인이 연속 턴이 되도록 <b>시작 전 턴 스트립 순서 확인</b>.
+        봇 대사는 놓치면 다음 턴까지 대기 — <b>녹화는 계속 돌리고 편집에서 자른다</b>.
+      </div></div>
+      <div class="row"><div class="lab">자막</div><div class="val">
+        <span class="cap">판정은 결정론적 규칙엔진</span>
+        <span class="cap">대사만 LLM이 생성합니다</span>
+        <span class="cap">✨ = LLM 응답, ⚙ = 규칙 폴백</span>
+      </div></div>
+      <div class="row alt"><div class="lab">대체 자막</div><div class="val">
+        <b>LLM 미동작 시</b> — LLM 주장을 전부 제거하고 아래 1장만.
+        <span class="cap deny">NPC 12명 각자의 말투로 말합니다</span>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- D -->
+  <div class="clip">
+    <div class="clip-hd">
+      <span class="letter lD">D</span><span class="name">계략</span>
+      <span class="time">0:29 – 0:37 · 8s</span>
+    </div>
+    <div class="clip-body">
+      <div class="row"><div class="lab">화면</div><div class="val">
+        고정 NPC 인접 → <code>[계략]</code> → 귓속말 말풍선 +
+        로그 <code>🃏 … 계략(엿보기 2·이동 +5)</code> /
+        <code>🃏 엿본 카드: 술동이 · 서재 (정답 아님·나만 봄)</code> →
+        증거 노트 칩 2개가 <b>취소선 + 흐림</b>으로 자동 전환
+      </div></div>
+      <div class="row sub"><div class="lab">촬영 조건</div><div class="val">
+        <b>모서리 헬퍼 = 2장</b>이라 증거노트 변화가 크다. 인접은 <b>체비셰프 ≤1</b>(대각 포함).<br>
+        중앙에서 모서리까지 거리가 있으므로 <b>주사위 눈이 큰 턴</b>을 고른다.
+        엿본 카드가 아직 체크 안 된 <b>판 초반</b>에 촬영.
+      </div></div>
+      <div class="row"><div class="lab">자막</div><div class="val">
+        <span class="cap">[계략] — 다른 손님의 패를 몰래 엿봅니다</span>
+        <span class="cap">엿본 단서는 증거 노트에서 자동으로 지워집니다</span>
+      </div></div>
+      <div class="row alt"><div class="lab">대체 컷</div><div class="val">
+        노트 변화가 안 잡히면 로그 <code>(정답 아님·나만 봄)</code> 클로즈업.
+      </div></div>
+    </div>
+  </div>
+
+  <!-- E -->
+  <div class="clip">
+    <div class="clip-hd">
+      <span class="letter lE">E</span><span class="name">뷰 진화 4연속</span>
+      <span class="time">0:37 – 0:46 · 9s</span>
+    </div>
+    <div class="clip-body">
+      <div class="row"><div class="lab">화면</div><div class="val">
+        좌하단 <code>뷰1 · 2D ▲</code> → 드롭다운 → 뷰1→2→3→4를 <b>2초 간격</b>.
+        <b>말들의 위치는 그대로</b>인 채 표현만 바뀐다.
+      </div></div>
+      <div class="row sub"><div class="lab">촬영 조건</div><div class="val">
+        <span class="pre">🔶 유일한 필수 선행 = PLACEHOLDER 배지 제거 (§2.4)</span>
+        안 하면 뷰3 전환이 <b>"도장 찍히는" 역효과</b>로 찍힌다.<br>
+        보드에 말이 흩어진 <b>판 중반(3~4라운드)</b> 이후. 뷰4는 첫 진입에 한 프레임 지연이 있으니
+        <b>리허설로 한 번 켜둔 뒤</b> 본 녹화. <b>내 턴 중</b>(카메라 고정)에 전환.
+      </div></div>
+      <div class="row"><div class="lab">자막</div><div class="val">
+        <span class="cap">개발 진화 4단계를 게임 기능으로</span>
+        <span class="cap">2D → 2.5D → 에셋 → 절차적 도트</span>
+      </div></div>
+      <div class="row alt"><div class="lab">대체 컷</div><div class="val">
+        카메라 팬이 겹치면 뷰1→뷰4 <b>2단계만</b> (6초로 축소, 남는 3초는 F로).
+      </div></div>
+    </div>
+  </div>
+
+  <!-- F -->
+  <div class="clip">
+    <div class="clip-hd">
+      <span class="letter lF">F</span><span class="name">고발 성공</span>
+      <span class="time">0:46 – 0:55 · 9s</span>
+    </div>
+    <div class="clip-body">
+      <div class="row"><div class="lab">화면</div><div class="val">
+        <code>[고발]</code> → 모달(장소도 선택) → 확인 → 초록 로그 <code>🎉 사건 해결! 정답: …</code> →
+        <code>#endOverlay</code> <code>🎉 승리!</code> + [다시 하기]/[메인으로]
+      </div></div>
+      <div class="row sub"><div class="lab">촬영 조건</div><div class="val">
+        <span class="pre must">⚠️ 가장 확률이 낮은 클립 — 개선 후에도 평균 7라운드째</span>
+        <span class="pre">🔶 제안 턴 고발 가능 (§7.5.1)</span><br>
+        <b>반드시 마지막에 몰아서</b> 촬영하고 [다시 하기]로 반복.<br>
+        정답 확정 경로: <b>공통 단서 2장 + 계략 엿보기 2장 + 미반증 제안</b>.<br>
+        §7.5.1 없으면 두 조각(제안 미반증 / 다음 턴 고발)으로 찍어 컷으로 붙인다.
+      </div></div>
+      <div class="row"><div class="lab">자막</div><div class="val">
+        <span class="cap">누가 · 무엇을 · 어디서 — 셋 다 맞아야 승리</span>
+        <span class="cap">정답 고발 성공</span>
+      </div></div>
+      <div class="row alt"><div class="lab">대체 컷</div><div class="val">
+        <b>우선순위대로</b><br>
+        ① <b>봇의 정답 고발</b> 종료 화면 <span class="cap">NPC도 같은 규칙으로 추리해 사건을 해결합니다</span>
+        ② <b>오답 고발 → 탈락</b> 관전바 <span class="cap">틀리면 즉시 탈락, 관전으로</span>
+        ③ 미반증 제안 로그 클로즈업으로 여운 종료
+      </div></div>
+    </div>
+  </div>
+
+  <!-- 안전 테이크 컷 시트 -->
+  <h3>안전 테이크 컷 시트 (A′~E′ · 52초)</h3>
+  <div class="scroll">
+  <table>
+    <thead><tr><th style="width:5%">#</th><th style="width:14%">구간</th><th style="width:40%">내용</th><th>가능한 이유</th></tr></thead>
+    <tbody>
+      <tr><td><b class="lA">A′</b></td><td>0:00–0:12 · 12s</td>
+          <td>랜딩 → [방 만들기] → 🏮 대기실 → 캐릭터 12종을 훑으며 <b>직업 풀이 패널</b> 변화 → [잔치 시작]</td>
+          <td>전부 구현됨. 4단계 진입을 <b>캐릭터 도감 쇼케이스</b>로 전환해 약점을 콘텐츠로 사용</td></tr>
+      <tr><td><b class="lB">B′</b></td><td>0:12–0:22 · 10s</td>
+          <td>주사위 → 이동 → 방 진입 → [제안] → 로그 2줄</td>
+          <td>구현됨. <b>보드가 아니라 로그 패널 중심</b></td></tr>
+      <tr><td><b class="lC">C′</b></td><td>0:22–0:31 · 9s</td>
+          <td>봇 대사 2연 (말투 대비)</td>
+          <td>로컬에서 <b>키가 살아있을 때만</b> LLM 자막 사용</td></tr>
+      <tr><td><b class="lD">D′</b></td><td>0:31–0:40 · 9s</td>
+          <td>[계략] → 엿보기 로그 → 증거 노트 자동 취소선</td>
+          <td>구현됨</td></tr>
+      <tr><td><b class="lE">E′</b></td><td>0:40–0:52 · 12s</td>
+          <td>뷰1→2→3→4 + 턴 배너 클릭 → <b>턴 순서 원형 오버레이</b></td>
+          <td>전부 구현됨. E′를 길게 잡아 <b>F 부재를 메움</b></td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <!-- ═══════════ 체크리스트 ═══════════ -->
+  <h2 id="steps">5. 촬영 순서 체크리스트 S0 ~ S7</h2>
+  <div class="lead">
+    순서대로 따라 하면 소재가 전부 모인다. 세션 1회 ≈ <b>90분(안전)</b> / <b>150분(본, F 반복 포함)</b>.
+    체크 상태는 저장되지 않는다 — 세션마다 새로 짚는다.
+  </div>
+
+  <div class="step">
+    <div class="st-hd"><span class="no">S0</span><span class="ti">준비</span><span class="mi">10분</span></div>
+    <ul class="chk">
+      <li><input type="checkbox" id="s0a"><label for="s0a">창 <b>1600×900</b>, 확대 100%, 알림·확장 배너 끄기</label></li>
+      <li><input type="checkbox" id="s0b"><label for="s0b"><code>pnpm dev</code> 기동 후 <b>터미널을 화면 밖으로</b></label></li>
+      <li><input type="checkbox" id="s0c"><label for="s0c">리허설 1판으로 뷰4(<code>pixel</code>) 씬 <b>예열</b></label></li>
+      <li><input type="checkbox" id="s0d"><label for="s0d">우측 컬럼 <b>320px</b>, 증거노트 <b>300px</b>로 드래그</label></li>
+      <li><input type="checkbox" id="s0e"><label for="s0e"><b>60fps 확인</b>, 테스트 5초 녹화 후 재생 확인</label></li>
+    </ul>
+  </div>
+
+  <div class="step">
+    <div class="st-hd"><span class="no">S1</span><span class="ti">진입 <span class="lA">A</span> / <span class="lA">A′</span></span></div>
+    <ul class="chk">
+      <li><input type="checkbox" id="s1a"><label for="s1a"><b>페이지 로드 상태부터</b> 녹화 시작</label></li>
+      <li><input type="checkbox" id="s1b"><label for="s1b">랜딩 <b>1.5초 정지</b></label></li>
+      <li><input type="checkbox" id="s1c"><label for="s1c">(안전) 캐릭터 4~5개 훑어 <b>직업 풀이 변화</b> 담기</label></li>
+      <li><input type="checkbox" id="s1d"><label for="s1d">시작 ~ 주사위 ~ 방 진입 <b>끊지 않고</b> 한 번에</label></li>
+    </ul>
+  </div>
+
+  <div class="step">
+    <div class="st-hd"><span class="no">S2</span><span class="ti">제안·반증 <span class="lB">B</span> / <span class="lB">B′</span></span></div>
+    <ul class="chk">
+      <li><input type="checkbox" id="s2a"><label for="s2a">S1에 <b>이어 같은 녹화로</b> [제안] → 로그 2줄까지 유지</label></li>
+      <li><input type="checkbox" id="s2b"><label for="s2b">미반증이면 파일을 <code>zc-*-Fcand-*.mov</code>로 <b>보관 후 재시도</b></label></li>
+    </ul>
+  </div>
+
+  <div class="step">
+    <div class="st-hd"><span class="no">S3</span><span class="ti">NPC 대사 <span class="lC">C</span> / <span class="lC">C′</span></span></div>
+    <ul class="chk">
+      <li><input type="checkbox" id="s3a"><label for="s3a">녹화 켠 채 [턴 종료] 반복으로 <b>봇 턴 3~4회</b></label></li>
+      <li><input type="checkbox" id="s3b"><label for="s3b">말투 대비 큰 2인 연속 구간 <b>타임코드 메모</b></label></li>
+      <li><input type="checkbox" id="s3c"><label for="s3c"><b style="color:var(--red)">AI 칩이 없으면 LLM 자막 금지</b></label></li>
+    </ul>
+  </div>
+
+  <div class="step">
+    <div class="st-hd"><span class="no">S4</span><span class="ti">계략 <span class="lD">D</span> / <span class="lD">D′</span></span></div>
+    <ul class="chk">
+      <li><input type="checkbox" id="s4a"><label for="s4a"><b>주사위 8 이상</b>인 턴에 모서리 NPC로 이동</label></li>
+      <li><input type="checkbox" id="s4b"><label for="s4b">인접(체비셰프 ≤1) 후 <b>[계략]</b></label></li>
+      <li><input type="checkbox" id="s4c"><label for="s4c">말풍선·로그·증거노트가 <b>한 프레임에</b> 들어오는지 확인</label></li>
+      <li><input type="checkbox" id="s4d"><label for="s4d">변화 후 <b>2초 더</b> 녹화</label></li>
+    </ul>
+  </div>
+
+  <div class="step">
+    <div class="st-hd"><span class="no">S5</span><span class="ti">뷰 전환 <span class="lE">E</span> / <span class="lE">E′</span></span></div>
+    <ul class="chk">
+      <li><input type="checkbox" id="s5a"><label for="s5a"><b>내 턴에</b> 드롭다운 열고 <b>2초 간격</b> 전환</label></li>
+      <li><input type="checkbox" id="s5b"><label for="s5b">(안전) 턴 배너 클릭 → <b>원형 오버레이 3초 유지</b></label></li>
+    </ul>
+  </div>
+
+  <div class="step" style="border-color:#8a3b33;">
+    <div class="st-hd"><span class="no" style="background:#8a3b33;">S6</span>
+      <span class="ti">결말 <span class="lF">F</span></span>
+      <span class="mi">본 테이크 전용 · 최대 90분</span></div>
+    <ul class="chk">
+      <li><input type="checkbox" id="s6a"><label for="s6a">녹화 켠 채 끝까지 진행, 종료 시 <b>즉시 [다시 하기]</b></label></li>
+      <li><input type="checkbox" id="s6b"><label for="s6b"><b>최대 20판 / 90분</b> 반복 — 이 상한을 넘기지 않는다</label></li>
+      <li><input type="checkbox" id="s6c"><label for="s6c">안 나오면 <b>클립 F 대체 컷 1순위</b>(봇의 정답 고발)로 확정</label></li>
+    </ul>
+  </div>
+
+  <div class="step">
+    <div class="st-hd"><span class="no">S7</span><span class="ti">마감</span></div>
+    <ul class="chk">
+      <li><input type="checkbox" id="s7a"><label for="s7a">원본 <b>전량</b> <code>~/zodiac-rec/&lt;날짜&gt;/</code> 보관</label></li>
+      <li><input type="checkbox" id="s7b"><label for="s7b">채택 타임코드를 <code>takes.txt</code>에 기록</label></li>
+      <li><input type="checkbox" id="s7c"><label for="s7c">편집 → 자막 → <b>무음 확인</b> → 길이 확인 → 업로드</label></li>
+    </ul>
+  </div>
+
+  <!-- ═══════════ 재촬영 트리거 ═══════════ -->
+  <h2 id="retake">6. 재촬영 트리거</h2>
+  <div class="danger">
+    <h3>🚨 하나라도 해당하면 그 테이크는 버린다</h3>
+    <p style="margin:0 0 4px;font-size:13.5px;">촬영 직후 재생하며 확인. 편집 단계에서 발견하면 재세팅 비용이 몇 배다.</p>
+    <div class="scroll">
+    <table>
+      <thead><tr><th style="width:14%">클립</th><th>조건</th></tr></thead>
+      <tbody>
+        <tr><td><b>공통</b></td>
+            <td>창 크기 불일치 · 알림/툴팁 잔상 · 프레임 드랍으로 타자기 끊김 ·
+                <b style="color:var(--red)">터미널·에디터가 프레임에</b></td></tr>
+        <tr><td><b class="lA">A · A′</b></td>
+            <td>주사위 부족으로 방 미도달 · 주사위 오버레이가 확정 전 잘림 ·
+                공개방 목록이 <code>불러오는 중…</code>에서 멈춤</td></tr>
+        <tr><td><b class="lB">B · B′</b></td>
+            <td>미반증이라 반증 배지 없음 · <b>조사 오류(<code>대감가</code>, <code>(으)로</code>)가 프레임에</b> ·
+                모달에 장소 행이 없는데 자막이 "장소" 언급</td></tr>
+        <tr><td><b class="lC">C · C′</b></td>
+            <td>말투 대비가 안 읽힘 · 말풍선이 HUD에 가림 ·
+                <b style="color:var(--red)">칩에 <code>⚙폴백</code>만 증가 → LLM 자막 사용 불가</b></td></tr>
+        <tr><td><b class="lD">D · D′</b></td>
+            <td><code>peek</code>(1장)만 떠서 변화가 1칸 · 엿본 카드가 이미 체크됨 · 귓속말 말풍선 미표시</td></tr>
+        <tr><td><b class="lE">E · E′</b></td>
+            <td>봇 턴 카메라 팬과 겹쳐 흔들림 · <b>뷰3에 <code>PLACEHOLDER</code> 보임</b> · 뷰4 첫 프레임이 빈 화면</td></tr>
+        <tr><td><b class="lF">F</b></td>
+            <td>고발 모달에서 장소 오선택으로 탈락 · 결과 오버레이가 정답 문장을 가림</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+  <!-- ═══════════ 편집·업로드 ═══════════ -->
+  <h2 id="edit">7. 편집 · 업로드</h2>
+  <div class="card">
+    <div class="kv"><b>자막</b> 하단 중앙, 흰 글자 + 반투명 검정 띠 · 1줄 20자 이내, 최대 2줄 · 클립당 1~3장 · <b>노출 2초 이상</b></div>
+    <div class="kv"><b>컷 전환</b> <b style="color:var(--gold)">하드컷만</b> — 디졸브·와이프 금지 ("편집으로 꾸몄다"는 인상 최소화)</div>
+    <div class="kv"><b>길이</b> 최종 <b>55초 ±3초</b>. 60초 초과 시 클립 E를 6초로 축소</div>
+  </div>
+  <div class="card">
+    <p style="margin:0 0 6px;"><b>YouTube 메타</b></p>
+    <div class="kv">제목 &nbsp;<code>호랑이 생신 잔치 (zodiac-clue) — 실제 플레이 55초</code></div>
+    <div class="kv">공개 범위 &nbsp;<b>공개</b> (미등록은 심사자 접근 사고 위험)</div>
+    <div class="kv">설명란 필수 3줄 &nbsp;① 플레이 링크 ② 소스 링크 ③ 아래 문장 그대로</div>
+    <div class="lead" style="margin-top:8px;">
+      "실제 플레이 화면을 컷 편집한 영상입니다. 자막은 후처리 텍스트이며,
+      게임 화면·판정은 어떤 방식으로도 조작하지 않았습니다."
+    </div>
+  </div>
+  <div class="card">
+    <b>제출 반영</b> — 업로드 후 <code>submission-checklist.md</code> ②와
+    <code>game-intro.md</code>의 플레이 영상 줄을 <b>같은 커밋에서</b> 갱신.
+  </div>
+
+  <!-- ═══════════ 폴백 트리 ═══════════ -->
+  <h2 id="fallback">8. 폴백 결정 트리 <span style="font-size:13px;color:var(--dim);">— 마감 역산</span></h2>
+  <ul class="tree">
+    <li class="t-amber"><span class="when">08-01까지 선행 개선 미완</span>
+      3절 <b>안전 테이크</b>로 촬영·업로드해 요건부터 확보. 그 전에
+      <b>조사 헬퍼 + PLACEHOLDER 배지 제거(합계 40분)</b>만 처리.</li>
+    <li class="t-blue"><span class="when">08-08까지 LLM 미동작</span>
+      본 테이크에서도 <b>클립 C의 LLM 자막 제거</b>. ④ 문서도 같은 날 문구 동기화
+      (영상과 문서 주장이 어긋나지 않게).</li>
+    <li class="t-blue"><span class="when">08-08까지 사람 승리 컷 미확보</span>
+      <b>클립 F 대체 컷 1순위</b>로 확정. 길이가 부족하면 클립 A를 12초로 연장.</li>
+    <li class="t-red"><span class="when">어느 경우에도 하지 않는 것</span>
+      마감 압박을 이유로 <b>주사위·정답·봇 판정에 손대는 것</b>.
+      <b style="color:var(--red)">요건 위반은 재촬영으로 되돌릴 수 없는 손실이다.</b></li>
+  </ul>
+
+  <p class="foot">
+    zodiac-clue · NHN NAN 2026 사전과제 제출물 ② · 사람용 <code>.html</code><br>
+    근거: <code>docs/design/20260727-improvement-roadmap.md</code> §7.5(고발 평균 7라운드) · §7.6(컷 편집 가능) ·
+    AI용 원문 <code>docs/submission/20260728-video-storyboard.md</code><br>
+    변경 이력 — <b>2026-07-29 전 컷을 실제 빌드로 밟아 §0′ 실측 정정 + §4′ 촬영 당일 순서 신설.</b>
+    콘티가 화면과 어긋나는 곳 13건, 촬영을 막을 수 있는 것 2건(Gemini 일일 쿼터 429 · 판 중반 로그 패널
+    72px 붕괴)을 실측했다. <b>컷 순서가 바뀐다 — 계략(D)을 제일 먼저 찍어야 한다.</b>
+    못 잰 것 2건도 §0′.4에 통과로 세지 않고 남긴다. ·
+    2026-07-27 최초 작성(컷 편집 구성, 안전 테이크 + 본 테이크 이원화).
+  </p>
+</div>
+</body>
+</html>

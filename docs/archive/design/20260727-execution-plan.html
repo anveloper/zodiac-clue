@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>통합 실행 계획서 D-14 — zodiac-clue</title>
+<style>
+  :root { --bg:#16130f; --card:#211c16; --edge:#3a3126; --ink:#f0e9dc; --dim:#a89778; --gold:#f0d9a8; --accent:#b4622b;
+          --red:#e0736b; --green:#7ee29a; --amber:#e0c25a; --blue:#7ec8e0; --violet:#b9a0e0; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink);
+    font-family:system-ui,-apple-system,"Apple SD Gothic Neo",sans-serif; line-height:1.6; }
+  .wrap { max-width:1120px; margin:0 auto; padding:32px 20px 90px; }
+  h1 { color:var(--gold); font-size:27px; margin:0 0 4px; letter-spacing:-.01em; }
+  .sub { color:var(--dim); font-size:13px; margin:0 0 6px; }
+  h2 { color:var(--gold); font-size:19px; margin:46px 0 12px; border-bottom:1px solid var(--edge); padding-bottom:6px; }
+  h2 .n { color:var(--accent); font-variant-numeric:tabular-nums; margin-right:9px; }
+  h3 { font-size:15px; margin:24px 0 8px; color:var(--ink); }
+  h4 { font-size:12px; margin:18px 0 6px; color:var(--dim); font-weight:700; letter-spacing:.06em; text-transform:uppercase; }
+  p, li { font-size:14px; }
+  code { background:#2c2519; border:1px solid var(--edge); border-radius:4px; padding:1px 5px; font-size:12.5px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+  ul { padding-left:20px; margin:8px 0; }
+  ul.tight li { margin:3px 0; }
+  table { width:100%; border-collapse:collapse; margin:12px 0; font-size:13px; }
+  th, td { border:1px solid var(--edge); padding:8px 10px; text-align:left; vertical-align:top; }
+  th { background:#2c2519; color:var(--gold); }
+  .scroll { overflow-x:auto; border-radius:8px; }
+  .card { background:var(--card); border:1px solid var(--edge); border-radius:10px; padding:16px 20px; margin:14px 0; }
+  .card.crit { border-left:3px solid var(--red); }
+  .card.warn { border-left:3px solid var(--amber); }
+  .card.info { border-left:3px solid var(--blue); }
+  .card.good { border-left:3px solid var(--green); }
+  .card h3 { margin-top:0; }
+  .lead { background:#2b2013; border:1px solid #7c6238; border-radius:8px; padding:13px 17px; font-size:13.5px; margin:16px 0; }
+  .note { font-size:12.5px; color:var(--dim); }
+  .toc { display:flex; flex-wrap:wrap; gap:6px; margin:20px 0 8px; }
+  .toc a { text-decoration:none; background:#2c2519; border:1px solid var(--edge); border-radius:20px;
+    padding:4px 12px; font-size:12.5px; color:var(--dim); }
+  .toc a:hover { color:var(--gold); border-color:#6b5838; }
+  .tag { display:inline-block; border-radius:5px; padding:0 6px; font-size:11px; font-weight:700;
+    border:1px solid var(--edge); background:#2c2519; color:var(--dim); vertical-align:1px; }
+  .tag.src { color:var(--violet); border-color:#54476a; }
+  .tag.p0 { color:var(--red); border-color:#6a3a36; }
+  .tag.cut { color:var(--dim); border-color:#4a4034; text-decoration:line-through; }
+  .tag.hu { color:var(--gold); border-color:#7c6238; }
+  .ok{color:var(--green)} .no{color:var(--red)} .part{color:var(--amber)} .dim{color:var(--dim)} .bl{color:var(--blue)}
+
+  /* ---------- 4 conflicting schedules banner ---------- */
+  .four { display:grid; grid-template-columns:repeat(auto-fit,minmax(215px,1fr)); gap:12px; margin:18px 0; }
+  .four div { background:var(--card); border:1px solid var(--edge); border-left:3px solid var(--red); border-radius:10px; padding:13px 15px; }
+  .four b { display:block; color:var(--gold); font-size:13.5px; margin-bottom:4px; }
+  .four span { font-size:12px; color:var(--dim); display:block; }
+
+  /* ---------- gantt ---------- */
+  .gantt { display:grid; grid-template-columns:132px repeat(15,minmax(58px,1fr));
+    gap:3px; min-width:1000px; padding:12px; background:var(--card);
+    border:1px solid var(--edge); border-radius:10px; }
+  .gantt .hd { font-size:11px; color:var(--dim); text-align:center; padding:3px 0 6px;
+    border-bottom:1px solid var(--edge); font-variant-numeric:tabular-nums; line-height:1.25; }
+  .gantt .hd i { display:block; font-style:normal; font-size:9.5px; opacity:.65; }
+  .gantt .hd.we { color:var(--gold); }
+  .gantt .lbl { font-size:11.5px; color:var(--dim); display:flex; align-items:center;
+    padding-right:6px; border-right:1px solid var(--edge); }
+  .gantt .bar { border-radius:6px; padding:5px 7px; font-size:10.5px; line-height:1.32;
+    display:flex; align-items:center; min-height:34px; overflow-wrap:anywhere; word-break:break-word;
+    background:#332a1d; border:1px solid #5c4c30; color:var(--ink); }
+  .bar.b-hu   { background:#4a3410; border-color:#8a6a28; color:var(--gold); font-weight:700; }
+  .bar.b-p0   { background:#43231f; border-color:#7d403a; }
+  .bar.b-srv  { background:#1f3527; border-color:#3c6a4c; }
+  .bar.b-mul  { background:#1d3038; border-color:#3a6070; }
+  .bar.b-view { background:#332444; border-color:#5b4478; }
+  .bar.b-run  { background:#3d3418; border-color:#6f6030; }
+  .bar.b-ai   { background:#3a2418; border-color:#7a4a2c; }
+  .bar.b-doc  { background:#2b2820; border-color:#57503c; }
+  .gantt .frz { background:repeating-linear-gradient(135deg,#43231f,#43231f 5px,#2a1a17 5px,#2a1a17 10px);
+    border:1px dashed var(--red); color:var(--red); font-weight:700; }
+  .legend { display:flex; flex-wrap:wrap; gap:8px; margin:10px 0 0; font-size:11.5px; color:var(--dim); }
+  .legend span { display:inline-flex; align-items:center; gap:5px; }
+  .legend i { width:22px; height:11px; border-radius:3px; display:inline-block; }
+
+  /* ---------- dependency chains ---------- */
+  .dep { background:var(--card); border:1px solid var(--edge); border-radius:10px; padding:14px 16px; margin:12px 0; }
+  .dep > b { display:block; color:var(--gold); font-size:13px; margin-bottom:9px; }
+  .chain { display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin:5px 0; }
+  .chain .nd { background:#2c2519; border:1px solid var(--edge); border-radius:6px;
+    padding:3px 9px; font-size:12px; white-space:nowrap; }
+  .chain .nd.root { border-color:#8a6a28; color:var(--gold); background:#3a2c14; font-weight:700; }
+  .chain .nd.hot { border-color:#7d403a; color:var(--red); }
+  .chain .nd.end { border-color:#3c6a4c; color:var(--green); }
+  .chain .ar { color:var(--accent); font-size:13px; font-weight:700; }
+  .chain .br { color:var(--dim); font-size:12px; padding-left:14px; }
+  .why { font-size:12px; color:var(--dim); margin:3px 0 10px 2px; padding-left:12px;
+    border-left:2px solid var(--edge); }
+  .why b { color:var(--amber); font-weight:600; }
+
+  /* ---------- human track ---------- */
+  .hu { display:grid; gap:10px; margin:14px 0; }
+  .hu article { background:var(--card); border:1px solid var(--edge); border-left:3px solid var(--gold);
+    border-radius:10px; padding:12px 16px; display:grid; grid-template-columns:60px 1fr; gap:12px; align-items:start; }
+  .hu article.fatal { border-left-color:var(--red); }
+  .hu .when { font-size:12px; font-weight:800; color:var(--gold); font-variant-numeric:tabular-nums;
+    background:#3a2c14; border-radius:6px; padding:6px 4px; text-align:center; line-height:1.3; }
+  .hu article.fatal .when { color:var(--red); background:#3a1e1a; }
+  .hu h4 { margin:0 0 4px; text-transform:none; letter-spacing:0; font-size:13.5px; color:var(--ink); }
+  .hu p { margin:0; font-size:12.5px; color:var(--dim); }
+  .hu p b { color:var(--amber); }
+
+  /* ---------- checkpoint ---------- */
+  .cp th:nth-child(1){width:74px} .cp td:nth-child(1){font-weight:700;color:var(--gold);font-variant-numeric:tabular-nums}
+  .cp tr.mile td { background:#2b2013; }
+  .cp tr.mile td:nth-child(1){ color:var(--gold); }
+
+  /* ---------- cut list ---------- */
+  .cut td:first-child { width:34%; }
+  .mvp { counter-reset:m; }
+  .mvp li { margin:7px 0; font-size:13.5px; }
+  .mvp li b { color:var(--gold); }
+
+  @media (max-width:720px){
+    .wrap{padding:22px 14px 70px}
+    .hu article{grid-template-columns:1fr}
+    .hu .when{width:66px}
+  }
+
+  /* ---------------- PRINT ---------------- */
+  @media print {
+    :root { --bg:#ffffff; --card:#ffffff; --edge:#bbb2a4; --ink:#1a1712; --dim:#5b5245;
+            --gold:#7a5a12; --accent:#8a4519; --red:#9b2f26; --green:#1f6b3a; --amber:#7d5f10;
+            --blue:#1d5570; --violet:#4b3a70; }
+    /* 배경색을 인쇄에 실어야 배지·간트 막대가 "글자만 뜬 상태"로 나오지 않는다. */
+    html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    body { background:#fff; color:#1a1712; }
+    .wrap { max-width:none; padding:0; }
+    a { color:#1d5570; }
+    a[href^="http"]::after { content:" (" attr(href) ")"; font-size:10px; color:#5b5245; word-break:break-all; }
+    h2 { page-break-after:avoid; break-after:avoid; }
+    .card, .dep, .hu article, table, .four div, .gantt { break-inside:avoid; page-break-inside:avoid;
+      background:#fff !important; }
+    th { background:#efeae1 !important; color:#3b2d10 !important; }
+    code { background:#f3efe7 !important; border-color:#ccc4b6 !important; }
+    .lead { background:#fbf6ea !important; border-color:#c3a86a !important; }
+    .toc { display:none; }
+    .gantt { min-width:0; }
+    .gantt .bar { background:#f2eee6 !important; border:1px solid #a89b86 !important; color:#1a1712 !important; }
+    .bar.b-hu { background:#f6e9c8 !important; border-color:#8a6a28 !important; color:#5c440e !important; }
+    .bar.b-p0 { background:#f7e2df !important; }
+    .gantt .frz { background:#f7e2df !important; color:#9b2f26 !important; }
+    .chain .nd { background:#f3efe7 !important; }
+    .chain .nd.root { background:#fbf1d8 !important; }
+    .hu .when { background:#fbf1d8 !important; }
+    .cp tr.mile td { background:#fbf6ea !important; }
+    /* `.tag` 는 화면용 어두운 배경(#2c2519)을 그대로 물려받아 인쇄에서 **검은 배지 위 검은 글자**가
+       된다(실측: §7.1·콘티 2.C 등 명도차 Δ3~31). 배경을 밝게 되돌리고 글자를 진하게 고정한다. */
+    .tag { background:#f1ece2 !important; color:#3d3527 !important; border-color:#b6ab97 !important; }
+    .tag.src { color:#463263 !important; border-color:#9b8bb8 !important; }
+    .tag.p0  { color:#8f2a22 !important; border-color:#c9938d !important; }
+    .tag.hu  { color:#6b4e0f !important; border-color:#c0a86a !important; }
+    .tag.cut { color:#5b5245 !important; border-color:#b6ab97 !important; }
+    @page { size: A4; margin:14mm; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>통합 실행 계획서 — 07-27 → 08-10</h1>
+<p class="sub">작성 2026-07-27 · D-14 · AI용 압축본 <code>20260727-execution-plan.md</code> 동봉<br>
+상위 문서: <code>20260727-improvement-roadmap.md</code>(§1~§9) · <code>20260727-view-contract-spec.md</code> · <code>20260728-video-storyboard.md</code> · <code>submission-checklist.md</code> · <code>../submission/20260720-ai-tech-doc.md</code></p>
+
+<div class="lead">
+<b>이 문서는 새 개선안을 만들지 않는다.</b> 기존 항목의 <b>순서 · 의존성 · 리스크</b>만 정리한다. 항목의 정의는 전부 상위 문서에 있고 여기서는 <span class="tag src">§</span>로 참조만 한다.<br>
+⚠️ <b>커밋 전 필수</b> — 이 파일은 <code>improvement-roadmap</code>과 같은 이유로 공개 배포 대상이 아니다. <code>scripts/gen-docs-manifest.mjs</code>의 <code>EXCLUDE</code>에 <code>/execution-plan/</code>를 <b>추가한 뒤</b> 푸시할 것 <span class="tag src">§7.4</span>
+</div>
+
+<nav class="toc">
+  <a href="#s0">0 · 문제</a><a href="#s1">1 · 의존성 그래프</a><a href="#s2">2 · 단일 일정표</a>
+  <a href="#s3">3 · 사람 트랙</a><a href="#s4">4 · 최소 생존선</a><a href="#s5">5 · 컷라인</a>
+  <a href="#s6">6 · 일일 체크포인트</a><a href="#s7">7 · 모순 · 누락 의존성</a>
+</nav>
+
+<!-- ================================================================= -->
+<h2 id="s0"><span class="n">0</span>왜 이 문서가 필요한가</h2>
+<p>로드맵 한 문서 안에 <b>일정표가 4개</b> 있고, 서로의 존재를 모른 채 <b>같은 날짜에 다른 작업</b>을 배정한다.</p>
+
+<div class="four">
+  <div><b>§5 실행 순서</b><span>1차 검수 · 전체 범위</span><span class="no">§7.99가 "대체한다"고 선언</span></div>
+  <div><b>§7.99 정정 후 실행 순서</b><span>2차 검수 · 전체 범위</span><span class="no">§8·§9(3차)를 전혀 반영 못 함</span></div>
+  <div><b>§8.6 실행 순서(멀티)</b><span>3차 검수 · 멀티만</span><span class="no">날짜 없음 · 누적 9h</span></div>
+  <div><b>§9 P0/P1 순위</b><span>3차 검수 · 런타임만</span><span class="no">날짜 없음 · 약 10.5h</span></div>
+</div>
+
+<div class="card crit">
+<h3>핵심 문제</h3>
+<p style="margin:0">§7.99가 07-27~08-08 달력을 <b>이미 꽉 채운 상태</b>에서, 3차 검수가 <b class="no">날짜 없는 19.5h</b>를 추가했다. 이 문서는 그 19.5h를 어디에 넣을지 결정하고, <b>밀려나는 것을 명시적으로 잘라낸다</b>.</p>
+</div>
+
+<h4>판정 원칙 — 충돌하면 이 순서로 결정한다</h4>
+<ol class="tight">
+  <li><b>제출 요건 5종 충족 &gt; 그 외 전부.</b> 요건 하나가 누락되면 나머지 개선은 전부 0점이다.</li>
+  <li><b>되돌릴 수 없는 것(촬영·업로드·제출) 우선 확보.</b> 코드는 마감 후에도 고칠 수 있지만 제출은 못 한다.</li>
+  <li><b>같은 파일·같은 시그니처를 두 번 고치지 않는 순서.</b></li>
+  <li><b>진실값(규칙) 변경은 촬영 전에 안정화.</b> 규칙이 바뀌면 실측·페이싱·클립 성공률이 전부 무효화된다.</li>
+  <li>동률이면 <b>심사자가 45초 안에 보는 것</b>이 이긴다.</li>
+</ol>
+
+<!-- ================================================================= -->
+<h2 id="s1"><span class="n">1</span>의존성 그래프 — 전수 수집</h2>
+<p class="note">문서 전반에 흩어진 "선행 조건" 서술을 한 곳으로 모았다. 각 사슬 아래 한 줄은 <b>순서를 어기면 무엇을 두 번 고치게 되는가</b>이다.</p>
+
+<h3>1.1 루트 — 사람에게 달린 것</h3>
+
+<div class="dep">
+<b>✅ 해결됨(07-28) — 라이브 LLM 동작</b>
+<div class="chain"><span class="nd root">[사람] 라이브 키 동작 <span class="tag src">§7.1</span></span><span class="ar">→</span><span class="nd">AI 카운터 칩 <span class="tag src">§1.3·7.7</span></span></div>
+<div class="chain"><span class="br">└</span><span class="ar">→</span><span class="nd">유료 키 전환</span><span class="ar">→</span><span class="nd">eval-narrator 36 실콜 <span class="tag src">④§3.1</span></span><span class="ar">→</span><span class="nd end">④ §3.4 결과표</span></div>
+<div class="chain"><span class="br">└</span><span class="ar">→</span><span class="nd end">영상 클립 C의 "LLM" 자막 <span class="tag src">콘티 2.C</span></span></div>
+<div class="why"><b>어기면</b> — 폴백만 세는 칩은 자백서가 되고, 무료 쿼터로 eval을 돌리면 <b>그날 심사자가 보는 화면이 전부 폴백</b>이 된다. 라이브 실측에서 이미 대사 5/5가 폴백이었다.</div>
+
+<b>제출 형태</b>
+<div class="chain"><span class="nd root">[사람] 개인/팀 확정 <span class="tag src">§7.2</span></span><span class="ar">→</span><span class="nd">⑤ 완성 or 삭제</span><span class="ar">→</span><span class="nd end">신청서 제출</span></div>
+<div class="why"><b>어기면</b> — 팀으로 신청하고 ⑤를 빼면 나머지 4종과 무관하게 <b>심사 제외</b>. 상류 회의록에 3인 팀이 명시돼 있다.</div>
+
+<b>우선순위의 근거</b>
+<div class="chain"><span class="nd root">[사람] 공고 원문 확보 <span class="tag src">§7.16</span></span><span class="ar">→</span><span class="nd">"심사축 1위=AI"·"그래픽 비채점" 근거</span><span class="ar">→</span><span class="nd end">이 계획 전체의 가중치</span></div>
+<div class="why"><b>어기면</b> — 저장소에 출처가 없는 전제 위에 14일치 우선순위가 쌓인다. <b>확보 전까지 이 계획 전체가 잠정</b>이다.</div>
+</div>
+
+<h3>1.2 클라이언트 — 계약 · 상수 축</h3>
+<div class="dep">
+<b>패널을 늘리기 전에 카메라부터</b>
+<div class="chain"><span class="nd root">hudInset zero-rect 가드 + 인셋 캐시 <span class="tag src">§7.8+§9.2</span></span><span class="ar">→</span><span class="nd">제안 기록표 <span class="tag src">§1.2</span></span><span class="ar">·</span><span class="nd">AI 패널 <span class="tag src">§1.3</span></span><span class="ar">·</span><span class="nd">탭 도크 <span class="tag src">§7.9</span></span></div>
+<div class="why"><b>어기면</b> — 패널이 <code>display:none</code>이거나 하단 시트가 되는 순간 <code>rect.left===0</code> → inset = 화면 전체 폭 → 내 캐릭터가 화면 밖으로 밀려난다. <b>가드와 프레임당 리플로우 캐시는 같은 함수</b>라 따로 하면 두 번 연다. 뷰4는 <code>mirrorCamera</code>로 자동 전파되므로 별도 조치 0.</div>
+
+<b>상수 이관이 세 갈래의 뿌리</b>
+<div class="chain"><span class="nd root">view-consts.ts 이관 <span class="tag src">§2.5·spec§1</span></span><span class="ar">→</span><span class="nd">ZODIAC_COLOR 12색 <span class="tag src">§7.11</span></span><span class="ar">→</span><span class="nd"><code>makeCritter(suspect,{gray})</code></span><span class="ar">→</span><span class="nd end">뷰4 실루엣 12종 <span class="tag src">§2.3</span></span></div>
+<div class="chain"><span class="br">├</span><span class="ar">→</span><span class="nd">reduced-motion 프로파일 <span class="tag src">§7.13</span></span><span class="ar">→</span><span class="nd end">4뷰 동시 대응</span></div>
+<div class="chain"><span class="br">├</span><span class="ar">→</span><span class="nd"><code>bubbleLifeMs</code> ↔ 서버 <code>SPEAK_HOLD</code> 정합 <span class="tag src">spec§1.3</span></span><span class="ar">→</span><span class="nd end">페이싱 재조정 <span class="tag src">§7.5.4</span></span></div>
+<div class="chain"><span class="br">└</span><span class="ar">→</span><span class="nd hot">pixel→game 순환 의존 제거 <span class="tag src">spec§3</span></span><span class="ar">→</span><span class="nd end">코드 스플리팅 <span class="tag src">§9.1</span></span></div>
+<div class="why"><b>어기면</b> — ① <code>makeCritter</code> 시그니처를 <b>두 번</b> 고친다. ② 감속 프로파일이 3개 렌더러에 흩어진다. ③ 말풍선 수명이 어긋나 <b>봇이 말하는 도중 턴이 넘어가 카메라가 튄다</b>. ④ 순환을 안 끊으면 <b>pixel 청크가 phaser를 통째로 끌고 와 −94%가 나오지 않는다</b>.</div>
+
+<b>클럭과 큐</b>
+<div class="chain"><span class="nd root"><code>loop(t)</code> dt 클럭 <span class="tag src">§9.4</span></span><span class="ar">→</span><span class="nd end"><code>k = 1 − exp(−dt/τ)</code> 보간 <span class="tag src">spec§3</span></span></div>
+<div class="why"><b>어기면</b> — dt를 만들 클럭이 없어 spec이 요구한 보간이 <b>현 구조로는 구현 자체가 불가능</b>하다. 144Hz에서 60Hz 대비 2.4배 빨리 수렴한다.</div>
+<div class="chain"><span class="nd root">overlay-bus 단일 큐 <span class="tag src">§7.10</span></span><span class="ar">→</span><span class="nd">뷰 인터스티셜 <span class="tag src">§2.1</span></span><span class="ar">·</span><span class="nd">fxBanner·소환 FX <span class="tag src">§2.2</span></span><span class="ar">·</span><span class="nd">리매치 선공 주사위 <span class="tag src">§8.5</span></span></div>
+<div class="why"><b>어기면</b> — 상단 중앙은 <code>.hud-turn</code>·<code>.hud-spectate</code>로 <b>이미 2중 점유</b>이고, <code>setStage(0)</code>이 <code>enterGame()</code> 말미에 무조건 호출돼 <b>인터스티셜과 주사위가 동시에 전면을 덮는다</b>.</div>
+
+<b>누수와 간판 기능</b>
+<div class="chain"><span class="nd root"><code>dispose()</code> 도입 <span class="tag src">§9.3</span></span><span class="ar">→</span><span class="nd">뷰 인터스티셜·연표 출시 <span class="tag src">§2.1</span></span><span class="ar">→</span><span class="nd end">본 테이크 클립 E(4연속 전환)</span></div>
+<div class="why"><b>어기면</b> — 간판 기능이 <b>정확히 누수 동선을 유도한다</b>. 왕복 1회당 geometry 18+/texture 28+ 유출 → 촬영 중 컨텍스트 로스 = 재촬영.</div>
+</div>
+
+<h3>1.3 서버 — 진실값 축</h3>
+<div class="dep">
+<div class="chain"><span class="nd root">즉시고발권(타이머 프리미티브 <b>인자화</b>) <span class="tag src">§7.5.1</span></span><span class="ar">→</span><span class="nd end"><code>armTurnClock</code> <span class="tag src">§8.2</span></span></div>
+<div class="why"><b>어기면</b> — 같은 프리미티브를 두 벌 짠다. §8.2가 "인자화해 공유"라 적었지만 §7.99의 07-29 항목에는 그 메모가 없다.</div>
+
+<div class="chain"><span class="nd root"><code>revealed</code> 분리(상한 60) <span class="tag src">§1.1·§7.5</span></span><span class="ar">→</span><span class="nd"><code>handoverToBot</code>의 awayBot 예외 <span class="tag src">§8.1</span></span></div>
+<div class="chain"><span class="br">└</span><span class="ar">→</span><span class="nd">재진입 규칙 <span class="tag src">§7.5.2</span></span><span class="ar">→</span><span class="nd">페이싱 재계산 <span class="tag src">§7.5.4</span></span><span class="ar">→</span><span class="nd">솔로 10판 실측</span><span class="ar">→</span><span class="nd end">본 테이크 클립 F</span></div>
+<div class="why"><b>어기면</b> — 판이 3.1→6.8라운드로 바뀐 <b>뒤</b>라야 페이싱 목표값이 정해진다. 먼저 하면 두 번 튜닝한다. 그리고 현행 사람 승률 <b class="no">3.9%</b>로는 <b>승리 컷 자체가 안 나온다</b>.</div>
+
+<div class="chain"><span class="nd root"><code>suggestLog</code> 브로드캐스트 <span class="tag src">§1.2</span></span><span class="ar">→</span><span class="nd">제안 기록표</span><span class="ar">≡</span><span class="nd hot"><code>publicLog</code> 리플레이 <span class="tag src">§8.3b</span></span></div>
+<div class="why"><b class="no">누락 의존성</b> — 두 문서가 서로를 참조하지 않는다. <b>같은 자료구조</b>로 만들지 않으면 로그가 두 벌이 되고, 재접속 시 제안 기록표만 비는 버그가 남는다.</div>
+
+<div class="chain"><span class="nd root"><code>lock()</code> → <code>setPrivate(true)</code> <span class="tag src">§8.3c</span></span><span class="ar">→</span><span class="nd end">심사자 2명 이상 동시 접속 · 초대 링크 재입장</span></div>
+<div class="why"><b>어기면</b> — 현재는 시작 즉시 방이 <b>영구 잠금</b>이라 <code>joinById</code>가 거부된다. 멀티 시연이 구조적으로 불가능하다.</div>
+</div>
+
+<h3>1.4 제출물 축 — 순서를 어기면 재작업</h3>
+<div class="dep">
+<div class="chain"><span class="nd root">조사 헬퍼 <span class="tag src">§7.14</span></span><span class="ar">+</span><span class="nd root">PLACEHOLDER 배지 제거 <span class="tag src">§2.4</span></span><span class="ar">→</span><span class="nd">안전 테이크 <span class="tag src">콘티§3</span></span><span class="ar">→</span><span class="nd end">② 요건 확보</span></div>
+<div class="why">합계 <b>40분</b>. 콘티가 "안전 테이크 전 <b>유일하게 권장하는 선행 작업</b>"이라 못 박았다. 안 하면 화면에 <code>호랑이 대감가</code>·<code>PLACEHOLDER</code>가 그대로 찍힌다.</div>
+
+<div class="chain"><span class="nd">원클릭 솔로 <span class="tag src">§1.6</span></span><span class="ar">+</span><span class="nd">장소 고정행 <span class="tag src">§1.5</span></span><span class="ar">+</span><span class="nd">소환 FX <span class="tag src">§2.2</span></span><span class="ar">+</span><span class="nd">즉시고발 <span class="tag src">§7.5.1</span></span><span class="ar">+</span><span class="nd">AI 칩 <span class="tag src">§7.7</span></span><span class="ar">→</span><span class="nd">본 테이크</span></div>
+<div class="chain"><span class="br">└</span><span class="ar">→</span><span class="nd">YouTube 업로드</span><span class="ar">→</span><span class="nd hot">③ 영상 링크 갱신</span><span class="ar">→</span><span class="nd end">③ PDF 인쇄</span></div>
+<div class="why"><b class="no">누락 의존성</b> — 이 순서가 어느 문서에도 없다. §5·§7.99는 "본 테이크 재촬영"과 "PDF"를 <b>08-08 같은 칸</b>에 넣었다. 링크 갱신 전에 인쇄한 ③ PDF는 폐기하고 다시 인쇄해야 한다.</div>
+
+<div class="chain"><span class="nd root"><code>@media print</code> 11파일 <span class="tag src">§7.3</span></span><span class="ar">→</span><span class="nd">헤드리스 <code>--print-to-pdf</code> 실검증</span><span class="ar">→</span><span class="nd end">5종 PDF 제출본</span></div>
+<div class="why">전 문서가 다크 테마 고정이라 <b>배경 그래픽을 끄면 크림색 글자 / 흰 종이 = 판독 불가</b>. ③의 CTA 3개는 흰 글자/흰 배경으로 <b>완전 소실</b>된다. 체크리스트의 "PDF 인쇄만 남음"이 가장 위험한 낙관.</div>
+
+<div class="chain"><span class="nd root">문서 노출 차단 <span class="tag src">§7.4</span></span><span class="ar">→</span><span class="nd end">이 계획서·로드맵의 커밋·푸시</span></div>
+<div class="why"><b>순서가 반대면</b> — 심사자에게 자기 결함 목록("AI가 치트한다로 읽힐 지점", "컷라인", "영영 안 할 것")이 <b>공개 배포</b>된다. ③의 CTA <code>문서</code>가 심사자를 정확히 그 트리로 안내한다.</div>
+
+<div class="chain"><span class="nd root">계측 <code>narrate() → {source, ms, model}</code> <span class="tag src">§1.3·④§4</span></span><span class="ar">→</span><span class="nd">eval C7 경로·지연 분포</span><span class="ar">→</span><span class="nd end">④ §3.4 결과표</span></div>
+<div class="why"><b>어기면</b> — 계측 없이는 eval 판정 7종 중 C7이 측정 불가다. eval 스크립트를 먼저 짜도 표의 절반을 못 채운다.</div>
+</div>
+
+<!-- ================================================================= -->
+<h2 id="s2"><span class="n">2</span>단일 일정표 — §5 · §7.99 · §8.6 · §9 병합</h2>
+<p class="note"><b>가정(추정)</b>: 커미터 1명 · 평일 4h · 주말 8h → 총 약 72h. 원문에 공수가 있는 항목은 원문 값, 없으면 <code>추정</code> 표기.</p>
+
+<div class="scroll">
+<div class="gantt">
+  <div class="lbl" style="border-right:1px solid var(--edge);border-bottom:1px solid var(--edge)"></div>
+  <div class="hd">07-27<i>월 D-14</i></div><div class="hd">07-28<i>화</i></div><div class="hd">07-29<i>수</i></div>
+  <div class="hd">07-30<i>목</i></div><div class="hd">07-31<i>금</i></div><div class="hd we">08-01<i>토</i></div>
+  <div class="hd we">08-02<i>일</i></div><div class="hd">08-03<i>월</i></div><div class="hd">08-04<i>화</i></div>
+  <div class="hd">08-05<i>수</i></div><div class="hd">08-06<i>목</i></div><div class="hd">08-07<i>금</i></div>
+  <div class="hd we">08-08<i>토</i></div><div class="hd we">08-09<i>일</i></div><div class="hd">08-10<i>월 마감</i></div>
+
+  <div class="lbl" style="grid-row:2;grid-column:1">🧑 사람 트랙</div>
+  <div class="bar b-hu" style="grid-row:2;grid-column:2">★ 키 확인<br>+ 공고 확보</div>
+  <div class="bar b-hu" style="grid-row:2;grid-column:7">★ 안전<br>테이크</div>
+  <div class="bar b-hu" style="grid-row:2;grid-column:9">★ 형태<br>확정</div>
+  <div class="bar b-hu" style="grid-row:2;grid-column:14">★ 본<br>테이크</div>
+  <div class="bar b-hu" style="grid-row:2;grid-column:15">★ PDF<br>+ 제출</div>
+  <div class="bar b-doc" style="grid-row:2;grid-column:16;opacity:.6">예비</div>
+
+  <div class="lbl" style="grid-row:3;grid-column:1">🧹 P0 위생 · 요건</div>
+  <div class="bar b-p0" style="grid-row:3;grid-column:2/4">노출차단 · 조사헬퍼 · 대비/포커스 · 배지제거 · 터치T0 · isoP0+hudInset · @media print · ⑤초안</div>
+
+  <div class="lbl" style="grid-row:4;grid-column:1">⚙️ 서버 진실값</div>
+  <div class="bar b-srv" style="grid-row:4;grid-column:4/6">즉시고발 · revealed 분리(60) · 재진입 · 손패지목 · 페이싱</div>
+
+  <div class="lbl" style="grid-row:5;grid-column:1">🤝 멀티 P0</div>
+  <div class="bar b-mul" style="grid-row:5;grid-column:5/7">handoverToBot · 턴클럭 · sendHand · setPrivate · 10판 실측</div>
+  <div class="bar b-mul" style="grid-row:5;grid-column:12">로그<br>리플레이</div>
+
+  <div class="lbl" style="grid-row:6;grid-column:1">🎨 계약 · 상수 · 색</div>
+  <div class="bar b-view" style="grid-row:6;grid-column:7/9">view-consts · ZODIAC_COLOR 12색 · 순환의존 제거 · ViewContract implements · reduced</div>
+
+  <div class="lbl" style="grid-row:7;grid-column:1">⚡ 런타임</div>
+  <div class="bar b-run" style="grid-row:7;grid-column:8">스플리팅<br>sleep/wake</div>
+  <div class="bar b-run" style="grid-row:7;grid-column:10">dispose<br>+ 게이트</div>
+
+  <div class="lbl" style="grid-row:8;grid-column:1">🤖 AI 계측 · 문서</div>
+  <div class="bar b-ai" style="grid-row:8;grid-column:9">계측<br>+ AI칩</div>
+  <div class="bar b-ai" style="grid-row:8;grid-column:12/14">eval 작성·실행 · ④ 승격 · ③ 6줄</div>
+
+  <div class="lbl" style="grid-row:9;grid-column:1">✨ FX · 패널 · 서사</div>
+  <div class="bar b-view" style="grid-row:9;grid-column:10">탭 도크</div>
+  <div class="bar b-view" style="grid-row:9;grid-column:11">overlay큐<br>+ FX</div>
+  <div class="bar b-view" style="grid-row:9;grid-column:12">제안<br>기록표</div>
+  <div class="bar b-view" style="grid-row:9;grid-column:14">뷰4도트·인터스티셜<br>(오전)</div>
+
+  <div class="lbl" style="grid-row:10;grid-column:1">🔒 동결 · 📄 제출</div>
+  <div class="bar frz" style="grid-row:10;grid-column:14">🔒 12:00<br>코드 동결</div>
+  <div class="bar b-doc" style="grid-row:10;grid-column:15">문서 정합성 · PDF 11종 · 신청서</div>
+</div>
+</div>
+<div class="legend">
+  <span><i style="background:#4a3410;border:1px solid #8a6a28"></i>사람만 가능</span>
+  <span><i style="background:#43231f;border:1px solid #7d403a"></i>P0 위생</span>
+  <span><i style="background:#1f3527;border:1px solid #3c6a4c"></i>서버 진실값</span>
+  <span><i style="background:#1d3038;border:1px solid #3a6070"></i>멀티</span>
+  <span><i style="background:#332444;border:1px solid #5b4478"></i>뷰·계약·FX</span>
+  <span><i style="background:#3d3418;border:1px solid #6f6030"></i>런타임</span>
+  <span><i style="background:#3a2418;border:1px solid #7a4a2c"></i>AI·문서</span>
+</div>
+
+<h3>2.1 날짜별 상세</h3>
+<div class="scroll">
+<table>
+<thead><tr><th style="width:76px">날짜</th><th>항목 (출처)</th><th style="width:78px">공수</th></tr></thead>
+<tbody>
+<tr><td rowspan="6"><b>07-27</b><br><span class="note">월</span></td><td><span class="ok">✅</span> 문서 노출 차단 <code>EXCLUDE</code> + vercel 화이트리스트 <span class="tag src">§7.4</span></td><td>0.5h <span class="note">추정</span></td></tr>
+<tr><td><span class="ok">✅</span> 조사 헬퍼 15줄 <span class="tag src">§7.14</span> — <span class="note">07-28 완료. 명세의 조사 회피 규칙에 따라 헬퍼가 아니라 <b>어순 교체</b> 26곳으로 해결</span></td><td>0.5h</td></tr>
+<tr><td><span class="ok">✅</span> 대비 <code>#8f8574</code> + <code>:focus-visible</code> <span class="tag src">§7.13</span> — <span class="note">07-28 완료</span></td><td>0.3h</td></tr>
+<tr><td><span class="ok">✅</span> PLACEHOLDER 배지 제거 후 44개 재생성 <span class="tag src">§2.4</span> — <span class="note">07-28 완료</span></td><td>0.2h</td></tr>
+<tr><td><span class="ok">✅</span> 터치 T0 — dvh · touch-action · overscroll <span class="tag src">§7.12</span> — <span class="note">07-28 완료</span></td><td>0.5h</td></tr>
+<tr><td><span class="ok">✅</span> <code>iso-view.ts</code> P0 3건(탈락 disc/ring/name · 장물 보간 · helper 감광) + <b>hudInset zero-rect 가드 + ResizeObserver 인셋 캐시</b> <span class="tag src">spec§6-1 · §7.8 · §9.2</span> — <span class="note">07-28 완료. dt 클럭(§9.4 최소분)도 함께</span></td><td>2h</td></tr>
+
+<tr><td rowspan="4"><b>07-28</b><br><span class="note">화</span></td><td><span class="ok">✅</span> <code>@media print</code> 11파일(실제 15) <span class="tag src">§7.3</span> — <span class="note">인쇄 팔레트 적용 완료 · 눈 검증은 08-09</span></td><td>2h <span class="note">추정</span></td></tr>
+<tr><td><span class="ok">✅</span> ⑤ 팀원 롤 기술서 <b>초안</b> <span class="tag src">§7.2</span></td><td>0.5h</td></tr>
+<tr><td><span class="ok">✅</span> 원클릭 솔로 진입 <code>?solo=1</code> <span class="tag src">§1.6</span> — <span class="note">서버 변경 0건 · 버튼 형태는 미착수</span></td><td>0.5h</td></tr>
+<tr><td><span class="ok">✅</span> overlay-bus <b>최소안</b>(fxBanner 하단 + dice 충돌 가드) <span class="tag src">§7.10</span> — <span class="note">07-28 완료 · <code>#fxBanner</code> 이름으로 만들어 08-05 FX가 재사용</span></td><td>0.5h</td></tr>
+
+<tr><td rowspan="8"><b>07-29</b><br><span class="note">수</span></td><td><span class="ok">✅</span> 즉시고발권 — <b>타이머 프리미티브 인자화</b>(§8.2 재사용 전제) <span class="tag src">§7.5.1</span> — <span class="note">07-28 완료 · <code>armTimer(key,ms,onExpire)</code> + 봇 페이싱 타이머 3개 이관</span></td><td>0.5h</td></tr>
+<tr><td><span class="ok">✅</span> <code>revealed</code> 분리 + 총 제안 상한 <b>60</b> <span class="tag src">§1.1 · §7.5 정정</span> — <span class="note">07-28 완료 · 시뮬 3,000판 실측 <b>2.3% → 22.3%</b></span></td><td>2h <span class="note">추정</span></td></tr>
+<tr><td><span class="ok">✅</span> 온보딩 — 목표 3줄 오버레이 · "이 3장은 정답이 아님" · 장소 고정행 · 동적 title <span class="tag src">§1.5</span> — <span class="note">07-28 완료 · 죽어 있던 비활성 사유 안내도 복구</span></td><td>1.5h <span class="note">추정</span></td></tr>
+<tr><td><span class="ok">✅ [승격]</span> <b>페이싱 재조정</b> <span class="tag src">§7.5.4</span> — <span class="note">07-28 완료. 1차 적용 후 목표 미달(4.4~5.7분)이었으나 <b>대사 길이 해소로 봇 1턴 7.6초 → 3.8초</b></span></td><td>0.5h</td></tr>
+<tr><td><span class="ok">✅ [신규]</span> <b>대사 길이를 디렉팅 규약 안으로</b> — <span class="note">07-28 완료 · 제안 47.1→<b>21.3자</b> · <code>BUBBLE_HOLD_MS</code> 2600→1200 · <b>봇 1턴 3.8초</b>(실측 80표본). <code>TYPE_MS</code>는 "AI 활용의 유일한 가시적 증거"라 불변</span></td><td>0.5h <span class="note">추정</span></td></tr>
+<tr><td><span class="ok">✅ [신규]</span> <b>제안 상한 재산정</b> — <span class="note">07-28 완료 · <b>60 → 75</b>(도달률 17.0% → 0.1%). 자연 분포 p99.5=74·최대 76 — 80 이상은 자연 최대를 넘어 백스톱 구실을 못 한다</span></td><td>0.3h <span class="note">추정</span></td></tr>
+<tr><td><span class="ok">✅ [신규]</span> <b>폴백률 22% → 실측 0%</b> <span class="tag src">로드맵 §7.1.1</span> — <span class="note">07-28 완료(<code>6d3a8a9</code>). <b>대사 길이 축의 마지막 조각</b>이다: 위 두 행이 <i>폴백 템플릿</i>을 규약 안으로 넣었다면 이 행은 <i>LLM 원문</i>을 넣었다.
+목표 길이 인하(32/25, <b>상한 40 불변</b>) + 3단 절단(문장→절→어절). 실호출 16콜 검증 <b>폐기 22% → 0% · 준수율 0.78 → 1.00</b>.
+<b class="part">⚠ 표본 8건 — 한 판 완주 후 <code>/health</code> 재확인 필요</b></span></td><td>1h <span class="note">추정</span></td></tr>
+<tr><td><span class="ok">✅ [신규]</span> <code>SPEAK_HOLD</code> ↔ <code>bubbleLifeMs</code> <b>정합</b> — <span class="note">07-28 완료 · 고정 상수 폐기, <code>speak()</code>가 실제 문장을 반환해 길이로 홀드를 건다. 서버·클라가 같은 shared 함수를 쓴다</span></td><td>0.3h <span class="note">추정</span></td></tr>
+
+<tr><td rowspan="6"><b>07-30</b><br><span class="note">목</span></td><td><span class="ok">✅</span> 재진입 규칙 <code>suggestedIn</code> + <b>제안 모달 손패 지목 허용</b> <span class="tag src">§7.5.2</span> — <span class="note">07-28 완료 · 방문 방 2.41 → <b>5.11/9</b></span></td><td>2h</td></tr>
+<tr><td><span class="ok">✅</span> <code>handoverToBot</code> <span class="tag src">§8.1 · §8.5</span> — <span class="note">07-28 완료 · <code>revealed</code> 분리가 선행돼 <code>awayBot</code> 예외 없이 좌석 시야를 그대로 계승. NPC 재충원 <code>startGame</code> 이동(⑨) 포함</span></td><td>1.5h</td></tr>
+<tr><td><span class="ok">✅</span> 페이싱 재조정 + <b>CLAUDE.md·AGENTS.md·④ 규약 문구 같은 커밋</b> <span class="tag src">§7.5.4 · §1.4</span> — <span class="note">07-28 완료</span></td><td>0.5h</td></tr>
+<tr><td><span class="ok">✅ [신규]</span> <code>main.ts</code> <b>계약 배선</b> — <span class="note">07-28 완료 · 연출 9종 전부 호출부 연결 + <code>activeView()</code> 축약(렌더러 타입 분기 5곳 제거). <b>오탐 방지가 핵심</b>이었다 — 서버가 봇 턴에도 좌표를 텔레포트해 단순 거리 판정은 모든 봇 이동을 소환으로 표시한다</span></td><td>1.5h <span class="note">추정</span></td></tr>
+<tr><td><span class="ok">✅ [신규·컷라인 위로 승격]</span> <b>봇의 확률적 오답 고발</b> <span class="tag src">§7.5.3</span> —
+<span class="note">07-28 완료(<code>1f55b28</code>) · <code>BOT_NERVE</code> + <code>rules/bot-accuse.ts</code>, <code>p = nerve × (1/combos)</code>. 시드 해시라 결정론 유지.
+시뮬 5,000판 <b>봇 탈락 판 0.2% → 7.0%</b> · 사람 승률 22.7% → <b>21.6%</b>. ④ §1.2 (b)의 자기 기재 결함이 해소됐다</span></td><td>1.5h</td></tr>
+<tr><td><span class="ok">✅ [신규]</span> <b>방 공개 상태 복귀</b> <span class="tag src">§8.3 c 보완</span> —
+<span class="note">07-28 완료(<code>1f55b28</code>) · 판 종료 3경로에서 <code>setListed(true)</code> + 숨김을 <code>handleStart</code> → <code>startGame</code>으로 이동.
+안 옮기면 <b>리매치 판이 진행 중인데 공개 목록에 뜬 채로 돈다</b></span></td><td>0.3h <span class="note">추정</span></td></tr>
+
+<tr><td rowspan="3"><b>07-31</b><br><span class="note">금</span></td><td><span class="ok">✅</span> 턴 클럭 <code>armTurnClock</code> + 다인 페이싱 <code>/(2×humans)</code> <span class="tag src">§8.2</span> — <span class="note">07-28 완료 · 기존 <code>armTimer</code> 재사용 · 접속 45초/끊김 8초 · <b>사람 1명이면 끈다</b> · 재접속 창 120초 + 20초 선행 핸드오버</span></td><td>2h</td></tr>
+<tr><td><span class="ok">✅</span> 재접속 <code>sendHand</code> + <b><code>lock()</code>→<code>setPrivate(true)</code></b> + 관전 좌석 제외 <span class="tag src">§8.3 a·c</span> — <span class="note">07-28 완료 · 관전은 좌석을 만들지 않고 서버 전용 집합으로 처리해 3곳에서 <b>구조적으로</b> 빠진다</span></td><td>1h</td></tr>
+<tr><td>솔로 10판 실측 → 공통단서 장수 확정 <span class="tag src">§7.99</span></td><td>1h <span class="note">추정</span></td></tr>
+
+<tr class="mile"><td rowspan="2"><b>08-01</b><br><span class="note">토</span></td><td>★ <b>안전 테이크 촬영 → 편집 → 업로드 → ②·③ 갱신</b> <span class="tag src">콘티§3·§4</span></td><td>3.5h</td></tr>
+<tr class="mile"><td><span class="ok">✅</span> <code>view-consts.ts</code> 이관 + <code>ZODIAC_COLOR</code> 12색 + <b>pixel→game 순환 의존 제거</b> <span class="tag src">§2.5 · §7.11 · spec§1·§3</span> —
+<span class="note"><b>07-28로 앞당겨 완료</b>(의존성이 전부 해소돼 있었고 렌더러 3종을 두 번 열지 않기 위해). 남은 것: <code>view-contract.ts</code> + <code>implements</code> 3곳 · <code>main.ts</code> 이관분 · HUD 12색</span></td><td>3.5h <span class="note">추정</span></td></tr>
+
+<tr><td rowspan="7"><b>08-02</b><br><span class="note">일</span></td><td><span class="ok">✅</span> <code>view-contract.ts</code> + <code>implements</code> 3곳 + <code>resolveMotion</code> reduced 프로파일 <span class="tag src">spec§2·§3 · §7.13</span> —
+<span class="note"><b>07-28로 앞당겨 완료</b> · 계약 15메서드를 렌더러 3종이 전부 구현. 단 파일 위치는 <code>apps/client/src/scenes/view-contract.ts</code>
+(spec §2는 <code>packages/shared</code>를 지목 — 엔진 타입 참조가 0이라 이관 시 import 경로만 바뀐다)</span></td><td>3h <span class="note">추정</span></td></tr>
+<tr><td><span class="ok">✅</span> 코드 스플리팅 동적 import <span class="tag src">§9.1</span> —
+<span class="note"><b>07-28로 앞당겨 완료</b>(<code>63c46be</code>) · <b>2,172 kB 단일 청크 → 초기 로드 JS 115.66 kB / 8청크</b>(초기 합계 158 kB · gzip 49 kB).
+지연: phaser 1,478 · iso-view 551 kB. 로딩 중에는 <code>interstitial</code>(60) 슬롯이 화면을 채운다 · <code>STAGES</code>에 <code>load</code> 자리 예약(§7.2 ④ 최소 방어)</span></td><td>3h</td></tr>
+<tr><td><span class="ok">✅</span> <code>setStage</code>에서 <code>game.loop.sleep()/wake()</code> + IsoView 말풍선 타이머 정리 <span class="tag src">§9.2</span> —
+<span class="note"><b>07-28 완료.</b> 🔴 <b>07-28 저녁 코드 확인으로 정정</b> — 이 문서와 체크리스트가 <b>"유일한 미착수 P0 잔여분"으로 계속 적고 있었다.</b>
+<code>main.ts</code>가 <code>three</code>일 때만 재우고(뷰4는 뷰1 루프가 굴리므로 재우면 안 된다) 깨울 때 <code>scale.refresh()</code>.
+<code>IsoView.setActive(false)</code>가 <code>clearBubbles()</code>+<code>clearFx()</code>+<code>releaseHudInset()</code>. 실측 뷰1·4 = 60fps / 뷰2·3 = 0fps</span></td><td>1h</td></tr>
+<tr><td><span class="ok">✅ [신규]</span> <b>뷰4 폴링 트윈 재시작 결함</b> <span class="tag src">로드맵 §9.7</span> —
+<span class="note">07-28 완료(<code>2fb83ef</code>). 뷰4에서 <b class="no">말·장물이 얼어 있었다</b> — 폴링 렌더러가 재시작 조건을 "그리는 중인 좌표 ≠ 목표"로 써서
+60Hz로 <code>kill → add</code>를 반복했고, Phaser 트윈은 <b>두 번째 스텝부터 움직이므로</b> 어떤 트윈도 살아남지 못했다.
+<b>뷰1은 이벤트 구동이라 같은 비교로도 안전했다 — 그 구조 차이가 원인.</b> 조건을 "목표의 변화"로(<code>tx/ty</code>).
+계략 NPC 위치 미갱신(재대국 유령)은 별개 결함으로 함께 해소</span></td><td>1h <span class="note">추정</span></td></tr>
+<tr><td><span class="ok">✅ [신규]</span> <b><code>verify --quick</code>이 eval 리포트를 덮어쓰던 것</b> <span class="tag src">로드맵 §9.6 · 체크리스트 §3</span> —
+<span class="note">07-28 완료(<code>2fb83ef</code>). 빠른 모드는 전수 스윕을 <b>생략하면서 리포트는 덮어써</b> ④ §3.4의 최대 근거를 <code>112,752 → 0</code>으로 퇴화시키고 있었다 → <code>--no-report</code> 동반.
+<b class="no">커밋 전 게이트를 성실히 돌린 사람일수록 근거를 더 많이 지우던 구조</b></span></td><td>0.2h <span class="note">추정</span></td></tr>
+<tr><td><span class="ok">✅</span> §9.6 게이트 <b>1차 측정</b>(기준선 기록) — <span class="note">07-28 완료 · <code>scripts/gate.baseline.json</code>에 시뮬·번들 기준선(<code>--reason</code> 필수)</span></td><td>0.5h</td></tr>
+<tr><td><span class="ok">✅ [신규]</span> <b>통합 회귀 게이트 <code>pnpm verify</code></b> —
+<span class="note">07-28 완료(<code>4244e5c</code>) · 타입·문서정합·GPU·밸런스·환각검증·빌드·번들예산을 한 화면에 판정. <code>--quick</code>은 커밋 전 3.4초.
+<b>어떤 항목도 조용히 건너뛰지 않는다</b>(SKIP은 사유와 함께 출력)</span></td><td>1h <span class="note">추정</span></td></tr>
+
+<tr class="mile"><td rowspan="5"><b>08-03</b><br><span class="note">월</span></td><td>★ 제출 형태 확정 반영 — ⑤ 완성 or 삭제 <span class="tag src">§7.2</span></td><td>0.5h</td></tr>
+<tr class="mile"><td><span class="ok">✅</span> 계측 — <code>narrate()</code> <code>{source,ms,model,reason?}</code> + <code>speak</code> 메타 동봉 + <code>GET /health</code> <span class="tag src">§1.3 · ④§4</span> — <span class="note"><b>07-28로 앞당겨 완료</b> · 폴백 사유 6종 구분</span></td><td>1.5h</td></tr>
+<tr class="mile"><td><span class="ok">✅</span> AI 카운터 칩 <b>기본 노출</b> + 로그 배지 <code>✨♻⚙</code> + 폴백 사유 표기 <span class="tag src">§7.7</span> — <span class="note">07-28 완료</span></td><td>1.5h</td></tr>
+<tr><td><span class="ok">✅ [신규]</span> <b>AI 패널을 판 시작과 동시에</b> <span class="tag src">§7.7 후속 · ④ §4</span> — <span class="note">07-28 완료(<code>55297c0</code>). 게이팅을 지웠어도 <b>첫 호출까지 27초</b>라 45초 심사자가 못 볼 수 있었다.
+<b class="no"><code>0·0·0</code>은 그리지 않는다</b>(서버가 하지 않은 주장) — 자리만 띄우고 값은 <code>—</code> 관례. <code>✨♻⚙</code> 범례 + 턴 HUD 겹침 해소</span></td><td>0.5h <span class="note">추정</span></td></tr>
+<tr><td><span class="ok">✅ [신규]</span> <b>랜딩에 AI 경계 노출</b> <span class="tag src">④ §4.2</span> — <span class="note">07-28 완료(<code>c90c723</code>). 심사자 시선 검수에서 <b class="no">첫 45초의 AI 신호가 0</b>(랜딩 DOM에 <code>&lt;a&gt;</code> 0개 · "AI/LLM/Gemini" 0개).
+경계 고지 + <b>배포본에 실제로 있는 경로만</b> 링크</span></td><td>0.5h <span class="note">추정</span></td></tr>
+
+<tr><td rowspan="7"><b>08-04</b><br><span class="note">화</span></td><td><span class="ok">✅</span> <code>disposeObject()</code> + 공유 지오메트리 상수화 + <code>THREE.Cache</code> + <b>Sprite 지오메트리 예외</b> <span class="tag src">§9.3</span> —
+<span class="note"><b>07-28로 앞당겨 완료</b> · <code>scenes/three-res.ts</code>가 공유 지오메트리 7종을 소유 → three 런타임 geometry 생성 <b>0건</b></span></td><td>2h</td></tr>
+<tr><td><span class="part">⚠️</span> §9.6 회귀 게이트 — <span class="note"><b>정적분(<code>pnpm gate:gpu</code> G1~G4)은 07-28 통과.</b>
+10회 순회 ±5 런타임 측정은 브라우저 WebGL이 필요해 <b>CLI에서 항상 SKIP + 절차 안내</b>로 남는다 → 사람이 1회 수행(08-09 문서 정합성과 같은 슬롯)</span></td><td>0.5h</td></tr>
+<tr><td><span class="ok">✅ [신규]</span> <b>비밀 통로 표기 재설계</b> —
+<span class="note">07-28 완료(<code>41c7a52</code>) · 기본 알파 0.09 / 커서 34px 안이면 0.75(160ms 페이드). 상수 4종은 <code>view-consts.ts</code>.
+뷰1·4는 임계를 <b>줌으로 나누고</b>, 뷰2·3은 42° 피치라 <b>양 끝점을 화면에 투영</b>해 잰다</span></td><td>0.5h <span class="note">추정</span></td></tr>
+<tr><td><span class="ok">✅ [신규 · 컷라인에서 되살림]</span> <b>터치 T1 D-패드</b> <span class="tag src">§7.12</span> — <span class="note">07-28 완료(<code>55297c0</code>).
+<b class="no">§5.1이 컷했던 판단을 뒤집었다</b> — 폰에서 말이 1칸도 안 움직여 <b>제출물 ①(“웹에서 즉시 플레이”) 요건의 절반이 성립하지 않았다.</b>
+탭-투-무브(T2)는 <b>클라가 벽·입구·한도를 판정</b>하게 되므로 폐기. 실측: 패드 프레임이 키보드와 <b>바이트 동일</b> · 390×844로 4뷰 전부 확인</span></td><td>2h</td></tr>
+<tr><td><span class="ok">✅ [신규]</span> <b>폰 조작 3건 — 액션 바 가림 · 문서 스크롤 · 우측 컬럼</b> <span class="tag src">로드맵 §7.12 후속</span> —
+<span class="note">07-28 완료(<code>1e23362</code>). <b class="no">사용자 실기 iPhone 스크린샷이 잡았다</b>:
+① 상단 액션 바 6개가 턴 배너와 겹쳐 <code>[제안]</code> 외 5개가 가려짐 → <b>하단으로</b>
+② <code>overscroll-behavior</code>는 스크롤 <b>연쇄</b>만 막아 문서가 통째로 밀려 올라감 → 게임 화면만 <code>body.no-scroll</code>
+③ 우측 컬럼을 <b>컬럼 안에서</b> 스크롤 + 닫기 버튼을 모서리로 · 44px.
+<b>셋 다 헤드리스 390×844가 통과시킨 것</b>(로드맵 §9.7.1)</span></td><td>1h <span class="note">추정</span></td></tr>
+<tr><td><span class="ok">✅ [신규]</span> <b>폰 화면 시각 정리 — 조작부를 하나의 축으로</b> <span class="tag src">로드맵 §7.12 후속</span> —
+<span class="note">07-28 완료(<code>8dfa3e6</code>) · <b>기능 변경 0</b>(<code>style</code>). 하단 바를 <b>화면 폭 6등분 한 줄</b>로(2줄 덩어리는 D-패드와 어긋나 화면을 둘로 갈랐다) ·
+비활성은 <b>칸을 남기고 채도만</b> · D-패드는 바와 같은 배경을 얇게 · <b>뷰 선택은 조작이 아니라 관람 설정</b>이라 좌하단 칩으로(하단 좌우 대칭) ·
+손패는 턴 배너 아래 한 줄</span></td><td>0.5h <span class="note">추정</span></td></tr>
+<tr><td>우측 컬럼 탭 도크 <span class="tag src">§7.9</span> — 뒤처지면 <code>&lt;details&gt;</code> 최소안 0.5h.
+<span class="note">📌 <b>07-28 저녁에 컬럼 자체 스크롤이 들어가 조작 측면은 해소</b>됐다(<code>1e23362</code>) — 남은 것은 세그먼트 탭뿐이라 컷 비용이 더 싸졌다</span></td><td>1.5h <span class="note">추정</span></td></tr>
+
+<tr><td rowspan="2"><b>08-05</b><br><span class="note">수</span></td><td>overlay-bus 완전판(우선순위 큐 · 타이머 소유권 단일화) <span class="tag src">§7.10</span></td><td>1h</td></tr>
+<tr><td>FX 레이어 — <code>warp</code>·<code>lootWarp</code>·<code>focusRoom</code>·<code>pulseCell</code>·<code>#fxBanner</code> 4뷰 <span class="tag src">§2.2 · spec§2</span></td><td>3h <span class="note">추정</span></td></tr>
+
+<tr><td rowspan="5"><b>08-06</b><br><span class="note">목</span></td><td><span class="ok">✅</span> <code>suggestLog</code> + 제안 기록표 패널 <span class="tag src">§1.2</span> — <span class="note"><b>07-28로 앞당겨 완료</b> · 실시간·리플레이가 같은 배열 · 같은 사건의 로그 줄은 소급 제거</span></td><td>2h <span class="note">추정</span></td></tr>
+<tr><td>로그 리플레이 <code>publicLog</code>/<code>privateLog</code> <span class="tag src">§8.3 b</span></td><td>1h</td></tr>
+<tr><td><span class="ok">✅</span> <code>scripts/eval-narrator.mjs</code> 작성 <span class="tag src">④§3</span> — <span class="note"><b>07-28로 앞당겨 완료</b> · 폴백 전수 112,752문장 C1~C6 위반 0건 · 기본 오프라인(쿼터 0)</span></td><td>1h <span class="note">추정</span></td></tr>
+<tr><td><span class="ok">✅ [신규]</span> <b>eval 리포트 파일을 실제로 생성</b> <span class="tag src">④§3·§10</span> — <span class="note">07-28 완료(<code>c90c723</code>).
+④가 “이 스크립트가 <code>eval-narrator-report.md</code>를 생성한다”고 명시하는데 <b class="no">실제로는 아무 파일도 남기지 않았다.</b>
+가장 강한 정량 주장의 근거 파일이 없으면 <b>나머지 참인 주장까지 의심받는다.</b> 매 실행 갱신(<code>--no-report</code>로 끔)</span></td><td>0.3h <span class="note">추정</span></td></tr>
+<tr><td><span class="ok">✅ [신규]</span> <b>eval 전제조건 <code>P6</code>(절단 구제 불변식)</b> <span class="tag src">④§3</span> — <span class="note">07-28 완료.
+합성 코퍼스 16종 <b>이전 규칙 0/16 → 현재 16/16</b>.
+<b class="no">🔴 코퍼스는 실측 표본이 아니다</b>(원문을 저장하지 않으므로) — 재는 것은 “관측된 <b>형태</b>에 대한 구제율”</span></td><td>0.3h <span class="note">추정</span></td></tr>
+
+<tr><td rowspan="3"><b>08-07</b><br><span class="note">금</span></td><td><span class="part">⬜</span> eval <code>--live</code> <b>1회 실행</b>(36콜) + 리포트 커밋 <span class="tag src">④§3.1·§3.4</span> — <span class="note"><b>C7(경로 분포)만 남았다.</b> 오프라인 결과는 §3.4에 반영됨. 실행은 쿼터를 먹으므로 <b>사람이 결정</b></span></td><td>0.5h</td></tr>
+<tr><td>④ 문서 승격 3개 절 — 디렉팅 명세 · 환각 검증 · 도구 사용내역 + load-bearing 용어 정정 <span class="tag src">§4 · §7.16</span></td><td>2.5h <span class="note">추정</span></td></tr>
+<tr><td>③에 "왜 이 게임인가" 6줄 + "자막은 후처리" 1줄 <span class="tag src">§7.16 · 콘티§0</span></td><td>0.5h</td></tr>
+
+<tr class="mile"><td rowspan="4"><b>08-08</b><br><span class="note">토</span></td><td><span class="ok">✅</span> 뷰4 도트 축소판(3×3 문장 배지 + 장물 스탬프) <span class="tag src">§2.3 축소판</span> — <span class="note"><b>07-28로 앞당겨 완료</b> · 66쌍 전수 검사(해밍 ≥3 · 2행 이상 상이) + <code>?cvd=1</code> 4뷰 확장</span></td><td>1.5h</td></tr>
+<tr class="mile"><td>오전 · 뷰 인터스티셜 + 연표 드롭다운(<code>commit</code> 해시) <span class="tag src">§2.1</span></td><td>1.5h</td></tr>
+<tr class="mile"><td>🔒 <b>12:00 코드 동결</b> — 이후 촬영 소재 변경 금지</td><td>—</td></tr>
+<tr class="mile"><td>★ <b>본 테이크 촬영 → 편집 → 업로드</b> <span class="tag src">콘티§2·§4·§6</span></td><td>4h</td></tr>
+
+<tr class="mile"><td rowspan="5"><b>08-09</b><br><span class="note">일</span></td><td>③ 영상 링크 갱신 → 문서 정합성(<code>plans/active/12-view-evolution-stages</code>·<code>docs/index</code>·체크리스트) <span class="tag src">§2.4⚠</span></td><td>2h</td></tr>
+<tr class="mile"><td>11종 HTML → PDF 인쇄 + <b>눈으로 검증</b> <span class="tag src">§7.3</span></td><td>1.5h</td></tr>
+<tr class="mile"><td>★ <b>신청서 + 5종 링크 제출</b></td><td>1h</td></tr>
+<tr class="mile"><td>예비</td><td>3.5h</td></tr>
+
+<tr><td><b>08-10</b><br><span class="note">월</span></td><td><b>마감일 · 순수 예비.</b> 08-09에 제출이 끝났으면 무작업.</td><td>—</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>2.2 충돌 판정 근거 — 어느 표를 왜 버렸는가</h3>
+<div class="scroll">
+<table>
+<thead><tr><th style="width:15%">충돌</th><th style="width:29%">4개 표의 배정</th><th style="width:20%">판정</th><th>근거</th></tr></thead>
+<tbody>
+<tr><td>07-29~30 슬롯</td><td>§5 = NPC 페이싱 + 인터스티셜<br>§7.99 = 즉시고발 + revealed + ZODIAC_COLOR</td><td class="ok">§7.99 채택<br>단 ZODIAC_COLOR는 08-01로 이동</td><td>§7.99가 §5를 명시 대체. ZODIAC_COLOR는 <code>view-consts</code> 이관과 <b>같은 파일 작업</b>이라 분리하면 3개 렌더러를 두 번 연다 <span class="tag src">spec§6-2</span></td></tr>
+<tr><td>페이싱 시점</td><td>§5 = 07-29~30 / §7.99 = 07-30<br>§7.5.4 = 규칙 변경 <b>후</b></td><td class="ok">07-30, 규칙 3건 직후</td><td>판 길이가 3.1→6.8라운드로 바뀐 뒤라야 목표값이 정해진다. 먼저 하면 두 번 튜닝</td></tr>
+<tr><td>§1.1 + §1.2 동시 투입</td><td>§5 = 08-02~04 <b>동시</b><br>§7.99 = 07-29 / 08-02~04 <b>분리</b></td><td class="ok">분리(§7.99)</td><td><b class="no">§5가 자기 표 바로 아래에서 "1.1과 1.2를 같은 스프린트에 넣지 말 것"이라 경고해놓고 자기 표에서 위반</b>했다. 동시 투입 시 승률이 68~76%로 반대편 극단</td></tr>
+<tr><td>§8 멀티 9h</td><td>어느 표에도 날짜 없음</td><td class="part">8.1·8.2·8.3(a)(c) → 07-30~31<br>8.3(b) → 08-06<br>8.4·8.5 → <b>컷</b></td><td>§8.6 스스로 "1~3(4.5h)까지가 최소선"이라 선언. 8.4·8.5는 다인 UX이고 심사자는 대부분 솔로 링크로 들어온다</td></tr>
+<tr><td>§9 런타임 10.5h</td><td>어느 표에도 날짜 없음</td><td class="part">9.1·9.2·9.3 → 08-02~04<br>9.4·9.5 → <b>컷</b>(dt 클럭 최소분만 흡수)</td><td>9.1은 첫 3초(①요건 체감), 9.2·9.3은 촬영 중 크래시 리스크. 9.5(뷰5 확장성)는 사전과제에서 회수되지 않는다</td></tr>
+<tr><td>안전 테이크 시점</td><td>§5 = 07-31~08-01<br>§7.99 = 08-01<br>콘티§7 = <b>조건부</b></td><td class="ok">08-01 <b>무조건 실행</b></td><td>②는 유일한 미제작 필수 항목이고 촬영은 되돌릴 수 없다. "선행 개선이 끝나면 생략"으로 두면 미루게 된다</td></tr>
+<tr><td>08-08 과적재</td><td>§5·§7.99 모두 "본 테이크 + 뷰4 도트 + 문서 정합성 + PDF"를 <b>하루에</b></td><td class="ok">촬영·편집만 남기고<br>PDF·문서는 08-09로</td><td>본 테이크 세션만 150분이고 F 클립은 <b>최대 20판 반복</b>이다. 같은 날 PDF까지는 물리적으로 불가</td></tr>
+<tr><td>마감일 처리</td><td>§5 = 08-09 예비<br>§7.99 = 08-08에서 끝(<b class="no">08-09·08-10 없음</b>)</td><td class="ok">08-09 제출 · 08-10 순수 예비</td><td>§7.99에는 <b>"제출한다"는 행동 자체가 없다</b>. 마감 당일 제출은 사고 시 복구 불가</td></tr>
+</tbody>
+</table>
+</div>
+
+<!-- ================================================================= -->
+<h2 id="s3"><span class="n">3</span>사람만 할 수 있는 일 — 별도 트랙</h2>
+<div class="lead">이 트랙이 늦으면 코드 트랙 전체가 무의미해지는 항목이 있다. <b class="no">A와 D가 그것이다.</b></div>
+
+<div class="hu">
+<article style="border-left:3px solid var(--green)"><div class="when">07-28<br><b>해결</b></div><div>
+  <h4>A · <s>라이브 <code>GEMINI_API_KEY</code> 확인 + 유료 키 충전</s> → <b>해결 완료</b> <span class="tag src">§7.1 · ④§4.1</span></h4>
+  <p><b>사람 작업이 아니라 코드 수정이었다.</b> 원인은 키·쿼터가 아니라 <code>thinkingBudget: 0</code>이 400으로 거부된 것. 파라미터 제거 후 라이브 재검증 <b>12/12 LLM · 폴백 0</b>. 이로써 AI 칩 · eval · ④ §3.4 · 클립 C 자막의 선행 조건이 <b>모두 풀렸다</b>.<br>남은 사람 몫은 <b>심사 기간 중 쿼터 잔량 확인</b>뿐 — <code>GET /health</code>로 서버 로그 없이 본다.</p>
+</div></article>
+
+<article><div class="when">촬영 전</div><div>
+  <h4>A′ · 한 판 완주 후 <code>/health</code> <b>재확인</b> <span class="tag src">로드맵 §7.1.1</span></h4>
+  <p>폴백률 0%의 표본이 <b class="part">8건뿐</b>이다. <code>fallbackCalls</code> · <code>normalizeTiers</code> · <code>cache.lookups</code>를 눈으로 확인한다.<br>
+  ④ §2.3이 “0%”를 <b>8건 표본</b>이라 정직하게 적어 뒀으므로 미실행이 거짓말이 되지는 않는다.
+  다만 <b>촬영본에 폴백 대사가 섞이면 클립 C의 “LLM” 자막과 화면이 어긋난다.</b></p>
+</div></article>
+
+<article><div class="when">07-27</div><div>
+  <h4>B · 공고 원문을 <code>docs/planning/</code>에 확보 <span class="tag src">§7.16</span></h4>
+  <p>"심사축 1위 = AI" · "그래픽은 채점 항목이 아니다"가 <b>저장소에 출처가 없다</b>. 이 계획의 우선순위 가중치 전체가 잠정 상태로 남는다. 30분.</p>
+</div></article>
+
+<article class="fatal"><div class="when">08-03</div><div>
+  <h4>C · 제출 형태(개인/팀) 확정 — 팀원 3인에게 확인 <span class="tag src">§7.2 · 체크리스트</span></h4>
+  <p>⑤ 팀원 롤 기술서의 존폐. <b>팀으로 신청하고 ⑤를 빼면 나머지 4종과 무관하게 심사 제외.</b> 초안은 07-28에 미리 써두므로, 늦어도 08-03 확정이면 08-09 제출에 지장 없다.</p>
+</div></article>
+
+<article class="fatal"><div class="when">08-01</div><div>
+  <h4>D · 안전 테이크 촬영 → 편집 → YouTube 업로드 <span class="tag src">콘티§3·§4</span></h4>
+  <p>★ ②는 유일한 미제작 필수 항목. 이 날짜를 놓치면 08-08 본 테이크가 <b>유일한 기회</b>가 되고, 그 날 실패하면 제출물 하나가 통째로 빈다 = <b>심사 제외</b>. 세션 90분.</p>
+</div></article>
+
+<article><div class="when">08-08</div><div>
+  <h4>E · 본 테이크 촬영 → 편집 → 업로드 <span class="tag src">콘티§2</span></h4>
+  <p>②의 <b>품질</b>. 실패해도 D의 안전 테이크가 살아 있으므로 요건은 유지된다 — 그래서 D가 D인 것이다. 세션 150분(F 클립 최대 20판 반복 포함).</p>
+</div></article>
+
+<article><div class="when">08-09</div><div>
+  <h4>F · 11종 HTML PDF 인쇄 + 눈으로 검증 <span class="tag src">§7.3</span></h4>
+  <p>③④⑤ 제출본. <code>@media print</code>가 07-28에 들어가 있어야 하고, <b>③은 영상 링크 갱신 후</b>에 인쇄해야 한다(순서를 어기면 재인쇄).</p>
+</div></article>
+
+<article class="fatal"><div class="when">08-09</div><div>
+  <h4>G · 신청서 + 5종 링크 제출 <span class="note">(마감 08-10)</span></h4>
+  <p>전부. <b>마감일을 예비로 남기기 위해 하루 앞당긴다.</b></p>
+</div></article>
+</div>
+
+<div class="card warn">
+<h3>A → D 연쇄</h3>
+<p style="margin:0">A가 08-08까지 미해결이면 콘티 §7에 따라 <b>클립 C의 LLM 자막을 제거</b>하고 <b>④ 문서 문구도 같은 날 동기화</b>해야 한다. 영상과 문서의 주장이 어긋나면 성실성 감점이다.</p>
+</div>
+
+<!-- ================================================================= -->
+<h2 id="s4"><span class="n">4</span>최소 생존선 — minimum viable submission</h2>
+<p><b>시간이 절반(7일)뿐이라면</b> — 요건 5종 충족만 남기고 전부 버린다.</p>
+<ol class="mvp">
+<li><b>[사람] 제출 형태 확정 + ⑤ 초안</b> <span class="tag src">§7.2</span> — 누락 = 심사 제외. 비용 30분.</li>
+<li><b>[사람] 안전 테이크 촬영·업로드</b> <span class="tag src">콘티§3</span> — ② 유일한 미제작 필수 항목.</li>
+<li><b>조사 헬퍼 + PLACEHOLDER 배지 제거</b> <span class="tag src">§7.14·§2.4</span> — 합계 <b>40분</b>. 콘티가 지정한 촬영 전 유일 선행. 안 하면 <code>대감가</code>·<code>PLACEHOLDER</code>가 화면에 찍힌다.</li>
+<li><b><code>@media print</code> 11파일 + PDF 실검증</b> <span class="tag src">§7.3</span> — ③④⑤ 제출본이 백지가 된다.</li>
+<li><b>문서 노출 차단</b> <span class="tag src">§7.4</span> — 심사자에게 자기 결함 목록을 배포 중이다.</li>
+<li><b>[사람] 라이브 키 확인 + 계측 칩 최소분</b> <span class="tag src">§7.1·§7.7</span> — ④의 주장을 5초 만에 반증당하는 것을 막는다.</li>
+<li><b>즉시고발권</b> <span class="tag src">§7.5.1</span> — 0.5h에 승률 3.9%→7.3%. 클립 F(승리 컷) 확률을 2배로. <b>최고 ROI</b>.</li>
+<li><b>대비·포커스 + 터치 T0</b> <span class="tag src">§7.13·§7.12</span> — 심사자가 폰으로 열면 <b>1칸도 못 움직인다</b>.</li>
+</ol>
+<div class="card good">
+<p style="margin:0"><b>절단선 아래 (= 절반이면 전부 버림)</b> — <code>revealed</code> 분리 · 재진입 규칙 · 멀티 §8 전부 · 런타임 §9 전부 · FX · 인터스티셜 · 뷰4 도트 · 제안 기록표 · 탭 도크 · eval 스크립트 · ④ 승격 · 본 테이크.<br>
+위 8개만으로 <b>요건 5종은 전부 충족</b>한다. 나머지는 전부 "점수"이지 "자격"이 아니다.</p>
+</div>
+
+<!-- ================================================================= -->
+<h2 id="s5"><span class="n">5</span>컷라인 — 마감까지 못 할 것이 확실한 항목</h2>
+
+<h3>5.1 본행사 백로그로 이관 <span class="note">(설계 근거가 살아 있음)</span></h3>
+<div class="scroll">
+<table class="cut">
+<thead><tr><th>항목</th><th style="width:80px">출처</th><th>컷 이유</th></tr></thead>
+<tbody>
+<tr><td><code>ViewLifecycle</code> 생명주기 축 · <code>STAGES.load</code></td><td><span class="tag src">§9.5</span> 3h</td><td>회수되는 가치가 "뷰5 추가 PR의 diff 크기"인데 <b>사전과제에 뷰5는 없다</b>. 단 §9.1 동적 import를 넣을 때 <code>STAGES</code>에 <code>load</code> <b>자리만 비워둘 것</b> → <span class="ok"><b>✅ 07-28 이행됨</b></span>: <code>STAGES</code> 각 항목에 <code>load: () =&gt; Promise&lt;unknown&gt;</code>을 두고 <code>setStage</code>가 그것으로 청크를 받는다. <code>ViewContract</code>에도 <code>dispose()</code>·<code>contextCost</code> 자리를 선점해 뒀다</td></tr>
+<tr><td>적응 해상도 · <code>antialias:false</code> · InstancedMesh · 컨텍스트 로스 핸들러</td><td><span class="tag src">§9.4</span> 2h</td><td><code>loop(t)</code> dt 클럭 <b>최소분만</b> §9.2 작업에 흡수(spec의 <code>k=1−exp(−dt/τ)</code>가 요구). 나머지는 저사양 최적화라 45초에 드러나지 않음</td></tr>
+<tr><td>대기실 로그 · 닉네임 · <code>.pending</code> · 시작 카운트다운</td><td><span class="tag src">§8.4</span> 2h</td><td>다인 대기실 UX. 심사자는 대부분 솔로 링크로 들어온다. 닉네임은 <b>XSS 이스케이프 부채</b>까지 동반.<br><span class="note">부수 — <code>20260727-ui-copy.md</code> §8의 대기실·닉네임 문안이 함께 미적용으로 남는다 → <b>ui-copy의 🚧 표기를 유지</b>(적용 완료로 오독 방지)</span></td></tr>
+<tr><td>리매치 합의 · 선공 셔플 · 시리즈 스코어보드</td><td><span class="tag src">§8.5</span> 2.5h</td><td>"2판째를 할 이유"는 심사 시나리오에 없다. 단 <b>NPC 재충원 루프 이동 1줄만</b> §8.1 커밋에 포함(3인 판 붕괴 방지)</td></tr>
+<tr><td><del>터치 T1 D-패드</del> · T2 탭-투-무브</td><td><span class="tag src">§7.12</span></td>
+    <td><del>T0(30분)로 "화면이 깨지는" 것은 막힌다. 폰 실플레이는 본행사</del><br>
+    <b class="no">🔴 07-28 컷 취소 — T1은 구현했다.</b> 이 컷 사유가 <b>틀렸다</b>: T0가 막은 것은 <b>레이아웃</b>이고,
+    이동은 <code>keydown</code> 전용이라 <b>키보드가 없으면 게임 진행 자체가 불가능</b>했다.
+    <b>화면이 안 깨지는 것과 플레이가 되는 것은 다르다</b> — 제출물 ① 요건의 절반이 걸린 문제였으므로
+    “점수”가 아니라 <b>“자격”</b> 쪽이다. <b>T2는 컷 유지가 아니라 폐기</b>(§5.2로 이동)</td></tr>
+<tr><td>뷰3 렌더 품질(접지 데칼 · Fog · 등불 · 야간 배경)</td><td><span class="tag src">§2.4 조치2</span></td><td>배지 제거(10분)만으로 <b>역효과는 사라진다</b>. 나머지는 "그래픽 퀄리티"이고 §6.1의 자기 논리에 걸린다</td></tr>
+<tr><td>도달 가능 칸 하이라이트 <code>reachable()</code></td><td><span class="tag src">§1.5 P1</span></td><td>온보딩 본체(3줄 오버레이·고정행)로 "60초 이해"는 확보된다</td></tr>
+<tr><td>시맨틱 마크업 · ESC · 포커스 트랩</td><td><span class="tag src">§7.13 P2</span></td><td>대비·포커스 2건(20분)이 완성도 문제의 8할</td></tr>
+<tr><td>뷰4 실루엣 풀버전(귀4×볏2×꼬리3) · <code>LOOT_DOTS</code> 6벌</td><td><span class="tag src">§2.3</span></td><td><b>축소판(3×3 배지 + 스탬프, 1~2h)만 08-08 오전에.</b> 원문이 "정보 결손의 8할 해소"라고 스스로 인정</td></tr>
+<tr><td>계략 종류 다양화 · 뷰5 3D</td><td><span class="tag src">§6.2</span></td><td>이미 §6에서 기각. 서버·클라·4뷰·문서 4곳 회귀 위험</td></tr>
+<tr><td>07-18 확정 차별점(자유 심문 · 거짓말/뇌물 축)</td><td><span class="tag src">§7.16</span></td><td>D-14에 신규 구현 불가. <b>④에 "본행사 로드맵"으로 명시 계승</b> — 아무 말도 안 하면 "차별점을 약속하고 안 만든 팀"이 된다</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>5.2 영영 안 할 것 <span class="note">(설계 판단으로 폐기)</span></h3>
+<div class="scroll">
+<table class="cut">
+<thead><tr><th>항목</th><th style="width:120px">출처</th><th>폐기 근거</th></tr></thead>
+<tbody>
+<tr><td>뷰3 실아트 PNG 90장</td><td><span class="tag src">§6.1</span></td><td>placeholder 로드 + 이모지 폴백이라 뷰3은 깨지지 않는다. 수일이 드는데 심사축 어디에도 기여 없음. <b>절차 생성 렌더(에셋 0)가 더 강한 서사</b></td></tr>
+<tr><td>회색조 단독 CVD 대응</td><td><span class="tag src">spec§4.1</span></td><td>1차원 축에 12점을 넣는 <b>수학적 한계</b>. 흑백 인쇄 계획이 없고 2형/1형은 청–황축이 살아 있다</td></tr>
+<tr><td>뷰2·3 렌더러 인스턴스 분리</td><td><span class="tag src">§9.5⚠</span></td><td>WebGL 컨텍스트가 늘어난다. <code>contextCost:1</code>을 두 stage가 공유한다고 계약에 명문화</td></tr>
+<tr><td class="dim">원테이크 55초 영상</td><td><span class="tag cut">§3</span> → §7.6</td><td>물리적으로 불가(§3 자신이 "봇 5명 = 33.5초"라고 계산). 컷 편집판이 유일한 실행안</td></tr>
+<tr><td class="dim">총 제안 상한 40</td><td><span class="tag cut">§1.1</span> → §7.5</td><td>분리 후 p95 = 53~60. 정상 게임의 25%를 강제 종료시킨다 → 60 → <b>07-28 재산정으로 최종 75</b>(재진입 규칙 투입 후 p95 65 · 자연 p99.5 73 · 최대 76. 60은 판의 17%에서 작동해 백스톱이 아니라 밸런스 손잡이가 됐다)</td></tr>
+<tr><td class="dim">"⑤ 해당 없음" 확정</td><td><span class="tag cut">§6.3</span> → §7.2</td><td>상류 회의록에 3인 팀 명시. <b>AI가 임의로 내릴 수 없는 결정</b></td></tr>
+<tr><td class="dim">탭-투-무브(터치 T2)</td><td><span class="tag cut">§7.12</span> → 07-28</td><td>클라가 경로를 계산해 <code>move</code>를 큐잉하면 그 순간 <b>벽 · 입구 · 충돌 · 한도를 클라가 판정</b>하게 된다.
+    D-패드는 <b>방향 1칸만</b> 보내고 서버 변경이 0이다(패드 프레임이 키보드와 <b>바이트 동일</b>). <b>진실값 경계를 지키는 쪽이 코드도 작다</b></td></tr>
+<tr><td class="dim">AI 패널의 <code>0 · 0 · 0</code> 표기</td><td><span class="tag cut">④ §4</span> → 07-28</td><td>입장 시 빈 스냅샷으로 <code>0·0·0</code>을 그리면 <b>서버가 하지 않은 주장</b>(“대사가 없었다”)을 화면이 대신한다.
+    패널은 판 시작과 동시에 띄우되 값은 확정 문안의 <code>—</code> 관례로만</td></tr>
+<tr><td class="dim"><code>?ai=1</code> 게이팅</td><td><span class="tag cut">§1.3</span> → §7.7</td><td>심사자는 파라미터 없는 URL로 들어온다</td></tr>
+</tbody>
+</table>
+</div>
+
+<!-- ================================================================= -->
+<h2 id="s6"><span class="n">6</span>일일 체크포인트 · 폴백 규칙</h2>
+<div class="lead"><b>판정 시각: 매일 작업 종료 시.</b> "끝났어야 하는 것"이 미완이면 <b>다음 날로 미루지 말고 그 자리에서 버린다.</b></div>
+
+<h3>판정 전에 반드시 돌리는 명령 <span class="note">07-28 신설 · 로드맵 §9.6</span></h3>
+<div class="scroll">
+<table>
+<thead><tr><th style="width:180px">시점</th><th style="width:190px">명령</th><th>내용</th></tr></thead>
+<tbody>
+<tr><td><b>커밋 전(매번)</b></td><td><code>pnpm verify:quick</code></td><td>3.4초 — 타입 · 문서·코드 상수 정합 · GPU 정적 계측 · 규칙 밸런스 회귀 · LLM 환각 검증(36케이스)</td></tr>
+<tr><td><b>작업 종료 시 / 푸시·촬영 전</b></td><td><code>pnpm verify</code></td><td>위 5종 + 빌드 + 번들 예산(기준선 +3% 래칫), 환각 검증은 전수 스윕</td></tr>
+</tbody>
+</table>
+</div>
+<ul class="tight">
+<li><b class="no">SKIP을 통과로 읽지 말 것.</b> 게이트는 어떤 항목도 조용히 건너뛰지 않고 <b>사유와 함께</b> SKIP을 인쇄한다.
+특히 §9.6 런타임 게이트(뷰 10회 순회 ±5)는 브라우저 WebGL이 필요해 <b>항상 SKIP</b>이다 → 사람이 절차대로 1회 수행해야 체크가 닫힌다.</li>
+<li>기준선을 움직여야 하면 <code>--reason</code>을 적는다. <b>사유 없는 기준선 갱신은 거부된다</b> — 래칫이 그냥 풀리는 것을 막는 장치다.</li>
+<li>📌 <b class="no">07-28 저녁 정정 — <code>--quick</code>이 자기 근거를 지우고 있었다.</b> 빠른 모드는 폴백 전수 스윕을 <b>생략하면서</b>
+<code>docs/design/eval-narrator-report.md</code>는 그대로 덮어써 전수 수치를 <code>112,752 → 0</code>으로 퇴화시켰다. 이제 <code>--no-report</code>를 동반한다(<code>2fb83ef</code>).
+<b>커밋 전 게이트를 돌린 뒤 <code>git status</code>에 이 리포트가 올라오면 회귀</b>이므로 그대로 커밋하지 말 것. 리포트는 <code>pnpm verify</code>(전체)만 갱신한다.</li>
+<li>아래 표의 "끝났어야 하는 것"은 <b>이 게이트가 통과한 상태</b>를 뜻한다(빌드가 깨진 채로 끝낸 날은 미완이다).</li>
+</ul>
+<div class="scroll">
+<table class="cp">
+<thead><tr><th>날짜</th><th style="width:38%">끝났어야 하는 것</th><th>뒤처졌을 때 버리는 것</th></tr></thead>
+<tbody>
+<tr><td>07-27</td><td>문서 노출 차단 · 조사 헬퍼 · 배지 제거 · 대비/포커스 · [사람] 키 확인 착수</td><td><code>iso-view</code> P0 3건 → 07-28로. <b class="no">문서 노출 차단은 절대 미루지 않는다</b> — 미완이면 그날 푸시 자체를 하지 않는다</td></tr>
+<tr><td>07-28</td><td><code>@media print</code> + PDF 실검증 · ⑤ 초안 · 원클릭 솔로</td><td>온보딩을 "3줄 오버레이"만으로 축소, 동적 title·고정행은 08-05로</td></tr>
+<tr><td>07-29</td><td>즉시고발권(0.5h) · <code>revealed</code> 분리</td><td>온보딩 잔여 → 컷. <b class="ok">즉시고발권은 절대 안 버린다</b>(0.5h에 승률 2배)</td></tr>
+<tr><td>07-30</td><td>재진입 규칙 · <code>handoverToBot</code> · 페이싱 재조정</td><td>손패 지목 허용(클라 1줄)만 남기고 재진입 규칙을 08-04로. §8.1이 미완이면 <b>멀티 시연을 포기하고 솔로 링크만 제출</b>(체크리스트에 명시)</td></tr>
+<tr><td>07-31</td><td>턴 클럭 · <code>setPrivate</code> · <b>솔로 10판 실측</b></td><td>실측을 3판으로 축소. 실측 자체를 버리면 공통단서 장수를 결정할 근거가 사라지므로 <b>최소 3판은 돌린다</b></td></tr>
+<tr class="mile"><td>08-01</td><td>★ <b>안전 테이크 업로드 완료</b></td><td>🚨 <b>다른 모든 작업을 버리고 이것만 한다.</b> view-consts 이관은 08-02로. 이 날 업로드가 안 되면 <b>계획 전체를 §4 최소 생존선으로 전환</b></td></tr>
+<tr><td>08-02</td><td><code>view-contract</code> implements · 코드 스플리팅</td><td>스플리팅을 <b>Three만 동적 import</b>로 축소(527 kB 회수). Phaser 분리는 08-04로</td></tr>
+<tr class="mile"><td>08-03</td><td>★ [사람] 제출 형태 확정 · 계측 + AI 칩</td><td>탭 도크를 <code>&lt;details&gt;</code> 최소안으로 확정. <b class="ok">계측은 안 버린다</b>(심사축 1위)</td></tr>
+<tr><td>08-04</td><td><code>dispose()</code> + §9.6 게이트 통과</td><td>탭 도크 컷 → 최소안. <b>게이트가 실패하면 인터스티셜(08-08)을 컷</b> — 누수 동선을 유도하는 기능이라 함께 미룬다</td></tr>
+<tr><td>08-05</td><td>overlay-bus 완전판 · FX warp/배너</td><td>FX를 <b>뷰1 <code>warp</code> + 공통 배너</b>만으로 축소(뷰4는 카메라 미러링으로 자동 상속, 뷰2·3은 배너만). 콘티 클립 B의 대체 컷으로 커버 가능</td></tr>
+<tr><td>08-06</td><td>제안 기록표 · eval 스크립트 작성</td><td>제안 기록표 컷 — §7.5가 "<b>새 정보를 주지 않는 인지부하 항목</b>"으로 재분류했으므로 컷 비용이 가장 싸다. eval은 유지</td></tr>
+<tr><td>08-07</td><td>eval 실행 + ④ 승격</td><td>④ 승격을 <b>3개 절 중 "AI 도구 사용내역(실증)" 1개만</b>으로 축소 — 심사 요건에 기재가 명시된 유일한 절</td></tr>
+<tr class="mile"><td>08-08</td><td>🔒 12:00 코드 동결 · ★ <b>본 테이크 업로드</b></td><td>12:00까지 미완 기능은 <b>그대로 두고 촬영</b>(콘티 §2 대체 컷 사용). 본 테이크가 안 나오면 <b>안전 테이크를 그대로 제출본으로 확정</b></td></tr>
+<tr class="mile"><td>08-09</td><td>★ PDF 5종 · <b>신청서 제출</b></td><td>문서 정합성 갱신을 버리고 제출을 먼저 한다. <b class="no">제출은 어떤 경우에도 08-09를 넘기지 않는다</b></td></tr>
+<tr><td>08-10</td><td>(예비)</td><td>—</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="card crit">
+<h3>전역 폴백 규칙 3개</h3>
+<ol class="tight" style="margin:0">
+<li><b>되돌릴 수 없는 것이 코드를 이긴다.</b> 촬영·업로드·제출 일정과 코드 작업이 충돌하면 언제나 코드를 버린다.</li>
+<li><b>진실값 변경은 08-01 이후 금지.</b> 규칙을 바꾸면 실측·페이싱·클립 성공률이 전부 무효화된다(07-29~30 창을 넘기면 그 항목은 본행사 백로그).</li>
+<li><b>어느 경우에도 하지 않는 것</b> — 마감 압박을 이유로 <b>주사위·정답·봇 판정에 손대는 것</b> <span class="tag src">콘티§7</span>. 요건 위반은 재촬영으로 되돌릴 수 없다.</li>
+</ol>
+</div>
+
+<!-- ================================================================= -->
+<h2 id="s7"><span class="n">7</span>발견한 모순 · 누락 의존성</h2>
+<p class="note">병합 과정에서 나온 것만. 새 개선안이 아니라 <b>문서 간 불일치 지적</b>이다.</p>
+
+<h3>7.1 모순 <span class="note">6건</span></h3>
+<div class="scroll">
+<table>
+<thead><tr><th style="width:26px">#</th><th style="width:40%">모순</th><th style="width:20%">위치</th><th>해소</th></tr></thead>
+<tbody>
+<tr><td class="no">A</td><td>§5가 08-02~04에 <b>§1.1과 §1.2를 동시 배정</b>해놓고, 같은 절 하단에서 "1.1과 1.2를 같은 스프린트에 넣지 말 것"이라 경고한다 — <b>자기 표가 자기 경고를 위반</b></td><td>§5 표 vs §5 밸런스 주의</td><td>§7.99가 우연히 분리해뒀다. 본 계획은 <b>07-29 / 08-06</b>으로 명시 분리</td></tr>
+<tr><td class="no">B</td><td><b>§7.99가 §8·§9를 반영하지 못한다.</b> 변경 이력상 §7.99는 2차 산출물이고 §8·§9는 3차에 추가됐는데 §7.99는 갱신되지 않았다 → <b>날짜 없는 19.5h가 표 밖에 떠 있다</b></td><td>§7.99 vs §8.6·§9</td><td>본 계획 §2가 <b>유일한 일정표</b>. §5·§7.99·§8.6·§9는 항목 정의용으로만 참조</td></tr>
+<tr><td class="no">C</td><td>§7.99에 <b>08-09·08-10이 없다.</b> §5에 있던 예비일이 사라졌고, <b>어느 표에도 "제출한다"는 행동 자체가 없다</b></td><td>§5 vs §7.99</td><td>08-09 제출 · 08-10 예비로 복원</td></tr>
+<tr><td class="no">D</td><td>§7.8은 <code>rightInset()</code>을 "<b>null 가드 부재</b>"로 진단했으나 §9.2가 "<b>가드는 이미 있고 zero-rect가 원인</b>"이라 정정했다. 그런데 §7.99 07-27 항목은 여전히 옛 진단 문구로 남아 있다</td><td>§7.8 vs §9.2 vs §7.99</td><td>07-27 항목에 §9.2 문구 병기. <b>가드 수정과 프레임당 리플로우 캐시를 같은 커밋으로</b> — 따로 하면 같은 함수를 두 번 연다</td></tr>
+<tr><td class="no">E</td><td>§3이 영상을 <b>원테이크</b>로 설계했고 §7.6이 뒤집었으나 <b>§3 본문은 그대로</b>다 → 읽는 순서에 따라 폐기된 설계가 살아 있는 것으로 읽힌다</td><td>§3 vs §7.6</td><td>콘티가 컷 편집판으로 재작성됨. §3은 <b>폐기</b>로 취급(§5.2 기록)</td></tr>
+<tr><td class="no">F</td><td>콘티 §7은 안전 테이크를 "<b>08-01까지 선행 개선 미완이면</b>"이라는 <b>조건부</b>로 두는데, ②는 유일한 미제작 필수 항목이라 조건부로 둘 성격이 아니다</td><td>콘티§7 vs 체크리스트②</td><td><b>08-01 무조건 실행</b>으로 격상</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>7.2 누락 의존성 <span class="note">12건 · 어느 문서에도 명시돼 있지 않음</span></h3>
+<div class="scroll">
+<table>
+<thead><tr><th style="width:26px">#</th><th style="width:47%">누락</th><th>어기면</th></tr></thead>
+<tbody>
+<tr><td>①</td><td><b>이 실행 계획서 자신이 §7.4의 공개 배포 대상이다.</b> <code>EXCLUDE</code>에 <code>improvement-roadmap</code>만 있고 <code>execution-plan</code>은 없다</td><td>문서를 만드는 순간 §7.4가 지적한 결함이 <b>그대로 재발</b> — 심사자가 "컷라인"·"영영 안 할 것"을 읽는다. 본 문서 머리말에 조치 명기</td></tr>
+<tr><td>②</td><td><b><code>suggestLog</code>(§1.2)와 <code>publicLog</code>(§8.3b)가 같은 데이터다.</b> 두 문서가 서로를 참조하지 않는다</td><td>자료구조가 두 벌이 된다. <b>재접속 시 제안 기록표만 비는 버그</b></td></tr>
+<tr><td>③</td><td><b><code>view-consts</code> 이관이 §9.1 코드 스플리팅의 숨은 선행 조건</b>이다. 그 사실은 §9.1의 괄호 한 줄에만 있다</td><td>스플리팅을 먼저 시도하면 pixel 청크가 phaser를 통째로 끌고 와 <b>−94% 효과가 나오지 않는다</b></td></tr>
+<tr><td>④</td><td><b>spec §2의 <code>ViewContract</code>(표기)와 §9.5의 <code>ViewLifecycle</code>(생명주기)이 같은 파일·같은 <code>main.ts</code> 8곳을 건드린다.</b> 두 문서 어느 쪽도 상대를 언급하지 않는다</td><td>계약 파일과 <code>main.ts</code> 분기를 두 번 고친다. §9.5를 컷하더라도 <b><code>STAGES</code>에 <code>load</code> 자리를 비워두는 것</b>이 최소 방어 → <span class="ok"><b>✅ 07-28 이행</b></span>: <code>STAGES.load</code> 슬롯 + <code>ViewContract</code>의 <code>dispose()</code>·<code>contextCost</code> 선점</td></tr>
+<tr><td>⑤</td><td><b>eval 36 실콜(④§3.1)이 §7.1의 무료 쿼터 소진 리스크와 정면 충돌</b>한다. "1회만 실행"으로 완화했다고 쓰여 있으나 심사 기간 중 실행하면 심사자 몫을 먹는다</td><td><b>유료 키 전환이 eval 실행의 선행 조건</b>이다. 무료 키로 08-07에 실행하면 그날 심사자가 보는 화면이 전부 폴백일 수 있다</td></tr>
+<tr><td>⑥</td><td><b>영상 업로드 → ③ 링크 갱신 → ③ PDF 인쇄</b> 순서가 어느 문서에도 없다. §5·§7.99는 "본 테이크"와 "PDF"를 08-08 같은 칸에 넣었다</td><td>링크 갱신 전에 인쇄한 ③ PDF는 <b>폐기하고 다시 인쇄</b>. 본 계획은 08-08(촬영) / 08-09(갱신→인쇄)로 분리</td></tr>
+<tr><td>⑦</td><td><b>§7.5.1의 "제안 후 30초 자동 종료"와 §8.2의 <code>armTurnClock</code>이 같은 프리미티브</b>다. §8.2는 "인자화해 공유"라 적었지만 §7.99의 07-29 항목에는 그 메모가 없다</td><td>07-29에 전용 타이머를 짜면 07-31에 다시 뜯는다. <b>처음부터 인자화</b></td></tr>
+<tr><td>⑧</td><td><b>§8.1 <code>handoverToBot</code>의 <code>awayBot</code> 예외가 §1.1 <code>revealed</code> 분리 위에 얹힌다.</b> 순서가 명시돼 있지 않다</td><td>§8.1을 먼저 하면 예외 처리를 나중에 덧대야 한다. 본 계획은 07-29(§1.1) → 07-30(§8.1)</td></tr>
+<tr><td>⑨</td><td><b>§8.5의 "NPC 재충원 루프를 <code>startGame</code>으로 이동"이 §8.5 전체와 함께 컷되면 3인 판 붕괴가 남는다</b></td><td>§8.5를 백로그로 보내되 <b>재충원 이동 1줄만 §8.1 커밋에 포함</b>해야 리매치 시 덱 구성이 깨지지 않는다</td></tr>
+<tr><td>⑩</td><td><b>§9.3 <code>dispose()</code>와 §2.1 인터스티셜의 출시 순서</b>가 규정돼 있지 않다(§9.3은 "간판 기능이 이 동선을 유도한다"고만 적었다)</td><td>인터스티셜을 먼저 내면 뷰 왕복이 늘어 누수가 <b>촬영 중에 발현</b>한다. 본 계획은 08-04(§9.3) → 08-08(§2.1), <b>게이트 실패 시 §2.1 컷</b></td></tr>
+<tr><td>⑪</td><td><b>§2.4 뷰3 정의 변경이 <code>plans/active/12-view-evolution-stages.md</code>와 어긋난다</b>는 경고는 있으나 동기화 작업이 <b>어느 일정표에도 없다</b></td><td>제출 시 문서 불일치. 본 계획 08-09 "문서 정합성"에 명시 편입</td></tr>
+<tr><td>⑫</td><td><b>§1.4 페이싱 변경이 <code>CLAUDE.md</code>·④의 "NPC 딜레이 = 평균의 절반" 규약 문구를 바꾼다</b>는 경고는 §1.4에만 있고, 실제 작업이 배정된 §7.99 07-30 항목에는 없다</td><td>코드와 문서가 다른 커밋에 흩어져 <b>심사 시 불일치</b>. 본 계획 07-30에 "같은 커밋" 명기</td></tr>
+</tbody>
+</table>
+</div>
+
+<!-- ================================================================= -->
+<h2><span class="n">8</span>추적표 — 4개 일정표 항목의 최종 행선지</h2>
+<div class="scroll">
+<table>
+<thead><tr><th style="width:34%">출처 항목</th><th style="width:30%">최종 배정</th><th>비고</th></tr></thead>
+<tbody>
+<tr><td>§5 전체</td><td class="no"><b>폐기</b>(§7.99가 대체)</td><td>단 §5의 "08-09 예비일"만 되살림</td></tr>
+<tr><td>§7.99 07-27 즉시(2h)</td><td class="ok">07-27</td><td>§7.8 문구를 §9.2 정정본으로 교체</td></tr>
+<tr><td>§7.99 07-27~28 (⑤·print·노출차단)</td><td class="ok">07-27(노출차단) / 07-28(print·⑤)</td><td>노출차단을 앞당김 — 푸시 전 선행</td></tr>
+<tr><td>§7.99 07-28 오버레이 큐</td><td class="part">07-28 최소안 / 08-05 완전판</td><td>FX 착수일에 승격</td></tr>
+<tr><td>§7.99 07-29 (즉시고발·revealed·ZODIAC_COLOR)</td><td class="part">07-29 / <b>ZODIAC_COLOR는 08-01</b></td><td>view-consts 이관과 동일 파일</td></tr>
+<tr><td>§7.99 07-30 (재진입·페이싱)</td><td class="ok">07-30</td><td>+ §8.1 삽입</td></tr>
+<tr><td>§7.99 07-31 실측</td><td class="ok">07-31</td><td>+ §8.2·§8.3(a)(c) 삽입</td></tr>
+<tr><td>§7.99 08-01 안전 테이크</td><td class="ok"><b>08-01 (무조건)</b></td><td>조건부 → 무조건으로 격상</td></tr>
+<tr><td>§7.99 08-02~04 (계측·탭도크·기록표)</td><td class="part">08-03(계측) / 08-04(탭도크) / 08-06(기록표)</td><td>§9.1~9.3 삽입으로 재배치</td></tr>
+<tr><td>§7.99 08-05~07 (④·eval·T1)</td><td class="part">08-06~07 / <s>T1은 컷</s> → <b class="ok">T1은 07-28 완료</b></td>
+<td class="no"><b>🔴 07-28 저녁 정정</b> — §5.1이 컷을 취소했는데 <b>이 표만 "컷"으로 남아</b> 같은 문서 안에서 §2 08-04 · §5.1과 어긋나 있었다.
+T1 D-패드는 <b>제출물 ① 요건의 절반</b>이 걸린 항목이라 "점수"가 아니라 "자격" 쪽이다</td></tr>
+<tr><td>§7.99 08-08 (본테이크·뷰4·문서·PDF)</td><td class="part">08-08(촬영) / 08-09(문서·PDF)</td><td>과적재 해소</td></tr>
+<tr><td>§8.6 1~3</td><td class="ok">07-30~31 · 08-06(로그 리플레이)</td><td>최소선 채택</td></tr>
+<tr><td>§8.6 4~6 (§8.4·§8.5)</td><td class="no"><b>컷 → 본행사</b></td><td>재충원 1줄만 §8.1에 편입</td></tr>
+<tr><td>§9.1 · 9.2 · 9.3</td><td class="ok">08-02 / 08-02·08-04</td><td><span class="ok">✅ <b>9.1·9.2·9.3 전부 07-28 완료</b></span>
+(9.2는 07-28 저녁 코드 확인으로 정정 — 이 표가 미착수로 적고 있었다). §9.6 게이트는 <code>pnpm verify</code>로 상시화(기준선 <code>gate.baseline.json</code>)</td></tr>
+<tr><td>— <span class="note">(신규 · 3차 검수 이후 발견)</span></td><td class="ok">08-02(§9.7) / 08-04(§7.12 후속)</td>
+<td>✅ 로드맵 <b>§9.7</b>(뷰4 폴링 트윈, <code>2fb83ef</code>) · <b>§9.6 <code>--quick</code> 리포트 덮어쓰기</b>(<code>2fb83ef</code>) ·
+<b>§7.12 후속 2건</b>(폰 조작 <code>1e23362</code> · 시각 정리 <code>8dfa3e6</code>).
+4개 일정표 어디에도 없던 항목이다 — <b>실기 검수와 결함 추적에서 새로 나온 것</b>이라 §2의 가장 가까운 슬롯에 편입했다</td></tr>
+<tr><td>§9.4</td><td class="no"><b>컷</b></td><td>dt 클럭 최소분만 §9.2에 흡수</td></tr>
+<tr><td>§9.5</td><td class="no"><b>컷 → 본행사</b></td><td><code>STAGES</code>에 <code>load</code> 자리만 예약 — <span class="ok"><b>✅ 07-28 예약 완료</b></span></td></tr>
+</tbody>
+</table>
+</div>
+
+<h2><span class="n">—</span>변경 이력</h2>
+<ul class="tight">
+<li><b>2026-07-27</b> 최초 작성. 로드맵 §5·§7.99·§8.6·§9 <b>4개 일정표 병합</b>, 선행 의존성 전수 수집, <b>모순 6건 · 누락 의존성 12건</b> 지적.</li>
+<li><b>2026-07-28</b> <b>구현 완료 반영.</b> §2에 07-28 착지분 편입 — 봇 도박 고발(§7.5.3, 컷라인 위로 승격) · 방 공개 상태 복귀 ·
+코드 스플리팅(§9.1) · <code>view-contract</code> <code>implements</code> · <code>dispose()</code>(§9.3) · 비밀 통로 표기 ·
+<b>통합 회귀 게이트 <code>pnpm verify</code> 신설</b>. §6 머리에 커밋 전/종료 시 게이트 명령을 명시.
+§5.1·§7.2 ③④의 최소 방어 항목(<code>STAGES.load</code>)을 이행 완료로 표기.
+미착수로 남은 것은 <b>§9.2(<code>loop.sleep/wake</code>)와 §9.6 런타임 순회</b>뿐.</li>
+<li><b>2026-07-28(2차)</b> <b>마지막 세 라운드 반영.</b>
+§2 07-29 슬롯에 <b>폴백률 22% → 0%</b>(<code>6d3a8a9</code>) 편입 — 대사 길이 축의 마지막 조각이다(폴백 템플릿 → LLM 원문).
+§2 08-03 슬롯에 <b>AI 패널 판 시작 동시 노출</b> · <b>랜딩 AI 경계 노출</b>(<code>55297c0</code> · <code>c90c723</code>),
+08-06 슬롯에 <b>eval 리포트 실제 생성</b> · <b>P6</b> 편입.
+§2 08-04 슬롯에 <b>터치 T1 D-패드</b>를 <b class="no">컷라인에서 되살려</b> 편입(<code>55297c0</code>).
+§5.1에서 T1을 <b>컷 취소</b>로 표기하고 그 컷 사유가 틀렸음을 명시 ·
+§5.2에 <b>탭-투-무브(T2)</b>와 <b>AI 패널 <code>0·0·0</code> 표기</b>를 폐기 항목으로 신설.
+§3에 <b>A′(한 판 완주 후 <code>/health</code> 재확인)</b> 추가.</li>
+<li><b>2026-07-28(3차)</b> <b>저녁 세 커밋 반영.</b>
+§2 08-02 슬롯에 <b>뷰4 폴링 트윈 결함</b>(로드맵 §9.7 · <code>2fb83ef</code>)과 <b><code>verify --quick</code>의 eval 리포트 덮어쓰기 해소</b>를 편입하고,
+<b class="no">§9.2를 미착수 → 완료로 정정</b>(코드에 이미 있었다 — 이 문서와 체크리스트가 “유일한 미착수 P0”로 적고 있던 것이 저녁 검수에서 드러났다).
+§2 08-04 슬롯에 <b>폰 조작 3건</b>(<code>1e23362</code>) · <b>폰 화면 시각 정리</b>(<code>8dfa3e6</code>) 편입,
+같은 슬롯의 탭 도크(§7.9)는 컬럼 자체 스크롤이 들어가 <b>조작 측면 해소</b>로 표기.
+§6 게이트 표에 <code>--quick</code>은 리포트를 쓰지 않는다는 항목 추가.
+<b class="no">§8 추적표의 “T1은 컷”을 정정</b> — §5.1은 07-28에 컷을 취소했는데 추적표만 옛 판단으로 남아 <b>문서가 자기 자신과 어긋나 있었다.</b>
+§8에 3차 검수 이후 새로 나온 항목 행 신설.
+<b>부수</b> — 위 §2 일정표의 날짜 셀 <code>rowspan</code>이 <b>5개 날짜에서 실제 행 수와 어긋나</b> 표가 밀려 보였다(<code>[신규]</code> 행을 더하면서 갱신되지 않은 누적분) → 전 날짜 재계산.
+<b>사람용 문서에서만 드러나는 결함</b>이라 <code>.md</code>만 보면 알 수 없다.</li>
+</ul>
+
+</div>
+</body>
+</html>
