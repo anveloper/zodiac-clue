@@ -56,6 +56,10 @@
     "dir": "plans/done",
     "items": [
       {
+        "path": "plans/done/32-landing-single-game.md",
+        "title": "plan: 랜딩 — 게임이 하나뿐이면 «고르기»가 아니다"
+      },
+      {
         "path": "plans/done/31-end-screen-cards.md",
         "title": "plan: 결과 화면 — 3장을 «장»으로 조판한다"
       },

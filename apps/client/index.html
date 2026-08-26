@@ -301,7 +301,39 @@
       .game-item .gi-body { display: flex; flex-direction: column; gap: 2px; }
       .game-item .gi-body b { color: var(--wds-label-strong); font-size: 14px; }
       .game-item .gi-sub { font-size: 12px; color: var(--wds-label-alternative); }
+
       .game-item.selected { border-color: var(--wds-primary-normal); background: var(--wds-bg-alternative); }
+
+      /* ── 게임이 하나뿐이면 «고르기»가 아니다 ─────────────────────────────
+         랜딩 첫 화면은 신규 유입의 **첫인상**인데, 선택지가 하나인 셀렉터가 ~180px를 쓰면서
+         바로 위 `<h1>`과 **제목·이모지를 글자 그대로 반복**하고 있었다(캡처 실측).
+         고를 것이 없는 자리를 «고르는 UI»로 그리면 제품이 아니라 설정 폼으로 읽힌다.
+
+         **마크업은 지우지 않는다** — 콘텐츠 교체가 이 저장소의 설계 목표다(CLAUDE.md).
+         다만 되살아나는 것은 **선택 UI의 «껍데기»뿐이다**: `.game-item`에는 지금
+         `role`·`tabindex`·클릭 핸들러가 없고 방 생성 프로토콜에 게임 식별자 필드 자체가 없다
+         (`network.ts`의 `create(roomType, { isPublic, demo })`). 게임 #2를 넣는 사람은
+         **동작을 그때 붙여야 한다** — 이 규칙은 자리만 비켜 줄 뿐이다.
+
+         ⚠️ **자식 결합자(`>`)여야 한다.** 자손(` `)으로 두면 항목이 래퍼에 감싸이는 순간
+         각 항목이 자기 래퍼의 `:only-child`가 되어 **게임이 둘인데도 접힌 채**로 남는다
+         (검수 실측: 래퍼 2개 → `gameField` 여전히 `none`). `>`는 실패 방향을
+         «접힌 채 도달 불가» → «셀렉터가 도로 나온다»(무해)로 뒤집고,
+         **«항목은 `#gameSelect`의 직계 자식»이라는 마크업 계약을 선택자가 스스로 말하게** 한다.
+
+         ⚠️ **`:has()` 미지원 폴백이 안전한 것은 우연이 아니다.** `:not()`은 forgiving이 **아니라서**
+         내부가 무효면 규칙 전체가 죽는다 → 두 규칙이 **함께** 죽어 «둘 다 보인다»(중복이지 정보 손실 아님).
+         `:is(:has(…))`로 썼다면 forgiving이라 폴백이 **뒤집혀 `#gameMeta`가 영구히 숨는다.**
+
+         JS 0바이트 — 초기 로드 JS는 §9.1 B1 래칫 예산이고 지금 red다(47.26 kB / 한도 43.65). */
+      #landing:has(#gameSelect > .game-item:only-child) #gameField { display: none; }
+      #landing:not(:has(#gameSelect > .game-item:only-child)) #gameMeta { display: none; }
+      /* 메타는 **제목 블록의 소개 한 줄**이다 — 부제에 붙이고, 헤더→폼 사이의 원래 20px 분리를
+         그대로 남긴다. (초안은 `-2px 0 14px`이라 부제와 18px·폼과 14px로 벌어져
+         **폼에 더 가까운 고아 줄**로 읽혔다 — 검수 실측.) */
+      .game-meta {
+        margin: -14px 0 20px; font-size: 12px; color: var(--wds-label-alternative); line-height: 1.5;
+      }
       .hint-sm { font-size: 12px; color: var(--wds-label-alternative); margin: 6px 0 14px; text-align: center; }
       /* 공개/비공개 세그먼트 토글 */
       .seg { display: flex; gap: 6px; }
@@ -1446,8 +1478,12 @@
       <div class="card">
         <h1>🐯 호랑이 생신 잔치</h1>
         <p class="subtitle">대감집 손님들 중 잔치 선물을 훔친 자를 추리하라</p>
-        <!-- 게임 선택 슬롯: 현재 1종. 다른 게임 컨텐츠가 추가되면 선택 UI로 확장. -->
-        <div class="field">
+        <!-- 게임이 하나뿐일 때의 소개 한 줄. 선택 UI가 접히면 이 줄이 그 몫을 진다.
+             문안은 아래 `.gi-sub`와 **글자 그대로 같다**(§8.4 — 같은 사실을 두 문장으로 만들지 않는다). -->
+        <p id="gameMeta" class="game-meta">클루형 추리 · 추천 2~6인 · 1인도 가능(빈자리는 NPC)</p>
+        <!-- 게임 선택 슬롯: 현재 1종이라 **접혀 있다**(위 `:has` 규칙). 2종이 되면 자리는 도로 나오지만
+             **선택 동작은 그때 붙여야 한다** — 지금은 `role`·핸들러가 없는 껍데기다. -->
+        <div class="field" id="gameField">
           <label>게임</label>
           <div id="gameSelect" class="game-select">
             <div class="game-item selected" data-game="zodiac-clue">
