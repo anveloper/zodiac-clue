@@ -56,6 +56,10 @@
     "dir": "plans/done",
     "items": [
       {
+        "path": "plans/done/26-goal-card-how-to-find.md",
+        "title": "plan: 목표 카드가 «찾는 법»을 안 가르친다 — ④ `확신` 신설"
+      },
+      {
         "path": "plans/done/25-bot-self-accuse-common-clue.md",
         "title": "plan: 봇 자멸 고발 — 「미반증 ⇒ 정답」이 공통 단서에서 깨진다"
       },

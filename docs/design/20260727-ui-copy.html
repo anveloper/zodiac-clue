@@ -397,7 +397,7 @@
     <tr><td>턴 배너 상태줄</td><td><b>28자</b></td><td><code>.hud-turn</code>이 <code>white-space:nowrap</code></td></tr>
     <tr><td>결과 제목</td><td><b>16자</b></td><td><code>.end-title</code> 26px</td></tr>
     <tr><td>결과 부제</td><td><b>44자</b></td><td><code>.end-sub</code> 1~2행</td></tr>
-    <tr><td>목표 카드 1줄</td><td><b>27자</b>(실측)</td><td><b>4줄</b> 카드. 폰 390 가용폭 306px = 순한글 27자. ⚠️ ②(33)·③(44)은 이미 초과라 2행으로 접힌다 — 카드는 넘치지 않으나 «2행 금지»는 이미 깨져 있다</td></tr>
+    <tr><td>목표 카드 1줄</td><td><b>순한글 ≈33자</b><br><span class="note">마커 제외</span></td><td><b>5줄</b> 카드. <b>상한은 글자 수가 아니라 렌더 폭이다</b>(폰 390 가용폭 306px) — ①은 <b>37자인데 1행</b>(숫자·<code>·</code>·공백이 좁다), ⑤는 <b>36자인데 2행</b>(순한글 비중). 2026-08-26 실측 — 1행: ①37·④33 / 2행: ②39·③52·⑤36. ⚠️ ③(52자)이 최장. <b>글자 수로 판정하지 말고 <code>gate-screen.mjs --keep</code> 캡처로 확정하라.</b> <del>«27자 · ③은 44자»는 md의 «32자»와도 어긋났고 둘 다 실측과 불일치 — 폐기</del></td></tr>
     <tr><td>랜딩 <code>.msg</code></td><td><b>40자</b></td><td><code>min-height:16px</code> 1행</td></tr>
     <tr><td><b>NPC 대사 — 제안</b></td><td><b>25자</b></td><td>코드 <code>LINE_BUDGET_SUGGEST</code>. 봇 1턴 = <code>npcDelay</code>+<code>BOT_ACT_GAP</code>+<code>bubbleLifeMs(len)</code> ≤ 4s 역산(④ §2.3)</td></tr>
     <tr><td><b>NPC 대사 — 고발·계략</b></td><td><b>40자</b></td><td>코드 <code>LINE_MAX</code>. 홀드 타이머가 없어 클라이맥스 대사의 캐릭터색을 남긴다</td></tr>
@@ -476,7 +476,8 @@
           <li><span class="k">①</span><span><b>목표</b> — 도둑 1명 · 훔친 것 1개 · 장소 1곳을 맞히면 승리.</span></li>
           <li><span class="k">②</span><span><b>출발점</b> — 내 손패 3장은 정답이 아닙니다. 여기서부터 지워 나가세요.</span></li>
           <li><span class="k">③</span><span><b>방법</b> — 방향키로 이동해 방에서 [추리하기]. 내 제안이 반증되면 그 카드는 정답이 아니에요.</span></li>
-          <li><span class="k">④</span><span><b>끝내기</b> — 확신하면 [신고하기]. 틀리면 탈락하고 반증만 남아요.</span></li>
+          <li><span class="k">④</span><span><b>확신</b> — 장소까지 안 지운 3장을 내가 냈는데 아무도 반증 못 하면 정답.</span></li>
+          <li><span class="k">⑤</span><span><b>끝내기</b> — 확신하면 [신고하기]. 틀리면 탈락하고 반증만 남아요.</span></li>
         </ol>
         <div class="cta"><button class="g-btn">알겠어요, 시작할게요</button></div>
         <p class="re">[?] 버튼을 누르면 다시 볼 수 있어요.</p>
@@ -484,7 +485,25 @@
       <div class="tipwrap" style="justify-content:center">
         <div class="box good" style="margin:0">
           <b>② 가 이 카드의 존재 이유다.</b> 순서를 바꾸지 말 것.<br>
-          <b style="color:var(--gold)">④ 신설 2026-08-26.</b> 앞의 3줄은 «어떻게 이기는가»를 말하지 않았다 —
+          <b style="color:var(--gold)">④ 확신 신설 2026-08-26(2차).</b> 4줄 카드는 <b>«어떻게 아는가»가 없었다</b> —
+          ②③이 <b>둘 다 소거</b>(이건 정답이 아니다)이고, ⑤가 「확신하면」이라 말하면서 <b>확신이 어디서 오는지</b>는
+          말하지 않았다. 카드가 «지우는 법»만 가르치고 <b>«찾는 법»을 안 가르친 것</b>이다.
+          서버 규칙이 확정한 명제 —「내가 «정답 아님»으로 본 적 없는 3장을 아무도 반증 못 하면 그게 정답」—을
+          사용자 어휘 <b>«안 지운»</b>으로 옮겼다(② <code>여기서부터 지워 나가세요</code>가 이미 심어 둔 동사다).
+          <b style="color:var(--red)">«내가 냈는데»를 빼면 거짓이 된다</b> — 서버 반증 루프는 <b>제안자를 건너뛰고</b>
+          (<code>for (let i = 1; …)</code>) 자기 손패 지목은 의도적으로 허용된다. 그래서 «아무도 반증 못 함»은
+          <b>제안자의 손패에 대해서만 무정보</b>인데, 제안 3장도 미반증 로그도 <b>전원에게 브로드캐스트</b>된다 →
+          남의 제안에 이 규칙을 적용하면 틀린다. ③이 <code>내 제안이 반증되면</code>으로 소유격을 명시하는 것과 같은 이유이고,
+          이건 문체가 아니라 <b>참·거짓</b> 문제다.<br>
+          <b>«장소까지»가 둘째 핵심어</b> — 제안의 장소는 고르는 값이 아니라 <b>서 있는 곳</b>
+          (<code>needRoom:false · fixedRoom: me.room</code> — 사용자는 <b>2장만 고른다</b>)이라
+          신규 유입이 셋 중 <b>장소 하나만 빠뜨린다</b>. 같은 누락이 봇에서는 자멸 고발로 나타났고
+          (<code>docs/plans/done/25-…</code>), 이 줄은 그 <b>사람 쪽 절반</b>이다.
+          <span class="note">초안의 <code>방까지</code>는 §2 어휘 통일표 위반이었다 — 3요소 ③의 확정 표기는 <b>장소</b>이고
+          <code>방</code>은 «칸 개념과 충돌»로 금지다. ③의 <code>방에서</code>는 물리 공간 용법이라 허용 범위.</span>
+          라벨을 <code>확신</code>으로 잡아 ⑤ 「확신하면」이 <b>이 줄을 가리키게</b> 했다 —
+          ③ 방법(반복하는 행동) · ④ 확신(판단) · ⑤ 끝내기(선언)로 역할이 셋 다 다르다.<br>
+          <b style="color:var(--gold)">⑤(구 ④) 신설 2026-08-26.</b> 앞의 3줄은 «어떻게 이기는가»를 말하지 않았다 —
           ①이 「맞히면 승리」라고만 하고 그 선언을 어느 버튼으로 하는지도, 틀리면 어떻게 되는지도 빠져 있었다.
           「탈락」에서 끊지 않고 <b>「반증만 남아요」까지</b> 말하는 이유는, 오답 고발의 실제 대가가
           «쫓겨남»이 아니라 «남은 판 내내 앉아서 반증만 하는 것»이기 때문이다.<br>
