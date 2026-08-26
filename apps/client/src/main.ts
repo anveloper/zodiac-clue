@@ -1633,7 +1633,7 @@ const updateEndState = (state: Room["state"]): void => {
   if (showSpec) {
     // 둘 다 **확정 문안 그대로**다 — 탈락은 §7.2, 관전은 §8.1 행 268(서버 안내와 같은 문장).
     $("specText").textContent = meElim
-      ? "❌ 고발 실패 · 관전 중 — 내 손패로 반증은 계속돼요."
+      ? "❌ 신고 실패 · 관전 중 — 내 손패로 반증은 계속돼요."
       : "이미 진행 중인 판이에요. 관전으로 들어갑니다.";
   }
 
@@ -1656,7 +1656,7 @@ const updateEndState = (state: Room["state"]): void => {
   let sub: string;
   if (meElim && endInfo?.mine) {
     // 4 — 내가 오답 탈락 후 종료. 부제 뒤에 «· 무승부로 종료»를 덧붙이지 않는다(3행 방지).
-    title = "❌ 고발 실패";
+    title = "❌ 신고 실패";
     sub = `내 지목 — ${cardTriple(endInfo.mine)} / ${envelope}`;
   } else if (winnerId === "") {
     // 5 — 무승부(제안 상한 도달). 승자가 없으므로 승리 연출도 없다(`applyFx` ⑤가 이미 그렇다).
@@ -1785,7 +1785,7 @@ const openTurnCircle = (): void => {
 let accuseDeadline: number | null = null;
 let accuseTicker: number | undefined;
 
-/** 남은 시간 문안 — ui-copy §9.5 "제안 후 고발 대기" 확정 문안에 초만 대입. */
+/** 남은 시간 문안 — ui-copy §9.5 "제안 후 신고 대기" 확정 문안에 초만 대입. */
 const accuseSubText = (): string => {
   if (accuseDeadline === null) return "";
   const left = Math.max(0, Math.ceil((accuseDeadline - Date.now()) / 1000));
@@ -2446,11 +2446,11 @@ const enterGame = async (): Promise<void> => {
   ($("accuse") as HTMLButtonElement).onclick = async () => {
     if (blockedBy("accuse")) return;
     const pick = await openPicker({
-      title: "고발 — 진범을 지목하라",
+      title: "신고 — 진범을 지목하라",
       needRoom: true,
       warn: "⚠ 틀리면 즉시 탈락합니다. 그 뒤로는 반증만 할 수 있어요.",
       note: "이 3장이 정답 봉투와 모두 같아야 승리해요.",
-      okLabel: "고발한다",
+      okLabel: "신고한다",
       okDanger: true,
       lockKnown: true, // 고발: 확정 «정답 아님»(손패·공통·엿보기·반박)만 선택 불가 — 수동 제외는 선택 가능(표기만)
     });

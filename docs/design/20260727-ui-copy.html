@@ -433,9 +433,9 @@
   <div class="scroll"><table>
     <tr><th>버튼</th><th>확정 라벨</th><th>개념어 <span class="note">(그대로 유지)</span></th></tr>
     <tr><td><code>#suggest</code></td><td><b class="good">추리하기</b></td><td class="dim">개념·로그·기록표는 <b>제안</b> — <code>🔍 제안</code>, <code>제안 기록표</code>, <code>제안 상한 75</code>는 바꾸지 않는다</td></tr>
-    <tr><td><code>#accuse</code></td><td><b class="good">신고하기</b></td><td class="dim">개념은 <b>고발</b> — 모달 제목 <code>고발 — 진범을 지목하라</code>(§6.2)와 <code>❌ 고발 실패</code>는 유지</td></tr>
+    <tr><td><code>#accuse</code></td><td><b class="good">신고하기</b></td><td><b class="good">✅ 2026-08-26 통일 — 사용자 문안은 전부 «신고»</b>(쿼카 결정 · 오너 확정).<br><del class="dim">«개념은 고발 — 모달 제목·<code>❌ 고발 실패</code>는 유지»</del> <b>철회.</b><br>모달 <code>신고 — 진범을 지목하라</code> · 확인 <code>신고한다</code> · 결과 <code>❌ 신고 실패</code>.<br><span class="note">내부 식별자(<code>accuse</code>·<code>doAccusation</code>·<code>bot-accuse.ts</code>)와 코드 주석의 «고발»은 도메인 용어로 그대로 둔다 — 사용자 문안과 코드 어휘는 다른 층이다.</span></td></tr>
     <tr><td><code>#passage</code></td><td><b class="good">지름길로 가기</b></td><td class="dim">개념은 <b>비밀 통로</b></td></tr>
-    <tr><td><code>#bonus</code></td><td><b class="good">엿보기</b></td><td class="dim">개념은 <b>계략</b>(위 표 「고정 NPC 능력」) — 로그 <code>🃏 … 계략(엿보기 2·이동 +5)</code>은 유지</td></tr>
+    <tr><td><code>#bonus</code></td><td><b class="good">다가가기</b></td><td class="dim">개념은 <b>계략</b>(위 표 「고정 NPC 능력」) — 로그 <code>🃏 … 계략(엿보기 2·이동 +5)</code>은 유지</td></tr>
     <tr><td><code>#endTurn</code></td><td><b class="good">내 턴 종료</b></td><td class="dim">개념은 <b>턴 종료</b></td></tr>
   </table></div>
   <div class="box warn">
@@ -683,7 +683,7 @@
         <div class="tipwrap">
           <div class="why">[계략] · 근처에 없음</div>
           <div class="tip">엿볼 수 있는 이가 근처에 없어요. 보드 가장자리의 NPC 곁으로.</div>
-          <div class="why">[고발] · 활성</div>
+          <div class="why">[신고하기] · 활성</div>
           <div class="tip on">정답 3장을 지목해요. 틀리면 즉시 탈락합니다.</div>
         </div>
       </div>
@@ -745,15 +745,15 @@
   </ul>
 
   <!-- ════════════ 6 ════════════ -->
-  <h2 id="s6"><span class="n">6</span>제안 모달 / 고발 모달</h2>
+  <h2 id="s6"><span class="n">6</span>제안 모달 / 신고 모달</h2>
   <ul>
     <li><b>제목은 무엇을 고르는지 말한다.</b> <span class="bad">제안</span> → <span class="good">제안 — 이 방에서 누가, 무엇을?</span></li>
-    <li><b>확인 버튼 라벨에 동사를 넣는다.</b> <span class="bad">확인</span> → <span class="good">이 조합으로 제안</span> / <span class="good">고발한다</span></li>
+    <li><b>확인 버튼 라벨에 동사를 넣는다.</b> <span class="bad">확인</span> → <span class="good">이 조합으로 제안</span> / <span class="good">신고한다</span></li>
     <li>취소 버튼은 <code>취소</code> 유지 · 셀렉트 옵션은 <code>이모지 + 라벨</code>, 장소는 <code>📍</code> 접두</li>
   </ul>
 
   <div class="pv">
-    <div class="pv-h">미리보기 · <b>openPicker()</b> — 좌: 제안 / 우: 고발</div>
+    <div class="pv-h">미리보기 · <b>openPicker()</b> — 좌: 제안 / 우: 신고</div>
     <div class="pv-b">
       <div class="g-modal">
         <h5>제안 — 이 방에서 누가, 무엇을?</h5>
@@ -767,7 +767,7 @@
         <div class="g-acts"><button class="g-btn ghost">취소</button><button class="g-btn">이 조합으로 제안</button></div>
       </div>
       <div class="g-modal">
-        <h5>고발 — 진범을 지목하라</h5>
+        <h5>신고 — 진범을 지목하라</h5>
         <div class="g-warnbar">⚠ 틀리면 즉시 탈락합니다. 그 뒤로는 반증만 할 수 있어요.</div>
         <div class="g-row"><label>용의자</label>
           <div class="g-sel"><span>🐍 뱀 무녀</span><span class="car">▾</span></div></div>
@@ -776,7 +776,7 @@
         <div class="g-row"><label>장소</label>
           <div class="g-sel"><span>📍 서재</span><span class="car">▾</span></div></div>
         <p class="g-hint">이 3장이 정답 봉투와 모두 같아야 승리해요.</p>
-        <div class="g-acts"><button class="g-btn ghost">취소</button><button class="g-btn danger">고발한다</button></div>
+        <div class="g-acts"><button class="g-btn ghost">취소</button><button class="g-btn danger">신고한다</button></div>
       </div>
     </div>
     <p class="pv-cap" style="padding:0 18px 16px">
@@ -792,10 +792,10 @@
     <tr><td>안내 줄</td><td class="q">지목한 인물과 물건이 이 방으로 소환돼요. <span class="lim">21자</span></td></tr>
     <tr><td>확인 버튼</td><td class="q">이 조합으로 제안 <span class="lim">8자</span></td></tr>
     <tr><td>내 패 옵션 접미 <span class="tag t-soon">선행</span></td><td class="q">— 내 패 <span class="note">(선택 <b>가능</b>. 반증자를 통제하는 정석 전술이라 제안에서는 막지 않는다)</span></td></tr>
-    <tr><td rowspan="5"><b>고발</b></td><td>제목</td><td class="q">고발 — 진범을 지목하라 <span class="note">(명령형 관용구라 허용. 본문은 해요체)</span></td></tr>
+    <tr><td rowspan="5"><b>신고</b></td><td>제목</td><td class="q">신고 — 진범을 지목하라 <span class="note">(명령형 관용구라 허용. 본문은 해요체)</span></td></tr>
     <tr><td>위험 경고 <span class="note">상단 고정</span></td><td class="q">⚠ 틀리면 즉시 탈락합니다. 그 뒤로는 반증만 할 수 있어요. <span class="lim">33자</span></td></tr>
     <tr><td>하단 안내</td><td class="q">이 3장이 정답 봉투와 모두 같아야 승리해요. <span class="lim">23자</span></td></tr>
-    <tr><td>확인 버튼</td><td class="q">고발한다 <span class="note">— 위험 스타일(붉은 배경)</span></td></tr>
+    <tr><td>확인 버튼</td><td class="q">신고한다 <span class="note">— 위험 스타일(붉은 배경)</span></td></tr>
     <tr><td>내 패 옵션 접미</td><td class="q">— 내 패 (정답 아님) · <code>disabled</code> <span class="tag t-keep">유지</span> <span class="note">자멸 방지</span></td></tr>
   </table></div>
   <p class="note">
@@ -835,7 +835,7 @@
         <div class="acts"><button class="g-btn">다시 하기</button><button class="g-btn ghost">메인으로</button></div>
       </div>
       <div class="g-end lose">
-        <div class="t">❌ 고발 실패</div>
+        <div class="t">❌ 신고 실패</div>
         <div class="s">내 지목 — 🐰 토끼 낭자 · 🥢 젓가락 · 📍 안방<br>정답 봉투 — <b>🐍 뱀 무녀 · 🍶 술동이 · 📍 서재</b></div>
         <div class="acts"><button class="g-btn">다시 하기</button><button class="g-btn ghost">메인으로</button></div>
       </div>
@@ -852,11 +852,11 @@
 
   <div class="scroll"><table>
     <tr><th>#</th><th>조건</th><th>제목 <code>#endTitle</code></th><th>부제 <code>#endSub</code></th></tr>
-    <tr><td>1</td><td>내가 고발 성공</td><td class="q">🎉 사건 해결!</td><td class="q">정답 봉투 — 🐍 뱀 무녀 · 🍶 술동이 · 📍 서재</td></tr>
+    <tr><td>1</td><td>내가 신고 성공</td><td class="q">🎉 사건 해결!</td><td class="q">정답 봉투 — 🐍 뱀 무녀 · 🍶 술동이 · 📍 서재</td></tr>
     <tr><td>2</td><td>남이 먼저 해결</td><td class="q">🔍 사건 종결</td><td class="q">🐭 생쥐 서생 님이 먼저 맞혔어요. 정답 봉투 — …</td></tr>
     <tr><td>3</td><td>내가 최후 생존</td><td class="q">🏅 최후의 1인</td><td class="q">모두 오답으로 탈락했어요. 정답 봉투 — …</td></tr>
     <tr><td>3′</td><td>남이 최후 생존</td><td class="q">🏅 판 종료</td><td class="q">🐭 생쥐 서생 님만 남았어요. 정답 봉투 — …</td></tr>
-    <tr><td>4</td><td>내가 오답 탈락 후 종료</td><td class="q">❌ 고발 실패</td><td class="q">내 지목 — … / 정답 봉투 — …</td></tr>
+    <tr><td>4</td><td>내가 오답 탈락 후 종료</td><td class="q">❌ 신고 실패</td><td class="q">내 지목 — … / 정답 봉투 — …</td></tr>
     <tr><td>5 <span class="tag t-new">신규</span></td><td>무승부 <span class="note">(제안 상한 도달 · <code>winner === ""</code>)</span></td><td class="q">🏳 무승부</td><td class="q">제안 75회에 이르도록 아무도 해결하지 못했어요. 정답 봉투 — …</td></tr>
   </table></div>
   <p class="note">부제 44자 상한을 넘는 2·3·4·5는 <b>2행 허용</b>. 3행이 되면 앞 문장을 잘라내고 정답 봉투만 남긴다. 버튼은 6종 모두 <code>[다시 하기]</code> <code>[메인으로]</code>이며, 리매치 합의 도입 시 §9.4로 대체한다.</p>
@@ -906,7 +906,7 @@
           ❌ 탈락 · 관전 중 <button class="g-btn" style="padding:4px 10px">메인으로</button>
         </div>
         <div class="g-hud g-spec" style="border-color:#3f5f45">
-          ❌ 고발 실패 · 관전 중 — 내 손패로 반증은 계속돼요.
+          ❌ 신고 실패 · 관전 중 — 내 손패로 반증은 계속돼요.
           <button class="g-btn ghost" style="padding:4px 10px">나가기</button>
         </div>
       </div>
@@ -978,7 +978,7 @@
     <tr><td>724</td><td class="q dim">🛡 ${이름} 님이 반증했습니다.</td><td class="q good">🛡 반증 — ${이름} 님</td><td>표기 일관</td></tr>
     <tr><td>733</td><td class="q">❗ 아무도 반증하지 못함 — 정답 후보!</td><td colspan="2"><b>❗ 아무도 반증하지 못함 — 다른 손패엔 이 3장이 한 장도 없음</b> <span class="note">2026-08-26 — 「정답 후보」는 <b>추론</b>이고 참·거짓이 보는 사람의 지식에 달렸다(자기 손패 지목·공통 단서에서 거짓). 전원 브로드캐스트에 추론을 실을 수 없다</span></td></tr>
     <tr><td>784</td><td class="q dim">🎉 ${이름} 사건 해결! 정답: … · … · …</td><td class="q good">🎉 사건 해결 — ${이름} 님<br>📜 정답 봉투 — … · … · 📍 …</td><td>결과 오버레이(§7)와 <b>같은 문자열 재사용</b></td></tr>
-    <tr><td>792</td><td class="q dim">❌ [고발 실패] ${이름} 탈락(반증만 가능).</td><td class="q good">❌ 고발 실패 — ${이름} 님 탈락 · 반증만 가능</td><td>대괄호 제거</td></tr>
+    <tr><td>792</td><td class="q dim">❌ [고발 실패] ${이름} 탈락(반증만 가능).</td><td class="q good">❌ 신고 실패 — ${이름} 님 탈락 · 반증만 가능</td><td>대괄호 제거</td></tr>
     <tr><td>1003</td><td class="q dim">🎉 ${이름} 최후 생존 — 승리!</td><td class="q good">🎉 최후 생존 — ${이름} 님 승리!</td><td>어순만</td></tr>
     <tr><td><code>endInDraw()</code><br><span class="tag t-new">확정</span></td><td class="q">🏳 무승부 — 제안 75회 도달 · 판을 종료합니다</td><td><span class="tag t-keep">그대로 유지</span> <span class="note">07-28 임시 문구를 검토 후 확정</span></td><td>접두 1개(§2 <code>🏳</code>) · 26자 · 조사 없음(<code>회</code> 고정 접미) · 승자 줄과 같은 <code>kind:"win"</code></td></tr>
     <tr><td><code>endInDraw()</code><br><span class="tag t-new">확정</span></td><td class="q">📜 정답 봉투 — … · … · 📍 …</td><td><span class="tag t-keep">유지</span></td><td>784와 같은 2줄 구성(결과 + 정답 봉투) · 오버레이 §7.1 5번과 같은 문자열</td></tr>
@@ -1245,7 +1245,7 @@
     <tr><td>10초 이하</td><td class="q">⏳ 10초 — 시간이 지나면 자동으로 넘어가요</td><td>부제 (강조색)</td></tr>
     <tr><td>만료</td><td class="q">⌛ 시간 초과 — 다음 사람에게 넘어갔어요</td><td>로그</td></tr>
     <tr><td>이탈자 대기</td><td class="q">⏳ 접속 대기 8초 — 토끼 낭자 님</td><td>로그</td></tr>
-    <tr><td>추리 후 신고 대기</td><td class="q">⏳ 지금 신고할 수 있어요 (30초). 넘기려면 [내 턴 종료]</td><td>부제</td></tr>
+    <tr><td>제안 후 신고 대기</td><td class="q">⏳ 지금 신고할 수 있어요 (30초). 넘기려면 [내 턴 종료]</td><td>부제</td></tr>
     <tr><td><b>솔로(사람 1명)</b></td><td colspan="2"><b class="good">타이머 문안을 전부 표시하지 않는다</b> — 심사 경험을 재촉하지 않는다</td></tr>
   </table></div>
 
@@ -1262,7 +1262,7 @@
     <tr><td>5.1–5.5</td><td>버튼 4종 + 턴 종료</td><td class="q">client/src/main.ts</td><td class="q">updateTurnInfo()에서 <code>title</code> 설정 · 각 onclick 첫 분기</td></tr>
     <tr><td>5.0</td><td>클릭 피드백 출력처 <span class="tag t-soon">선행</span></td><td class="q">client/index.html · main.ts</td><td class="q"><code>.hud-turn</code> 안 <code>.ti-sub</code> 추가</td></tr>
     <tr><td>6.1</td><td>제안 모달 장소 고정행</td><td class="q">client/src/main.ts</td><td class="q">openPicker() ≈102 — 읽기전용 행 분기</td></tr>
-    <tr><td>6.2</td><td>고발 모달 경고</td><td class="q">client/src/main.ts</td><td class="q">openPicker() · <code>#accuse</code> onclick</td></tr>
+    <tr><td>6.2</td><td>신고 모달 경고</td><td class="q">client/src/main.ts</td><td class="q">openPicker() · <code>#accuse</code> onclick</td></tr>
     <tr><td>7.0</td><td>정답 봉투 전달 <span class="tag t-soon">선행</span></td><td class="q">server/rooms/clue-room.ts</td><td class="q">doAccusation() ≈768 · advanceTurn() 최후 생존 분기 ≈998</td></tr>
     <tr><td>7.1</td><td>결과 6종 <span class="note">(무승부 포함)</span></td><td class="q">client/src/main.ts</td><td class="q">updateEndState() ≈1377</td></tr>
     <tr><td>7.2</td><td>관전 배너 본문 2종 <span class="tag t-new">있음</span></td><td class="q">client/index.html · main.ts</td><td class="q"><code>#spectateBar</code> 안 <code>#specText</code> · updateEndState() <span class="note">(표시 판정 = 탈락 || 좌석 없음)</span></td></tr>
@@ -1301,6 +1301,19 @@
 
   <footer>
     <b>변경 이력</b><br>
+    <b style="color:var(--gold)">2026-08-26 (3) — «고발» → «신고» 용어 통일.</b>
+    <b>오너 확정 · 쿼카가 정한 표기.</b> 1~6회차 내내 버튼만 <code>신고하기</code>이고 모달 제목·확인 버튼·
+    결과 화면은 <code>고발</code>이었다. §2가 「개념은 고발 — … 유지」로 <b>의도적 유지</b>를 못 박았으나
+    <b>§2의 제목 자체가 「1개념 = 1표기」</b>여서 <b>표가 자기 제목과 어긋난 상태</b>였다 — 그 조항을 <b>철회</b>하고
+    §2 본표에 «승리 선언 행동» 행을 신설했다.
+    <span class="note">(1~6회차 보고가 근거로 든 「§8.1 — 같은 것을 두 이름으로…」는 <b>오인용</b>이었다.
+    §8.1의 실제 조항은 「같은 <b>사유</b>를 두 <b>문장</b>으로」이고 다른 명제다. 결론은 그대로지만 근거를 §2로 바로잡았다.)</span>
+    교체: 모달 <code>신고 — 진범을 지목하라</code> · 확인 <code>신고한다</code> · 결과 <code>❌ 신고 실패</code> ·
+    관전 배너 · 서버 로그 · NPC 대사 프롬프트 <code>행동: 신고 —</code>.
+    <b>내부 식별자(<code>accuse</code>·<code>doAccusation</code>·<code>bot-accuse.ts</code>)와 코드 주석의
+    «고발»은 그대로 둔다</b> — 사용자 문안과 코드 어휘는 다른 층이고, 식별자를 바꾸면 진단 가치 없는
+    대형 diff만 남는다. 이 문서의 <b>설계 서술 산문</b>에 남은 «고발»(내부 <code>reason</code> 값 ·
+    구 문자열 대조표 · 예산 표 · §8.2 폴백 템플릿표의 액션 이름)도 같은 이유로 유지한다.<br><br>
     <b>2026-07-29 (4) — §8.5 3행 «만석»을 도달 불가로 정정.</b> 화면 게이트에 S7(공개방 목록 배지)을
     넣으면서 실측으로 드러났다 — Colyseus가 정원이 찬 방을 잠그고 <code>getAvailableRooms()</code>가
     잠긴 방을 거르므로 <b>목록 안에 «만석»인 방이 존재할 수 없다</b>. 문안을 확정해 코드에 붙여둔 채

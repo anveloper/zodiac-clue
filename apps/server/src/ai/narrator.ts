@@ -454,7 +454,7 @@ export const narrate = async (i: NarrationInput): Promise<NarrationResult> => {
 
   const act =
     i.action === "accuse"
-      ? `행동: 고발 — 도둑 ${i.suspect}, 훔친 것 ${i.weapon}, 장소 ${i.room}.`
+      ? `행동: 신고 — 도둑 ${i.suspect}, 훔친 것 ${i.weapon}, 장소 ${i.room}.`
       : i.action === "scheme"
         ? `행동: 계략(귓속말) — 은밀히 정보를 흘린다. 단서: ${i.hint ?? ""}. 상대에게만 소곤대듯 한 문장.`
         : `행동: 제안 — ${i.suspect} / ${i.weapon} / ${i.room}${

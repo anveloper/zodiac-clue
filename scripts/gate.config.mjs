@@ -450,7 +450,7 @@ export const SCREEN = {
     },
     {
       id: "accuse-modal",
-      label: "게임 + 고발 모달(select 3개)",
+      label: "게임 + 신고 모달(select 3개)",
       url: "/?solo=1&demo=1",
       steps: [
         { waitFor: "!document.getElementById('turnInfo').classList.contains('hidden')" },
@@ -459,8 +459,8 @@ export const SCREEN = {
       ready: "!!document.querySelector('.overlay .modal select')",
       vscroll: "locked",
       protect: [
-        { sel: ".modal select", min: 3, why: "용의자·훔친 것·장소 — 고발의 전부" },
-        { sel: ".modal .actions button", min: 2, why: "[취소]/[고발한다]" },
+        { sel: ".modal select", min: 3, why: "용의자·훔친 것·장소 — 신고의 전부" },
+        { sel: ".modal .actions button", min: 2, why: "[취소]/[신고한다]" },
       ],
       pairs: [[".modal .actions", ".modal-note", "버튼 줄이 안내 문구를 덮는가"]],
       touchExempt: [],
@@ -476,7 +476,7 @@ export const SCREEN = {
    *  ① **손패의 합집합 = 정답 아닌 카드 전부.**
    *     덱 = (참가자 용의자 6 + 장물 6 + 장소 9) − 정답 3 = 18장, 6인 × 3장으로 **딱** 나뉜다
    *     (clue-room.ts `deal` — 봇이 없으면 공통 단서도 나가지 않는다).
-   *     각 탭은 자기 손패를 **고발 모달의 `disabled` 옵션**으로 이미 알고 있다
+   *     각 탭은 자기 손패를 **신고 모달의 `disabled` 옵션**으로 이미 알고 있다
    *     (main.ts `selectFrom(..., lockMine=true)`). 6탭이 서로 알려주면
    *     각 카테고리에서 **아무의 손에도 없는 값이 정확히 하나** 남는다 = 정답 봉투.
    *     → 서버에 묻지 않고, 동기화 상태를 읽지도 않고, **콜루전 6인이 실제로 할 수 있는
@@ -491,7 +491,7 @@ export const SCREEN = {
    *
    * 도달 순서(전부 기존 UI 조작뿐 — 서버에 새 경로를 만들지 않는다):
    *   방 만들기(비공개) → 5탭이 초대 코드로 참가 → [잔치 시작]
-   *   → 한 바퀴: 각 탭이 자기 차례에 고발 모달을 열어 **손패만 읽고 [취소]** → [턴 종료]
+   *   → 한 바퀴: 각 탭이 자기 차례에 신고 모달을 열어 **손패만 읽고 [취소]** → [턴 종료]
    *   → 두 바퀴째: 생존 지정 탭은 [턴 종료], 나머지 5탭은 «남의 패» 조합으로 고발(반드시 오답)
    *   → 5번째 오답에서 종료(`survivor`) → 탈락 탭 = §7.1 4번 / 생존 탭 = §7.1 3번
    *   → [다시 하기] → 손패 한 바퀴 다시 읽기 → 생존 탭이 **정답 봉투**로 고발
@@ -529,8 +529,8 @@ export const SCREEN = {
         id: "result-lose",
         game: 1,
         tab: ["A", "B"],
-        label: "결과 ❌ 고발 실패(§7.1 4번 · 내 지목 ↔ 정답 봉투 대조)",
-        title: "고발 실패",
+        label: "결과 ❌ 신고 실패(§7.1 4번 · 내 지목 ↔ 정답 봉투 대조)",
+        title: "신고 실패",
       },
       {
         id: "result-survivor",
@@ -543,7 +543,7 @@ export const SCREEN = {
         id: "result-win",
         game: 2,
         tab: ["F"],
-        label: "결과 🎉 사건 해결(§7.1 1번 · 고발 성공)",
+        label: "결과 🎉 사건 해결(§7.1 1번 · 신고 성공)",
         title: "사건 해결",
       },
       {

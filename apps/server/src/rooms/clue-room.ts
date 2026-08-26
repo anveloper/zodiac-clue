@@ -1593,7 +1593,7 @@ export class ClueRoom extends Room<GameState> {
         room: accusation.room,
       });
       this.broadcast("log", {
-        text: `❌ 고발 실패 — ${player.name} 님 탈락 · 반증만 가능`,
+        text: `❌ 신고 실패 — ${player.name} 님 탈락 · 반증만 가능`,
         kind: "accuse",
       });
       this.advanceTurn();

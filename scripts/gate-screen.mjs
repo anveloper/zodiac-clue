@@ -50,8 +50,8 @@
  *      세어 인쇄한다 — 조용히 통과시키지 않는다.
  *
  * 측정 대상 화면
- *   랜딩 · 대기실 · 게임 뷰1 · **게임 뷰2·3·4(HUD만)** · 안내 카드 · 고발 모달
- *   · **결과 화면 4행**(❌ 고발 실패 / 🏅 최후의 1인 / 🎉 사건 해결 / 🔍 사건 종결)
+ *   랜딩 · 대기실 · 게임 뷰1 · **게임 뷰2·3·4(HUD만)** · 안내 카드 · 신고 모달
+ *   · **결과 화면 4행**(❌ 신고 실패 / 🏅 최후의 1인 / 🎉 사건 해결 / 🔍 사건 종결)
  *
  *   · **공개방 목록 3행**(대기 중 / 정원 초과 / 종료됨 — ui-copy §8.5, `SCREEN.roomList`)
  *
@@ -1156,7 +1156,7 @@ const TAB_STATE_JS = `(() => {
   };
 })()`;
 
-/** 고발 모달의 select 3개에서 «전체 후보»와 «내 패(=disabled)»를 읽는다. */
+/** 신고 모달의 select 3개에서 «전체 후보»와 «내 패(=disabled)»를 읽는다. */
 const READ_PICKER_JS = `(() => {
   const s = Array.prototype.slice.call(document.querySelectorAll('.overlay .modal select'));
   if (s.length !== 3) return null;
@@ -1188,7 +1188,7 @@ const accuseJs = (triple) => `(() => {
     if (o.disabled) return { ok: false, why: 'select[' + i + ']에서 잠긴 옵션(내 패)을 골랐다: ' + want[i] };
   }
   const b = document.querySelector('.overlay .modal .actions button.danger');
-  if (!b) return { ok: false, why: '[고발한다] 버튼이 없다' };
+  if (!b) return { ok: false, why: '[신고한다] 버튼이 없다' };
   b.click();
   return { ok: true, picked: want };
 })()`;
@@ -1571,7 +1571,7 @@ const runResultFlow = async () => {
   const waitTurnLeft = (t) =>
     waitFor(t.sid, "document.getElementById('accuse').getAttribute('aria-disabled') !== 'false'", 8000);
 
-  /** 한 바퀴 돌며 6탭의 손패를 읽는다(고발 모달을 열고 **[취소]** — 판을 건드리지 않는다). */
+  /** 한 바퀴 돌며 6탭의 손패를 읽는다(신고 모달을 열고 **[취소]** — 판을 건드리지 않는다). */
   const readAllHands = async (game) => {
     const hands = new Map();
     for (let i = 0; i < R.maxTurns && hands.size < tabs.length; i++) {
@@ -1585,10 +1585,10 @@ const runResultFlow = async () => {
       if (!hands.has(t.id)) {
         await evalIn(t.sid, clickJs("#accuse"));
         if (!(await waitFor(t.sid, "!!document.querySelector('.overlay .modal select')", 8000)))
-          return { skip: `${game}판: 탭 ${t.id}의 고발 모달이 열리지 않았다` };
+          return { skip: `${game}판: 탭 ${t.id}의 신고 모달이 열리지 않았다` };
         const cats = await evalIn(t.sid, READ_PICKER_JS);
         await evalIn(t.sid, CANCEL_JS);
-        if (!cats) return { skip: `${game}판: 탭 ${t.id}의 고발 모달 select 3개를 읽지 못했다` };
+        if (!cats) return { skip: `${game}판: 탭 ${t.id}의 신고 모달 select 3개를 읽지 못했다` };
         hands.set(t.id, cats);
       }
       await evalIn(t.sid, clickJs("#endTurn"));
@@ -1634,7 +1634,7 @@ const runResultFlow = async () => {
   const doAccuse = async (t, triple, why) => {
     await evalIn(t.sid, clickJs("#accuse"));
     if (!(await waitFor(t.sid, "!!document.querySelector('.overlay .modal select')", 8000)))
-      return `탭 ${t.id}: 고발 모달이 열리지 않았다`;
+      return `탭 ${t.id}: 신고 모달이 열리지 않았다`;
     const r = await evalIn(t.sid, accuseJs(triple));
     if (!r?.ok) return `탭 ${t.id}: 고발 실행 실패 — ${r?.why ?? "?"} (${why})`;
     notes.push(`${t.id} 고발 [${triple.suspect} · ${triple.weapon} · ${triple.room}] — ${why}`);
@@ -1943,7 +1943,7 @@ const runResultFlow = async () => {
   };
 
   step("결과 흐름 · S7 사람 5명 오답 탈락");
-  /** 탭별 손패(카테고리 3개). 자기 차례에 고발 모달을 열면 그 자리에서 읽힌다. */
+  /** 탭별 손패(카테고리 3개). 자기 차례에 신고 모달을 열면 그 자리에서 읽힌다. */
   const hands3 = new Map();
   let ended3 = false;
   for (let i = 0; i < R.maxTurns && !ended3; i++) {
@@ -1959,9 +1959,9 @@ const runResultFlow = async () => {
     const t = a.tab;
     await evalIn(t.sid, clickJs("#accuse"));
     if (!(await waitFor(t.sid, "!!document.querySelector('.overlay .modal select')", 8000)))
-      return bail(`3막: 탭 ${t.id}의 고발 모달이 열리지 않았다`);
+      return bail(`3막: 탭 ${t.id}의 신고 모달이 열리지 않았다`);
     const cats = await evalIn(t.sid, READ_PICKER_JS);
-    if (!cats) return bail(`3막: 탭 ${t.id}의 고발 모달 select 3개를 읽지 못했다`);
+    if (!cats) return bail(`3막: 탭 ${t.id}의 신고 모달 select 3개를 읽지 못했다`);
     hands3.set(t.id, cats.map((c) => c.mine));
     const donorId = [...hands3.keys()].find((id) => id !== t.id && hands3.get(id).some((m) => m.length));
     const triple = donorId ? wrongWithDonor(cats, hands3.get(donorId)) : null;
@@ -2220,7 +2220,7 @@ const FAULTS = [
     expect: "S6",
     signature: /#accuse/,
     why:
-      "[고발] 글자색을 버튼 배경과 거의 같은 색으로 바꾼다(1.1:1) — " +
+      "[신고하기] 글자색을 버튼 배경과 거의 같은 색으로 바꾼다(1.1:1) — " +
       "§7.13이 고친 `#6b6355`(2.9:1) 회귀가 다시 일어났을 때의 모양",
     js: `(() => {
       document.getElementById('accuse').style.color = '#b46a35';

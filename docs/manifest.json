@@ -56,6 +56,10 @@
     "dir": "plans/done",
     "items": [
       {
+        "path": "plans/done/27-accuse-term-to-report.md",
+        "title": "plan: «고발» → «신고» 사용자 문안 통일 (오너 확정)"
+      },
+      {
         "path": "plans/done/26-goal-card-how-to-find.md",
         "title": "plan: 목표 카드가 «찾는 법»을 안 가르친다 — ④ `확신` 신설"
       },
