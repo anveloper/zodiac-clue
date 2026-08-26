@@ -56,6 +56,10 @@
     "dir": "plans/done",
     "items": [
       {
+        "path": "plans/done/28-right-column-log-share.md",
+        "title": "plan: 우측 컬럼 배분 — 📜 기록/알림에 «보장 몫»을 준다 (S8 red 해소)"
+      },
+      {
         "path": "plans/done/27-accuse-term-to-report.md",
         "title": "plan: «고발» → «신고» 사용자 문안 통일 (오너 확정)"
       },

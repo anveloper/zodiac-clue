@@ -2060,7 +2060,7 @@ const judgeRightColumn = (rc, baseline) => {
         `보장 ${floor}줄 < 기능 하한 ${RC.minVisibleLines}줄. ` +
         `지금 ${d.capacityLines}줄이 보이는 것은 **위 패널들이 아직 안 자란 덕**이지 약속이 아니다 — ` +
         `AI 대사 패널은 폴백 사유가 늘수록, 증거 노트는 고정 ${d.panels.find((p) => p.sel === "#eviPanel")?.h ?? "?"}px, ` +
-        `제안 기록표는 32% 상한까지 자란다. 그 합이 컬럼을 넘는 순간 로그는 \`min-height\`로 떨어지고, ` +
+        `제안 기록표는 \`#sugBody{max-height:26vh}\`까지 자란다. 그 합이 컬럼을 넘는 순간 로그는 \`min-height\`로 떨어지고, ` +
         `그 바닥이 ${d.floorBodyPx}px = ${floor}줄이다. 📜 기록/알림은 반증·계략·소환이 사람에게 닿는 ` +
         `**유일한 통로**이므로 그때 통로의 대역폭은 0이 된다. ` +
         `(이 줄은 아래 래칫과 **무관하다** — 래칫을 통과해도 화면은 여전히 결함이다.)`,
@@ -2112,7 +2112,11 @@ const judgeRightColumn = (rc, baseline) => {
     status: bad ? "FAIL" : "PASS",
     // ⚠️ 통과해도 **인쇄한다.** 기본 출력은 PASS 항목을 접는데, 이 검사는 통과가
     //    «정상»이 아니라 «안 나빠졌다»는 뜻이라 접히는 순간 게이트가 거짓말을 시작한다.
-    always: short,
+    // `[정정 2026-08-26]` 여기가 `short`(= 보장이 기능 하한 미달)였다. 플랜 28이 보장을
+    //    0줄 → 4줄로 올리자 `short`가 false가 되면서 **이 블록 전체가 기본 출력에서 사라졌다**
+    //    — `knownUnmeasured`(«조용히 빼면 은폐») 줄까지 함께. 결함을 고친 것이 은폐 방지
+    //    장치를 끈 셈이라 `true`로 고정한다.
+    always: true,
     detail:
       `받은 몫 ${d.logBodyPx}px/${cap}줄(컬럼의 ${pct(d.logPanelH)}) · **보장 ${d.floorBodyPx}px/${floor}줄**` +
       ` (기준선 ${baseline.logBodyPx}px·${baseline.capacityLines}줄 / 보장 ${baseline.floorBodyPx}px·${baseline.floorLines}줄, 기록 ${baseline.recordedAt})` +
@@ -2472,7 +2476,7 @@ if (OPT.selfTest) {
       note:
         `결함 주입 전 상태 — 받은 몫 ${clean.logBodyPx}px/${clean.capacityLines}줄 · ` +
         `보장 ${clean.floorBodyPx}px/${clean.floorLines}줄. ` +
-        "**보장이 이미 0줄이라 PASS가 «정상»을 뜻하지 않는다**(그 사실은 판정문의 «결함 확인» 줄이 말한다).",
+        "**PASS는 «정상»이 아니라 «기준선보다 안 나빠졌다»는 뜻이다**(그 사실은 판정문의 «결함 확인» 줄이 말한다).",
     });
 
     const RC_FAULTS = [

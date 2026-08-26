@@ -733,9 +733,30 @@
       /* 패널이 4개가 되면서(§7.9) 고정 높이만 두면 짧은 화면에서 컬럼이 넘친다.
          드래그로 정한 높이는 유지하되 공간이 모자라면 줄어들도록 shrink를 연다. */
       .rp-evi { flex: 0 1 auto; height: 260px; min-height: 72px; } /* 높이 드래그로 조절 */
-      .rp-log { flex: 1 1 0; min-height: 72px; } /* 남은 공간 채우고 내부 스크롤 */
-      /* AI·제안 패널: 축소 허용 + 내부 스크롤. 높이는 리사이저로 조절(그래서 max-height 캡을 두지 않는다). */
-      .rp-ai { flex: 0 1 auto; }
+      /* 📜 기록/알림 — 반증·계략·소환이 사람에게 닿는 **유일한 통로**다.
+         `flex:1 1 0`은 «남는 것을 받는» 쪽이라 지금 넉넉해 보여도 약속이 아니다 —
+         이 화면이 실제로 보장하는 값은 `min-height` 하나뿐이다(S8).
+         72px는 머리글·패딩 55px를 빼면 본문 17px = **0줄**이었다. 줄 최소 높이 35px 기준
+         **4줄**을 보장하려면 4×35 + 55 = 195px. 제안·반증이 한 쌍으로 오므로 2줄로는
+         «무슨 일이 있었는지»가 한 화면에 안 남는다. */
+      .rp-log { flex: 1 1 0; min-height: 195px; }
+      /* 세로가 짧으면 4줄 보장이 증거 노트·제안 기록표를 짓누른다(검수 실측: 1280×720에서
+         두 패널 합 −11%, 1280×501에서 −30%). **«보장»은 그 뷰포트에서 실제로 지킬 수 있는
+         약속이어야 한다** — 높이에 따라 단계적으로 낮춘다. 데스크톱 기준선(900px)은 4줄. */
+      @media (max-height: 820px) { .rp-log { min-height: 160px; } } /* 3줄 */
+      @media (max-height: 700px) { .rp-log { min-height: 125px; } } /* 2줄 */
+      /* AI·제안 패널: 축소 허용 + 내부 스크롤. 높이는 리사이저로 조절한다(AI만 성장 상한 `max-height`가 있다 — 아래). */
+      /* 펼쳤을 때도 무한정 자라지 않는다 — 폴백 사유 행이 늘면 내부에서 스크롤한다.
+         (S8이 «AI 대사 패널은 폴백 사유가 늘수록 자란다»를 결함 근거로 지목했다.
+          이 상한은 인라인 `height`(리사이저)보다 우선한다 — 의도한 동작이다.) */
+      .rp-ai { flex: 0 1 auto; max-height: 40vh; }
+      /* ⚠️ **접힌 AI 패널은 축소 대상에서 뺀다.** `.rp-panel`은 `min-height:0`(축소 허용) +
+         `overflow:hidden`이라, 컬럼이 빡빡해지면 접힌 패널이 **자기 summary보다 작아지고**
+         칩(`✨LLM n · ♻캐시 n · ⚙폴백 n`)이 잘려 사라진다 — 그 칩이 ④ §4 관측 표면이다.
+         260px 컬럼에서 칩은 **두 번째 줄로 내려가므로**(위 주석) summary는 ~65px다. */
+      .rp-ai:has(> details:not([open])) { flex: 0 0 auto; }
+      /* `:has()` 미지원 브라우저용 바닥 — 펼친 상태에서도 summary는 지킨다. */
+      .rp-ai { min-height: 65px; }
       .rp-ai #aiDetail { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
       .rp-sug { flex: 0 1 auto; }
 
@@ -941,6 +962,9 @@
       .ai-row { display: flex; justify-content: space-between; gap: 8px; padding: 1px 0; }
       .ai-row b { color: var(--wds-label-normal); font-weight: 600; }
       .ai-note { margin-top: 6px; color: var(--wds-primary-normal); line-height: 1.45; }
+      /* summary 안의 전건 폴백 경고 — 칩 옆(폭이 모자라면 다음 줄). 접혀도 보인다. */
+      .ai-warn { flex: none; width: 100%; margin-top: 4px; font-size: 12px;
+                 color: var(--wds-primary-normal); font-weight: 600; }
       /* 기호 범례 — `✨`/`♻`/`⚙`가 무슨 뜻인지 화면에 남긴다.
          표기는 ui-copy §2 기호 목록 확정본(`✨ LLM 대사 · ♻ 캐시 대사 · ⚙ 폴백 대사`)이다.
          `#aiDetail` **바깥**의 고정 마크업이라 상세가 길어져도 늘 패널 바닥에 붙어 있다
@@ -1484,11 +1508,19 @@
              `0 · 0 · 0`은 서버가 하지 않은 주장이기 때문이다(ui-copy §4.4 "문안 없음이 확정본").
              계측 전에는 상세의 `평균 —` / `모델 —`(§4.4 "계측 전이면 —")가 그 자리를 말한다.
              상세를 기본 펼침으로 둔 것은 **기호 범례**를 첫 화면에서 읽히게 하기 위함이다. -->
+        <!-- AI 대사 — **기본 접힘**. 펼친 상태로 두면 컬럼의 122px를 «평균 —· 모델 —»(계측 전
+             기본값)로 채우는데, 그 자리는 📜 기록/알림이 사건을 전달할 폭이다(S8).
+             ④ §4 관측 가능성이 요구하는 것은 **칩**(`✨LLM n · ♻캐시 n · ⚙폴백 n`)이고,
+             칩은 `<summary>` 안이라 접혀도 그대로 보인다. 접히는 것은 평균·모델·사유별 건수
+             (진단 상세)와 기호 범례뿐이며 클릭 한 번으로 열린다. -->
         <div class="rp-panel rp-fold rp-ai hidden" id="aiPanel">
-          <details open>
+          <details>
             <summary>
               <span class="ai-title">🤖 AI 대사</span>
               <span id="aiChip" class="ai-chip"></span>
+              <!-- 전건 폴백 경고(④ §4 요구사항 5). **`<summary>` 안에 둔다** —
+                   상세(`#aiDetail`)에 두면 패널이 접혔을 때 사용자에게 도달하지 못한다. -->
+              <span id="aiWarn" class="ai-warn hidden">AI 대사 일시 폴백</span>
             </summary>
             <div id="aiDetail"></div>
             <!-- 기호 범례 — `✨`/`♻`/`⚙`가 무슨 뜻인지 화면에 남긴다.

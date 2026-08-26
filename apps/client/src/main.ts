@@ -354,9 +354,11 @@ const renderAi = (): void => {
   for (const [reason, n] of aiReasons) {
     html += aiRow(`${AI_GLYPH.fallback} ${aiReasonKo(reason)}`, String(n));
   }
-  // 문안은 ④ §4 요구사항 5의 확정 배지 문장을 그대로 쓴다(새로 짓지 않는다).
-  if (allFallback) html += `<div class="ai-note">AI 대사 일시 폴백</div>`;
   $("aiDetail").innerHTML = html;
+  // 전건 폴백 경고(④ §4 요구사항 5) — **`<summary>` 안의 `#aiWarn`**에 띄운다.
+  // 상세(`#aiDetail`)에 두면 패널이 접혔을 때(§7.7 «칩은 기본 노출, 상세만 접힘»)
+  // 사용자에게 도달하지 못한다. 문안은 확정본을 그대로 쓴다(새로 짓지 않는다).
+  $("aiWarn").classList.toggle("hidden", !allFallback);
 };
 
 /** `say`에 동봉된 계측 1건 반영. 값은 전부 서버가 준 것이다. */
