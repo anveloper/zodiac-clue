@@ -56,6 +56,10 @@
     "dir": "plans/done",
     "items": [
       {
+        "path": "plans/done/33-lobby-locked-legible.md",
+        "title": "plan: 대기실 카드가 «자기 상태를 낱말로» 말한다"
+      },
+      {
         "path": "plans/done/32-landing-single-game.md",
         "title": "plan: 랜딩 — 게임이 하나뿐이면 «고르기»가 아니다"
       },

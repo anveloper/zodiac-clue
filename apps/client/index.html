@@ -268,6 +268,7 @@
       .full { width: 100%; margin-top: 4px; }
       .char-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 4px; }
       .char {
+        position: relative; /* 🔒 배지 기준점 */
         display: flex; flex-direction: column; align-items: center; gap: 3px;
         padding: 8px 2px; background: var(--wds-bg-normal); border: 1px solid var(--wds-line-normal);
         border-radius: var(--wds-radius-card); cursor: pointer; font-size: 12px; color: var(--wds-label-normal);
@@ -282,7 +283,31 @@
       .sg-combo .face-ic { margin-right: 1px; }
       .char:hover { border-color: var(--wds-primary-normal); }
       .char.selected { border-color: var(--wds-primary-normal); background: var(--wds-bg-alternative); color: var(--wds-label-strong); }
-      .char.locked { opacity: 0.35; cursor: not-allowed; }
+      /* ── 카드가 «자기 상태를 낱말로» 말한다 ──────────────────────────
+         🔴 여기 있던 `.char.locked { opacity: 0.35 }`는 **화면 게이트가 원리적으로 못 보는**
+         대비 저하였다. S6는 `getComputedStyle` 기반이라 «#4A3B2A on #FBF3E7 = 9.78:1»을 읽는데
+         실제 합성 렌더는 **1.87:1**이다(직접 계산). 대기실에서 가장 자주 하는 판단
+         («어느 캐릭터가 이미 나갔는가»)이 눈을 붙여야 읽히는 상태였다.
+
+         🔴 범례 `(선택됨 🟡 / 사용중 🔒)`도 **화면에 없는 기호**를 설명하고 있었다 —
+         그리드는 클래스만 붙이고 두 기호를 한 번도 그리지 않았다.
+
+         → **상태를 낱말로 적는다.** 기호·투명도·색 어디에도 기대지 않는다:
+           · 모서리 배지는 360·320px에서 **초상을 덮는다**(실측 중심거리 16.0 / 12.5px < 반지름 17)
+           · 색 단독 신호는 1.4.1 위반이고, 실제로 «선택됨»이 그 상태였다(면 대비 1.14:1)
+           · 낱말은 **게이트가 잴 수 있다**(S5 글자 크기 · S6 대비) — 사각지대를 안 만든다
+           · 범례가 필요 없다. **카드가 스스로 말하므로** 사용자가 배울 기호가 0개다
+         `grayscale`도 쓰지 않는다 — 이 격자는 «게임 전에 십이지 색을 학습시키는 자리»인데
+         (`main.ts` `renderLobbyChars` 주석) 잠긴 칸이 곧 **같이 플레이할 사람**이라 색이 가장 필요하다. */
+      /* 높이를 **예약하지 않는다** — 12칸 전부에 빈 줄을 두면 카드가 36px 자라
+         초대 링크 [복사]가 고정 배치된 배경음 버튼 밑으로 밀려 들어갔다(화면 게이트 S1이 잡았다).
+         격자는 **행 단위로** 높이를 맞추므로 상태가 있는 행만 그만큼 자란다. */
+      .char-state { font-size: 10px; line-height: 1.2; font-weight: 700; }
+      .char.selected .char-state { color: var(--wds-primary-strong); }   /* 5.84:1 */
+      .char.locked .char-state { color: var(--wds-label-alternative); }  /* 5.72:1 */
+      /* 못 고른다 = **점선**(형태). 면·색은 건드리지 않아 시각 위계가 뒤집히지 않는다. */
+      .char.locked { cursor: not-allowed; border-style: dashed; }
+      .char.locked:hover { border-color: var(--wds-line-normal); }
       .persona {
         margin-top: 8px; font-size: 12px; color: var(--wds-label-normal); line-height: 1.5;
         background: var(--wds-bg-normal); border: 1px solid var(--wds-line-normal); border-radius: 8px;
@@ -1536,7 +1561,7 @@
         </div>
         <ul id="playerList"></ul>
         <div style="font-size: 12px; color: var(--wds-label-alternative); margin-bottom: 4px;">
-          내 캐릭터 (선택됨 🟡 / 사용중 🔒)
+          내 캐릭터
         </div>
         <div id="lobbyChars" class="char-grid" style="margin-bottom: 8px;"></div>
         <div id="lobbyPersona" class="persona" style="margin-bottom: 16px;">

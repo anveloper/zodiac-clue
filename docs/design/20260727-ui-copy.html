@@ -1255,7 +1255,42 @@
   </ul>
 
   <!-- ════════════ 9 ════════════ -->
-  <h2 id="s9"><span class="n">9</span>멀티플레이 문안 <span class="tag t-soon">전부 선행 조건</span></h2>
+  <h2 id="s9"><span class="n">9</span>멀티플레이 문안 <span class="tag t-done">9.0 적용 완료</span> <span class="tag t-soon">나머지 선행</span></h2>
+
+  <h3>9.0 대기실 캐릭터 그리드 — 카드가 자기 상태를 말한다 <span class="tag t-done">적용 완료 2026-08-27</span></h3>
+  <div class="scroll"><table>
+    <tr><th>상태</th><th>카드 안 낱말</th><th>테두리</th><th>면</th><th>이름 대비</th><th>낱말 대비</th></tr>
+    <tr><td>선택 가능</td><td class="note">(줄 없음)</td><td>실선 <code>line-normal</code></td><td><code>bg-normal</code></td><td>9.78:1</td><td>—</td></tr>
+    <tr><td><b>선택됨</b></td><td class="q"><b>내 캐릭터</b></td><td>실선 <code>primary-normal</code></td><td><code>bg-alternative</code></td><td><b>11.58:1</b></td><td><b>5.84:1</b></td></tr>
+    <tr><td><b>사용중</b></td><td class="q"><b>사용중</b></td><td><b>점선</b></td><td><code>bg-normal</code></td><td>9.78:1</td><td><b>5.72:1</b></td></tr>
+  </table></div>
+  <p class="s13"><b>범례가 없다.</b> 카드가 스스로 말하므로 사용자가 배울 기호가 <b>0개</b>다.</p>
+  <div class="box crit">
+    <b style="color:var(--red)">이전 범례 «(선택됨 🟡 / 사용중 🔒)»는 화면에 없는 기호를 설명했다.</b>
+    그리드는 <code>.selected</code>/<code>.locked</code> <b>클래스만</b> 붙였고 두 기호를 <b>한 번도 그리지 않았다</b>.<br><br>
+    <b style="color:var(--red)"><code>opacity: 0.35</code>은 화면 게이트가 원리적으로 못 보는 대비 저하였다.</b>
+    S6는 <code>getComputedStyle</code> 기반이라 «<code>#4A3B2A</code> on <code>#FBF3E7</code> = <b>9.78:1</b>»을 읽는다 —
+    실제 합성 렌더는 <b>1.87:1</b>이다(직접 계산).<br>
+    ⚠️ <b>다만 S6가 이 칸을 실제로 잰 적은 없다</b> — 게이트 대기실 캡처는 참가자 1명이라
+    <code>.locked</code> 칸이 <b>생기지 않는다</b>. 「쟀다면 통과시켰을 값」이다.
+  </div>
+  <ul class="s13">
+    <li><b>기호 배지를 안 쓴 이유</b> — 모서리 배지는 <b>360·320px에서 초상을 덮는다</b>
+      (실측 중심거리 16.0 / 12.5px &lt; 초상 반지름 17px). 390px에서도 여유가 2px뿐이라 설계가 아니라 우연이다.</li>
+    <li><b>색 단독 신호를 안 쓴 이유</b> — 그것이 바로 이전 «선택됨»의 상태였다(면 대비 <b>1.14:1</b>) — 1.4.1 위반.</li>
+    <li><b><code>grayscale</code>을 안 쓴 이유</b> — 이 격자는 «게임 전에 십이지 색을 학습시키는 자리»인데
+      (<code>renderLobbyChars</code> 주석) <b>잠긴 칸이 곧 같이 플레이할 사람</b>이라 색이 가장 필요하다.
+      게다가 <code>filter</code>도 S6가 못 보는 축이다 — <b>투명도 함정을 지우면서 같은 계열을 새로 만들지 않는다.</b></li>
+    <li><b>낱말은 게이트가 잰다</b> — S5(글자 크기 10px 하한) · S6(대비). 사각지대를 만들지 않는다.</li>
+    <li>⚠️ <b>빈 줄을 예약하지 않는다.</b> 12칸 전부에 두면 카드가 <b>36px 자라</b> 초대 링크
+      <code>[복사]</code>가 고정 배치된 배경음 버튼 밑으로 밀려 들어갔다 — <b>화면 게이트 S1이 잡았다</b>.
+      격자는 <b>행 단위로</b> 높이를 맞추므로 상태가 있는 행만 그만큼 자란다.</li>
+    <li>보조 기술: 잠긴 칸에 <code>aria-disabled="true"</code>. 상태는 <b>카드 안 텍스트</b>로 이미 있으므로
+      <code>title</code>에 중복해 넣지 않는다(넣었더니 이름이 두 번 읽혔다).</li>
+    <li><span class="tag t-soon">주의</span> <b>키보드로는 캐릭터를 고를 수 없다</b> —
+      <code>.char</code>는 <code>onclick</code>만 있는 <code>div</code>라 focusable 0개다(WCAG 2.1.1 A).
+      <b>이번 회차 범위 밖</b>이고 선행 결함이다.</li>
+  </ul>
 
   <h3>9.1 대기실 서버 피드백</h3>
   <div class="box crit">
@@ -1360,6 +1395,7 @@
     <tr><td>8.3</td><td>클라 로그 · 중복 제거</td><td class="q">client/src/main.ts</td><td class="q">wireRoom()의 onMessage 5개 · errMsg() · enterGame() 말미</td></tr>
     <tr><td>8.4</td><td>랜딩 <span class="tag t-new">07-29 적용</span></td><td class="q">client/index.html · main.ts</td><td class="q"><code>.hint-sm</code>·<code>.room-empty</code> · loadPublicRooms() · init()의 joinBtn</td></tr>
     <tr><td>8.5</td><td>공개방 상태 배지 <span class="tag t-done">적용 완료</span></td><td class="q">server/clue-room.ts · client/network.ts · main.ts · index.html</td><td class="q"><code>syncMeta()</code>의 <code>phase</code> → <code>PublicRoomMeta</code> → loadPublicRooms()의 <code>li</code> 조립 · <code>.ri-badge</code></td></tr>
+    <tr><td>9.0</td><td>대기실 캐릭터 그리드 <span class="tag t-done">완료</span></td><td class="q">client/index.html · main.ts</td><td class="q"><code>.char.selected</code>/<code>.locked</code>·<code>.char-state</code> · <code>renderLobbyChars()</code></td></tr>
     <tr><td>9.1</td><td>대기실 피드백 <span class="tag t-soon">선행</span></td><td class="q">client/index.html · main.ts · clue-room.ts</td><td class="q">신규 <code>#lobbyMsg</code> · renderLobby() · onJoin / removePlayer / handleChooseCharacter</td></tr>
     <tr><td>9.2</td><td>닉네임 <span class="tag t-soon">선행</span></td><td class="q">packages/shared · clue-room.ts · index.html</td><td class="q"><code>Player.name</code> 분리 · 대기실 <code>.field</code> 추가</td></tr>
     <tr><td>9.3</td><td>대리 NPC 표기 <span class="tag t-soon">선행</span></td><td class="q">packages/shared · 3개 렌더러</td><td class="q"><code>displayName(p)</code> · renderLobby / renderTurnStrip / openTurnCircle</td></tr>

@@ -2131,14 +2131,20 @@ const renderLobbyChars = (state: Room["state"]): void => {
     // §4.2 HUD — 좌측 3px 스트라이프. 게임 진입 **전에** 색을 학습시키는 자리다.
     // 2차 단서는 이미 있는 이모지 + 이름 전체.
     cell.style.boxShadow = colorStripe(z);
+    // 카드가 **자기 상태를 낱말로** 말한다 — 기호·투명도·색에 기대지 않는다(위 CSS 주석).
+    // 상태가 **있을 때만** 줄을 넣는다(빈 줄을 12칸에 예약하면 카드가 36px 자라 다른 것을 밀어낸다).
+    const stateWord = mine ? "내 캐릭터" : takenByOther ? "사용중" : "";
     cell.innerHTML =
       `<span class="em">${faceIc(z, 34)}</span>` +
-      `<span>${label(z)}${cvdTag(z)}</span>`;
+      `<span>${label(z)}${cvdTag(z)}</span>` +
+      (stateWord ? `<span class="char-state">${stateWord}</span>` : "");
     // 직업 뜻풀이를 툴팁으로도 노출(생소한 단어 설명).
     const j = job(z);
+    // 상태는 이미 카드 안 낱말로 있으므로 `title`에 다시 넣지 않는다(이름이 두 번 읽힌다).
     cell.title = j
       ? `${label(z)} — ${j.term}: ${j.gloss}\n${persona(z)}`
       : label(z);
+    if (takenByOther) cell.setAttribute("aria-disabled", "true");
     cell.onmouseenter = () => showCharInfo(z);
     if (!takenByOther && !mine) {
       cell.onclick = () => room?.send("character", { value: z });
