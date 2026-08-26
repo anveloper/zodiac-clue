@@ -98,6 +98,10 @@
     "dir": "plans/done",
     "items": [
       {
+        "path": "plans/done/30-contrast-finish.md",
+        "title": "plan: 명암비 마감 — 토큰이 두 일을 하고 있었다"
+      },
+      {
         "path": "plans/done/29-panel-scroll-fade.md",
         "title": "plan: 패널 스크롤 경계 신호 — «더 있다»를 화면에 남긴다"
       },
