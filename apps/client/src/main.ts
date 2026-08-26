@@ -2120,9 +2120,22 @@ const renderLobbyChars = (state: Room["state"]): void => {
     room !== null ? players.get(room.sessionId)?.suspect : undefined;
 
   const grid = $("lobbyChars");
+  // 🔴 `renderLobby`는 **모든 state patch마다** 이 격자를 통째로 다시 만든다
+  //    (`onStateChange` → `renderLobby` → 여기). 카드가 `<div>`였을 땐 focusable이 0이라
+  //    드러나지 않았는데, `<button>`이 되면서 **내 선택이 유발한 patch가 내 포커스를 죽였다**
+  //    (Enter/Space → `activeElement`가 `<body>`로. 검수 실측). 남이 고를 때도 같다.
+  //    → 재생성 전 포커스 위치를 기억했다가 복원한다.
+  const focusedIdx = Array.prototype.indexOf.call(
+    grid.children,
+    document.activeElement,
+  );
   grid.innerHTML = "";
   for (const z of ZODIAC) {
-    const cell = document.createElement("div");
+    // 🔴 `<div>` + `onclick`이었다 — **키보드로는 캐릭터를 아예 못 골랐다**(WCAG 2.1.1 A).
+    // 실제 `<button>`이면 포커스·Enter/Space·역할이 전부 공짜로 따라온다.
+    // 저장소에 이미 있는 패턴이다(액션 바는 `<button>` + `aria-disabled`).
+    const cell = document.createElement("button");
+    cell.type = "button";
     const ownerId = owner.get(z);
     const takenByOther = ownerId !== undefined && ownerId !== room?.sessionId;
     const mine = z === mySuspect;
@@ -2140,25 +2153,55 @@ const renderLobbyChars = (state: Room["state"]): void => {
       (stateWord ? `<span class="char-state">${stateWord}</span>` : "");
     // 직업 뜻풀이를 툴팁으로도 노출(생소한 단어 설명).
     const j = job(z);
-    // 상태는 이미 카드 안 낱말로 있으므로 `title`에 다시 넣지 않는다(이름이 두 번 읽힌다).
-    cell.title = j
-      ? `${label(z)} — ${j.term}: ${j.gloss}\n${persona(z)}`
-      : label(z);
+    // `title`은 `<button>`에서 **정식 accessible description**이 된다 — 이름을 다시 넣으면
+    // 「생쥐 서생 … 생쥐 서생 — 서생: …」로 **두 번 읽힌다**(검수 AX 트리 실측).
+    // 이름은 이미 버튼의 접근 가능한 이름이므로 여기엔 **풀이만** 남긴다.
+    cell.title = j ? `${j.term}: ${j.gloss}\n${persona(z)}` : persona(z);
+    // `disabled`가 아니라 `aria-disabled` — 포커스에 남아야 «이미 나갔다»를 **읽을 수** 있다.
+    // ⚠️ 액션 바도 `aria-disabled`를 쓰지만 **이유가 다르다** — 그쪽은 클릭하면 `showBanner()`로
+    //    **사유를 말하기 위해서**다. 여기서는 Enter를 눌러도 **아무 일도 일어나지 않는다** —
+    //    대기실에는 메시지 자리가 없다(`#fxBanner`는 `#gameScreen` 안이고 `#lobbyMsg`는
+    //    ui-copy §9.1의 **선행 항목**이다). 그 자리가 생기면 여기도 사유를 붙여야 한다.
     if (takenByOther) cell.setAttribute("aria-disabled", "true");
+    // `aria-current`는 «항목 집합 안의 현재 항목»(현재 페이지·단계)용이고 Chrome AX 트리에
+    // **아무 속성도 노출하지 않았다**(검수 실측). 12지 중 1개를 고르는 자리이므로 `aria-pressed`가 맞다.
+    cell.setAttribute("aria-pressed", mine ? "true" : "false");
+    // 호버 미리보기의 **키보드 짝** — 포커스만 옮겨도 직업 풀이가 뜬다.
+    // `blur` 짝이 없으면 격자를 벗어나도 남의 캐릭터가 계속 떠 있다(검수 실측) → 아래 `focusout`.
     cell.onmouseenter = () => showCharInfo(z);
+    cell.onfocus = () => showCharInfo(z);
     if (!takenByOther && !mine) {
       cell.onclick = () => room?.send("character", { value: z });
     }
     grid.appendChild(cell);
   }
-  // 호버는 «미리보기». 그리드 밖으로 마우스가 나가면 지금 «선택된» 캐릭터로 되돌린다.
-  grid.onmouseleave = () => {
+  // 재생성 전에 포커스가 격자 안에 있었으면 **같은 자리로 되돌린다**(위 주석).
+  if (focusedIdx >= 0) (grid.children[focusedIdx] as HTMLElement | undefined)?.focus();
+  // 격자에 그룹 의미를 준다 — 저장소 선례와 같다(D패드는 `role="group" aria-label="이동"`).
+  grid.setAttribute("role", "group");
+  grid.setAttribute("aria-label", "캐릭터 고르기");
+  /** 미리보기를 «지금 선택된 캐릭터»로 되돌린다(호버·포커스 공용). */
+  const resetPreview = (): void => {
     if (mySuspect) showCharInfo(mySuspect);
     else {
       $("lobby-char").classList.remove("on");
       $("lobbyPersona").innerHTML =
         "캐릭터에 올리면 <b>직업 풀이</b>와 성격이 표시됩니다.";
     }
+  };
+  // 포커스가 격자를 **떠날 때만** 되돌린다(칸 사이 이동은 그대로 둔다).
+  // ⚠️ `addEventListener`를 쓰면 안 된다 — 이 함수는 **state patch마다** 돌아서 리스너가 쌓인다.
+  //    속성 대입은 멱등이다(아래 `onmouseleave`와 같은 이유).
+  (grid as HTMLElement & { onfocusout: ((e: FocusEvent) => void) | null }).onfocusout = (e) => {
+    const to = e.relatedTarget as Node | null;
+    if (!to || !grid.contains(to)) resetPreview();
+  };
+  // 호버는 «미리보기». 그리드 밖으로 마우스가 나가면 되돌린다 —
+  // ⚠️ 단 **키보드 포커스가 격자 안에 있으면 덮어쓰지 않는다**. 안 그러면 마우스를 움직이기만 해도
+  //    «포커스된 칸»과 «미리보기»가 서로 다른 캐릭터를 가리킨다(검수 실측).
+  grid.onmouseleave = () => {
+    if (grid.contains(document.activeElement)) return;
+    resetPreview();
   };
   // 기본 표시 = 내 캐릭터(있으면).
   if (mySuspect) showCharInfo(mySuspect);

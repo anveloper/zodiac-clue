@@ -98,6 +98,10 @@
     "dir": "plans/done",
     "items": [
       {
+        "path": "plans/done/34-lobby-keyboard.md",
+        "title": "plan: 대기실 — 키보드로 캐릭터를 고를 수 있게 (+ 포커스가 실제로 보이게)"
+      },
+      {
         "path": "plans/done/33-lobby-locked-legible.md",
         "title": "plan: 대기실 카드가 «자기 상태를 낱말로» 말한다"
       },

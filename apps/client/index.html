@@ -230,9 +230,16 @@
       }
       h1 { color: var(--wds-label-strong); }
 
-      /* ── 키보드 포커스 가시성(전역) ── */
+      /* ── 키보드 포커스 가시성(전역) ──────────────────────────────────
+         🔴 링 색이 `--wds-accent`(#E3B873)였는데 이 테마의 면은 전부 밝다 —
+         카드 `#FBF3E7` 위 **1.68:1** · 모달 `#FFF8EF` 위 1.75:1로
+         **WCAG 2.4.11/1.4.11(비텍스트 ≥3.0) 미달**이었다. 즉 키보드 사용자에게
+         포커스가 **어디에도 안 보였다.** (화면 게이트는 «평상 상태만» 재므로 못 잡는 축이다.)
+         → 밝은 면에서는 `primary-strong`(#8A4128) — 카드 **6.65:1** · 모달 6.95:1.
+         ⚠️ 단 하나 있는 **어두운 면**(배경음 컨트롤)에서는 반대다 —
+            거기선 `primary-strong`이 1.85:1이고 `accent`가 7.34:1이라 그쪽만 되돌린다. */
       :focus-visible {
-        outline: 2px solid var(--wds-accent);
+        outline: 2px solid var(--wds-primary-strong);
         outline-offset: 2px;
         border-radius: 6px;
       }
@@ -242,11 +249,18 @@
       summary:focus-visible,
       a:focus-visible,
       [tabindex]:focus-visible {
-        outline: 2px solid var(--wds-accent);
+        outline: 2px solid var(--wds-primary-strong);
         outline-offset: 2px;
       }
+      /* 어두운 면 위에서는 두 색의 우열이 뒤집힌다 — 여기만 `accent`로 되돌린다.
+         ⚠️ **어두운 면은 하나가 아니다.** 초안이 «배경음 컨트롤 하나뿐»이라고 단정했다가
+         도감 오버레이(`.codex-overlay` — 어두운 배경 이미지 + 0.5 스크림)를 놓쳤고,
+         그 안 닫기 버튼의 링이 **7.88 → 1.99:1**(이미지 밝은 지점에선 **1.01:1**)로 떨어졌다.
+         고치려던 것과 정확히 같은 결함을 옆 화면에 새로 만든 셈이었다(검수 실측). */
+      .bgm-ctrl :focus-visible,
+      .codex-overlay :focus-visible { outline-color: var(--wds-accent); }
       /* .hud summary는 outline:none으로 포커스를 지우므로 되살린다. */
-      .hud summary:focus-visible { outline: 2px solid var(--wds-accent); outline-offset: 2px; }
+      .hud summary:focus-visible { outline: 2px solid var(--wds-primary-strong); outline-offset: 2px; }
 
       /* ── 랜딩 / 로비 공통 카드 ── */
       /* 모바일 주소창이 접혔다 펴져도 잘리지 않도록 dvh(폴백 vh) + 노치 여백 */
@@ -267,13 +281,19 @@
       .field input { width: 100%; }
       .full { width: 100%; margin-top: 4px; }
       .char-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 4px; }
+      /* `.char`는 실제 `<button>`이다(키보드 조작 — `renderLobbyChars` 주석).
+         전역 `button` 규칙(primary 배경·흰 글자·600·13px·라운딩)이 얹히므로 전부 눌러 둔다.
+         `font-family`는 폼 컨트롤이 **상속하지 않는다** — 명시하지 않으면 카드만 다른 서체가 된다. */
       .char {
-        position: relative; /* 🔒 배지 기준점 */
         display: flex; flex-direction: column; align-items: center; gap: 3px;
         padding: 8px 2px; background: var(--wds-bg-normal); border: 1px solid var(--wds-line-normal);
-        border-radius: var(--wds-radius-card); cursor: pointer; font-size: 12px; color: var(--wds-label-normal);
-        text-align: center;
+        border-radius: var(--wds-radius-card); cursor: pointer; color: var(--wds-label-normal);
+        font-family: inherit; font-size: 12px; font-weight: 400; text-align: center;
+        /* 사파리/iOS의 `<button>` UA 렌더를 지배하는 축 — 눌러 두지 않으면 그쪽만 다르게 그려진다.
+           (헤드리스 크롬으로는 확인할 수 없는 차이라 원인을 아예 제거한다.) */
+        appearance: none; -webkit-appearance: none; -webkit-tap-highlight-color: transparent;
       }
+      .char:hover { background: var(--wds-bg-normal); }
       .char .em { font-size: 20px; line-height: 1; }
       /* 미리 크롭한 캐릭터 «얼굴» 아이콘(원형) — 선택칩·제안기록·도감 썸네일 공용 */
       .face-ic {
