@@ -98,6 +98,10 @@
     "dir": "plans/done",
     "items": [
       {
+        "path": "plans/done/29-panel-scroll-fade.md",
+        "title": "plan: 패널 스크롤 경계 신호 — «더 있다»를 화면에 남긴다"
+      },
+      {
         "path": "plans/done/28-right-column-log-share.md",
         "title": "plan: 우측 컬럼 배분 — 📜 기록/알림에 «보장 몫»을 준다 (S8 red 해소)"
       },

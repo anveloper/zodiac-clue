@@ -727,6 +727,47 @@
       }
       .rp-head .rp-sub { color: var(--wds-label-alternative); font-weight: 400; }
       .rp-body { flex: 1; min-height: 0; overflow-y: auto; padding: 8px 12px; }
+
+      /* ── 스크롤 경계 신호 ────────────────────────────────────────────────
+         패널 3개(증거 노트·제안 기록표·기록/알림)가 스크롤 경계에서 줄을 **중간에서
+         잘라** «더 있다»는 신호가 없었다. macOS 오버레이 스크롤바는 쉬는 동안 숨으므로
+         **정지 화면에는 단서가 0**이다(실측: `::-webkit-scrollbar` 폭이 레이아웃상 0).
+
+         🔴 **내용을 흐리게(mask) 하는 방법은 쓰지 않는다.** 1차 시도가 그것이었고 검수가
+         세 가지로 무너뜨렸다:
+           ① **대비 예산이 성립하지 않는다.** 본문 `rgb(43,37,33)` on 패널 `rgb(244,236,226)`에서
+              AA 4.5:1을 지키려면 알파 ≥ **0.67**이 필요하다. 0.67~1.0 구간의 페이드는
+              «더 있다»로 읽히지 않는다 — 즉 **읽히면 신호가 아니고, 신호면 안 읽힌다.**
+           ② **넘침이 작을 때 온전한 줄을 지운다.** 페이드는 넘침량과 무관하게 고정 길이라,
+              10px만 넘쳐도 35px 줄 하나가 사라진다(실측 대비 12.92 → **1.57:1**).
+              📜 기록/알림은 **한 줄씩 자라므로 그 상태를 매번 통과한다.**
+           ③ **마스크는 히트 테스트를 안 바꾼다** — 안 보이는데 눌린다. 증거 노트 칩은
+              `row.onclick`이 상태를 순환시키고 `localStorage`에 **영구 저장**한다(`main.ts`).
+
+         → **글자를 건드리지 않는 오버레이**로 바꾼다. `pointer-events: none`이라 ③이 원천
+           차단되고, 알파를 안 건드리니 ①②도 사라진다. 반투명 패널 위에서도 **어두운
+           그라디언트는 성립한다**(배경색으로 덮는 방식과 달리).
+
+         타임라인은 `.rp-body`가 발행하고(`scroll-timeline`) 패널이 `timeline-scope`로 끌어올려
+         `::after`가 쓴다. **내용이 넘치지 않으면 타임라인이 비활성** → 애니메이션 미적용 →
+         `opacity: 0` 그대로. 미지원 브라우저도 같다(오버레이가 아예 안 보인다).
+         JS 0바이트 — 초기 로드 JS는 §9.1 B1 래칫 예산이다. */
+      .rp-panel { position: relative; }
+      .rp-body { scroll-timeline: --rp-y block; }
+      .rp-panel::after {
+        content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 16px;
+        pointer-events: none; opacity: 0;
+        background: linear-gradient(to top, rgba(58, 42, 26, 0.30), rgba(58, 42, 26, 0));
+      }
+      @supports (animation-timeline: scroll()) {
+        .rp-panel { timeline-scope: --rp-y; }
+        /* ⚠️ `animation` 단축속성은 `animation-timeline`을 초기화한다 —
+           longhand가 **뒤에** 와야 한다. 순서를 바꾸면 조용히 무동작이 된다. */
+        .rp-panel::after { animation: rp-scroll-edge linear; animation-timeline: --rp-y; }
+      }
+      /* 90%까지 유지하다 끝에서만 꺼진다 — 끝 근처에서만 바뀌어야 «경계 신호»로 읽힌다. */
+      @keyframes rp-scroll-edge { 0%, 90% { opacity: 1; } 100% { opacity: 0; } }
+
       /* 마우스 드래그 스크롤(요청 ①) — 데스크톱에서 잡고 끌어 이전 내역 확인. */
       .rp-body, #log { cursor: grab; }
       .drag-scrolling { cursor: grabbing !important; user-select: none; }
