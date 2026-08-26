@@ -561,6 +561,9 @@ type Pick = { suspect: string; weapon: string; room?: string };
  * → 장소는 고정 문자 `📍`로 통일한다(ui-copy §2 표기 접두 기호).
  */
 const ROOM_SET: ReadonlySet<string> = new Set<string>(ROOMS);
+/** 서버 값 검증용(§1.4 신뢰 경계) — `readTriple`이 «카드 키인가»를 여기서 본다. */
+const SUSPECT_SET: ReadonlySet<string> = new Set<string>(SUSPECTS);
+const WEAPON_SET: ReadonlySet<string> = new Set<string>(WEAPONS);
 const cardIcon = (v: string): string => (ROOM_SET.has(v) ? "📍" : emoji(v));
 
 /**
@@ -851,11 +854,24 @@ type EndInfo = CardTriple & {
 const END_REASONS: readonly EndReason[] = ["accuse", "survivor", "draw"];
 let endInfo: EndInfo | null = null;
 
+/**
+ * 서버가 보낸 3장을 읽는다. **타입만 보지 않고 «카드 키인가»까지 본다.**
+ *
+ * 🔴 2026-08-26 — 원래는 `typeof === "string"`만 봤다. 그런데 `label()`은
+ * `LABELS[value] ?? value`라 **미지 키를 그대로 되돌려주고**(`cards.ts`), 결과 화면 조판이
+ * 그 출력을 `innerHTML`에 넣는다 → 손상·악의적 `solution` 메시지의 문자열이 **그대로 실행**된다
+ * (헤드리스에서 `<img src=x onerror=…>` 실행 재현 확인). CSP도 없다.
+ * `readTriple`이 존재하는 이유가 «네트워크를 못 믿는다»인데 타입만 보면 방어가 반쪽이다.
+ * 멤버십까지 보면 `__proto__`·`constructor` 같은 프로토타입 키도 함께 막힌다.
+ */
 const readTriple = (v: unknown): CardTriple | null => {
   if (v === null || typeof v !== "object") return null;
   const o = v as Partial<CardTriple>;
   if (typeof o.suspect !== "string" || typeof o.weapon !== "string") return null;
   if (typeof o.room !== "string") return null;
+  if (!SUSPECT_SET.has(o.suspect)) return null;
+  if (!WEAPON_SET.has(o.weapon)) return null;
+  if (!ROOM_SET.has(o.room)) return null;
   return { suspect: o.suspect, weapon: o.weapon, room: o.room };
 };
 
@@ -876,13 +892,36 @@ const readEndInfo = (v: unknown): EndInfo | null => {
 };
 
 /**
- * 카드 3장 표기 — ui-copy §7.0 «정답 표기(공용)». 결과 오버레이의 봉투와 «내 지목»이
- * 같은 함수를 쓴다(표기가 두 벌 생기지 않게). 변수 뒤에 조사를 붙이지 않는다(§1.2 R2/R4).
+ * 결과 화면의 **3장 조판**(ui-copy §7.1.1). `cmp`를 주면 그것과 대조해 장마다 맞음/틀림을 표시한다.
+ *
+ * ⚠️ 대조는 **서버가 준 두 값(`endInfo.mine` ↔ `endInfo`)의 동일성 비교**일 뿐이다 —
+ *    클라가 진실값을 만들지 않는다(§1.4). 승패는 이미 서버가 정했고 여기서 바뀌지 않는다.
+ *
+ * innerHTML 안전성의 근거는 **`readTriple`의 멤버십 검증**이다 — `label()`은 미지 키를
+ * 그대로 되돌려주므로 «고정 표에서 온다»는 것만으로는 근거가 안 된다(위 `readTriple` 주석).
+ * 플레이어 이름은 여기 들어오지 않는다.
+ *
+ * 맞음/틀림은 **색·취소선만으로 말하지 않는다** — 보조 기술을 위해 `.ec-sr`로 낱말도 싣는다.
  */
-const cardTriple = (t: CardTriple): string =>
-  `${emoji(t.suspect)} ${label(t.suspect)} · ${emoji(t.weapon)} ${label(
-    t.weapon,
-  )} · 📍 ${label(t.room)}`;
+const endCardSet = (t: CardTriple, cmp?: CardTriple): string => {
+  const cell = (ic: string, v: string, ok: boolean | null): string =>
+    `<span class="ec-card${ok === null ? "" : ok ? " hit" : " miss"}">` +
+    `<span class="ec-ic" aria-hidden="true">${ic}</span>` +
+    `<span class="ec-name">${label(v)}</span>` +
+    (ok === null ? "" : `<span class="ec-sr">${ok ? " (맞음)" : " (틀림)"}</span>`) +
+    `</span>`;
+  return (
+    cell(emoji(t.suspect), t.suspect, cmp ? t.suspect === cmp.suspect : null) +
+    cell(emoji(t.weapon), t.weapon, cmp ? t.weapon === cmp.weapon : null) +
+    cell("\u{1F4CD}", t.room, cmp ? t.room === cmp.room : null)
+  );
+};
+
+/** 조판 한 줄(라벨 + 3장). */
+const endCardRow = (labelText: string, cards: string): string =>
+  `<div class="ec-row"><div class="ec-label">${labelText}</div>` +
+  `<div class="ec-set">${cards}</div></div>`;
+
 
 // ── 렌더러 접근자 ───────────────────────────────────────────
 // ⚠ Phaser 씬은 **`create()`가 끝나기 전에도 인스턴스가 조회된다.** 그 시점에 메서드를
@@ -1648,46 +1687,44 @@ const updateEndState = (state: Room["state"]): void => {
   const winnerId = (state.winner as string) ?? "";
   const iWon = !!room && winnerId !== "" && winnerId === room.sessionId;
   const winnerName = players.get(winnerId)?.name ?? "";
-  // 봉투는 서버가 개봉해 준 값만 쓴다. 아직 안 왔으면(메시지 유실·구버전 서버) 빈 문자열로
-  // 두고 **지어내지 않는다** — 뒤의 `join`이 문장을 그만큼만 짧게 만든다.
-  const envelope = endInfo ? `정답 봉투 — ${cardTriple(endInfo)}` : "";
-  const join = (...parts: string[]): string =>
-    parts.filter((p) => p !== "").join(" ");
+  // 봉투·내 지목은 **조판(`#endCards`)으로** 간다 — 부제에는 «산문»만 남는다(§7.1.1).
+  // 봉투는 여전히 **서버가 개봉해 준 값만** 쓴다. 아직 안 왔으면 조판이 통째로 비고
+  // `.end-cards:empty`가 자리를 지운다 — **지어내지 않는다**.
 
   let title: string;
   let sub: string;
   if (meElim && endInfo?.mine) {
     // 4 — 내가 오답 탈락 후 종료. 부제 뒤에 «· 무승부로 종료»를 덧붙이지 않는다(3행 방지).
     title = "❌ 신고 실패";
-    sub = `내 지목 — ${cardTriple(endInfo.mine)} / ${envelope}`;
+    sub = "";
   } else if (winnerId === "") {
     // 5 — 무승부(제안 상한 도달). 승자가 없으므로 승리 연출도 없다(`applyFx` ⑤가 이미 그렇다).
     title = "🏳 무승부";
     sub = endInfo
-      ? join(
-          `제안 ${endInfo.suggestCap}회에 이르도록 아무도 해결하지 못했어요.`,
-          envelope,
-        )
+      ? `제안 ${endInfo.suggestCap}회에 이르도록 아무도 해결하지 못했어요.`
       : "";
   } else if (endInfo?.reason === "survivor") {
     // 3 / 3′ — 최후 생존
     title = iWon ? "🏅 최후의 1인" : "🏅 판 종료";
     sub = iWon
-      ? join("모두 오답으로 탈락했어요.", envelope)
-      : join(winnerName === "" ? "" : `${winnerName} 님만 남았어요.`, envelope);
+      ? "모두 오답으로 탈락했어요."
+      : winnerName === ""
+        ? ""
+        : `${winnerName} 님만 남았어요.`;
   } else {
     // 1 / 2 — 고발 성공. `reason`이 없는(=봉투가 안 온) 경우도 여기로 떨어진다.
     title = iWon ? "🎉 사건 해결!" : "🔍 사건 종결";
-    sub = iWon
-      ? envelope
-      : join(
-          winnerName === "" ? "" : `${winnerName} 님이 먼저 맞혔어요.`,
-          envelope,
-        );
+    sub = iWon ? "" : winnerName === "" ? "" : `${winnerName} 님이 먼저 맞혔어요.`;
   }
 
   $("endTitle").textContent = title;
   $("endSub").textContent = sub;
+  // 3장 조판 — 내가 오답 탈락했으면 «내 지목»을 봉투와 대조해 먼저 싣는다(§7.1 4번의 정보 가치).
+  $("endCards").innerHTML = !endInfo
+    ? ""
+    : (endInfo.mine
+        ? endCardRow("내 지목", endCardSet(endInfo.mine, endInfo))
+        : "") + endCardRow("정답 봉투", endCardSet(endInfo));
   // 결과도 전면 오버레이 → 버스가 소유. 주사위·목표 카드를 밀어내고 그 자리를 차지한다.
   // 이미 떠 있으면 **다시 띄우지 않는다** — 위에서 문안만 갈아 끼운다(봉투가 늦게 와도 무해).
   if (!isOverlayShown("end")) showOverlay({ id: "end", el: overlay });

@@ -597,6 +597,40 @@
         font-size: 14px; color: var(--wds-label-alternative); margin: 10px auto 20px;
         max-width: 420px; line-height: 1.6; word-break: keep-all;
       }
+      /* ── 결과 화면 3장 조판(§7.1.1) ───────────────────────────────────
+         §7.1이 «내 지목 ↔ 정답 봉투» 대조를 «패배 화면의 유일한 정보 가치 … 생략하지 말 것»
+         이라고 못 박았는데, 한 줄 산문이라 **어느 장이 틀렸는지가 안 보였다** —
+         폰 실측에서 3행으로 접히고 구분자 `/`가 **줄머리**에 떨어졌다(오타처럼 읽힌다).
+         게임의 전부인 3장을 실제 «장»으로 조판하고, 내 지목은 봉투와 대조해 표시한다.
+         (대조는 서버가 준 두 값의 동일성 비교일 뿐 — 클라가 진실값을 만들지 않는다. §1.4) */
+      .end-cards { display: flex; flex-direction: column; gap: 10px; margin: 4px 0 20px; }
+      .end-cards:empty { display: none; }
+      .ec-row { display: flex; flex-direction: column; gap: 6px; align-items: center; }
+      .ec-label { font-size: 12px; color: var(--wds-label-alternative); letter-spacing: 0.4px; }
+      .ec-set { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
+      .ec-card {
+        display: inline-flex; align-items: center; gap: 5px; padding: 6px 10px;
+        border-radius: var(--wds-radius-chip); background: var(--wds-bg-alternative);
+        border: 1px solid var(--wds-line-normal); color: var(--wds-label-strong);
+        font-size: 13px; font-weight: 600; white-space: nowrap;
+      }
+      /* 맞음/틀림은 **색만으로 말하지 않는다** — 틀린 장은 취소선까지 긋는다(CVD). */
+      .ec-card.hit { background: var(--wds-tint-positive); border-color: var(--wds-status-positive); }
+      .ec-card.miss { background: var(--wds-tint-negative); border-color: var(--wds-status-negative); }
+      /* 13px 한글에서 기본 취소선은 자모 가로획(ㅏ·ㅓ·ㅇ·ㅁ)과 같은 높이에 겹쳐 **거의 사라진다**
+         (검수 A/B 실측). 두께와 색을 명시해야 «색만으로 말하지 않는다»가 실제로 성립한다. */
+      .ec-card.miss .ec-name {
+        text-decoration: line-through;
+        text-decoration-thickness: 2px; text-decoration-color: var(--wds-status-negative);
+      }
+      /* 보조 기술용 낱말 — 시각적으로는 감추되 읽히게 둔다(색·취소선의 세 번째 신호). */
+      .ec-sr {
+        position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+        overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+      }
+      .ec-ic { font-size: 14px; line-height: 1; }
+      /* 봉투가 카드로 빠지면서 부제가 빈 줄만 남는 경우(1번 «사건 해결!»)가 생긴다. */
+      .end-sub:empty { display: none; }
       .end-actions { display: flex; gap: 10px; justify-content: center; }
       .end-btn { padding: 10px 22px; font-size: 14px; }
       /* `button{border:0}`이라 면 델타만으로는 «버튼»으로 안 읽힌다(면 vs 모달 1.19:1) —
@@ -1347,8 +1381,20 @@
       /* 폰 폭에서 모달은 **카드 계열과 같은 폭**으로 선다.
          300px 고정은 390px 화면에서 좌우 45px씩을 버려 랜딩(.card 358)·결과(.end-card 359)와
          폭이 어긋났다 — 화면마다 카드 폭이 다르면 그 자체가 정렬 축의 부재다. */
+      /* 365px 이하(안드로이드 360 · SE 1세대 320)는 줄여도 3장이 한 줄에 안 선다 —
+         `flex-wrap`에 맡기면 **2+1**로 접혀 이번 회차가 없앤 그 모양이 돌아온다.
+         차라리 **세로로 세운다**: 줄이 셋이 되지만 «3장»이라는 구조는 유지된다. */
+      @media (max-width: 365px) {
+        .ec-set { flex-direction: column; align-items: center; }
+      }
       @media (max-width: 680px), (max-height: 500px) {
         .modal { width: 100%; padding: 18px 16px; }
+        /* 좌우 44px 패딩이면 3장 조판이 2+1로 접힌다. 16px로 322.8px 확보(= 0.92W − 36). */
+        .end-card { padding: 24px 16px; }
+        /* 최장 조합(🐵 잔나비 광대 · 🎁 잔치 선물 · 📍 정지(부엌))이 310.5px라 390에서도 여유가
+           12px뿐이었다 — 여백·간격을 줄여 294.6px로 낮춘다(375에서 15px 여유). */
+        .ec-card { padding: 6px 8px; }
+        .ec-set { gap: 4px; }
         /* 우측에 몰린 작은 버튼 두 개 → 폭을 반씩 나눠 갖는 한 줄. 엄지가 닿는 자리로 내려온다. */
         .modal .actions button { flex: 1; }
         .end-actions .end-btn { flex: 1; }
@@ -1547,6 +1593,8 @@
         <div class="end-card">
           <div id="endTitle" class="end-title"></div>
           <div id="endSub" class="end-sub"></div>
+          <!-- 3장 조판(§7.1.1). 부제는 «산문»만 남고 봉투·내 지목은 여기로 온다. -->
+          <div id="endCards" class="end-cards"></div>
           <div class="end-actions">
             <button id="endRematch" class="end-btn">다시 하기</button>
             <button id="endHome" class="end-btn ghost">메인으로</button>

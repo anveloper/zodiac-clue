@@ -128,6 +128,13 @@
   .g-goal li b{color:var(--gold);font-weight:600}
   .g-goal .cta{margin-top:18px;text-align:center}
   .g-goal .cta .g-btn{padding:9px 20px}
+  .ec-demo{display:inline-flex;align-items:center;gap:5px;padding:6px 10px;border-radius:8px;
+    background:#2c2519;border:1px solid #7c6238;color:var(--ink);font-size:13px;font-weight:600;white-space:nowrap}
+  .ec-demo.miss{background:#3a1f1a;border-color:#8f4a3a}
+  .ec-demo.hit{background:#1c3325;border-color:#2c5238}
+  .ec-demo del{text-decoration-thickness:2px;text-decoration-color:#e0736b}
+  .ec-lab{font-size:11px;color:var(--dim);margin:8px 0 4px;text-align:center}
+  .ec-strip{display:flex;gap:4px;justify-content:center;flex-wrap:wrap}
   .g-goal .re{margin:12px 0 0;text-align:center;font-size:11px;color:#8f8574}
 
   /* 공개방 목록 항목 재현 (§8.5) — 배지는 이모지가 아니라 CSS다 */
@@ -253,6 +260,10 @@
     .g-btn.off{background:#ddd8cc!important;color:#6d675c!important}
     .g-btn.ghost{background:#e6e0d3!important;color:#2a241a!important}
     .g-btn.danger{background:#9c2f27!important;color:#fff!important}
+    /* 목업 칩도 인쇄에서 라이트로 뒤집는다 — 안 하면 어두운 면 고정이라 1.18:1로 판독 불가. */
+    .ec-demo{background:#f1e4d0!important;border-color:#96733e!important;color:#33271a!important}
+    .ec-demo.miss{background:#f5dcdc!important;border-color:#a83a3a!important}
+    .ec-demo.hit{background:#dfebdf!important;border-color:#487449!important}
     .g-hud,.g-modal,.g-end,.g-goal,.g-confirm{background:#fafaf7!important;border-color:#c9c2b4!important;
       box-shadow:none!important;color:#1a1712}
     .g-sel,.g-fixed,.g-chip,.voice .sam,.rule .ex{background:#f4f0e6!important;border-color:#c9c2b4!important}
@@ -837,45 +848,81 @@
     <div class="pv-b">
       <div class="g-end">
         <div class="t">🎉 사건 해결!</div>
-        <div class="s">정답 봉투 — <b>🐍 뱀 무녀 · 🍶 술동이 · 📍 서재</b></div>
+        <div class="ec-lab">정답 봉투</div><div class="ec-strip"><span class="ec-demo">🐍 뱀 무녀</span><span class="ec-demo">🍶 술동이</span><span class="ec-demo">📍 서재</span></div>
         <div class="acts"><button class="g-btn">다시 하기</button><button class="g-btn ghost">메인으로</button></div>
       </div>
       <div class="g-end">
         <div class="t">🔍 사건 종결</div>
-        <div class="s">🐭 생쥐 서생 님이 먼저 맞혔어요.<br>정답 봉투 — <b>🐍 뱀 무녀 · 🍶 술동이 · 📍 서재</b></div>
+        <div class="s">🐭 생쥐 서생 님이 먼저 맞혔어요.</div><div class="ec-lab">정답 봉투</div><div class="ec-strip"><span class="ec-demo">🐍 뱀 무녀</span><span class="ec-demo">🍶 술동이</span><span class="ec-demo">📍 서재</span></div>
         <div class="acts"><button class="g-btn">다시 하기</button><button class="g-btn ghost">메인으로</button></div>
       </div>
       <div class="g-end">
         <div class="t">🏅 최후의 1인</div>
-        <div class="s">모두 오답으로 탈락했어요.<br>정답 봉투 — <b>🐍 뱀 무녀 · 🍶 술동이 · 📍 서재</b></div>
+        <div class="s">모두 오답으로 탈락했어요.</div><div class="ec-lab">정답 봉투</div><div class="ec-strip"><span class="ec-demo">🐍 뱀 무녀</span><span class="ec-demo">🍶 술동이</span><span class="ec-demo">📍 서재</span></div>
         <div class="acts"><button class="g-btn">다시 하기</button><button class="g-btn ghost">메인으로</button></div>
       </div>
       <div class="g-end lose">
         <div class="t">❌ 신고 실패</div>
-        <div class="s">내 지목 — 🐰 토끼 낭자 · 🥢 젓가락 · 📍 안방<br>정답 봉투 — <b>🐍 뱀 무녀 · 🍶 술동이 · 📍 서재</b></div>
+        <div class="ec-lab">내 지목</div><div class="ec-strip"><span class="ec-demo hit">🐍 뱀 무녀</span><span class="ec-demo miss">🥢 <del>젓가락</del></span><span class="ec-demo miss">📍 <del>안방</del></span></div><div class="ec-lab">정답 봉투</div><div class="ec-strip"><span class="ec-demo">🐍 뱀 무녀</span><span class="ec-demo">🍶 술동이</span><span class="ec-demo">📍 서재</span></div>
         <div class="acts"><button class="g-btn">다시 하기</button><button class="g-btn ghost">메인으로</button></div>
       </div>
       <div class="g-end" style="border-color:#7c6238">
         <div class="t" style="color:#cbbfa8">🏳 무승부</div>
-        <div class="s">제안 75회에 이르도록 아무도 해결하지 못했어요.<br>정답 봉투 — <b>🐍 뱀 무녀 · 🍶 술동이 · 📍 서재</b></div>
+        <div class="s">제안 75회에 이르도록 아무도 해결하지 못했어요.</div><div class="ec-lab">정답 봉투</div><div class="ec-strip"><span class="ec-demo">🐍 뱀 무녀</span><span class="ec-demo">🍶 술동이</span><span class="ec-demo">📍 서재</span></div>
         <div class="acts"><button class="g-btn">다시 하기</button><button class="g-btn ghost">메인으로</button></div>
       </div>
     </div>
     <p class="pv-cap" style="padding:0 18px 16px">
-      4번의 <b>내 지목 / 정답 봉투 대조</b>는 패배 화면의 유일한 정보 가치다. 생략하지 말 것.
+      4번의 <b>내 지목 ↔ 정답 봉투 대조</b>는 패배 화면의 유일한 정보 가치다. 생략하지 말 것 — 2026-08-26부터 <b>3장 조판</b>(§7.1.1)이 그 몫을 진다. 4번 목업은 <b>맞음 1 · 틀림 2</b>가 섞인 표본이다.
     </p>
   </div>
 
+  <div class="box good" style="margin-top:0">
+    <b style="color:var(--gold)">2026-08-26 구조 변경 — 봉투·내 지목은 «부제»가 아니라 «3장 조판»이다(§7.1.1).</b>
+    아래 «부제» 칸은 이제 <b>산문만</b> 담고, 3장은 <code>#endCards</code>가 렌더한다.
+  </div>
+
   <div class="scroll"><table>
-    <tr><th>#</th><th>조건</th><th>제목 <code>#endTitle</code></th><th>부제 <code>#endSub</code></th></tr>
-    <tr><td>1</td><td>내가 신고 성공</td><td class="q">🎉 사건 해결!</td><td class="q">정답 봉투 — 🐍 뱀 무녀 · 🍶 술동이 · 📍 서재</td></tr>
-    <tr><td>2</td><td>남이 먼저 해결</td><td class="q">🔍 사건 종결</td><td class="q">🐭 생쥐 서생 님이 먼저 맞혔어요. 정답 봉투 — …</td></tr>
-    <tr><td>3</td><td>내가 최후 생존</td><td class="q">🏅 최후의 1인</td><td class="q">모두 오답으로 탈락했어요. 정답 봉투 — …</td></tr>
-    <tr><td>3′</td><td>남이 최후 생존</td><td class="q">🏅 판 종료</td><td class="q">🐭 생쥐 서생 님만 남았어요. 정답 봉투 — …</td></tr>
-    <tr><td>4</td><td>내가 오답 탈락 후 종료</td><td class="q">❌ 신고 실패</td><td class="q">내 지목 — … / 정답 봉투 — …</td></tr>
-    <tr><td>5 <span class="tag t-new">신규</span></td><td>무승부 <span class="note">(제안 상한 도달 · <code>winner === ""</code>)</span></td><td class="q">🏳 무승부</td><td class="q">제안 75회에 이르도록 아무도 해결하지 못했어요. 정답 봉투 — …</td></tr>
+    <tr><th>#</th><th>조건</th><th>제목 <code>#endTitle</code></th><th>부제 <code>#endSub</code> — 산문만</th><th>3장 조판 <code>#endCards</code></th></tr>
+    <tr><td>1</td><td>내가 신고 성공</td><td class="q">🎉 사건 해결!</td><td class="note">(없음 — <code>:empty</code>로 자리도 사라진다)</td><td>정답 봉투</td></tr>
+    <tr><td>2</td><td>남이 먼저 해결</td><td class="q">🔍 사건 종결</td><td class="q">🐭 생쥐 서생 님이 먼저 맞혔어요.</td><td>정답 봉투</td></tr>
+    <tr><td>3</td><td>내가 최후 생존</td><td class="q">🏅 최후의 1인</td><td class="q">모두 오답으로 탈락했어요.</td><td>정답 봉투</td></tr>
+    <tr><td>3′</td><td>남이 최후 생존</td><td class="q">🏅 판 종료</td><td class="q">🐭 생쥐 서생 님만 남았어요.</td><td>정답 봉투</td></tr>
+    <tr><td>4</td><td>내가 오답 탈락 후 종료</td><td class="q">❌ 신고 실패</td><td class="note">(없음)</td><td><b>내 지목</b>(대조 표시) + 정답 봉투</td></tr>
+    <tr><td>5</td><td>무승부 <span class="note">(제안 상한 도달 · <code>winner === ""</code>)</span></td><td class="q">🏳 무승부</td><td class="q">제안 75회에 이르도록 아무도 해결하지 못했어요.</td><td>정답 봉투</td></tr>
   </table></div>
-  <p class="note">부제 44자 상한을 넘는 2·3·4·5는 <b>2행 허용</b>. 3행이 되면 앞 문장을 잘라내고 정답 봉투만 남긴다. 버튼은 6종 모두 <code>[다시 하기]</code> <code>[메인으로]</code>이며, 리매치 합의 도입 시 §9.4로 대체한다.</p>
+
+  <h3 id="s711">7.1.1 3장 조판 <code>#endCards</code> <span class="tag t-new">2026-08-26 신설</span></h3>
+  <div class="pv">
+    <div class="pv-b" style="text-align:center">
+      <div class="note" style="margin-bottom:6px">내 지목</div>
+      <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:12px">
+        <span class="ec-demo miss">🦎 <del>게코 도령</del></span>
+        <span class="ec-demo miss">🍜 <del>잡채</del></span>
+        <span class="ec-demo miss">📍 <del>사랑채</del></span>
+      </div>
+      <div class="note" style="margin-bottom:6px">정답 봉투</div>
+      <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap">
+        <span class="ec-demo">🐰 토끼 낭자</span>
+        <span class="ec-demo">💰 금고</span>
+        <span class="ec-demo">📍 정지(부엌)</span>
+      </div>
+    </div>
+  </div>
+  <ul class="s13">
+    <li><b>왜 바꿨나.</b> §7.1이 4번의 «내 지목 ↔ 정답 봉투» 대조를 <b>«패배 화면의 유일한 정보 가치…
+      생략하지 말 것»</b>이라 못 박았는데, 한 줄 산문이라 <b>어느 장이 틀렸는지가 안 보였다</b>.
+      폰 실측에서 <b>3행으로 접히고 구분자 <code>/</code>가 줄머리에 떨어져</b> 오타처럼 읽혔다.
+      게임의 전부가 3장인데 그 3장이 쉼표로 이어진 글이었다.</li>
+    <li><b>맞음/틀림을 색만으로 말하지 않는다</b> — 틀린 장에 <b>취소선</b>을 함께 긋는다(CVD).</li>
+    <li><b>대조는 진실값 생성이 아니다</b>(§1.4) — 서버가 준 두 값(<code>endInfo.mine</code> ↔
+      <code>endInfo</code>)의 <b>동일성 비교</b>일 뿐이고 승패는 이미 서버가 정했다.</li>
+    <li>봉투가 아직 안 왔으면 조판이 통째로 비고 <code>.end-cards:empty</code>가 자리를 지운다 — <b>지어내지 않는다</b>.</li>
+    <li><b>대비(실측)</b> — 중립 카드 글자 <b>11.58</b> · 맞음 11.82 · 틀림 11.17 ·
+      테두리 vs 모달 4.14 / 5.15 / 5.98 · 라벨 5.97. <b>새 색 없이 기존 토큰 조합</b>이다.</li>
+  </ul>
+
+  <p class="note">부제는 이제 산문 한 조각뿐이라 44자 상한 안에 넉넉히 든다(봉투가 조판으로 빠졌다). 버튼은 6종 모두 <code>[다시 하기]</code> <code>[메인으로]</code>이며, 리매치 합의 도입 시 §9.4로 대체한다.</p>
 
   <div class="box good">
     <h3 style="margin-top:0">5(무승부) 확정 근거</h3>

@@ -98,6 +98,10 @@
     "dir": "plans/done",
     "items": [
       {
+        "path": "plans/done/31-end-screen-cards.md",
+        "title": "plan: 결과 화면 — 3장을 «장»으로 조판한다"
+      },
+      {
         "path": "plans/done/30-contrast-finish.md",
         "title": "plan: 명암비 마감 — 토큰이 두 일을 하고 있었다"
       },
