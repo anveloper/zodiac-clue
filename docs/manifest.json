@@ -56,6 +56,10 @@
     "dir": "plans/done",
     "items": [
       {
+        "path": "plans/done/36-overlay-focus.md",
+        "title": "plan: 오버레이 버스 — 모달만 포커스를 가져간다"
+      },
+      {
         "path": "plans/done/35-codex-keyboard.md",
         "title": "plan: 도감 — 키보드로 열고·고르고·닫는다"
       },

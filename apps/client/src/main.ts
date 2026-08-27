@@ -1258,17 +1258,91 @@ let activeOverlay: OverlayReq | null = null;
 let overlayTimers: number[] = [];
 const pendingOverlays: OverlayReq[] = [];
 
+// ── 모달 포커스 (ui-copy §1.6) ─────────────────────────────────────────
+// 도감(15회차)과 **같은 코드**를 쓴다 — 선택자가 두 벌이 되면 한쪽만 낡는다.
+const FOCUSABLE_SEL =
+  'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]),' +
+  ' textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+/** 보이는 포커스 대상만. `getClientRects()`는 `display:none`·`hidden` 조상을 함께 걸러 준다. */
+const focusablesIn = (box: HTMLElement): HTMLElement[] =>
+  Array.from(box.querySelectorAll<HTMLElement>(FOCUSABLE_SEL)).filter(
+    (n) => n.tabIndex !== -1 && n.getClientRects().length > 0,
+  );
+/**
+ * Tab을 모달 안에서 순환시킨다.
+ *
+ * ⚠️ **리스너는 `document`에 걸어야 한다.** 모달 안의 «포커스 불가» 영역을 클릭하면
+ * `activeElement`가 `<body>`가 되어 keydown이 모달을 **거치지 않는다** →
+ * 오버레이가 덮은 배경 컨트롤로 그대로 빠져나간다(15회차 실측). 그래서 아래 첫 분기가
+ * «밖에 있으면 안으로 끌어온다»를 한다. `aria-modal`은 보조 기술에만 말할 뿐 이걸 못 막는다.
+ */
+const cycleTab = (ev: KeyboardEvent, box: HTMLElement): void => {
+  const f = focusablesIn(box);
+  if (f.length === 0) return;
+  const first = f[0];
+  const last = f[f.length - 1];
+  if (!box.contains(document.activeElement)) {
+    ev.preventDefault();
+    (ev.shiftKey ? last : first).focus();
+    return;
+  }
+  if (ev.shiftKey && document.activeElement === first) {
+    ev.preventDefault();
+    last.focus();
+  } else if (!ev.shiftKey && document.activeElement === last) {
+    ev.preventDefault();
+    first.focus();
+  }
+};
+
+/** 오버레이가 포커스를 가져가기 **전에** 어디 있었는지. 되돌릴 자리다. */
+let overlayReturn: HTMLElement | null = null;
+/**
+ * 되돌릴 자리가 **아직 쓸 수 있는지**로 판정한다.
+ *
+ * ⚠️ `isConnected`만으로는 부족하다 — 이 앱은 화면을 **제거하지 않고** `.hidden`
+ * (`display:none !important`)으로 끈다(`show()`). 그런 요소는 `isConnected === true`인데
+ * `focus()`는 **조용히 no-op**이라 포커스가 `<body>`로 떨어진다.
+ * 게다가 되돌릴 자리가 사라지는 실제 경로가 있다 — 증거 노트 메모 `<input>`은
+ * `onblur`가 `renderMemo()`를 불러 **자기 자신을 DOM에서 떼어낸다**(검수 지적).
+ * `preventScroll`: 복원은 «원래 자리로»일 뿐 화면을 움직일 이유가 없다.
+ */
+const restoreFocus = (el: HTMLElement | null): boolean => {
+  if (!el || !el.isConnected || el.getClientRects().length === 0) return false;
+  el.focus({ preventScroll: true });
+  return true;
+};
+
 const hideOverlay = (): void => {
   if (!activeOverlay) return;
   overlayTimers.forEach((t) => window.clearTimeout(t));
   overlayTimers = [];
   activeOverlay.el.classList.add("hidden");
   activeOverlay = null;
+  // 우리가 포커스를 옮겼을 때만 되돌린다.
+  if (overlayReturn) {
+    restoreFocus(overlayReturn);
+    overlayReturn = null;
+  }
 };
 
 const runOverlay = (req: OverlayReq): void => {
   activeOverlay = req;
   req.el.classList.remove("hidden");
+  // **포커스 대상이 있는 오버레이만 «모달»로 다룬다.** 주사위·로딩 인터스티셜은
+  // 포커스 대상이 **0개**라 옮기면 갈 곳이 없다(Tab이 죽는다).
+  // ⚠️ 판정은 `req.run` **이전**에 한다 — `run`이 내용을 만드는 오버레이(주사위)가 이미 있으므로,
+  //    앞으로 «run이 버튼을 만드는» 모달을 추가하면 여기서 0으로 보인다. 그런 오버레이는
+  //    버튼을 **마크업에 두거나** 이 판정을 `run` 뒤로 옮겨야 한다.
+  const f = focusablesIn(req.el);
+  if (f.length > 0) {
+    overlayReturn = document.activeElement as HTMLElement | null;
+    // APG Dialog — 되돌리기 어려운 동작이 있으면 **가장 덜 파괴적인 요소**에 초기 포커스를 둔다.
+    // 결과 화면의 첫 버튼은 `[다시 하기]`이고 **누르는 즉시 재대국을 보낸다** — 거기 두면
+    // Enter 한 번이 새 판이다. 그래서 마크업이 `[data-initial-focus]`로 자리를 선언한다.
+    const initial = req.el.querySelector<HTMLElement>("[data-initial-focus]");
+    (initial ?? f[0]).focus({ preventScroll: true });
+  }
   req.run?.({
     after: (ms, fn) => {
       overlayTimers.push(window.setTimeout(fn, ms));
@@ -1300,6 +1374,14 @@ const closeOverlay = (id: OverlayId): void => {
 };
 
 const isOverlayShown = (id: OverlayId): boolean => activeOverlay?.id === id;
+
+// 버스가 띄운 모달 안에서 Tab을 가둔다. 모듈 로드 시 **한 번만** 건다.
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Tab" || e.defaultPrevented) return;
+  const el = activeOverlay?.el;
+  if (!el || el.classList.contains("hidden")) return;
+  cycleTab(e, el);
+});
 
 /**
  * 전면 오버레이 요청. 동시 표시는 없다.
@@ -2956,33 +3038,15 @@ const init = async (): Promise<void> => {
   // Tab이 모달을 빠져나가면 **덮여서 안 보이는** 랜딩 컨트롤로 간다 → 안에서 순환시킨다.
   // (`aria-modal`은 보조 기술에만 말할 뿐 시퀀셜 포커스를 막지 않는다.)
   // 리스너는 **여기서 한 번만** 건다 — `renderCodex`는 열 때마다 도는 함수다.
-  // ⚠️ 리스너를 `#codex`에 걸면 **구멍이 난다** — 모달 안의 포커스 불가 영역(레일 좌우 여백 등)을
-  //    클릭하면 `activeElement`가 `<body>`가 되고 keydown이 `#codex`를 **거치지 않는다** →
-  //    오버레이가 덮은 배경 컨트롤로 그대로 빠져나간다(검수 실측: 배경 focusable 10개).
-  //    `document`에 걸고 «모달 밖이면 안으로 끌어온다» 분기를 둔다.
+  // Tab 순환은 버스 모달과 **같은 헬퍼**를 쓴다(§1.6). 도감은 버스를 안 타는 별도 경로다.
+  // ⚠️ 버스 리스너(모듈 스코프)가 **먼저** 등록된다. 둘 다 `preventDefault`를 쓰므로
+  //    가드가 없으면 «버스가 옮긴 포커스를 도감이 다시 뺏는» 무한 리셋이 된다(검수 지적).
   document.addEventListener("keydown", (e) => {
-    if ((e as KeyboardEvent).key !== "Tab") return;
+    if (e.key !== "Tab" || e.defaultPrevented) return;
     if ($("codex").classList.contains("hidden")) return;
-    const f = Array.from(
-      $("codex").querySelectorAll<HTMLElement>("button:not([disabled])"),
-    );
-    if (f.length === 0) return;
-    const first = f[0];
-    const last = f[f.length - 1];
-    const ev = e as KeyboardEvent;
-    if (!$("codex").contains(document.activeElement)) {
-      ev.preventDefault();
-      (ev.shiftKey ? last : first).focus();
-      return;
-    }
-    if (ev.shiftKey && document.activeElement === first) {
-      ev.preventDefault();
-      last.focus();
-    } else if (!ev.shiftKey && document.activeElement === last) {
-      ev.preventDefault();
-      first.focus();
-    }
+    cycleTab(e, $("codex"));
   });
+
   // 랜딩이 보이는 동안 주기적으로 공개방 목록 갱신.
   window.setInterval(() => {
     if (!$("landing").classList.contains("hidden")) void loadPublicRooms();

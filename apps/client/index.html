@@ -1685,9 +1685,13 @@
         </div>
       </div>
 
-      <div id="endOverlay" class="end-overlay hidden">
+      <!-- 판이 끝나는 모달 — 여기서 나가는 길이 [다시 하기]/[메인으로]뿐이라 대화상자다(§1.6). -->
+      <div id="endOverlay" class="end-overlay hidden" role="dialog" aria-modal="true"
+           aria-labelledby="endTitle" aria-describedby="endSub endCards">
         <div class="end-card">
-          <div id="endTitle" class="end-title"></div>
+          <!-- 초기 포커스를 **제목**에 둔다(APG) — 첫 버튼 `[다시 하기]`는 누르는 즉시
+               재대국을 보내므로 «가장 덜 파괴적인 곳»이 아니다. `tabindex="-1"`이라 Tab 순환엔 안 낀다. -->
+          <div id="endTitle" class="end-title" tabindex="-1" data-initial-focus></div>
           <div id="endSub" class="end-sub"></div>
           <!-- 3장 조판(§7.1.1). 부제는 «산문»만 남고 봉투·내 지목은 여기로 온다. -->
           <div id="endCards" class="end-cards"></div>
