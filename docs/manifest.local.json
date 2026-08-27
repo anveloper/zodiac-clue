@@ -98,6 +98,10 @@
     "dir": "plans/done",
     "items": [
       {
+        "path": "plans/done/39-bgm-overlay-stacking.md",
+        "title": "plan: 전면 모달 위에 뜨던 배경음 컨트롤을 끈다 — z-index로는 못 막는 자리"
+      },
+      {
         "path": "plans/done/38-bgm-placement.md",
         "title": "plan: 배경음 버튼을 «내용이 지나가는 띠»에서 뺀다 — 세 번째 재발을 배치로 막는다"
       },

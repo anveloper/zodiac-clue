@@ -248,12 +248,48 @@ export const DOC_CHECKS = [
 // 랜딩·대기실에서는 정상이다(카드가 뷰포트보다 길 수 있다). 한 기준을 전 화면에
 // 밀어붙이면 곧 아무도 못 믿는 게이트가 된다.
 
+/**
+ * «전면 모달 위를 바깥 컨트롤이 덮는가» — 배경음 컨트롤 전용 쌍. 배경은 플랜 39.
+ *
+ * 왜 `protect`로는 안 되는가: `protect`는 «모달 **안의** 요소가 가려졌는가»만 보고,
+ * 그것도 요소마다 **중심 + 20% 인셋 5점**만 히트 테스트한다(`gate-screen.mjs` `sampleInsetPct`).
+ * `#bgmCtrl`은 우상단이고 보호 대상은 카드 가운데라 데스크톱에선 아예 교차가 없고,
+ * 폰에서 `.end-card`와 세로로 겹치더라도 **5점이 그 모서리를 안 찍는다** → 원리적으로 침묵.
+ * (결과 화면 `pairs` 위 주석이 「오버레이 위를 아무도 덮지 않는다는 protect가 이미 한다」고
+ *  적어 뒀는데 **거짓이다.** 겹치는 보호 대상이 있고 그 5점이 찍힐 때만 참이다.)
+ *
+ * 왜 이 쌍이 작동하는가: 모달은 `inset: 0`이라 교차 = 배경음 상자 전체이고, 그 중심을
+ * 히트 테스트해 `#bgmCtrl`이 잡히면 `a-covers-b` → **FAIL**(음성 테스트로 확인).
+ *
+ * ⚠️ **끄는 구현과 이 검사는 한 벌이다.** 정상 상태에서는 컨트롤이 `display:none`이라
+ * `shown` 필터에 걸러져 쌍이 조용히 넘어간다. **z-index를 낮추는 방식으로 고치면**
+ * 모달이 컨트롤을 덮는 것이 `b-covers-a`로 잡혀 오탐이 된다 — 실제로 폰에서 그렇게 났다.
+ * `visibility:hidden`·`opacity:0`도 `shown`이 걸러 통과는 하지만, `opacity:0`은
+ * **히트 타깃이 남아** 「안 보이는데 눌린다」가 되므로 `display:none`이어야 한다.
+ *
+ * ⚠️ **이 쌍만으로는 반쪽이다** — «숨겨져 있으면 통과»이므로 `modal-on`이 고착돼
+ * 컨트롤이 영영 사라져도 전부 PASS다. 반대쪽은 `GAME_PROTECT`의 `#bgmToggle`이 잰다.
+ */
+const BGM_OVER_MODAL = (modalSel) => [
+  "#bgmCtrl",
+  modalSel,
+  "전면 모달 위에 배경음 컨트롤이 뜨는가 — 스크림이 안 먹은 밝은 버튼 + 눌리기까지 한다",
+];
+
 // ── 게임 화면(HUD) 기대값 ────────────────────────────────────────
 //
 // HUD는 캔버스 위에 얹힌 **DOM 한 벌**이다(index.html §③ — `.hud-*`는 `#gameScreen`
 // 직속이고 Phaser 캔버스는 그 아래에 깔린다). 겹침·스크롤·터치 타깃은 전부 이 DOM 층의
 // 성질이라 캔버스가 무엇을 그리든 기대값은 하나다.
 const GAME_PROTECT = [
+  {
+    // 🔴 **«끄는 검사»만 있으면 한 벌이 아니다.** `BGM_OVER_MODAL`은 «숨겨져 있으면 통과»라,
+    //    `body.modal-on`이 고착돼 배경음이 **영영 사라져도** 모든 쌍이 PASS다(검수 지적).
+    //    이 항목이 그 반대쪽을 잰다 — 모달이 없는 화면에서는 **보여야 한다**.
+    //    `protect`는 `visible < min`이면 FAIL이므로 고착이 곧바로 드러난다.
+    sel: "#bgmToggle",
+    why: "모달이 없는 화면에서 배경음 컨트롤이 보이는가 — `modal-on` 고착으로 영구히 사라지는 회귀를 잡는다",
+  },
   {
     sel: ".hud-ctrl button",
     min: 6,
@@ -445,7 +481,10 @@ export const SCREEN = {
         { sel: "#goalOk", why: "안내를 닫는 유일한 버튼. 가려지면 게임에 못 들어간다" },
         { sel: "#goalCard .goal-lines div", min: 5, why: "규칙 5줄 — 온보딩 본문. min이라 4로 두면 ⑤(탈락 대가)가 가려져도 통과한다" },
       ],
-      pairs: [["#goalOk", ".goal-lines", "확인 버튼이 본문을 덮으면 규칙을 못 읽는다"]],
+      pairs: [
+        ["#goalOk", ".goal-lines", "확인 버튼이 본문을 덮으면 규칙을 못 읽는다"],
+        BGM_OVER_MODAL("#goalCard"),
+      ],
       touchExempt: [],
     },
     {
@@ -462,7 +501,13 @@ export const SCREEN = {
         { sel: ".modal select", min: 3, why: "용의자·훔친 것·장소 — 신고의 전부" },
         { sel: ".modal .actions button", min: 2, why: "[취소]/[신고한다]" },
       ],
-      pairs: [[".modal .actions", ".modal-note", "버튼 줄이 안내 문구를 덮는가"]],
+      pairs: [
+        [".modal .actions", ".modal-note", "버튼 줄이 안내 문구를 덮는가"],
+        // ⚠️ 여기선 **데스크톱이 사고 현장**이다. `.overlay`는 z:10인데 `.bgm-ctrl` 기본값이
+        //    z:40이라(폰·coarse 블록에서만 4로 내린다) **스택 컨텍스트와 무관하게** 40 > 10이다.
+        //    「폰에서 안 났다」가 「없다」가 아니다 — 이 쌍이 그 차이를 잡는다.
+        BGM_OVER_MODAL(".overlay"),
+      ],
       touchExempt: [],
     },
   ],
@@ -591,6 +636,7 @@ export const SCREEN = {
     // `pairs`는 양쪽을 `shown`으로 거른 뒤 교차를 보므로, 한쪽이 없는 화면(1·4번의 부제)에서는
     // **조용히 넘어간다** — 그래서 조판·부제 쌍을 둘 다 둬도 오탐이 나지 않는다(실측 확인).
     pairs: [
+      BGM_OVER_MODAL("#endOverlay"),
       [".end-actions", "#endCards", "버튼 줄이 3장 조판을 덮는가"],
       ["#endTitle", "#endCards", "제목이 조판을 덮는가(구성이 무너졌는가)"],
       [".end-actions", "#endSub", "버튼 줄이 결과 산문을 덮는가"],

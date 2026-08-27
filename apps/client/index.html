@@ -79,6 +79,15 @@
         border-radius: 999px; background: rgba(28,20,11,0); transition: background .18s, padding .18s;
       }
       .bgm-ctrl:hover, .bgm-ctrl:focus-within { background: rgba(28,20,11,0.82); padding: 3px 4px 3px 12px; }
+      /* 🔴 전면 모달이 뜨면 **끈다.** z-index로는 못 막는다 — `#gameScreen`이
+         `position: fixed`(:452)라 **스택 컨텍스트**를 만들어, 그 안의 모달(z:35·40·45)이
+         `<body>` 직계인 이 컨트롤을 **이길 수 없다**(4든 40이든 같다). 데스크톱에선 스택
+         컨텍스트와 무관하게도 진다 — 제안·신고 모달 `.overlay`는 z:10인데 여기 기본값이 z:40이다.
+         `visibility`·`opacity`가 아니라 `display: none`인 이유는 **하나뿐**이다 —
+         보이지 않는데 **눌리는 영역**을 안 남긴다(`opacity:0`은 히트 테스트에 남는다).
+         근거 전문·실측: `docs/plans/done/39-bgm-overlay-stacking.md`.
+         `.modal-on`은 `main.ts`의 `syncModalOn()`이 **열린 모달 DOM에서 파생**시킨다. */
+      body.modal-on .bgm-ctrl { display: none; }
       .bgm-icon {
         width: 34px; height: 34px; flex: none; border-radius: 50%; padding: 0; font-size: 15px;
         background: rgba(28,20,11,0.7); border: 1px solid rgba(255,255,255,0.28); color: #f4ead7; cursor: pointer;

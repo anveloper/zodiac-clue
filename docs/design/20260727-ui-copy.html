@@ -475,6 +475,26 @@
     <li><span class="tag t-soon">주의</span> <b><code>#turnCircle</code>(턴 순서)은 아직 남아 있다</b> —
       <code>inset:0</code>·<code>z-index:45</code>·스크림까지 있는 <b>완전한 전면 모달</b>인데 버스를 안 타고,
       <code>role="dialog"</code>도 없고, 포커스를 넣지도·가두지도·되돌리지도 않으며 <b>Esc로도 안 닫힌다</b>.</li>
+    <li><b style="color:var(--red)">🔴 모달 밖 부유 컨트롤은 «포인터로도» 못 닿아야 한다</b>
+      <span class="tag t-new">2026-08-27 (4차)</span><br>
+      <code>cycleTab</code>이 키보드는 모달 안에 가둬 놨는데 <b>마우스·터치는 나갈 수 있었다</b> —
+      배경음 컨트롤이 목표 카드·결과 화면 <b>위에</b> 뜨고 눌렸다
+      (실측: 스크림이 안 먹은 밝은 스피커 + <code>elementFromPoint</code> → <code>#bgmToggle</code>,
+      폰·데스크톱 양쪽).<br>
+      <b>⚠️ z-index로 올릴 길이 없다</b> — ① <code>#gameScreen</code>이 <code>position: fixed</code>라
+      <b>스택 컨텍스트</b>를 만들어 그 안의 모달(z:35·40·45)이 <code>&lt;body&gt;</code> 직계 컨트롤을
+      못 이긴다(4든 40이든 같다) · ② 데스크톱에선 스택 컨텍스트와 <b>무관하게도</b> 진다 —
+      제안·신고 모달 <code>.overlay</code>는 <b>z:10</b>인데 컨트롤 기본값이 <b>z:40</b>이다.
+      그래서 «어느 z를 줄까»가 아니라 <b>«뜨면 끈다»</b>가 답이다.<br>
+      <b style="color:var(--red)">«폰에서 안 났다»가 «없다»가 아니었다 — 이 결함은 데스크톱이 더 넓다.</b></li>
+    <li><b>⚠️ <code>display: none</code>이라야 한다.</b> <code>visibility:hidden</code>·<code>opacity:0</code>도
+      눈에는 같지만 <code>opacity:0</code>은 <b>히트 타깃이 남는다</b> — 「안 보이는데 눌린다」(§1.7).</li>
+    <li><b>판정은 «열려 있는 모달 DOM»에서 파생시킨다</b>(<code>syncModalOn</code>).
+      불리언 토글은 소유자가 넷이라(버스 · 제안/신고 모달 · 턴 순서 · 도감)
+      «A를 닫으면 B 위에서 되살아나는» 순서 버그가 난다.</li>
+    <li><span class="tag t-soon">주의</span> <b><code>#turnCircle</code>은 배경음만 해소됐다</b> —
+      여전히 버스를 안 타므로 <code>role="dialog"</code>도, 포커스 트랩도, Esc도 없다.
+      버스에 올리는 것이 남은 일이다.</li>
     <li><span class="tag t-soon">주의</span> <b><code>#viewLoad</code>는 마우스만 막고 키보드는 안 막는다</b> —
       청크 로딩 동안 Tab으로 아래 컨트롤에 닿는다. 정답은 <code>inert</code>다.</li>
     <li><b>예외</b> — <b>결과 화면은 Esc로 닫히지 않는다.</b> 의도된 예외다(판이 끝난 화면에서 «닫기»가
@@ -1572,6 +1592,15 @@
 
   <footer>
     <b>변경 이력</b><br>
+    <b style="color:var(--gold)">2026-08-27 (4차) — §1.6에 «포인터 쪽» 규약 · 모달이 뜨면 밖의 부유 컨트롤을 끈다.</b>
+    <code>cycleTab</code>이 키보드는 가둬 놨는데 마우스·터치는 나갈 수 있었다 — 배경음 스피커가
+    결과 화면·목표 카드 <b>위에</b> 스크림도 안 먹은 채 뜨고 <b>눌렸다.</b>
+    <b>⚠️ z-index로는 못 막는 자리였다</b> — <code>#gameScreen</code>이 <code>position: fixed</code>라
+    스택 컨텍스트를 만들어 그 안의 z:35·40이 <code>&lt;body&gt;</code> 직계 컨트롤을 이길 수 없다.
+    「몇으로 줄까」가 아니라 「뜨면 끈다」가 답이다. 판정은 버스의 «포커스 대상 &gt; 0»을 그대로 쓴다.
+    회귀는 화면 게이트 쌍 검사가 잡는다(음성 테스트로 FAIL 재현 확인).
+    <code>#turnCircle</code>은 버스를 안 타 <b>미해소</b>로 남았다.
+    <br><br>
     <b style="color:var(--gold)">2026-08-27 (3차) — §1.7 신설 · 부유 컨트롤은 «내용이 지나가는 띠»에 두지 않는다.</b>
     배경음 버튼 밑으로 <code>[복사]</code>가 들어가는 S1 FAIL이 <b>13·17회차에 각각 다른 이유로</b> 났고,
     두 번 다 «내용을 줄여» 피한 결과가 이 문서에 <b>문안 길이 제약</b>으로 굳어 있었다.

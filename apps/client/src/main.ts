@@ -152,6 +152,8 @@ const show = (which: ScreenId): void => {
   // (실측: 폰에서 보드가 위로 사라지고 아래에 빈 검은 띠가 남았다).
   // 랜딩·대기실은 카드가 화면보다 길 수 있어 잠그지 않는다.
   document.body.classList.toggle("no-scroll", which === "gameScreen");
+  // 안전벨트 — 화면을 바꾸면 그 안의 모달도 같이 꺼진다. 버스는 그걸 모르므로 여기서 맞춘다.
+  syncModalOn();
 };
 
 // ── AI 계측 계약 (서버 → 클라, 표시 전용) ─────────────────────────────
@@ -741,6 +743,7 @@ const openPicker = (opts: PickerOpts): Promise<Pick | null> =>
 
     const close = (result: Pick | null): void => {
       overlay.remove();
+      syncModalOn();
       resolve(result);
     };
     cancel.onclick = () => close(null);
@@ -753,6 +756,7 @@ const openPicker = (opts: PickerOpts): Promise<Pick | null> =>
 
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
+    syncModalOn();
   });
 
 /**
@@ -1314,12 +1318,46 @@ const restoreFocus = (el: HTMLElement | null): boolean => {
   return true;
 };
 
+/**
+ * «전면 모달이 떠 있다»를 `<body>`에 알린다 — 지금 쓰는 곳은 배경음 컨트롤 하나다
+ * (`body.modal-on .bgm-ctrl { display: none }`). 근거 전문은 `docs/plans/done/39-*.md`.
+ * 요약: 모달을 z-index로 컨트롤 위에 올리는 길이 **없다**(`#gameScreen`의 스택 컨텍스트 ·
+ * 데스크톱에선 `.overlay` z:10 < 컨트롤 z:40). 그래서 «몇으로 줄까»가 아니라 «뜨면 끈다»다.
+ *
+ * ⚠️ **불리언 토글을 쓰지 않는다.** 전면 모달의 소유자가 넷이다(버스 · `openPicker` ·
+ * `#turnCircle` · 도감). 각자 `true`/`false`를 쓰면 «신고 모달이 열린 채 결과 화면이 뜨고,
+ * 신고 모달을 취소하면 결과 화면 위에 배경음이 되돌아오는» 순서 의존 버그가 난다(검수 지적).
+ * 그래서 **DOM에서 파생**시킨다 — 지금 열려 있는가만 보므로 호출 순서에 안전하다.
+ *
+ * ⚠️ 목록에 도감(z:50)까지 넣은 이유 — «지금은 z가 더 크니 괜찮다»는 **깨지기 쉬운 근거**다.
+ * 누가 도감 z를 40 아래로 내리면 조용히 결함이 생긴다. 규칙을 z 산수에서 떼어 놓는다.
+ */
+const MODAL_SEL = [
+  "#goalCard:not(.hidden)",
+  "#endOverlay:not(.hidden)",
+  "#turnCircle:not(.hidden)",
+  "#codex:not(.hidden)",
+  ".overlay", // 제안·신고 모달 — 열 때 만들고 닫을 때 지운다(`openPicker`)
+].join(",");
+
+const syncModalOn = (): void => {
+  // `.hidden`만 보면 **조상이 꺼진 경우를 놓친다** — 이 앱은 화면을 `show()`가
+  // `#gameScreen`째로 끄고(`display:none`), 그 안의 `#endOverlay`는 자기 클래스가 그대로다.
+  // 그 상태에서 `modal-on`이 남으면 **배경음 컨트롤이 영영 사라진다** — 이 변경의 최악 실패다.
+  // 실제로 그리는가(`getClientRects`)로 판정하면 조상까지 한 번에 걸러진다.
+  const open = Array.from(document.querySelectorAll<HTMLElement>(MODAL_SEL)).some(
+    (el) => el.getClientRects().length > 0,
+  );
+  document.body.classList.toggle("modal-on", open);
+};
+
 const hideOverlay = (): void => {
   if (!activeOverlay) return;
   overlayTimers.forEach((t) => window.clearTimeout(t));
   overlayTimers = [];
   activeOverlay.el.classList.add("hidden");
   activeOverlay = null;
+  syncModalOn();
   // 우리가 포커스를 옮겼을 때만 되돌린다.
   if (overlayReturn) {
     restoreFocus(overlayReturn);
@@ -1337,6 +1375,10 @@ const runOverlay = (req: OverlayReq): void => {
   //    버튼을 **마크업에 두거나** 이 판정을 `run` 뒤로 옮겨야 한다.
   const f = focusablesIn(req.el);
   if (f.length > 0) {
+    // 🔴 `syncModalOn()`보다 **먼저** 잡아야 한다. 배경음 버튼에 포커스가 있는 채로 모달이
+    //    뜨면 `display:none`이 그 요소를 즉시 포커스 불가로 만들어 `activeElement`가
+    //    `<body>`로 떨어지고, 그 `<body>`를 되돌릴 자리로 잡으면 닫을 때 포커스가
+    //    문서 맨 앞으로 날아간다(`restoreFocus`는 `<body>`를 유효한 자리로 본다).
     overlayReturn = document.activeElement as HTMLElement | null;
     // APG Dialog — 되돌리기 어려운 동작이 있으면 **가장 덜 파괴적인 요소**에 초기 포커스를 둔다.
     // 결과 화면의 첫 버튼은 `[다시 하기]`이고 **누르는 즉시 재대국을 보낸다** — 거기 두면
@@ -1344,6 +1386,7 @@ const runOverlay = (req: OverlayReq): void => {
     const initial = req.el.querySelector<HTMLElement>("[data-initial-focus]");
     (initial ?? f[0]).focus({ preventScroll: true });
   }
+  syncModalOn();
   req.run?.({
     after: (ms, fn) => {
       overlayTimers.push(window.setTimeout(fn, ms));
@@ -1886,6 +1929,7 @@ const openTurnCircle = (): void => {
     ring.appendChild(node);
   });
   $("turnCircle").classList.remove("hidden");
+  syncModalOn(); // 이 오버레이는 버스를 안 탄다 — 버스에 올리기 전까지 여기서 직접 알린다
 };
 
 // ── 즉시고발 창 (로드맵 §7.5.1 · 문안 ui-copy §9.5·§5.2) ─────────────
@@ -2687,7 +2731,10 @@ const enterGame = async (): Promise<void> => {
   if (!demo && !goalSeen()) openGoalCard();
 
   // 턴 순서(원형) 오버레이 닫기 — 버튼 또는 바깥 클릭.
-  const closeTurnCircle = (): void => $("turnCircle").classList.add("hidden");
+  const closeTurnCircle = (): void => {
+    $("turnCircle").classList.add("hidden");
+    syncModalOn();
+  };
   ($("tcClose") as HTMLButtonElement).onclick = closeTurnCircle;
   $("turnCircle").onclick = (e) => {
     if (e.target === $("turnCircle")) closeTurnCircle();
@@ -3036,15 +3083,19 @@ const init = async (): Promise<void> => {
   let codexReturn: HTMLElement | null = null;
   const closeCodex = (): void => {
     $("codex").classList.add("hidden");
+    syncModalOn();
     // 연 자리가 사라졌으면(동적 트리거) 조용히 실패하지 않게 기본 트리거로 되돌린다.
     if (codexReturn?.isConnected) codexReturn.focus();
     else ($("codexBtn") as HTMLElement).focus();
     codexReturn = null;
   };
   ($("codexBtn") as HTMLButtonElement).onclick = () => {
+    // 되돌릴 자리는 `syncModalOn()`보다 **먼저** 잡는다 — 배경음 버튼에서 열면
+    // `display:none`이 그것을 포커스 불가로 만들어 `activeElement`가 `<body>`가 된다.
     codexReturn = document.activeElement as HTMLElement | null;
     renderCodex();
     $("codex").classList.remove("hidden");
+    syncModalOn();
     // 기본 선택(호랑이 대감)에 포커스를 준다 — 모달의 «주 내용»이 그 캐러셀이다.
     ($("cxRail").querySelector(".cx-thumb.active") as HTMLElement | null)?.focus();
   };
