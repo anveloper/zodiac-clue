@@ -958,8 +958,14 @@
          칩(`✨LLM n · ♻캐시 n · ⚙폴백 n`)이 잘려 사라진다 — 그 칩이 ④ §4 관측 표면이다.
          260px 컬럼에서 칩은 **두 번째 줄로 내려가므로**(위 주석) summary는 ~65px다. */
       .rp-ai:has(> details:not([open])) { flex: 0 0 auto; }
-      /* `:has()` 미지원 브라우저용 바닥 — 펼친 상태에서도 summary는 지킨다. */
-      .rp-ai { min-height: 65px; }
+      /* 접힌 높이 예약. **66px은 «칩이 두 줄일 때의 접힌 패널 높이» 실측값**이다
+         (1440×900 · 실제 칩 마크업). 65는 1px 모자라 첫 계측이 도착할 때 **1px 흔들렸다**.
+         예약을 아예 없애면 38 → 66으로 **28px 리플로우**하고 그 아래가 📜 기록/알림
+         (`flex:1 1 0`)이라 판 중간에 흔들린다 — 세 값을 다 재고 66을 골랐다.
+         ⚠️ 여기 원래 「`:has()` 미지원 브라우저용 바닥」이라고 적혀 있었다 — `:has()`는
+            대상 브라우저 전부가 지원하므로 **그 근거는 만료됐다.** 지금 이 값이 서 있는
+            이유는 위의 «리플로우 0» 하나다. */
+      .rp-ai { min-height: 66px; }
       .rp-ai #aiDetail { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
       .rp-sug { flex: 0 1 auto; }
 
@@ -1178,6 +1184,24 @@
       .rp-fold summary .ai-title { flex: none; white-space: nowrap; }
       .rp-fold summary .rp-sub { flex: none; color: var(--wds-label-alternative); font-weight: 400; }
       .rp-fold summary::-webkit-details-marker { display: none; }
+      /* 🔴 **접힌 패널이 «머리글 + 빈 본문»으로 보이던 것을 고친다.**
+         `#aiPanel`은 접혀 있어도 높이를 예약한다(아래 `.rp-ai`). 그런데 **첫 계측 전에는
+         `#aiChip`이 비어** summary가 한 줄이라, 남는 자리가 `border-bottom` **아래**에
+         **빈 크림색 상자**로 남았다 — 컬럼에서 가장 «미완성»으로 읽히는 요소였다.
+         실측(1440×900 · 실제 스타일시트+마크업): panel 65 · summary **36** · 빈 공간 **27px**.
+
+         → ① 접힌 동안에는 **구분선을 지운다** — 아래에 본문이 없는데 선이 있으면
+              «본문이 비었다»로 읽힌다.
+           ② summary에 `flex: 1`을 줘 **예약된 높이를 머리글이 통째로 쓰게** 한다.
+              `.rp-fold summary`에 이미 `align-items: center`가 있어 글자는 저절로 중앙에 온다.
+
+         ⚠️ **`justify-content: center`로 하면 안 된다.** 1차 구현이 그것이었는데,
+            글자만 가운데로 옮기고 **summary 상자는 36px에 머문다** → 65px 패널에서
+            «눌러서 펼치는» 영역이 36px로 줄고 **자리까지 가운데로 옮겨진다**
+            (실측: 패널 위·아래 히트 테스트가 둘 다 `DETAILS`). 게다가 27의 절반이라
+            제목이 **22.5px 반픽셀**에 얹힌다. `flex: 1`이면 summary가 **64px**이 되어
+            타깃이 패널 전체가 되고 배치도 정수다(검수 지적 — 실측으로 재확인). */
+      .rp-fold > details:not([open]) > summary { border-bottom: none; flex: 1; }
       .rp-fold summary::before { content: "▸"; color: var(--wds-label-alternative); }
       .rp-fold details[open] summary::before { content: "▾"; }
       .ai-chip {

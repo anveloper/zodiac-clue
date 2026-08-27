@@ -56,6 +56,10 @@
     "dir": "plans/done",
     "items": [
       {
+        "path": "plans/done/42-collapsed-panel-empty-box.md",
+        "title": "plan: 접힌 AI 패널의 «빈 상자»를 없앤다 — 예약된 높이를 머리글이 통째로 쓰게"
+      },
+      {
         "path": "plans/done/41-scrollbar-theme-global.md",
         "title": "plan: 죽어 있던 스크롤바 도색을 되살린다 — 전역 한 줄이 저장소 전체의 스크롤 신호를 끄고 있었다"
       },
