@@ -56,6 +56,10 @@
     "dir": "plans/done",
     "items": [
       {
+        "path": "plans/done/40-panel-scroll-signal.md",
+        "title": "plan: 「아래 더 있음」을 **진짜 스크롤바**가 말하게 한다 — 9회차 처방이 마지막 줄의 AA를 깨고 있었다"
+      },
+      {
         "path": "plans/done/39-bgm-overlay-stacking.md",
         "title": "plan: 전면 모달 위에 뜨던 배경음 컨트롤을 끈다 — z-index로는 못 막는 자리"
       },
