@@ -162,8 +162,28 @@
         overflow-x: auto; max-width: min(1180px, 94vw);
         margin: 0 0 calc(16px + var(--sa-b, 0px)); padding: 10px 14px; border-radius: 16px;
         background: rgba(16,11,5,0.78); border: 1px solid rgba(255,255,255,0.14);
-        box-shadow: 0 8px 30px rgba(0,0,0,0.45); scrollbar-width: thin;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.45);
       }
+      /* 🔴 여기 있던 `scrollbar-width: thin`은 «전역 톤 통일»과 같은 이유로 지웠다 —
+         non-auto 표준 속성 하나가 `::-webkit-scrollbar`를 통째로 끄고 macOS에서
+         **정지 화면에 아무것도 안 그린다.** 15칸짜리 가로 캐러셀에서 «옆에 더 있다»는
+         가장 필요한 신호다. 대신 **어두운 면 전용 도색**을 준다 — 전역 도색은
+         트랙이 `--wds-bg-normal`(밝음)이라 이 레일 위에서 뒤집힌다(§1.5 «어두운 면 2종»).
+
+         대비는 **엄지 ↔ 트랙**으로 잰다. 초안은 «엄지 ↔ 레일 배경 9.47~10.41»이라 적었는데
+         **인접색이 아니다** — 1.4.11이 보는 것은 바로 옆의 트랙이다. 실제 값 **7.11~8.14:1**.
+         ⚠️ 그리고 `border`는 **엄지 위에 합성된다**(`background-clip` 기본값 `border-box`) —
+            9px 바에서 **눈에 보이는 엄지는 5px**이다. 전역 엄지도 같은 구조다.
+         🔴 **hover를 덮어쓰지 않으면 여기서 기준이 깨진다.** 전역
+            `::-webkit-scrollbar-thumb:hover`(0,1,1)와 `.cx-rail::-webkit-scrollbar-thumb`(0,1,1)는
+            **특이도 동률**이고 전역이 뒤에 있어 이긴다 → 어두운 면에서 `--wds-label-assistive`가
+            트랙 대비 **2.83 / 2.47:1**로 **하한 미달**(직접 계산 · 검수 픽셀 실측과 일치). */
+      .cx-rail::-webkit-scrollbar-track { background: rgba(255,255,255,0.10); border-radius: 5px; }
+      .cx-rail::-webkit-scrollbar-thumb {
+        background: var(--wds-accent); border-radius: 5px; border: 2px solid rgba(16,11,5,0.78);
+      }
+      /* 밝히는 방향으로 간다 — 11.22 / 9.80:1. */
+      .cx-rail::-webkit-scrollbar-thumb:hover { background: #F2DCB4; }
       /* `.cx-thumb`는 실제 `<button>`이다(키보드 조작 — `renderCodex` 주석).
          전역 `button` 규칙(:216~)에서 **실제로 새는 것만** 눌러 둔다(실측):
            · `font-family` — 폼 컨트롤은 **상속하지 않는다**. 안 잡으면 UA 기본(Arial)이 된다.
@@ -419,6 +439,10 @@
       .mini { background: var(--wds-bg-alternative); border: 1px solid var(--wds-line-normal);
               color: var(--wds-label-strong); padding: 2px 8px; font-size: 12px; }
       .mini:hover { background: var(--wds-bg-alternative); }
+      /* ⚠️ 오른쪽 여백을 주지 않는다. `.rp-body`는 **있던 12px을 4px로 줄인** 것이라 순손실이
+         1px이지만, 여기는 원래 0이라 **더하면 순손실**이다(4 + 스크롤바 9 = 13px). 게다가
+         안 넘칠 때도 4px을 잃어 바로 위 `.field input`(카드 폭 100%)과 **오른쪽 축이 어긋난다.**
+         넘칠 때만 9px 좁아지는 편이 낫다 — 그때는 스크롤바가 그 자리를 설명한다. */
       .room-list {
         list-style: none; margin: 6px 0 0; padding: 0; max-height: 156px;
         overflow-y: auto; display: flex; flex-direction: column; gap: 6px;
@@ -903,45 +927,8 @@
 
          🔴 **그리고 9회차의 「네이티브 스크롤바는 못 쓴다」도 틀렸다** — 아래 참조.
             그것이 플랫폼 한계가 아니라 **이 파일 자신의 규칙**이었다. */
-      /* 🔴 **어두운 그라디언트 오버레이를 걷어냈다(20회차).** 9회차가 마스크의 «알파 함정»을
-         피하려고 `rgba(58,42,26,0.30)` 오버레이를 골랐는데 — **같은 함정에 다른 문으로 들어갔다.**
-         어두운 막을 밝은 배경 위에 씌우면 **배경이 글자 쪽으로 내려와** 어두운 글자의 대비가
-         떨어진다. 직접 계산(패널 `rgba(255,248,239,0.9)`를 실제 보드 색 위에 합성):
-           `--wds-label-alternative` **5.01~5.32 → 3.59~3.78** — **AA 4.5 미달.**
-         하필 그 색을 쓰는 것이 **잘리는 줄들**이다(`.sg-combo` 제안 조합 · `.evi-group .cat` ·
-         `.sg-n` · `.evi-memo`). **S6는 이걸 원리적으로 못 본다** — `getComputedStyle`은 합성
-         **전** 색을 읽는다. 게이트가 통과시켰다는 것이 안전하다는 뜻이 아니었다.
-
-         → 신호를 **글자 위에서 치우고 머리글로 옮긴다.** 머리글은 스크롤 영역 밖이라
-           ① 어떤 글자도 안 덮고 ② 배경이 고정이라 대비를 계산해 둘 수 있으며
-           (`--wds-label-alternative` on 합성 패널 = **최악 5.01:1**)
-           ③ 히트 테스트 유령이 없고 ④ JS 0바이트다.
-         ⚠️ 네이티브 스크롤바는 **여전히 답이 아니다.** 9회차가 실측한 대로 macOS 오버레이
-            스크롤바는 쉬는 동안 사라지고, `scrollbar-width: thin` + `scrollbar-color`를 줘도
-            그대로다(20회차 재실측: 스크롤바 폭 0px · 캡처에 엄지 미도색).
-            아래 두 줄은 **클래식 스크롤바를 쓰는 플랫폼(Win·Linux)에서만** 덤으로 먹는다 —
-            신호를 이것에 기대지 않는다. */
-      /* → 신호는 **진짜 스크롤바**로 되돌린다. 아래 «네이티브는 못 쓴다»는 9회차 결론이
-         **틀렸다** — 그건 macOS 플랫폼 한계가 아니라 **이 파일 자신의 규칙** 때문이었다.
-         `* { scrollbar-width: thin; scrollbar-color: … }`(아래 «스크롤바 톤 통일»)가
-         ① Chromium에서 오버레이(자동 숨김) 스크롤바를 강제하고
-         ② 표준 속성이 non-auto면 Chromium이 **`::-webkit-scrollbar` 규칙을 통째로 무시**하므로
-            바로 그 아래 9px 도색 3줄이 **죽어 있다.**
-         9회차의 실측(「`::-webkit-scrollbar` 폭이 레이아웃상 0」)은 플랫폼이 아니라 이 규칙을
-         잰 것이었고, 20회차의 1차 시도(`thin` + 커스텀 색)도 같은 것을 다시 쟀다.
-
-         실측(CDP · Chrome 151 · macOS · 같은 전역 규칙 아래 · 스크롤바 폭 = offsetW − clientW):
-           `thin` + 커스텀 색 → **0px · 미도색**  ·  `auto` + 커스텀 색 → **0px · 미도색**
-           **`auto` + `auto` → 9px · 정지 상태에서도 엄지·트랙이 그려짐**
-         즉 **둘 다 `auto`여야** 한다 — non-auto `scrollbar-color` 하나가 오버레이를 강제한다.
-
-         이쪽이 표식보다 낫다: ① 글자를 안 덮으니 대비를 못 낮추고 ② «더 있다»에 더해
-         **얼마나·어디쯤**까지 말하며 ③ `content` 글리프가 없어 **접근성 이름을 안 더럽히고**
-         (`opacity:0`은 접근성 트리에서 요소를 안 지운다 — 안 넘치는 패널의 표식까지 낭독된다)
-         ④ `@supports`도 `scroll-timeline`도 필요 없다(Firefox·구 Safari 포함).
-         대가는 본문 폭 9px. `#aiDetail`도 넣는다 — `max-height: 40vh` 때문에 실제로 넘친다. */
-      .rp-body,
-      #aiDetail { scrollbar-width: auto; scrollbar-color: auto; }
+      /* → **신호는 진짜 스크롤바다.** 원인·실측은 아래 «스크롤바 톤 통일» 블록 하나에 모았고,
+         자리(오른쪽 여백 4px)는 위 `.rp-body` 주석에 있다. */
 
       /* 마우스 드래그 스크롤(요청 ①) — 데스크톱에서 잡고 끌어 이전 내역 확인. */
       .rp-body, #log { cursor: grab; }
@@ -1003,12 +990,46 @@
       .rp-wresizer:hover { background: rgba(180, 98, 43, 0.32); }
       .rp-wresizer:hover::before { background: var(--wds-primary-normal); }
 
-      /* 스크롤바 톤 통일 */
-      * { scrollbar-width: thin; scrollbar-color: var(--wds-line-normal) var(--wds-bg-normal); }
+      /* ── 스크롤바 톤 통일 ────────────────────────────────────────────────
+         🔴 **표준 속성을 무조건 걸면 아래 도색 3줄이 죽는다.**
+         Chromium은 `scrollbar-width`/`scrollbar-color`가 **non-auto면 `::-webkit-scrollbar`
+         규칙을 통째로 무시**하고, 그때 macOS에서는 **오버레이(자동 숨김)** 스크롤바가 된다.
+         즉 `* { scrollbar-width: thin; … }` 한 줄이
+           ① 바로 아래 9px 도색을 **죽은 코드**로 만들고
+           ② 저장소 전체(`.rp-body`·`.room-list`·`.modal`·`.rp-col`·문서)의 스크롤바를
+              **정지 화면에서 안 보이게** 만들고 있었다.
+         9회차는 그 결과(「`::-webkit-scrollbar` 폭이 레이아웃상 0」)를 **플랫폼 한계로 읽고**
+         스크롤바를 기각한 뒤 그라디언트 오버레이를 깔았고, 그 오버레이가 20회차에
+         **AA 위반**으로 걷혔다. 원인은 처음부터 이 한 줄이었다.
+
+         실측(CDP · Chrome 151 · macOS · 폭 = `offsetWidth − clientWidth`):
+           `thin` + 색 → **0px · 미도색** · `auto` + 색 → **0px · 미도색**
+           도색 규칙만(표준 속성 없음) → **9px · 정지 상태에서도 엄지·트랙이 그려짐**
+
+         → 표준 속성은 **Gecko에만** 건다. Chromium·Safari는 이 블록을 건너뛰고 도색을 쓴다.
+
+         ⚠️ **판별식으로 `@supports not selector(::-webkit-scrollbar)`를 쓰면 안 된다.**
+            Firefox 153(2026-07-21 · 차기 ESR)이 이 의사요소를 **셀렉터로만 인식**해
+            `selector()`가 **true**를 주면서 **도색은 구현하지 않는다.** 그 식을 쓰면
+            블록이 **어디에서도 실행되지 않아** Firefox가 스크롤바 스타일을 통째로 잃는다
+            (초안이 그 상태였다 — 검수 지적).
+            `-moz-orient`는 Gecko 전용이고 Chromium에서 `false`임을 실측 확인했다.
+         `[미확인]` 이 저장소에 Firefox 실측 수단이 없다 — **Gecko 쪽은 사람이 한 번 봐야 한다.** */
       ::-webkit-scrollbar { width: 9px; height: 9px; }
       ::-webkit-scrollbar-track { background: var(--wds-bg-normal); border-radius: 5px; }
       ::-webkit-scrollbar-thumb { background: var(--wds-line-normal); border-radius: 5px; border: 2px solid var(--wds-bg-normal); }
       ::-webkit-scrollbar-thumb:hover { background: var(--wds-label-assistive); }
+      /* 🔴 **반투명 표면 위에 불투명 트랙을 올리지 않는다.** `.rp-panel`은
+         `rgba(255,248,239,0.9)`라 본문 배경이 실제로는 `#E9E2DA`쯤으로 합성되는데,
+         트랙 토큰 `--wds-bg-normal`(#FBF3E7)은 불투명이라 패널 안에 **더 밝은 9px 띠**가 선다.
+         `--wds-line-normal` 주석(:31~)과 `.sg-mine`이 지적한 것과 같은 종류의 함정이다.
+         트랙을 비우면 패널의 반투명 배경이 그대로 비친다 — 엄지 ↔ 합성 배경 **최악 3.47:1**
+         (1.4.11 비문자 하한 3.0). */
+      .rp-body::-webkit-scrollbar-track,
+      #aiDetail::-webkit-scrollbar-track { background: transparent; }
+      @supports (-moz-orient: inline) {
+        * { scrollbar-width: thin; scrollbar-color: var(--wds-line-normal) var(--wds-bg-normal); }
+      }
       #log > div {
         padding: 3px 6px; border-bottom: 1px solid var(--wds-bg-alternative);
         border-left: 3px solid transparent; border-radius: 3px; margin-bottom: 2px;

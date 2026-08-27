@@ -98,6 +98,10 @@
     "dir": "plans/done",
     "items": [
       {
+        "path": "plans/done/41-scrollbar-theme-global.md",
+        "title": "plan: 죽어 있던 스크롤바 도색을 되살린다 — 전역 한 줄이 저장소 전체의 스크롤 신호를 끄고 있었다"
+      },
+      {
         "path": "plans/done/40-panel-scroll-signal.md",
         "title": "plan: 「아래 더 있음」을 **진짜 스크롤바**가 말하게 한다 — 9회차 처방이 마지막 줄의 AA를 깨고 있었다"
       },

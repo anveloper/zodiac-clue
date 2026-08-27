@@ -609,8 +609,13 @@
     ① <code>▾</code>를 쓰면 접힘 어휘와 충돌하고(같은 머리글에 <b>나란히</b> 붙는다) ·
     ② <code>↓</code>로 피해도 <code>content</code> 글리프는 <b>접근성 이름에 그대로 들어간다</b>
     (<code>opacity: 0</code>은 접근성 트리에서 요소를 지우지 않아, 넘치지도 않는 패널의 표식까지 낭독된다).<br>
-    스크롤은 <b>스크롤바가 말한다</b>(<code>.rp-body</code>·<code>#aiDetail</code>의
-    <code>scrollbar-*: auto</code>). 기호는 «얼마나 남았는지»를 못 말한다는 점에서도 진다.
+    스크롤은 <b>스크롤바가 말한다</b> — 기호는 «얼마나 남았는지»를 못 말한다는 점에서도 진다.<br>
+    <span class="tag t-soon">미확인 2026-08-28</span> 다만 <b>실기 폰에 이 신호가 닿는지는 엔진마다 다르다</b> —
+    Android Chrome은 «<code>::-webkit-scrollbar</code>에 폭을 주면 오버레이가 클래식이 된다»는
+    Blink 동작 때문에 <b>닿을 가능성이 높고</b>, iOS Safari는 그 의사요소를 안 그려
+    <b>신호가 0일 가능성이 높다.</b> 둘 다 문헌 근거이고 <b>실기 측정이 아니다.</b><br>
+    헤드리스 게이트는 폰 에뮬레이션에서도 클래식 스크롤바를 그려 <b>이 차이를 못 가른다</b>
+    (<code>gate.config.mjs</code> §사람 확인에 기록). <b>사람이 두 기기로 확인해야 한다.</b>
   </div>
 
   <p class="note">접두 기호는 <b>이형 선택자(VS16 <code>U+FE0F</code>) 없이</b> 쓴다. 저장소 전체가 그렇고(<code>🛡</code> = <code>U+1F6E1</code> 단독), 한 곳만 붙이면 폭이 달라져 로그 좌측 정렬이 어긋난다.</p>

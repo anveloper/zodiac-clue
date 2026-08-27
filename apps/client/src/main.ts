@@ -2794,6 +2794,12 @@ const enterGame = async (): Promise<void> => {
   const enableDragScroll = (el: HTMLElement): void => {
     el.addEventListener("pointerdown", (e) => {
       if (e.pointerType !== "mouse" || e.button !== 0) return;
+      // 🔴 **네이티브 스크롤바 위에서는 발화하면 안 된다.** 스크롤바는 요소의 테두리 상자
+      //    안이지만 `clientWidth/Height` **밖**이라 `pointerdown`이 여기로도 온다.
+      //    21회차 전에는 오버레이(폭 0)라 도달 불가였던 경로다 — 도색이 살아나면서 생겼다.
+      //    잡아 끌면 스크롤은 네이티브 엄지가 정상 처리하지만, 이 핸들러가 `moved`를 세워
+      //    **뒤따르는 클릭 1회를 삼킨다**(증거 노트 칩을 한 번 못 누른다).
+      if (e.offsetX >= el.clientWidth || e.offsetY >= el.clientHeight) return;
       const startY = e.clientY;
       const startTop = el.scrollTop;
       let moved = false;
