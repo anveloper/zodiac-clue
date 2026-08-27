@@ -98,6 +98,10 @@
     "dir": "plans/done",
     "items": [
       {
+        "path": "plans/done/37-lobby-seat-count.md",
+        "title": "plan: 대기실 — «빈 자리»를 숫자로 말한다 (+ 큐 항목 하나 폐기)"
+      },
+      {
         "path": "plans/done/36-overlay-focus.md",
         "title": "plan: 오버레이 버스 — 모달만 포커스를 가져간다"
       },

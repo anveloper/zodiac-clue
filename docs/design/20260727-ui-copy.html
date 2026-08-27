@@ -1361,6 +1361,32 @@
       호버 미리보기의 <b>키보드 짝</b>으로 <code>focus</code>에서도 직업 풀이가 뜬다.</li>
   </ul>
 
+  <h3>9.0.1 참가자 수 · 빈 좌석 <span class="tag t-done">적용 완료 2026-08-27</span></h3>
+  <p class="s13"><b>수와 설명을 청중으로 가른다</b> — 수는 모두에게, 설명은 <b>시작을 결정하는 방장에게만</b>.</p>
+  <div class="scroll"><table>
+    <tr><th>자리</th><th>확정 문안</th><th>대상</th></tr>
+    <tr><td>라벨</td><td class="q">참가자 (${count}/${MAX_PLAYERS})<span class="note"> + 빈 자리가 있으면</span> · 빈 자리 ${n}</td><td>전원</td></tr>
+    <tr><td>안내(방장)</td><td class="q">빈 자리는 NPC가 대신해요. 바로 시작할 수 있어요.</td><td>방장</td></tr>
+    <tr><td>안내(그 외)</td><td class="q">방장이 시작하기를 기다리는 중… <span class="tag t-keep">유지</span></td><td>비방장</td></tr>
+  </table></div>
+  <ul class="s13">
+    <li><b>라벨은 수만 말한다.</b> R1대로 변수 뒤에 조사가 없고, 짧아서 <b>320px에서도 안 접힌다</b>
+      (최악 143.5px &lt; 가용 238px). 설명까지 넣으면 한글 1.0em 서체에서 <b>최악 260px &gt; 238px</b>로
+      2줄이 되고, <b>2줄이 되면 카드가 자라 <code>[복사]</code>가 배경음 버튼과 겹친다</b>(검수 실측).</li>
+    <li><b style="color:var(--red)"><code>곳</code>은 좌석의 단위가 아니다</b> — 초안이 R1의 «받침 고정 접미어»를
+      기계적으로 만족시키려고 <code>빈 자리 ${n}곳은</code>이라 썼는데, <code>곳</code>은 <b>장소</b>를 세는 말이라
+      <code>자리</code>와 <b>의미가 겹친다</b>(«빈 자리 다섯 장소»). R1 예시 목록에도 없다.
+      → <b>조사를 아예 없앴다</b>(R1의 첫 처방).</li>
+    <li><b style="color:var(--red)"><code>최대 6인</code>도 하드코딩이었다</b> — 마크업의 <code>6</code>만 걷어내면
+      <code>MAX_PLAYERS</code>를 바꿀 때 <b>라벨만 따라가고 안내는 안 따라간다.</b> 문구에서 총원을 뺐다.</li>
+    <li><b style="color:var(--red)">같은 사실을 두 문장으로 말하고 있었다</b> — 라벨의 «NPC가 대신해요»와
+      방장 안내의 «NPC로 채워집니다»가 한 화면에 같이 떴다(§8.1 위반). 청중으로 가르면서 해소.</li>
+    <li>라벨에 <code>aria-live="polite"</code> — 사람이 들어와 수가 바뀌면 <b>읽힌다</b>.
+      <code>word-break: keep-all</code> — 한국어는 아무 음절에서나 끊긴다.</li>
+    <li>⚠️ <b>목록에 «빈 좌석 행»을 그리지 않는다.</b> ① 좌석마다 한 줄 → <b>같은 문장 5줄</b>(소음) ·
+      ② 요약 한 줄 → 카드가 ~40px 자라 <code>[복사]</code>가 배경음 버튼 밑으로(S1 FAIL). 둘 다 캡처로 보고 버렸다.</li>
+  </ul>
+
   <h3>9.1 대기실 서버 피드백</h3>
   <div class="box crit">
     <b>현재 대기실 단계의 서버 메시지는 전부 무음으로 사라진다.</b> <code>addLog</code>가 쓰는 <code>#log</code>는 <code>#gameScreen</code> 안쪽인데 대기실 화면은 <code>#lobby</code>다.
@@ -1465,6 +1491,7 @@
     <tr><td>8.4</td><td>랜딩 <span class="tag t-new">07-29 적용</span></td><td class="q">client/index.html · main.ts</td><td class="q"><code>.hint-sm</code>·<code>.room-empty</code> · loadPublicRooms() · init()의 joinBtn</td></tr>
     <tr><td>8.5</td><td>공개방 상태 배지 <span class="tag t-done">적용 완료</span></td><td class="q">server/clue-room.ts · client/network.ts · main.ts · index.html</td><td class="q"><code>syncMeta()</code>의 <code>phase</code> → <code>PublicRoomMeta</code> → loadPublicRooms()의 <code>li</code> 조립 · <code>.ri-badge</code></td></tr>
     <tr><td>9.0</td><td>대기실 캐릭터 그리드 <span class="tag t-done">완료</span></td><td class="q">client/index.html · main.ts</td><td class="q"><code>.char.selected</code>/<code>.locked</code>·<code>.char-state</code> · <code>renderLobbyChars()</code></td></tr>
+    <tr><td>9.0.1</td><td>참가자 수 · 빈 좌석 <span class="tag t-done">완료</span></td><td class="q">client/index.html · main.ts</td><td class="q"><code>#playerCount</code>/<code>#playerMax</code>/<code>#seatHint</code> · <code>renderLobby()</code></td></tr>
     <tr><td>9.1</td><td>대기실 피드백 <span class="tag t-soon">선행</span></td><td class="q">client/index.html · main.ts · clue-room.ts</td><td class="q">신규 <code>#lobbyMsg</code> · renderLobby() · onJoin / removePlayer / handleChooseCharacter</td></tr>
     <tr><td>9.2</td><td>닉네임 <span class="tag t-soon">선행</span></td><td class="q">packages/shared · clue-room.ts · index.html</td><td class="q"><code>Player.name</code> 분리 · 대기실 <code>.field</code> 추가</td></tr>
     <tr><td>9.3</td><td>대리 NPC 표기 <span class="tag t-soon">선행</span></td><td class="q">packages/shared · 3개 렌더러</td><td class="q"><code>displayName(p)</code> · renderLobby / renderTurnStrip / openTurnCircle</td></tr>

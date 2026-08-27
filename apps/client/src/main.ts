@@ -1,5 +1,6 @@
 import {
   PASSAGES,
+  MAX_PLAYERS,
   ROOMS,
   SUSPECTS,
   WEAPONS,
@@ -2165,12 +2166,28 @@ const renderLobby = (state: Room["state"]): void => {
     list.appendChild(li);
   });
   $("playerCount").textContent = String(count);
+  $("playerMax").textContent = String(MAX_PLAYERS);
+  // 빈 좌석을 **라벨 안에서** 센다 — «참가자 (1/6)»이 숫자로만 말하던 것을 낱말로 잇는다.
+  //
+  // ⚠️ 목록에 «자리»를 그리는 두 안을 캡처로 보고 **둘 다 버렸다**:
+  //   ① 좌석마다 한 줄 → **같은 문장 5줄**로 카드가 훌쩍 길어졌다(정보가 아니라 소음).
+  //   ② 요약 한 줄 → 그것만으로도 카드가 ~40px 자라 초대 링크 `[복사]`가 고정 배치된
+  //      배경음 버튼 밑으로 밀려 들어갔다 — **화면 게이트 S1이 잡았다**(13회차와 **같은 충돌**).
+  // 라벨은 이미 있는 줄이라 **높이를 1px도 안 늘린다.**
+  const empty = MAX_PLAYERS - count;
+  // 라벨은 **수만** 말한다 — R1대로 변수 뒤에 조사가 없고, 짧아서 320px에서도 안 접힌다.
+  // (설명까지 넣으면 한글 1.0em 서체에서 최악 260px > 가용 238px로 **2줄이 되고**,
+  //  2줄이 되면 카드가 자라 `[복사]`가 배경음 버튼과 겹친다 — 검수 실측.)
+  $("seatHint").textContent = empty > 0 ? ` · 빈 자리 ${empty}` : "";
 
   const isHost = room !== null && state.host === room.sessionId;
   const startBtn = $("startBtn") as HTMLButtonElement;
   startBtn.disabled = !isHost;
+  // **설명은 방장에게만.** 시작을 결정하는 사람만 «빈 자리가 어떻게 되는가»를 알아야 한다.
+  // 수는 위 라벨이 이미 말하므로 여기서 다시 세지 않는다 — 같은 사실을 두 문장으로 만들지 않는다(§8.1).
+  // 총원 «최대 6인»도 뺐다: `MAX_PLAYERS`를 바꾸면 라벨만 따라가고 이 문장은 안 따라갔다.
   $("hostHint").textContent = isHost
-    ? "빈 자리는 NPC로 채워집니다 (최대 6인). 바로 시작할 수 있어요."
+    ? "빈 자리는 NPC가 대신해요. 바로 시작할 수 있어요."
     : "방장이 시작하기를 기다리는 중…";
 
   renderLobbyChars(state);

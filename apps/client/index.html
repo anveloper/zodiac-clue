@@ -1591,8 +1591,10 @@
           <input id="inviteLink" readonly />
           <button id="copyBtn">복사</button>
         </div>
-        <div style="font-size: 12px; color: var(--wds-label-alternative);">
-          참가자 (<span id="playerCount">0</span>/6)
+        <!-- 사람이 들어오면 수가 바뀐다 → 보조 기술에 알린다. `keep-all`은 한국어를 어절 단위로 끊는다. -->
+        <div style="font-size: 12px; color: var(--wds-label-alternative); word-break: keep-all;"
+             aria-live="polite">
+          참가자 (<span id="playerCount">0</span>/<span id="playerMax">6</span>)<span id="seatHint"></span>
         </div>
         <ul id="playerList"></ul>
         <div style="font-size: 12px; color: var(--wds-label-alternative); margin-bottom: 4px;">
