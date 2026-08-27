@@ -56,6 +56,10 @@
     "dir": "plans/done",
     "items": [
       {
+        "path": "plans/done/35-codex-keyboard.md",
+        "title": "plan: 도감 — 키보드로 열고·고르고·닫는다"
+      },
+      {
         "path": "plans/done/34-lobby-keyboard.md",
         "title": "plan: 대기실 — 키보드로 캐릭터를 고를 수 있게 (+ 포커스가 실제로 보이게)"
       },

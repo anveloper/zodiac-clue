@@ -155,10 +155,24 @@
         background: rgba(16,11,5,0.78); border: 1px solid rgba(255,255,255,0.14);
         box-shadow: 0 8px 30px rgba(0,0,0,0.45); scrollbar-width: thin;
       }
+      /* `.cx-thumb`는 실제 `<button>`이다(키보드 조작 — `renderCodex` 주석).
+         전역 `button` 규칙(:216~)에서 **실제로 새는 것만** 눌러 둔다(실측):
+           · `font-family` — 폼 컨트롤은 **상속하지 않는다**. 안 잡으면 UA 기본(Arial)이 된다.
+           · `font-weight` — 전역 600이 `.tn`까지 상속된다.
+           · `appearance` — 전역 button이 설정하는 값은 아니고 **UA 기본**이다. 사파리/iOS의
+             `<button>` 렌더를 지배하는 축이라 명시해 둔다(헤드리스 크롬으로는 안 보이는 차이).
+           · `-webkit-tap-highlight-color` — 터치 시 파란 하이라이트를 없앤다(다른 커스텀 버튼과 동일).
+         배경·색·테두리·패딩·라운딩은 `.cx-thumb`(0,1,0) > `button`(0,0,1)이라 **안 샌다**.
+         ⚠️ `:hover`도 안 샌다 — `:hover`는 **클래스 열**에 들어가므로 `.cx-thumb:hover`는 (0,2,0)이고
+            `button:hover`(0,1,1)를 **특이도로 이긴다.** 순서는 관여하지 않는다.
+            (초안이 이것을 «무승부라 뒤가 이긴다»로 잘못 세고 `.cx-rail` 접두사를 붙였다가 되돌렸다 —
+             **«전» 상태를 재보지 않고 특이도 계산만으로 결함을 단정한 것**이 원인이다.) */
       .cx-thumb {
         flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 2px;
         min-width: 68px; padding: 6px 8px; border-radius: 10px; cursor: pointer;
         background: rgba(255,255,255,0.06); border: 1px solid transparent; color: #e9ddc8;
+        font-family: inherit; font-weight: 400;
+        appearance: none; -webkit-appearance: none; -webkit-tap-highlight-color: transparent;
       }
       .cx-thumb .te { font-size: 20px; line-height: 1; }
       .cx-thumb .tn { font-size: 11px; white-space: nowrap; }
@@ -1510,13 +1524,14 @@
       <span class="leaf" style="left:78%;animation-delay:-9.5s"></span>
     </div>
     <!-- 캐릭터 도감(손님 소개) — 방 목록(랜딩)에서 진입. 배경 중앙 캐릭터 + 측면 설명 + 하단 캐러셀 -->
-    <div id="codex" class="codex-overlay hidden" role="dialog" aria-label="잔치 손님 소개">
+    <div id="codex" class="codex-overlay hidden" role="dialog" aria-modal="true" aria-label="잔치 손님 소개">
       <button type="button" id="codexClose" class="codex-x" aria-label="닫기">✕</button>
       <div class="cx-stage">
         <div id="cxArt" class="cx-stage-art"></div>
-        <div id="cxInfo" class="cx-stage-info"></div>
+        <!-- 썸네일을 고르면 이 패널이 통째로 바뀐다 → 보조 기술에 알린다(§1.6). -->
+        <div id="cxInfo" class="cx-stage-info" aria-live="polite"></div>
       </div>
-      <div id="cxRail" class="cx-rail" aria-label="손님 선택"></div>
+      <div id="cxRail" class="cx-rail" role="group" aria-label="손님 선택"></div>
     </div>
     <!-- ① 랜딩 -->
     <section id="landing" class="center">

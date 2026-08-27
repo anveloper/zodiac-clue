@@ -2901,7 +2901,11 @@ const init = async (): Promise<void> => {
       `<span class="tag">${isCameo(id) ? "특별 손님" : "십이지 손님"}</span>`;
     for (const t of Array.from($("cxRail").children)) {
       const el = t as HTMLElement;
-      el.classList.toggle("active", el.dataset.id === id);
+      const on = el.dataset.id === id;
+      el.classList.toggle("active", on);
+      // 선택이 **색으로만** 전달되고 있었다(1.4.1 / 4.1.2). 대기실 격자가 이미 같은 결론을 냈다 —
+      // `aria-current`는 Chrome AX 트리에 아무것도 노출하지 않으므로 `aria-pressed`를 쓴다.
+      el.setAttribute("aria-pressed", on ? "true" : "false");
     }
     // 선택한 썸네일이 가로 캐러셀에서 보이도록 스크롤.
     ($("cxRail").querySelector(".cx-thumb.active") as HTMLElement | null)?.scrollIntoView({
@@ -2910,11 +2914,13 @@ const init = async (): Promise<void> => {
     });
   };
   const renderCodex = (): void => {
+    // 🔴 `<div>` + `onclick`이었다 — **14칸 전부 키보드로 조작 불가**(WCAG 2.1.1 A).
+    //    대기실 격자(플랜 34)와 **같은 결함·같은 처방**이다.
     $("cxRail").innerHTML = CODEX_IDS.map((id) => {
       const nm = (CODEX_EXTRA[id]?.name ?? label(id)).split(" ")[0];
       return (
-        `<div class="cx-thumb" data-id="${id}">` +
-        `<span class="te">${faceIc(id, 30)}</span><span class="tn">${nm}</span></div>`
+        `<button type="button" class="cx-thumb" data-id="${id}">` +
+        `<span class="te">${faceIc(id, 30)}</span><span class="tn">${nm}</span></button>`
       );
     }).join("");
     for (const t of Array.from($("cxRail").children)) {
@@ -2923,14 +2929,59 @@ const init = async (): Promise<void> => {
     }
     selectCodex("tiger"); // 기본 = 호랑이 대감(잔치 주최자)
   };
-  const closeCodex = (): void => $("codex").classList.add("hidden");
+
+  // ── 도감 모달의 포커스 관리 ───────────────────────────────────────────
+  // 버튼으로 바꾸는 것만으로는 **아무것도 나아지지 않는다** — 열어도 포커스가 뒤 페이지에
+  // 남아 있어서, 랜딩 전체를 Tab으로 지나야 도감 안에 닿는다(오버레이가 덮고 있어 **보이지도 않는**
+  // 컨트롤들이다). 열 때 안으로 넣고, 닫을 때 **연 자리로** 되돌린다.
+  let codexReturn: HTMLElement | null = null;
+  const closeCodex = (): void => {
+    $("codex").classList.add("hidden");
+    // 연 자리가 사라졌으면(동적 트리거) 조용히 실패하지 않게 기본 트리거로 되돌린다.
+    if (codexReturn?.isConnected) codexReturn.focus();
+    else ($("codexBtn") as HTMLElement).focus();
+    codexReturn = null;
+  };
   ($("codexBtn") as HTMLButtonElement).onclick = () => {
+    codexReturn = document.activeElement as HTMLElement | null;
     renderCodex();
     $("codex").classList.remove("hidden");
+    // 기본 선택(호랑이 대감)에 포커스를 준다 — 모달의 «주 내용»이 그 캐러셀이다.
+    ($("cxRail").querySelector(".cx-thumb.active") as HTMLElement | null)?.focus();
   };
   ($("codexClose") as HTMLButtonElement).onclick = closeCodex;
   window.addEventListener("keydown", (e) => {
     if (e.key === "Escape" && !$("codex").classList.contains("hidden")) closeCodex();
+  });
+  // Tab이 모달을 빠져나가면 **덮여서 안 보이는** 랜딩 컨트롤로 간다 → 안에서 순환시킨다.
+  // (`aria-modal`은 보조 기술에만 말할 뿐 시퀀셜 포커스를 막지 않는다.)
+  // 리스너는 **여기서 한 번만** 건다 — `renderCodex`는 열 때마다 도는 함수다.
+  // ⚠️ 리스너를 `#codex`에 걸면 **구멍이 난다** — 모달 안의 포커스 불가 영역(레일 좌우 여백 등)을
+  //    클릭하면 `activeElement`가 `<body>`가 되고 keydown이 `#codex`를 **거치지 않는다** →
+  //    오버레이가 덮은 배경 컨트롤로 그대로 빠져나간다(검수 실측: 배경 focusable 10개).
+  //    `document`에 걸고 «모달 밖이면 안으로 끌어온다» 분기를 둔다.
+  document.addEventListener("keydown", (e) => {
+    if ((e as KeyboardEvent).key !== "Tab") return;
+    if ($("codex").classList.contains("hidden")) return;
+    const f = Array.from(
+      $("codex").querySelectorAll<HTMLElement>("button:not([disabled])"),
+    );
+    if (f.length === 0) return;
+    const first = f[0];
+    const last = f[f.length - 1];
+    const ev = e as KeyboardEvent;
+    if (!$("codex").contains(document.activeElement)) {
+      ev.preventDefault();
+      (ev.shiftKey ? last : first).focus();
+      return;
+    }
+    if (ev.shiftKey && document.activeElement === first) {
+      ev.preventDefault();
+      last.focus();
+    } else if (!ev.shiftKey && document.activeElement === last) {
+      ev.preventDefault();
+      first.focus();
+    }
   });
   // 랜딩이 보이는 동안 주기적으로 공개방 목록 갱신.
   window.setInterval(() => {
