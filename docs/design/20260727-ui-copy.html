@@ -481,6 +481,50 @@
       무엇을 뜻하는지 정의되지 않는다. 나가는 길은 두 버튼뿐).</li>
   </ul>
 
+  <h3>1.7 부유 컨트롤 배치 (전역) <span class="tag t-new">2026-08-27</span></h3>
+  <p class="s13">화면에 고정(<code>position: fixed</code>)된 컨트롤은
+    <b>«내용이 지나가는 띠»에 두지 않는다.</b></p>
+
+  <div class="scroll"><table>
+    <tr><th>회차</th><th>카드를 키운 원인</th><th>증상</th><th>그때의 처방</th></tr>
+    <tr><td>13</td><td>잠금 상태 행을 12칸 전부 예약 <b>+36px</b></td>
+        <td rowspan="2" style="vertical-align:middle"><b style="color:var(--red)">배경음 버튼 밑으로<br><code>[복사]</code>가 들어감</b><br><span class="note">화면 게이트 S1 FAIL</span></td>
+        <td>상태 있는 행만 예약</td></tr>
+    <tr><td>17</td><td>빈 좌석 «요약 한 줄» <b>+40px</b></td><td>그 줄을 버림</td></tr>
+  </table></div>
+
+  <p class="s13"><b style="color:var(--red)">원인이 매번 다른데 결과가 같으면 원인은 내용이 아니다.</b>
+    두 번 다 «내용을 줄여» 피했고, 그 처방이 이 문서에 <b>문안 길이 제약으로</b> 굳어 있었다
+    (§9.0 · §9.0.1 — <b>2026-08-27 3차에 해제</b>).</p>
+
+  <ul class="s13">
+    <li><b>왜 중턱이 위험한가</b> — 랜딩·대기실 카드는 <code>.center</code>가
+      <b>세로 중앙 정렬 + 내용 의존 높이</b>다. 카드가 자라면 상단이 <b>위로 움직여</b>
+      오른쪽 정렬 컨트롤이 화면 중턱의 고정 좌표를 <b>가로지른다.</b></li>
+    <li><b style="color:var(--red)">🔴 <code>top</code>을 맨 위로 되돌리는 것만으로는 부족하다</b> —
+      초안이 «카드 상단이 <code>.center</code> padding으로 y≥16px에 고정되니 상한이 내용과 무관» 이라
+      적었는데 <b>거짓이다.</b> 카드 화면은 게임 화면과 달리 <b>문서가 스크롤한다</b>
+      (<code>body.no-scroll</code>이 없다) — <code>fixed</code>면 카드가 컨트롤 <b>밑으로 흘러 들어간다.</b>
+      그 상한은 <b><code>scrollTop = 0</code>에서만</b> 성립했고 화면 게이트 S1도 거기서만 잰다.<br>
+      <span class="note">실측 — <code>#joinBtn</code> scrollY 373 · <code>#refreshRooms</code> scrollY 433에서
+      <code>elementFromPoint</code>가 배경음 컨트롤을 잡는다(보이지 않는 <code>.bgm-vol</code> 22px).</span></li>
+    <li><b class="good">처방은 «스크롤과 함께 움직인다»</b> — 카드 화면의 부유 컨트롤은
+      <code>position: absolute</code>. 문서 좌표에서 컨트롤(y 12~62)과 카드 컨트롤(y ≥ 110)이 갈리므로
+      <b>어떤 스크롤 위치에서도</b> 겹치지 않는다. 대가는 «긴 카드에서 같이 스크롤돼 나간다»이고,
+      그 편이 «보이는데 안 눌린다»보다 낫다.</li>
+    <li><b>중턱 좌표는 «그 값을 필요하게 만든 화면»에서만</b> — 배경음 <code>150px</code>의
+      <b>지배적 사유는 상시 전폭인 턴 배너</b>(<code>.hud-turn</code> y10~74)다
+      (<code>#rpToggle</code>은 패널이 열렸을 때만 있는 부차 사유). 둘 다 <code>#gameScreen</code> 안이라
+      카드 화면엔 없다 → <code>body.no-scroll</code>로 한정했다.</li>
+    <li><span class="tag t-soon">주의</span> <b>게이트가 잡아 준다고 배치가 맞는 것은 아니다.</b>
+      S1은 «이 캡처, <b>이 스크롤 위치</b>에서 겹쳤는가»만 말한다 — 겹치기 <b>직전</b>도,
+      <b>스크롤한 뒤</b>도 통과다.</li>
+    <li><span class="tag t-soon">미확인</span> <b>coarse 태블릿(681px~)의 <code>150px</code>은
+      근거가 확인되지 않았다</b> — 그 구간엔 <code>#rpToggle</code>이 없고
+      (<code>display:flex</code>는 <code>max-width:680px</code>에서만) 배너도 전폭이 아니다.
+      게이트 뷰포트가 <b>폰·데스크톱 둘뿐</b>이라 잴 수단이 없어 값을 그대로 뒀다.</li>
+  </ul>
+
   <h2 id="s2"><span class="n">2</span>어휘 통일표 — 1개념 = 1표기</h2>
   <div class="scroll"><table>
     <tr><th>개념</th><th>확정 표기</th><th>쓰지 않는 표기 <span class="note">(현재 코드에 혼재)</span></th></tr>
@@ -1346,9 +1390,11 @@
       (<code>renderLobbyChars</code> 주석) <b>잠긴 칸이 곧 같이 플레이할 사람</b>이라 색이 가장 필요하다.
       게다가 <code>filter</code>도 S6가 못 보는 축이다 — <b>투명도 함정을 지우면서 같은 계열을 새로 만들지 않는다.</b></li>
     <li><b>낱말은 게이트가 잰다</b> — S5(글자 크기 10px 하한) · S6(대비). 사각지대를 만들지 않는다.</li>
-    <li>⚠️ <b>빈 줄을 예약하지 않는다.</b> 12칸 전부에 두면 카드가 <b>36px 자라</b> 초대 링크
-      <code>[복사]</code>가 고정 배치된 배경음 버튼 밑으로 밀려 들어갔다 — <b>화면 게이트 S1이 잡았다</b>.
-      격자는 <b>행 단위로</b> 높이를 맞추므로 상태가 있는 행만 그만큼 자란다.</li>
+    <li>⚠️ <b>빈 줄을 예약하지 않는다.</b> 12칸 전부에 두면 카드가 <b>36px 자란다.</b>
+      격자는 <b>행 단위로</b> 높이를 맞추므로 상태가 있는 행만 그만큼 자란다.<br>
+      <span class="note">당시 이유는 «자란 카드가 배경음 버튼과 겹친다»였다 —
+      그 제약은 <b>§1.7에서 해소됐다.</b> 남은 이유는 «쓸 데 없이 긴 카드»뿐이고,
+      그것만으로도 예약하지 않는 편이 맞다.</span></li>
     <li>보조 기술: 잠긴 칸에 <code>aria-disabled="true"</code>. 상태는 <b>카드 안 텍스트</b>로 이미 있으므로
       <code>title</code>에 중복해 넣지 않는다(넣었더니 이름이 두 번 읽혔다).</li>
     <li><b class="good">✅ 도감 캐러셀도 해소(2026-08-27 · §1.6).</b> <code>.cx-thumb</code> 15칸이
@@ -1372,7 +1418,9 @@
   <ul class="s13">
     <li><b>라벨은 수만 말한다.</b> R1대로 변수 뒤에 조사가 없고, 짧아서 <b>320px에서도 안 접힌다</b>
       (최악 143.5px &lt; 가용 238px). 설명까지 넣으면 한글 1.0em 서체에서 <b>최악 260px &gt; 238px</b>로
-      2줄이 되고, <b>2줄이 되면 카드가 자라 <code>[복사]</code>가 배경음 버튼과 겹친다</b>(검수 실측).</li>
+      2줄이 된다. <del>«2줄이면 카드가 자라 <code>[복사]</code>가 배경음 버튼과 겹친다»</del> —
+      <b>그 제약은 §1.7에서 해소됐다.</b> 라벨을 한 줄로 두는 이유는 이제 <b>읽기</b>다
+      (수를 세는 줄이 접히면 훑기가 안 된다).</li>
     <li><b style="color:var(--red)"><code>곳</code>은 좌석의 단위가 아니다</b> — 초안이 R1의 «받침 고정 접미어»를
       기계적으로 만족시키려고 <code>빈 자리 ${n}곳은</code>이라 썼는데, <code>곳</code>은 <b>장소</b>를 세는 말이라
       <code>자리</code>와 <b>의미가 겹친다</b>(«빈 자리 다섯 장소»). R1 예시 목록에도 없다.
@@ -1384,7 +1432,9 @@
     <li>라벨에 <code>aria-live="polite"</code> — 사람이 들어와 수가 바뀌면 <b>읽힌다</b>.
       <code>word-break: keep-all</code> — 한국어는 아무 음절에서나 끊긴다.</li>
     <li>⚠️ <b>목록에 «빈 좌석 행»을 그리지 않는다.</b> ① 좌석마다 한 줄 → <b>같은 문장 5줄</b>(소음) ·
-      ② 요약 한 줄 → 카드가 ~40px 자라 <code>[복사]</code>가 배경음 버튼 밑으로(S1 FAIL). 둘 다 캡처로 보고 버렸다.</li>
+      ② 요약 한 줄 → 라벨의 <code>· 빈 자리 5</code>와 <b>같은 사실을 두 문장으로</b> 말한다(§8.1).
+      둘 다 캡처로 보고 버렸다.<br>
+      <del>«카드가 ~40px 자라 S1 FAIL»</del> — 그 사유는 <b>§1.7에서 해소됐다.</b> ①의 사유는 그대로 산다.</li>
   </ul>
 
   <h3>9.1 대기실 서버 피드백</h3>
@@ -1471,6 +1521,7 @@
   <h2 id="s10"><span class="n">10</span>적용 위치</h2>
   <div class="scroll"><table>
     <tr><th>§</th><th>문안 묶음</th><th>파일</th><th>함수 / 요소</th></tr>
+    <tr><td>1.7</td><td>부유 컨트롤 배치 <span class="tag t-done">적용 완료</span></td><td class="q">client/index.html</td><td class="q"><code>.bgm-ctrl</code> — 폰 · <code>pointer:coarse</code> 두 블록의 <code>top</code>을 <code>body.no-scroll</code>로 한정</td></tr>
     <tr><td>3</td><td>목표 카드 <span class="tag t-soon">선행</span></td><td class="q">client/index.html · client/src/main.ts</td><td class="q">신규 <code>#goalCard</code> · <code>enterGame()</code> 말미 · <code>.hud-ctrl</code> 끝 <code>[?]</code></td></tr>
     <tr><td>4.1</td><td>손패 라벨</td><td class="q">client/src/main.ts</td><td class="q">onMessage("hand") ≈212 · <code>#hand</code> 초기 텍스트</td></tr>
     <tr><td>4.2</td><td>공통 단서</td><td class="q">server/rooms/clue-room.ts · client/src/main.ts</td><td class="q">startGame() ≈546 · buildEvidence()</td></tr>
@@ -1521,6 +1572,19 @@
 
   <footer>
     <b>변경 이력</b><br>
+    <b style="color:var(--gold)">2026-08-27 (3차) — §1.7 신설 · 부유 컨트롤은 «내용이 지나가는 띠»에 두지 않는다.</b>
+    배경음 버튼 밑으로 <code>[복사]</code>가 들어가는 S1 FAIL이 <b>13·17회차에 각각 다른 이유로</b> 났고,
+    두 번 다 «내용을 줄여» 피한 결과가 이 문서에 <b>문안 길이 제약</b>으로 굳어 있었다.
+    원인이 매번 다른데 결과가 같으면 원인은 내용이 아니다 — 배치를 고쳤다
+    (<code>top:150px</code>은 그 값을 필요하게 만든 <b>턴 배너</b>가 사는 게임 화면에만 ·
+    카드 화면은 <code>position: absolute</code>로 <b>문서와 함께</b> 움직인다).
+    <b style="color:var(--red)">🔴 초안은 «카드 상단이 y≥16px에 고정되니 상한이 내용과 무관»이라
+    적었다 — 거짓이었다.</b> 카드 화면은 문서가 스크롤해서 <code>fixed</code> 컨트롤 밑으로 흘러
+    들어간다(검수가 잡았고 실측으로 재확인 — <code>#joinBtn</code>·<code>#refreshRooms</code>가
+    실제로 안 눌렸다). 그 상한은 <b>게이트가 재는 <code>scrollTop=0</code>에서만</b> 참이었다.
+    <b>§9.0 · §9.0.1의 「카드가 자라면 겹친다」 사유 3곳을 해제</b>했다. 남은 사유(소음 · 읽기 · §8.1 중복)는
+    그대로 살려 두 절의 <b>결론은 바뀌지 않는다 — 사유만 고쳐 적었다.</b> §10에 §1.7 행 추가.
+    <br><br>
     <b style="color:var(--gold)">2026-08-26 (3) — «고발» → «신고» 용어 통일.</b>
     <b>오너 확정 · 쿼카가 정한 표기.</b> 1~6회차 내내 버튼만 <code>신고하기</code>이고 모달 제목·확인 버튼·
     결과 화면은 <code>고발</code>이었다. §2가 「개념은 고발 — … 유지」로 <b>의도적 유지</b>를 못 박았으나
