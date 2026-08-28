@@ -410,7 +410,13 @@
     <b style="color:var(--red)">이전에는 전 화면이 <code>--wds-accent</code> 하나였다.</b>
     이 테마의 면은 전부 밝아서 카드 위 <b>1.68:1</b> · 모달 위 1.75:1 —
     <b>WCAG 2.4.11/1.4.11(비텍스트 ≥3.0) 미달</b>이다. 즉 <b>키보드 사용자에게 포커스가 어디에도 안 보였다.</b><br>
-    화면 게이트는 <b>«평상 상태만»</b> 재므로 이 축은 <b>기계가 안 잡는다</b> — 색을 바꿀 때 직접 계산해야 한다.<br>
+    <b style="color:var(--gold)">🖼 <code>:hover</code>는 이제 기계가 잡는다</b>
+    <span class="tag t-new">2026-08-28 · S9</span> — 25회차에 <code>button:hover</code>가 커스텀
+    버튼으로 새어 대비가 <b>1.16:1</b>이 됐는데 게이트가 원리적으로 못 봤다. S9는 조작 요소에
+    <b>진짜 마우스를 올려</b> 색이 <b>바뀐 것만</b> 다시 재고, 하한은 S6와 <b>같은 함수</b>를 쓴다.<br>
+    ⚠️ <b><code>:active</code>·<code>:focus</code>는 여전히 사람 몫</b>이고, S9는 <b>마우스 뷰포트에서만</b>
+    돈다(손가락 화면은 <code>(hover: hover)</code>가 거짓 → SKIP · 실기 폰에도 hover가 없다).
+    <b>포커스 링의 수치는 지금도 직접 계산해야 한다.</b><br>
     어두운 면에서는 두 색의 우열이 <b>뒤집힌다</b>(<code>primary-strong</code> 1.85~2.18 · <code>accent</code> 7.34~8.64) —
     그래서 전역은 <code>primary-strong</code>, <code>.bgm-ctrl</code>·<code>.codex-overlay</code> 안만 <code>accent</code>로 되돌린다.<br><br>
     <b style="color:var(--red)">⚠️ 어두운 면은 하나가 아니다.</b> 초안이 «배경음 컨트롤 하나뿐»이라고 단정했다가

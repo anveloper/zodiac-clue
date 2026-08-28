@@ -42,10 +42,20 @@
  *                  «요소가 있는가»로는 절대 안 잡힌다 — 요소는 늘 있고 틀리는 것은 글자다.
  *                  판을 새로 돌리지 않는다: 아래 6탭 실판에 **관측 탭 하나**를 붙여
  *                  같은 세션의 세 시점(대기 중 / 정원 초과 / 종료됨)에서 목록을 읽는다.
+ *   S9 상태 대비   **`:hover`에서** 색이 바뀐 글자의 명암비. 하한은 S6와 같은 함수다.
+ *                  25회차에 전역 `button:hover`가 커스텀 버튼으로 새어 대비가 1.16:1이
+ *                  됐는데 S6는 **원리적으로 못 봤다**(평상 상태만 잰다) — 그 구멍이다.
+ *                  JS로는 `:hover`를 못 만들므로 **진짜 마우스를 움직인다**
+ *                  (`Input.dispatchMouseEvent` · 브라우저 자신의 히트 테스트를 쓴다).
+ *                  전이·애니메이션은 계측 동안 **끈다** — 안 끄면 0.18s 전이 색을 못 잡고
+ *                  잔상이 다음 후보에 섞인다.
+ *                  ⚠️ **마우스 뷰포트에서만** 돈다(폰은 `hover: none` 에뮬 → SKIP + 사유).
+ *                  ⚠️ 후보는 **조작 요소**뿐이다 — `.hud-turn`처럼 조작 요소가 아닌 주체의
+ *                     hover, 그리고 `opacity`·`filter`·배경 이미지 축은 **아직 못 본다**(플랜 47 큐).
  *
- *   ⚠️ S5·S6은 §사람 확인 «읽히는가»에서 **기계가 잴 수 있는 두 조각만** 떼어낸 것이다.
- *      줄바꿈·서체·행간, 그리고 :hover/:active/:focus 상태의 색은 **여전히 사람 몫**이고
- *      §사람 확인에 그대로 남아 있다. 이 둘이 통과했다고 «읽힌다»가 증명되지 않는다.
+ *   ⚠️ S5·S6·S9는 §사람 확인 «읽히는가»에서 **기계가 잴 수 있는 조각만** 떼어낸 것이다.
+ *      줄바꿈·서체·행간, 그리고 **`:active`·`:focus` 상태의 색**은 여전히 사람 몫이고
+ *      §사람 확인에 그대로 남아 있다. 이들이 통과했다고 «읽힌다»가 증명되지 않는다.
  *      배경 이미지·그라디언트·캔버스 위의 글자는 뒤 색이 한 값이 아니라 **판정 불가**로
  *      세어 인쇄한다 — 조용히 통과시키지 않는다.
  *
@@ -713,6 +723,92 @@ function pageProbe(cfg) {
     textItems.push(item);
   }
 
+  // ── S9 상태 대비를 위한 내보내기 ────────────────────────────────
+  // **JS로는 `:hover`를 만들 수 없다.** 그래서 색 계산 도구만 여기서 내주고,
+  // 실제 hover는 Node 쪽이 `Input.dispatchMouseEvent`로 **진짜 마우스를 움직여** 만든다
+  // (`CSS.forcePseudoState`보다 실제에 가깝다 — 브라우저 자신의 히트 테스트를 쓴다).
+  // ⚠️ 색 계산은 S6와 **같은 함수**다(`bgBehind`/`over`/`contrast`) — 복붙하면 갈라진다.
+  //    다만 **대상 선별은 S6와 다르다**(S6는 직계 텍스트 노드 전부, S9는 커서 밑 하나) —
+  //    그래서 S6의 **면제 규칙만큼은 그대로 물려받는다**(아래 `textOK`).
+  const textOK = (el) => {
+    let own = "";
+    for (const n of Array.from(el.childNodes)) if (n.nodeType === 3) own += n.nodeValue;
+    own = own.trim();
+    if (!own || !HAS_LETTER.test(own)) return null; // 이모지·기호만 → 색이 글리프에 안 붙는다
+    if (cfg.textExempt.length && cfg.textExempt.some((sel) => el.matches(sel))) return null;
+    return own.replace(/\s+/g, " ").slice(0, 24);
+  };
+  /** 커서 밑 요소의 «글자색 + 합성 배경». `rest`와 `measure`가 **같은 방식**으로 떠야 한다. */
+  const colorAt = (x, y) => {
+    const el = document.elementFromPoint(x, y);
+    if (!el) return null;
+    const cs = getComputedStyle(el);
+    const bg = bgBehind(el);
+    const fillRaw =
+      cs.webkitTextFillColor && cs.webkitTextFillColor !== "currentcolor"
+        ? cs.webkitTextFillColor
+        : cs.color;
+    return {
+      el,
+      key: `${fillRaw}|${bg.color ? `${bg.color.r},${bg.color.g},${bg.color.b}` : bg.reason}`,
+      fillRaw,
+      bg,
+      cs,
+    };
+  };
+  const stateCand = (el) => {
+    const r = el.getBoundingClientRect();
+    if (r.width < 1 || r.height < 1) return null;
+    const x = Math.min(window.innerWidth - 1, Math.max(0, Math.round(r.left + r.width / 2)));
+    const y = Math.min(window.innerHeight - 1, Math.max(0, Math.round(r.top + r.height / 2)));
+    const hit = document.elementFromPoint(x, y);
+    if (!hit || !(hit === el || el.contains(hit))) return null; // 중심이 남에게 가려짐
+    // ⚠️ **쉬는 값은 «커서 밑 요소»에서 뜬다.** 초안은 조작 요소(`el`)에서 떴는데,
+    //    `measure`는 `elementFromPoint`가 준 안쪽 span을 잰다 — **다른 요소를 비교**하니
+    //    정적인 색 차이가 «hover에서 바뀌었다»로 잡혔다(검수 실증: 12건 오탐).
+    const c = colorAt(x, y);
+    return c ? { path: path(el), x, y, rest: c.key } : null;
+  };
+  window.__zcState = {
+    /** 이 뷰포트에서 hover가 성립하는가. 손가락 화면에서는 «잴 수 없다»가 정답이다. */
+    hoverable: () => window.matchMedia("(hover: hover)").matches,
+    /** 전이·애니메이션을 끈다. 안 끄면 ① 0.18s 전이 색을 못 잡고 ② 잔상이 **다음** 후보에 섞인다. */
+    freeze: (on) => {
+      const id = "zc-state-freeze";
+      document.getElementById(id)?.remove();
+      if (!on) return true;
+      const st = document.createElement("style");
+      st.id = id;
+      st.textContent = "*,*::before,*::after{transition:none !important;animation:none !important}";
+      document.head.appendChild(st);
+      return true;
+    },
+    candidates: () =>
+      Array.from(document.querySelectorAll(OPERABLE)).filter(shown).map(stateCand).filter(Boolean),
+    /** 지금(=hover 중) 커서 밑 글자의 대비. **쉬는 상태와 달라졌을 때만** 돌려준다. */
+    measure: (x, y, rest) => {
+      const c = colorAt(x, y);
+      if (!c || c.key === rest) return null; // 안 변했다 → S6가 이미 쟀다
+      const text = textOK(c.el);
+      if (text === null) return null; // 글자가 아니거나 §면제 — S6와 같은 기준
+      if (!c.bg.color) return { path: path(c.el), why: c.bg.reason ?? "bgUnknown", contrast: null };
+      const fg = parseRgb(c.fillRaw);
+      if (!fg) return null;
+      return {
+        path: path(c.el),
+        contrast: Math.round(contrast(over(fg, c.bg.color), c.bg.color) * 100) / 100,
+        px: round(parseFloat(c.cs.fontSize) || 0),
+        weight: Number(c.cs.fontWeight) || 400,
+        text,
+      };
+    },
+    done: () => {
+      document.getElementById("zc-state-freeze")?.remove();
+      delete window.__zcState; // 계측 도구를 페이지에 남기지 않는다
+      return true;
+    },
+  };
+
   return {
     url: location.href,
     vw: VW,
@@ -839,12 +935,15 @@ const judge = (screen, viewport, data) => {
       { lines: tiny.map((i) => `✗ ${i.path} ${i.px}px "${i.text}"`) });
   }
 
+  // 큰 글자 판정과 하한 — **S6와 S9가 같은 함수를 쓴다.** 상태가 바뀐다고 읽기 기준이
+  // 느슨해지지 않으므로, 갈라 두면 언젠가 한쪽만 고쳐진다.
+  const isLarge = (i) =>
+    i.px >= SCREEN.largeFontPx || (i.weight >= 700 && i.px >= SCREEN.largeBoldFontPx);
+  const floorOf = (i) => (isLarge(i) ? SCREEN.minContrastLarge : SCREEN.minContrast);
+
   // ── S6 명암비(WCAG 2.1 AA) ──
   // 뷰포트와 무관한 성질이지만 화면마다 나오는 글자가 다르므로 화면·뷰포트마다 잰다.
   {
-    const isLarge = (i) =>
-      i.px >= SCREEN.largeFontPx || (i.weight >= 700 && i.px >= SCREEN.largeBoldFontPx);
-    const floorOf = (i) => (isLarge(i) ? SCREEN.minContrastLarge : SCREEN.minContrast);
     const measured = tx.items.filter((i) => typeof i.contrast === "number");
     const unmeasured = tx.items.filter((i) => typeof i.contrast !== "number");
     const dim = measured
@@ -863,6 +962,45 @@ const judge = (screen, viewport, data) => {
               `${i.fg} on ${i.bg} "${i.text}"`,
           ),
           ...unmeasured.map((i) => `· ${i.path} 판정 불가 — ${i.why} "${i.text}"`),
+        ],
+      });
+  }
+
+  // ── S9 상태(hover) 대비 ──
+  // 하한은 S6와 **같다**(AA 4.5 / 큰 글자 3.0) — 상태가 바뀐다고 읽기 기준이 느슨해지지 않는다.
+  // 🔴 **«없음»으로 조용히 빠지지 않는다.** 이 파일 머리글이 「은폐된 미측정이 회귀보다
+  //    위험하다」고 못 박는데, 초안은 `data.hover`가 없으면 **체크를 아예 안 만들었다** —
+  //    결과 흐름 6화면이 그렇게 빠져 있었다(`grab()`이 `probeHoverStates`를 안 부른다).
+  if (!data.hover) {
+    add("S9", "SKIP", "이 화면은 상태(hover) 계측 경로를 안 탄다 — 결과 흐름은 `grab()`이 본 계측만 부른다(플랜 47 큐)");
+  } else if (data.hover.skip) {
+    add("S9", "SKIP", data.hover.skip);
+  } else if (data.hover.unavailable) {
+    add("S9", "SKIP", data.hover.unavailable);
+  } else if (data.hover.candidates === 0) {
+    // 선택자가 죽거나 화면이 안 그려져도 초록이 되면 안 된다.
+    add("S9", "SKIP", "조작 요소가 0개다 — 잴 것이 없는 것인지 못 찾은 것인지 기계가 구분 못 한다");
+  } else {
+    const hv = data.hover;
+    const measured = hv.items.filter((i) => typeof i.contrast === "number");
+    const unmeasured = hv.items.filter((i) => typeof i.contrast !== "number");
+    const bad = measured
+      .filter((i) => i.contrast < floorOf(i) - 0.005)
+      .sort((a, b) => a.contrast - b.contrast);
+    add("S9", bad.length ? "FAIL" : "PASS",
+      `조작 요소 ${hv.candidates}개에 hover · 색이 바뀐 것 ${hv.items.length}건 · ` +
+        `AA 미달 ${bad.length}건` +
+        (unmeasured.length ? ` · 판정 불가 ${unmeasured.length}건` : ""),
+      {
+        lines: [
+          // `on`(마우스를 올린 곳)을 반드시 찍는다 — 없으면 같은 `path` 여러 줄이
+          // 완전히 동일해져 어느 것을 눌렀을 때 난 것인지 구분되지 않는다(검수 지적).
+          ...bad.map(
+            (i) =>
+              `✗ [${i.on} 에 hover] ${i.path} ${i.contrast}:1 < ${floorOf(i)}:1 ` +
+              `(${i.px}px w${i.weight}) "${i.text}"`,
+          ),
+          ...unmeasured.map((i) => `· [${i.on} 에 hover] ${i.path} 판정 불가 — ${i.why}`),
         ],
       });
   }
@@ -1098,6 +1236,63 @@ const probeTab = async (sid, screen, shotName) => {
   return evalIn(sid, `(${pageProbe.toString()})(${JSON.stringify(probeCfg(screen))})`);
 };
 
+/**
+ * S9 — **상태(hover) 대비.** 25회차에 `button:hover`가 커스텀 버튼으로 새어
+ * 상자 전체가 진갈색이 되고 글자 대비가 1.16:1이 됐는데, 게이트는 그걸 **원리적으로
+ * 못 봤다** — 자기 리포트에 「§사람 확인: hover 상태의 색은 사람 몫」이라 인쇄하고 있었다.
+ *
+ * **JS로는 `:hover`를 만들 수 없다.** 그래서 여기서 **진짜 마우스를 움직인다**
+ * (`CSS.forcePseudoState`보다 실제에 가깝다 — 브라우저 자신의 히트 테스트를 쓴다).
+ * 요소마다 CDP 왕복 2회(이동 + 계측)이고, 후보는 조작 요소로 한정한다.
+ *
+ * ⚠️ **«달라진 것»만 잰다.** hover에서 색이 안 바뀌는 요소는 S6가 이미 쟀다 —
+ *    여기서 또 세면 같은 위반을 두 번 세고, 어느 검사가 잡은 것인지 흐려진다.
+ */
+const probeHoverStates = async (sid) => {
+  let cands = [];
+  try {
+    // 🔴 **손가락 화면에서는 아예 안 잰다.** 게이트가 폰 뷰포트에 `hover: none`을
+    //    **에뮬레이션으로 강제**하므로 브라우저가 hover 상태를 만들지 않는다.
+    //    실기 폰에도 hover가 없다는 판단까지 더해 여기서는 **SKIP + 사유**가 정답이다 —
+    //    PASS로 찍으면 «쟀는데 괜찮다»로 읽힌다.
+    if (!(await evalIn(sid, `window.__zcState.hoverable()`)))
+      return {
+        items: [],
+        candidates: 0,
+        skip:
+          "이 뷰포트는 `hover: none`으로 에뮬레이션된다 — 브라우저가 hover 상태를 안 만든다. " +
+          "실기 폰에도 hover가 없으므로 «못 쟀다»가 아니라 «없는 상태»다",
+      };
+    // ⚠️ **전이를 끈다.** 안 끄면 ① `.bgm-ctrl`의 `transition .18s`처럼 전이가 걸린 hover 색을
+    //    **한 번도 못 잡고**(실측: 정착 300ms를 주면 잡히지만 화면 하나가 2.0s → 10.1s가 된다)
+    //    ② 전 후보의 잔상이 **다음** 후보 계측에 섞인다(실측 확인).
+    await evalIn(sid, `window.__zcState.freeze(true)`);
+    cands = (await evalIn(sid, `window.__zcState.candidates()`)) ?? [];
+  } catch (e) {
+    return { items: [], candidates: 0, unavailable: `계측 도구를 못 불렀다 — ${e.message}` };
+  }
+  const items = [];
+  try {
+    for (const c of cands) {
+      await cmd("Input.dispatchMouseEvent", { type: "mouseMoved", x: c.x, y: c.y, buttons: 0 }, sid);
+      const r = await evalIn(
+        sid,
+        `window.__zcState.measure(${c.x}, ${c.y}, ${JSON.stringify(c.rest)})`,
+      );
+      if (r) items.push({ ...r, on: c.path });
+    }
+  } catch (e) {
+    // ⚠️ **S9가 화면 전체를 인질로 잡으면 안 된다.** 여기서 예외가 새면 `openScreen`의 catch가
+    //    받아 그 화면이 «도달 실패»가 되고 S1~S6 판정이 통째로 버려진다.
+    return { items, candidates: cands.length, unavailable: `계측 중 예외 — ${e.message}` };
+  } finally {
+    // 커서를 화면 밖으로 뺀다(잔상 방지) · 전이를 되살리고 계측 도구를 지운다.
+    await cmd("Input.dispatchMouseEvent", { type: "mouseMoved", x: -20, y: -20, buttons: 0 }, sid).catch(() => {});
+    await evalIn(sid, `window.__zcState.done()`).catch(() => {});
+  }
+  return { items, candidates: cands.length };
+};
+
 /** 한 화면 × 한 뷰포트를 연다. 반환: { data } / { unreachable } / { skip } */
 const openScreen = async (screen, vp, faultJs) => {
   const { sid, close } = await newTab(vp);
@@ -1125,6 +1320,9 @@ const openScreen = async (screen, vp, faultJs) => {
 
     // 캡처는 **뷰포트만** 찍는다. 전체 페이지 캡처는 밀려 올라간 화면을 정상으로 렌더한다.
     const data = await probeTab(sid, screen, `${screen.id}-${vp.id}`);
+    // S9는 캡처·본 계측 **뒤에** 돈다 — 마우스를 움직이므로 앞에 두면 다른 검사가
+    // hover 상태를 재게 된다.
+    data.hover = await probeHoverStates(sid);
     return { data, close };
   } catch (e) {
     return { unreachable: `실행 오류 — ${e.message}`, close };
@@ -2181,6 +2379,27 @@ const FAULTS = [
     })()`,
   },
   {
+    id: "F2b-hover만깨짐",
+    expect: "S9",
+    vp: "desktop", // hover는 손가락 화면에 없다 — 이 결함은 마우스 뷰포트에서만 성립한다
+    // ⚠️ 지문은 **주입한 그 요소**여야 한다. 초안은 `/hover에서/`라 **모든 S9 위반 줄**에
+    //    걸렸다 — 그러면 「내 결함을 잡았다」가 아니라 「S9에 FAIL이 하나라도 생겼다」가 된다
+    //    (`zc-fault-hover`는 style의 id일 뿐 출력에 절대 안 나오는 죽은 대안이었다).
+    signature: /\[button#(suggest|accuse|passage|bonus|endTurn)[^\]]* 에 hover\]/,
+    why:
+      "**평상 상태는 멀쩡하고 hover에서만** 글자가 배경에 묻히게 만든다 — 25회차에 실제로 난 " +
+      "사고다(전역 `button:hover`가 커스텀 버튼으로 새어 대비 1.16:1). S6는 이걸 원리적으로 " +
+      "못 본다. 잡는 것은 S9뿐이고, 이 결함이 안 잡히면 S9는 **아무것도 안 재는 검사**다.",
+    js: `(() => {
+      const st = document.createElement('style');
+      st.id = 'zc-fault-hover';
+      // 액션 바 버튼: 평상시 그대로, hover에서만 «거의 같은 두 색»으로 만든다.
+      st.textContent = '.hud-ctrl button:hover{background:#8A8A8A !important;color:#828282 !important}';
+      document.head.appendChild(st);
+      return 'injected';
+    })()`,
+  },
+  {
     id: "F3-세로스크롤",
     expect: "S2",
     signature: /세로 스크롤 발생/,
@@ -2292,11 +2511,13 @@ const ROOM_FAULTS = [
 ];
 
 if (OPT.selfTest) {
-  const vp = SCREEN.viewports.find((v) => v.id === "phone");
+  // 자기검사는 폰을 기본으로 쓴다(44px 하한 등 손가락 축이 많다). 다만 **hover는 폰에 없다** —
+  // S9 같은 검사는 결함마다 뷰포트를 고를 수 있어야 한다(`f.vp`).
+  const vpPhone = SCREEN.viewports.find((v) => v.id === "phone");
   const scr = (id) => SCREEN.screens.find((s) => s.id === id);
   const rows = [];
   /** 화면 하나를 열고 판정한다. */
-  const run = async (screen, faultJs) => {
+  const run = async (screen, faultJs, vp = vpPhone) => {
     const r = await openScreen(screen, vp, faultJs);
     if (r.unreachable || r.skip) {
       await r.close?.();
@@ -2310,14 +2531,17 @@ if (OPT.selfTest) {
   // 기준선 — 결함 없이 통과하는가(통과해야 «FAIL이 결함 때문»이라고 말할 수 있다).
   // 화면마다 따로 필요하다: F5는 뷰2에 주입하므로 «뷰2의 무결함 상태»가 기준선이다.
   const baselines = new Map();
-  const baselineOf = async (id) => {
-    if (baselines.has(id)) return baselines.get(id);
-    step(`음성 테스트 기준선 ${id}`);
-    const r = await run(scr(id), null);
+  // ⚠️ 기준선은 **결함과 같은 뷰포트**여야 한다 — 「기준선에 없던 지문이 새로 나타났는가」가
+  //    판정 방식이라, 뷰포트가 다르면 지문 집합 자체가 달라 비교가 성립하지 않는다.
+  const baselineOf = async (id, vpId = "phone") => {
+    const key = `${id}@${vpId}`;
+    if (baselines.has(key)) return baselines.get(key);
+    step(`음성 테스트 기준선 ${key}`);
+    const r = await run(scr(id), null, SCREEN.viewports.find((v) => v.id === vpId));
     if (r.fail) skipOut(`음성 테스트 기준선(${id}) 도달 실패 — ${r.fail}`, client.log);
-    baselines.set(id, r.checks);
+    baselines.set(key, r.checks);
     rows.push({
-      id: `기준선(${id})`,
+      id: `기준선(${key})`,
       expect: "-",
       got: r.checks.map((c) => `${c.id}:${c.status}`).join(" "),
       ok: true,
@@ -2337,9 +2561,9 @@ if (OPT.selfTest) {
 
   for (const f of FAULTS) {
     const screen = scr(f.screen ?? "game");
-    const baseChecks = await baselineOf(screen.id);
+    const baseChecks = await baselineOf(screen.id, f.vp ?? "phone");
     step(`음성 테스트 ${f.id}`);
-    const r = await run(screen, f.js);
+    const r = await run(screen, f.js, SCREEN.viewports.find((v) => v.id === (f.vp ?? "phone")));
     if (r.fail) {
       rows.push({ id: f.id, expect: f.expect, got: "도달 실패", ok: false, note: r.fail });
       continue;
@@ -2542,7 +2766,9 @@ if (OPT.selfTest) {
   } else {
     if (tty) process.stderr.write(`${" ".repeat(70)}\r`);
     console.log(`\n══ 화면 게이트 · 음성 테스트(일부러 깨뜨려 본다) ${"═".repeat(24)}`);
-    console.log("   대상: 게임 뷰1 · 폰 390×844 (S1~S6) · 랜딩 공개방 목록 1줄 (S7)");
+    console.log(
+      "   대상: 게임 뷰1 · 폰 390×844 (S1~S6) · 데스크톱 1440×900 (S9 — hover는 폰에 없다) · 랜딩 공개방 목록 1줄 (S7)",
+    );
     console.log("   결함은 런타임 주입이라 앱 코드는 그대로다\n");
     for (const r of rows) {
       console.log(`  ${r.ok ? "OK  " : "MISS"}  ${r.id.padEnd(16)} 기대 ${String(r.expect).padEnd(14)} 실제 ${r.got}`);

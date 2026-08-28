@@ -56,6 +56,10 @@
     "dir": "plans/done",
     "items": [
       {
+        "path": "plans/done/47-gate-state-contrast.md",
+        "title": "plan: 게이트가 «평상 상태»만 재는 구멍을 메운다 — hover·focus 대비"
+      },
+      {
         "path": "plans/done/46-evi-roving-tabindex.md",
         "title": "plan: 증거 노트를 «툴바»로 — 그리고 25회차가 연 키보드 경로의 뒷문을 닫는다"
       },
