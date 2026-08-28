@@ -960,6 +960,154 @@
       <span class="note">«숨기지 않는다»(§1.4)는 <b>대사 경로 배지(✨/♻/⚙)를 로그에서 감추지 않는다</b>는 뜻이고, 배지는 그대로다.</span></li>
   </ul>
 
+  <!-- ════════════ 4.5 ════════════ -->
+  <h3>4.5 제안 기록표 <code>#sugPanel</code> · <code>.sg-row</code> <span class="tag t-new">2026-08-29</span></h3>
+  <div class="box info">
+    로드맵 §1.2는 이 패널을 <b>인지부하</b> 항목으로 분류한다 — 새 정보를 주지 않고,
+    로그에 흩어진 제안·반증을 <b>한 행으로 모으는 것</b>이 전부다.
+    그러면 <b>행 안에서 무엇이 먼저 읽히는가</b>가 이 패널의 전부이기도 하다.<br>
+    <span class="note">아래 수치는 전부 화면 게이트 <code>pageProbe</code> 실측이다 — 이 화면은 30회차에 <b>처음</b> 계측됐다(그전까지 S8 하나만 돌았다).</span>
+  </div>
+
+  <style>
+    .sgv{--sgtint:#F3E1D6;--sgtintc:#F7EBCF;--sgline:#96733E;--sgstrong:#33271A;--sgnormal:#4A3B2A;
+      --sgalt:#6F5D49;--sgprim:#8A4128;--sgprimn:#A85638;
+      background:var(--sgtint);border-left:3px solid var(--sgline);border-radius:3px;
+      padding:6px 8px;margin-bottom:4px;width:270px;font-family:system-ui,sans-serif}
+    /* 결과 채널 — label-strong. primary-strong은 line-normal과 상호 1.68:1이라 기각했다. */
+    .sgv.unref{border-left-color:var(--sgstrong)}
+    /* 소유 채널 — 배경 + inset 링 + 「나」 배지. */
+    .sgv.mine{background:var(--sgtintc);box-shadow:inset 0 0 0 1px var(--sgprimn)}
+    .sgv .tag-me{font-size:11px;font-weight:700;color:var(--sgstrong);
+      background:rgba(180,98,43,.18);border-radius:4px;padding:0 5px;line-height:1.5}
+    /* «이전» 재현은 **이전의 색**을 써야 한다 — 초안이 여기에 이후의 line-normal을 써서
+       「테두리가 아무 신호도 안 날랐다」를 설명하는 그림이 스스로를 반증하고 있었다. */
+    .sgv.old{border-left-color:var(--sgprimn)}
+    .sgv .r1{display:flex;align-items:baseline;gap:5px}
+    .sgv .num{font-size:12px;color:var(--sgalt);min-width:12px}
+    .sgv .combo{font-size:15px;font-weight:600;color:var(--sgstrong);line-height:1.35;word-break:keep-all}
+    .sgv .r2{display:flex;align-items:baseline;gap:6px;margin-top:2px;padding-left:17px;font-size:12px}
+    .sgv .by{flex:1;color:var(--sgnormal)}
+    .sgv .res{color:var(--sgnormal)}
+    .sgv .res.none{background:var(--sgprim);color:#fff;font-weight:700;border-radius:4px;padding:0 5px;line-height:1.5}
+    /* 이전 안 — 위계가 뒤집힌 상태 */
+    .sgv.old .r1{display:flex;align-items:baseline;gap:5px}
+    .sgv.old .who{flex:1;font-size:16px;color:var(--sgstrong)}
+    .sgv.old .res-old{font-size:12px;color:var(--sgnormal)}
+    .sgv.old .combo-old{margin-top:2px;padding-left:17px;font-size:16px;color:var(--sgalt);line-height:1.4}
+    .sgv.old .res-old.none{color:#A85638;font-weight:600;background:none;padding:0}
+    .sgcap{font-size:12px;color:var(--dim);margin:0 0 6px}
+  </style>
+
+  <div class="pv">
+    <div class="pv-h">미리보기 · <b>.sg-row</b> 2행 — <b>이전(위계 역전)</b> / <b>이후</b></div>
+    <div class="pv-b">
+      <div>
+        <p class="sgcap"><b class="bad">이전</b> — 가장 큰 글자가 «누가 물었나»다</p>
+        <div class="sgv old">
+          <div class="r1"><span class="num">6</span><span class="who">🔍 뱀 무녀</span><span class="res-old">🛡 생쥐 서생</span></div>
+          <div class="combo-old">생쥐 서생 · 술동이 · 대청마루</div>
+        </div>
+        <div class="sgv old">
+          <div class="r1"><span class="num">5</span><span class="who">🔍 게코 도령</span><span class="res-old none">❗ 미반증</span></div>
+          <div class="combo-old">뱀 무녀 · 잡채 · 대청마루</div>
+        </div>
+      </div>
+      <div>
+        <p class="sgcap"><b class="good">이후</b> — 가장 큰 글자가 «무엇을 물었나»다</p>
+        <div class="sgv">
+          <div class="r1"><span class="num">6</span><span class="combo">🐭&nbsp;생쥐 서생&nbsp;· 🍶&nbsp;술동이&nbsp;· 📍&nbsp;대청마루</span></div>
+          <div class="r2"><span class="by">🔍 뱀 무녀</span><span class="res">🛡 생쥐 서생</span></div>
+        </div>
+        <div class="sgv unref">
+          <div class="r1"><span class="num">5</span><span class="combo">🐍&nbsp;뱀 무녀&nbsp;· 🍜&nbsp;잡채&nbsp;· 📍&nbsp;대청마루</span></div>
+          <div class="r2"><span class="by">🔍 게코 도령</span><span class="res none">❗ 미반증</span></div>
+        </div>
+        <p class="sgcap" style="margin-top:10px">소유 채널 — <b>내 제안</b> · 그리고 <b>둘이 겹칠 때</b></p>
+        <div class="sgv mine">
+          <div class="r1"><span class="num">4</span><span class="combo">🐯&nbsp;호랑이 대감&nbsp;· 🍶&nbsp;술동이&nbsp;· 📍&nbsp;안채</span></div>
+          <div class="r2"><span class="tag-me">나</span><span class="by">🔍 토끼 낭자</span><span class="res">🛡 뱀 무녀</span></div>
+        </div>
+        <div class="sgv mine unref">
+          <div class="r1"><span class="num">3</span><span class="combo">🐮&nbsp;황소 역사&nbsp;· 🍜&nbsp;잡채&nbsp;· 📍&nbsp;대청마루</span></div>
+          <div class="r2"><span class="tag-me">나</span><span class="by">🔍 토끼 낭자</span><span class="res none">❗ 미반증</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <table>
+    <tr><th>조각</th><th>이전</th><th>이후</th><th>왜</th></tr>
+    <tr><td>조합 <span class="note">(용의자·장물·장소)</span></td>
+        <td class="bad">16px · <b>4.96:1</b> · 2줄째</td>
+        <td class="good"><b>15px 600</b> · <b>11.45:1</b> · <b>1줄째</b></td>
+        <td>추리가 실제로 쓰는 값</td></tr>
+    <tr><td>제안자 <code>🔍 이름</code></td>
+        <td>16px · 11.45:1 · 1줄째</td><td>12px · 8.49:1 · 2줄째</td>
+        <td>누가 물었나 = <b>메타데이터</b></td></tr>
+    <tr><td>반증자 <code>🛡 이름</code></td><td>12px · 8.49:1</td><td>그대로(2줄째)</td><td>〃</td></tr>
+    <tr><td><code>❗ 미반증</code></td>
+        <td class="bad">12px 글자 · <b>4.08:1 — AA 미달</b></td>
+        <td class="good">채운 배지 · 흰 글자 · <b>7.32:1</b></td>
+        <td>판에서 <b>가장 값진 사건</b></td></tr>
+  </table>
+
+  <ul>
+    <li><b>행은 2줄이다.</b> 1줄 = <code>순번</code> + <code>조합</code>, 2줄 = <code>「나」</code> +
+      <code>🔍 제안자</code> + <code>🛡 반증자</code>/<code>❗ 미반증</code>.
+      <b>DOM 순서가 곧 읽는 순서</b>라 스크린리더도 «무엇을 물었나»를 먼저 듣는다.</li>
+    <li><b>「나」 배지는 제안자 이름 바로 앞</b>에 둔다 — 예전에는 순번과 이름 사이에 떠 있어
+      자리만으로는 무엇을 수식하는지 알 수 없었다.</li>
+    <li><b class="good">채널을 둘로 가른다.</b> 왼쪽 3px 테두리 = <b>결과</b>(기본 <code>line-normal</code> 3.43 ·
+      미반증 <code>label-strong</code> 11.45) · 배경 + 「나」 배지 + inset 링(4.38) = <b>소유</b>.<br>
+      <b style="color:var(--red)">🔴 초안은 미반증을 <code>primary-strong</code>으로 뒀다</b> —
+      각각의 배경 대비(3.43·5.77)는 통과하는데 <b>두 상태의 상호 대비가 1.68:1</b>이라
+      «채널»이 성립하지 않았다(회색조로 사실상 동일 · 둘 다 따뜻한 갈색이라 색각 이상에서 더 나쁘다).
+      <code>label-strong</code>이면 <b>상호 3.33:1</b>.
+      <b>각 색이 배경에 대해 통과한다는 것과, 두 상태가 서로 구별된다는 것은 다른 명제다.</b><br>
+      <b style="color:var(--red)">🔴 이전에는 그 테두리가 아무 신호도 안 날랐다</b> —
+      <code>.sg-row</code>와 <code>.sg-row.sg-mine</code>의 <code>border-left-color</code>가
+      <b>같은 값</b>이라 override가 <b>no-op</b>이었다. 즉 «내 제안»을 실제로 나른 것은
+      배경 델타 1.07과 배지뿐이었다.</li>
+    <li><b>조합에는 아이콘이 붙는다</b> — 용의자는 얼굴(고유색 링) · 장물은 이모지 · 장소는 <code>📍</code>.
+      §4.1의 «색 단독 금지»가 여기서 성립하려면 이 아이콘이 <b>2차 단서</b>다.<br>
+      <b style="color:var(--red)">🔴 이 아이콘은 처음부터 죽어 있었다</b> — 서버가 <code>label()</code>을 씌워
+      <b>한글 라벨</b>을 보냈고 클라가 그 문자열에 <code>faceIc()</code>/<code>cardIcon()</code>을 걸었다.
+      <code>FACE_IDS.has("토끼 낭자")</code>는 늘 거짓이라 <b>빈 문자열</b>이 나왔다
+      (<code>.sg-combo .face-ic</code> CSS는 <b>존재하지 않는 요소</b>를 겨냥하고 있었다).
+      → 서버가 <b>카드 키</b>를 보내고 표시는 받는 쪽이 만든다.</li>
+    <li><b>접힘 규칙</b> — 아이콘↔이름, 이름↔<code>·</code>는 <code>&amp;nbsp;</code>로 묶고
+      <code>word-break: keep-all</code>. 좁은 컬럼(<b>220px</b>까지 드래그된다)에서
+      «대/청마루»로 끊기던 것을 <b>항목 단위</b> 접힘으로 바꾼다.<br>
+      <b style="color:var(--red)">⚠️ 이름 «안»의 공백도 NBSP로 묶어야 한다</b> —
+      <code>keep-all</code>은 <b>공백에서의 줄바꿈을 막지 않는다.</b> 그것이 없으면
+      「고양이 / 밤손님」으로 쪼개진다(현 카드셋에서는 아직 발화하지 않지만
+      이름이 한 글자만 길어져도 무너진다).</li>
+    <li>기호는 §2 고정본을 그대로 쓴다(<code>🔍</code> 제안 · <code>🛡</code> 반증 · <code>❗</code> 미반증 · <code>📍</code> 장소).<br>
+      <b style="color:var(--red)">🔴 기호만으로는 역할이 안 읽힌다</b> — 스크린리더가
+      <code>🔍</code>/<code>🛡</code>을 「돋보기」/「방패」로 읽어 한 행에서
+      <b>같은 이름이 «용의자 카드»와 «반증자»로 두 번</b> 나오는데 구분어가 없었다.
+      → 결과 화면이 쓰는 <code>.ec-sr</code>(시각적으로만 감추는 낱말)로
+      <code>제안</code>·<code>반증</code>·<code>결과</code>를 싣는다.</li>
+    <li><b class="warn">행 높이 — 아이콘을 살리면 조합이 접힌다.</b>
+      16px에서는 기본 컬럼(조합 폭 218px)에서 <b>전형 조합도 2줄</b>이 돼 행이
+      <b>55 → 74px</b>, 즉 «모아 보이는 양»이 약 <b>28%</b> 줄었다. 이 패널의 존재 이유가
+      §1.2 «모아 보게 한다»이므로 그것은 <b>회귀</b>다(초안은 S8 래칫만 보고 «영향 없음»으로 닫았다).
+      → <b>15px</b>로 내려 전형 조합을 한 줄에 넣었다: 행 <b>51px</b>로 <b>이 회차 이전(55px)보다도 짧다.</b>
+      최장 조합(<code>고양이 밤손님 · 잔치 선물 · 대청마루</code>)은 여전히 2줄 <b>72px</b>.</li>
+    <li><b>입력 검증은 서버에서.</b> <code>handleSuggest</code>가 <code>msg.suspect</code>/<code>msg.weapon</code>의
+      <b>카드 집합 소속</b>을 검사한다 — 이전에는 클라이언트가 보낸 <b>임의 문자열</b>이
+      <code>suggestLog</code>에 저장돼 전원에게 브로드캐스트됐다(재접속·관전 리플레이에도 남는다).
+      손패 검증이 아니라 <b>어휘 검증</b>이고, §7.5.2의 «자기 손패도 지목 허용»은 그대로다.</li>
+  </ul>
+
+  <div class="box warn">
+    <b>남은 미측정 — <code>❗ 미반증</code> 행은 게이트에 한 번도 안 뜬다.</b>
+    화면 게이트의 좌석 사슬은 제안 6건을 만들지만 <b>그 6건이 전부 반증된다</b>(실측 미반증 <b>0행</b>).
+    AA 미달 <b>4.08:1</b>이 오래 살아남은 이유가 그것이다 — <b>무계측이 무결함이 아니다.</b>
+    사유는 <code>scripts/gate.config.mjs</code>의 <code>rightColumn.knownUnmeasured</code>에 적혀 매 실행 인쇄된다.
+  </div>
+
   <!-- ════════════ 5 ════════════ -->
   <h2 id="s5"><span class="n">5</span>액션 버튼 4종 — 상태별 문안</h2>
 
@@ -1709,6 +1857,7 @@
     <tr><td>4.2</td><td>공통 단서</td><td class="q">server/rooms/clue-room.ts · client/src/main.ts</td><td class="q">startGame() ≈546 · buildEvidence()</td></tr>
     <tr><td>4.3</td><td>증거 노트 툴팁 <span class="tag t-new">07-29 정합</span></td><td class="q">client/src/main.ts</td><td class="q">buildEvidence() — 잠금 칩 <code>chip.title</code></td></tr>
     <tr><td>4.4</td><td>AI 칩 · 대사 경로 배지</td><td class="q">client/src/main.ts</td><td class="q">renderAi() ≈216 · addLog()의 배지 분기 ≈170 <span class="note">(폴백 사유 한글화)</span></td></tr>
+    <tr><td>4.5</td><td>제안 기록표 행 위계 <span class="tag t-new">완료</span></td><td class="q">client/index.html · client/src/main.ts · server/rooms/clue-room.ts · shared/…/types.ts</td><td class="q">.sg-head/.sg-meta/.sg-res.none/.sg-unrefuted · sugRow() · recordSuggestEntry() · handleSuggest() <span class="note">(라벨 대신 <b>카드 키</b> 전송 · 어휘 검증)</span></td></tr>
     <tr><td>5.0</td><td><code>disabled</code> → <code>aria-disabled</code></td><td class="q">client/src/main.ts · index.html</td><td class="q">updateTurnInfo() ≈436 · <code>button:disabled</code> 옆 <code>.is-off</code></td></tr>
     <tr><td>5.1–5.5</td><td>버튼 4종 + 턴 종료</td><td class="q">client/src/main.ts</td><td class="q">updateTurnInfo()에서 <code>title</code> 설정 · 각 onclick 첫 분기</td></tr>
     <tr><td>5.0</td><td>클릭 피드백 출력처 <span class="tag t-soon">선행</span></td><td class="q">client/index.html · main.ts</td><td class="q"><code>.hud-turn</code> 안 <code>.ti-sub</code> 추가</td></tr>
@@ -1754,6 +1903,14 @@
 
   <footer>
     <b>변경 이력</b><br>
+    <b style="color:var(--gold)">2026-08-29 — §4.5 제안 기록표 신설 · 행의 위계를 정보 가치 순으로 뒤집었다.</b>
+    화면 게이트가 이 화면을 <b>처음 계측</b>하고(그전까지 S8 하나만 돌았다) 나온 실측이 근거다 —
+    «누가 물었나»가 16px·<b>11.45:1</b>인데 «무엇을 물었나»가 같은 16px에 <b>4.96:1</b>이었다.
+    같은 계측에서 <code>❗ 미반증</code>이 <b>4.08:1로 AA 미달</b>인 것도 드러났으나,
+    <b>그 행은 게이트 시나리오에 한 번도 안 뜬다</b>(제안 6건이 전부 반증된다) — 여전히 무계측이다.
+    아이콘 3종은 서버가 <b>한글 라벨</b>을 보내는 바람에 <b>처음부터 죽어 있었고</b>,
+    서버가 <b>카드 키</b>를 보내도록 고쳤다. <code>.sg-mine</code>의 <code>border-left-color</code>
+    override는 기본값과 같은 값이라 <b>no-op</b>이었다.<br><br>
     <b style="color:var(--gold)">2026-08-28 — §2에 UI 표식 기호표 · 스크롤 신호에는 기호를 쓰지 않는다.</b>
     9회차가 우측 컬럼에 깐 «더 있음» 어두운 오버레이가 <b>잘리는 줄의 AA를 깨고 있었다</b>
     (합성 실측 <b>3.44:1</b>(α=0.30) / <b>4.10:1</b>(α=0.15)).
