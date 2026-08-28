@@ -1454,18 +1454,50 @@
          한 줄로 읽히게 하는 것이 전부다(대신 로그 쪽 중복 2줄은 main.ts가 걷어낸다). */
       .sg-row {
         padding: 4px 6px; border-bottom: 1px solid var(--wds-bg-alternative);
-        border-left: 3px solid var(--wds-primary-normal); border-radius: 3px; margin-bottom: 2px;
+        border-left: 3px solid var(--wds-line-normal); border-radius: 3px; margin-bottom: 2px;
         background: var(--wds-tint-primary);
       }
-      .sg-top { display: flex; align-items: baseline; gap: 5px; }
+      /* 🔴 **30회차: 위계가 뒤집혀 있었다.** 게이트가 이 화면을 처음 재고 나온 실측 —
+           «누가 물었나»(`.sg-by`)가 16px·**11.45:1**, «무엇을 물었나»(`.sg-combo`)가
+           같은 16px에 **4.96:1**이었다(AA 여유 0.46). 추리가 실제로 쓰는 값이 화면에서
+           가장 약했고, 메타데이터가 가장 강했다. 눈으로 본 캡처가 먼저 이상했고
+           **실측이 그것을 확인했다** — 추정으로 결론 내지 않았다.
+           채널을 둘로 가른다: **왼쪽 테두리 = 결과** · **배경 + 「나」 배지 = 소유.** */
+      /* 1줄 — 순번 + 조합. 행의 앵커다. */
+      .sg-head { display: flex; align-items: baseline; gap: 5px; }
       .sg-n { flex: none; color: var(--wds-label-alternative); font-size: 12px; min-width: 12px; }
+      .sg-combo {
+        /* label-strong: tint-primary 위 **11.45:1** · tint-cautionary(내 제안) 위 **12.27:1**. */
+        /* 🔴 16px였다가 **15px로 내렸다**(검수 지적 · 실측). 16px에서는 아이콘을 살린 조합이
+           기본 컬럼(조합 폭 218px)에서 **거의 항상 2줄**로 접혀 행이 55 → 74px이 됐다 —
+           로드맵 §1.2가 이 패널에 준 일이 «모아 보게 한다»인데 **모아 보이는 양이 줄었다.**
+           15px에서 전형 조합은 **한 줄**이라 행이 **51px** — 이 회차 이전(55px)보다도 짧다.
+           (최장 조합 「고양이 밤손님 · 잔치 선물 · 대청마루」는 여전히 2줄 72px.) */
+        flex: 1; min-width: 0; color: var(--wds-label-strong); font-weight: 600;
+        font-size: 15px; line-height: 1.35;
+        /* 조합은 이름 3개라 좁은 컬럼(220px까지 드래그된다)에서 접힌다. 접히는 것 자체는
+           정상이지만 **단어 중간**에서 접히면 안 된다 — 실측에서 «대/청마루»가 났다. */
+        word-break: keep-all;
+      }
+      /* 2줄 — 누가 물었고 누가 막았나. 12px 메타데이터로 내린다. */
+      .sg-meta {
+        display: flex; align-items: baseline; gap: 6px;
+        margin-top: 2px; padding-left: 17px; font-size: 12px;
+      }
       .sg-by {
-        flex: 1; min-width: 0; color: var(--wds-label-strong);
+        /* label-normal: tint-primary 위 **8.49:1** — 12px라 AA(4.5) 기준이고 여유가 크다. */
+        flex: 1; min-width: 0; color: var(--wds-label-normal);
         overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
       }
-      .sg-res { flex: none; font-size: 12px; color: var(--wds-label-normal); }
-      .sg-res.none { color: var(--wds-primary-normal); font-weight: 600; }
-      .sg-combo { margin-top: 2px; padding-left: 17px; color: var(--wds-label-alternative); line-height: 1.4; }
+      .sg-res { flex: none; color: var(--wds-label-normal); }
+      /* ❗ 미반증 = 판에서 가장 값진 사건인데 **12px 회색 글자**였다(primary-normal
+         on tint-primary = 4.08:1 — 실은 **AA 미달**이었고 아무도 세지 않았다).
+         채운 배지로 올린다: 흰 글자 on primary-strong = **7.32:1**.
+         색 단독 금지(§4.1)는 «미반증»이라는 글자 자체가 받는다. */
+      .sg-res.none {
+        background: var(--wds-primary-strong); color: var(--wds-static-white);
+        font-weight: 700; border-radius: 4px; padding: 0 5px; line-height: 1.5;
+      }
       /* 제안기록표는 <details>+flex 구조라 내부 스크롤이 안 잡히던 것 → 본문에 명시 상한으로 스크롤 보장. */
       #sugBody { max-height: 26vh; }
       /* 내 제안 강조 — 기록이 길어지면 «어느 게 내 것»인지 안 보이던 것 해소(접두 «나» 뱃지 + 강조 테두리). */
@@ -1473,12 +1505,28 @@
          `.sg-n` 대비가 4.10~4.49:1로 흔들렸다(AA 미달). 불투명 틴트로 고정 → **5.31:1**.
          «내 제안»의 식별은 왼쪽 강조 테두리(accent)와 «나» 배지가 맡는다. */
       /* 강조 테두리는 `--wds-accent`(#E3B873)였는데 tint-cautionary 위 **1.56:1**이라 안 보였다.
-         배경 델타가 1.07뿐이므로 «내 제안»의 식별은 **이 테두리와 «나» 배지가 실제로 져야 한다**. */
-      .sg-row.sg-mine { border-left-color: var(--wds-primary-normal); background: var(--wds-tint-cautionary); }
+         배경 델타가 1.07뿐이므로 «내 제안»의 식별은 **이 테두리와 «나» 배지가 실제로 져야 한다**.
+         🔴 **그런데 그 테두리는 아무 일도 안 하고 있었다** — `.sg-row`의 기본값이 이미
+            `--wds-primary-normal`이라 이 override는 **모든 행에서 no-op**이었다(30회차 발견).
+            즉 «내 제안»을 실제로 나른 것은 배경 델타 1.07과 배지뿐이었다.
+            테두리는 이제 **결과**(반증/미반증)가 쓴다 — 소유는 아래 inset 링이 받는다.
+            링: primary-normal on tint-cautionary = **4.38:1** (1.4.11 비텍스트 3.0 통과). */
+      .sg-row.sg-mine {
+        background: var(--wds-tint-cautionary);
+        box-shadow: inset 0 0 0 1px var(--wds-primary-normal);
+      }
+      /* 왼쪽 테두리 = **결과 채널.** 기본 `line-normal`(on tint-primary 3.43:1) ↔
+         미반증 `label-strong`(11.45 / tint-cautionary 12.27).
+         🔴 초안은 미반증을 `primary-strong`으로 뒀는데, **두 상태의 상호 대비가 1.68:1**이라
+            각각의 배경 대비(3.43·5.77)가 통과해도 **두 상태를 서로 구별하지 못했다**
+            (회색조에서 사실상 동일 · 둘 다 따뜻한 갈색이라 색각 이상에서 더 나쁘다).
+            「테두리 = 결과 채널」이라 세 문서에 적어 놓고 실제로 결과를 나른 것은 배지 글자
+            하나였다(검수 지적). `label-strong`이면 **상호 3.33:1** — 채널이 실제로 선다. */
+      .sg-row.sg-unrefuted { border-left-color: var(--wds-label-strong); }
       .sg-mine-tag {
         flex: none; font-size: 11px; font-weight: 700; color: var(--wds-label-strong);
         /* 글자가 `--wds-accent`였는데 이 배경 위 **1.24:1**이었다 — 이번 회차가 «파일 최악값»이라
-           부른 1.68보다 나빴고 아무도 세지 않고 있었다. label-strong으로 **9.79:1**. */
+           부른 1.68보다 나빴고 아무도 세지 않고 있었다. label-strong으로 **9.97:1**. */
         background: rgba(180, 98, 43, 0.18); border-radius: 4px; padding: 0 5px; line-height: 1.5;
       }
 

@@ -455,34 +455,79 @@ const sugRow = (e: SuggestEntry): HTMLElement => {
   const row = document.createElement("div");
   // 내 제안이면 강조 — 기록이 길어져도 «어느 게 내 것»인지 즉시 보이게(byId = 내 좌석).
   const mine = !!e.byId && e.byId === room?.sessionId;
-  row.className = "sg-row" + (mine ? " sg-mine" : "");
-  const top = document.createElement("div");
-  top.className = "sg-top";
+  // 반증자가 없다 = 판에서 가장 값진 사건. 30회차까지 이것이 12px 회색 글자였다.
+  // ⚠️ 판정 키는 **id**다. 서버는 `dis?.name ?? (disprovedById ? disprovedById : null)`이라
+  //    이름이 빈 문자열이면 `??`가 발동하지 않아 `""`가 온다 — 이름으로 판정하면 그때
+  //    «반증됐는데 미반증으로» 그린다(테두리·배지까지 뒤집힌다).
+  const unrefuted = !e.disprovedById;
+  row.className =
+    "sg-row" + (mine ? " sg-mine" : "") + (unrefuted ? " sg-unrefuted" : "");
+
+  // ── 1줄: **무엇을 물었나.** ──────────────────────────────────────────
+  // 30회차 실측(게이트 pageProbe) — 이 조합은 16px·**4.96:1**(label-alternative)이었고
+  // «누가 물었나»(제안자 이름)가 같은 16px에 **11.45:1**이었다. 추리가 실제로 쓰는 값이
+  // 화면에서 가장 약하고, 메타데이터가 가장 강했다. 위계를 뒤집는다.
+  const head = document.createElement("div");
+  head.className = "sg-head";
   const n = document.createElement("span");
   n.className = "sg-n";
   n.textContent = String(e.seq);
-  top.appendChild(n);
+  const combo = document.createElement("div");
+  combo.className = "sg-combo";
+  // 용의자는 «얼굴» 아이콘, 장물·장소는 기존 이모지.
+  // ⚠️ **이름은 절대 `innerHTML`로 넣지 않는다.** 예전 주석은 「값이 모두 검증된 카드 키라
+  //    innerHTML 안전」이라 적었는데 **거짓이었다** — `readSuggestEntry`는 `typeof string`만
+  //    보고 `label()`은 모르는 값을 **그대로 돌려준다**. 아이콘 쪽만 우리가 만든 마크업이고
+  //    (`faceIc`/`cardIcon` 둘 다 집합 소속일 때만 마크업을 내고 아니면 빈 문자열),
+  //    이름은 서버 문자열이므로 텍스트 노드로 넣는다.
+  // 접힘 규칙: 아이콘과 이름 사이, 이름과 `·` 사이는 **안 끊는다**(NBSP).
+  // 그래야 줄이 넘칠 때 «항목 단위»로만 접힌다 — 아이콘만 줄 끝에 남거나
+  // `·`가 다음 줄 머리에 서는 일이 없다. (`keep-all`은 «대/청마루»를 막는다.)
+  const part = (icon: string, key: string, last: boolean): void => {
+    const seg = document.createElement("span");
+    seg.innerHTML = icon;
+    // 이름 **안의** 공백도 NBSP다 — `keep-all`은 공백에서의 줄바꿈을 막지 않으므로
+    // 이것이 없으면 「고양이 / 밤손님」으로 쪼개진다(현 카드셋에서는 아직 발화 안 하지만
+    // 이름이 한 글자만 길어져도 무너진다 · 검수 지적).
+    seg.append(`\u00A0${label(key).replace(/ /g, "\u00A0")}${last ? "" : "\u00A0· "}`);
+    combo.appendChild(seg);
+  };
+  part(faceIc(e.suspect, 15), e.suspect, false);
+  part(cardIcon(e.weapon), e.weapon, false);
+  part(cardIcon(e.room), e.room, true);
+  head.append(n, combo);
+
+  // ── 2줄: **누가 물었고 누가 막았나.** 메타데이터라 작고 조용하다. ──
+  // 「나」 배지는 제안자 이름 옆으로 옮긴다 — 수식하는 대상 바로 앞이다
+  // (예전에는 순번과 이름 사이에 떠 있어 무엇을 가리키는지 자리로 알 수 없었다).
+  const meta = document.createElement("div");
+  meta.className = "sg-meta";
   if (mine) {
     const tag = document.createElement("span");
     tag.className = "sg-mine-tag";
     tag.textContent = "나";
-    top.appendChild(tag);
+    meta.appendChild(tag);
   }
+  // 🔴 **기호만으로는 역할이 안 읽힌다.** 스크린리더는 `🔍`/`🛡`을 「돋보기」/「방패」로
+  //    읽으므로 한 행이 「… 생쥐 서생 · 잡채 · 대청마루, 돋보기 뱀 무녀, 방패 생쥐 서생」이
+  //    된다 — **같은 이름이 «용의자 카드»와 «반증자»로 두 번** 나오는데 구분어가 없다.
+  //    결과 화면이 이미 쓰는 `.ec-sr`(시각적으로만 감추는 낱말) 패턴으로 닫는다.
+  const srWord = (w: string): HTMLElement => {
+    const el = document.createElement("span");
+    el.className = "ec-sr";
+    el.textContent = `${w} `;
+    return el;
+  };
   const by = document.createElement("span");
   by.className = "sg-by";
-  by.textContent = `🔍 ${e.byName}`;
+  by.append(srWord("제안"), `🔍 ${e.byName}`);
   const res = document.createElement("span");
-  res.className = "sg-res" + (e.disprovedByName ? "" : " none");
-  res.textContent = e.disprovedByName ? `🛡 ${e.disprovedByName}` : "❗ 미반증";
-  top.append(by, res);
-  const combo = document.createElement("div");
-  combo.className = "sg-combo";
-  // 용의자는 «얼굴» 아이콘, 장물·장소는 기존 이모지. 값이 모두 검증된 카드 키라 innerHTML 안전.
-  combo.innerHTML =
-    `${faceIc(e.suspect, 18)} ${label(e.suspect)} · ` +
-    `${cardIcon(e.weapon)} ${label(e.weapon)} · ` +
-    `${cardIcon(e.room)} ${label(e.room)}`;
-  row.append(top, combo);
+  res.className = "sg-res" + (unrefuted ? " none" : "");
+  if (unrefuted) res.append(srWord("결과"), "❗ 미반증");
+  else res.append(srWord("반증"), `🛡 ${e.disprovedByName}`);
+  meta.append(by, res);
+
+  row.append(head, meta);
   return row;
 };
 
