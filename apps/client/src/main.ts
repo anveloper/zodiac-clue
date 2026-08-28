@@ -2928,26 +2928,137 @@ const enterGame = async (): Promise<void> => {
     handle.addEventListener("pointercancel", stop);
   };
 
+  /**
+   * 🔴 **리사이저를 진짜 «구분자»로 만든다(ARIA window splitter).**
+   *
+   * 전에는 넷 다 `<div aria-hidden="true">`에 `pointerdown`만 달려 있었다 —
+   *   ① **키보드로 아예 못 썼다.** 포인터가 없으면 기능이 **0**이다.
+   *   ② 보조기술 사용자는 «패널 크기를 바꿀 수 있다»는 사실 자체를 몰랐다.
+   *   ③ role이 없어 화면 게이트 `OPERABLE` 밖 → **한 번도 계측되지 않았다**
+   *      (플랜 45가 `.evi-row`에서 고친 구멍의 재발 · 플랜 48이 S3를 마우스로 넓혔는데도 못 잡았다).
+   *
+   * `role="separator"` + `tabindex="0"`이면 포커스·역할이 따라오고, `aria-valuenow`가
+   * «지금 얼마»를 말한다. 방향키 = 한 걸음, `Home`/`End` = 양끝.
+   */
+  const RESIZE_STEP = 16;
+  /** 수정자 키가 붙은 방향키는 **브라우저 것**이다 — `Alt+←`는 «뒤로 가기»다. 먹으면 안 된다. */
+  const plainKey = (e: KeyboardEvent): boolean => !e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey;
+  /**
+   * 🔴 **값을 «쓰는» 것과 «알리는» 것을 가른다.**
+   * 초안은 초기화에서도 `applyPanelH(…, 현재 높이)`를 불렀는데, `#aiPanel`·`#sugPanel`은
+   * 그 시점에 `.hidden`이라 높이가 **0**이다 → `min` 72로 clamp돼 **`style.height="72px"`가
+   * 영구히 박혔다.** 나중에 `.hidden`만 떼므로 제안 기록표가 72px(실제로 보이는 본문 34px)에
+   * 갇혔다 — 검수 실측 228 → 72. **게이트는 못 잡았다**: S8은 📜 기록/알림만 보는데
+   * 그 패널은 오히려 160 → 281로 **늘어나** 래칫을 더 여유롭게 통과했다.
+   */
+  const publishH = (panel: HTMLElement, hz: HTMLElement): void => {
+    const r = panel.getBoundingClientRect();
+    if (r.height < 1) return; // 안 그려진 패널에는 아무것도 쓰지 않는다
+    const colBottom = rightCol.getBoundingClientRect().bottom;
+    const min = 72;
+    let max = Math.max(min, colBottom - r.top - 110);
+    // ⚠️ `.rp-ai { max-height: 40vh }`가 인라인 `height`를 **이긴다**(의도된 동작).
+    //    그걸 안 보면 aria가 실제보다 크게 말한다 — 검수 실측 `valuenow 671` vs 렌더 **325**.
+    const cap = parseFloat(getComputedStyle(panel).maxHeight);
+    if (Number.isFinite(cap)) max = Math.min(max, cap);
+    const now = Math.round(r.height); // **렌더된 값**을 알린다(요청값이 아니라)
+    hz.setAttribute("aria-valuenow", String(now));
+    hz.setAttribute("aria-valuemin", String(min));
+    hz.setAttribute("aria-valuemax", String(Math.round(Math.max(min, max))));
+    // 숫자만으로는 «72»가 무엇인지 전달되지 않는다.
+    hz.setAttribute("aria-valuetext", `높이 ${now}픽셀`);
+  };
+  /** 한 곳에서만 값을 쓴다 — 드래그·키보드가 갈라지면 한쪽만 고쳐진다. */
+  const applyPanelH = (panel: HTMLElement, hz: HTMLElement, want: number): void => {
+    const top = panel.getBoundingClientRect().top;
+    const colBottom = rightCol.getBoundingClientRect().bottom;
+    const min = 72;
+    const h = Math.max(min, Math.min(Math.max(min, colBottom - top - 110), want));
+    panel.style.height = `${h}px`;
+    publishH(panel, hz); // 쓴 뒤 **다시 읽는다** — `max-height`가 이길 수 있다
+  };
+  const applyColW = (hz: HTMLElement, want: number): void => {
+    const w = Math.max(220, Math.min(680, want));
+    rightCol.style.width = `${w}px`;
+    const now = Math.round(rightCol.getBoundingClientRect().width);
+    hz.setAttribute("aria-valuenow", String(now));
+    hz.setAttribute("aria-valuetext", `너비 ${now}픽셀`);
+  };
+
   // 높이 조절: 각 리사이저(.rp-hz)는 «바로 위» 섹션의 높이를 조절한다(섹션 4개 → 사이마다 핸들).
-  // 높이는 그 섹션 «자신의 top» 기준으로 재 — 위에 다른 패널이 떠 있어도 값이 안 섞인다.
+  // 높이는 그 섹션 «자신의 top» 기준으로 잰다 — 위에 다른 패널이 떠 있어도 값이 안 섞인다.
   for (const hz of Array.from(
     document.querySelectorAll<HTMLElement>(".rp-hz"),
   )) {
     const panel = hz.previousElementSibling as HTMLElement | null;
     if (!panel || !panel.classList.contains("rp-panel")) continue;
-    makeDrag(hz, (e) => {
-      const top = panel.getBoundingClientRect().top;
-      const colBottom = rightCol.getBoundingClientRect().bottom;
-      const h = Math.max(72, Math.min(colBottom - top - 110, e.clientY - top));
-      panel.style.height = `${h}px`;
+    // ⚠️ 이름은 **마크업이 선언한다**(`data-resize-of`). `.rp-head`의 `textContent`를 그대로
+    //    쓰면 이모지("로봇 얼굴…")와 리사이저와 무관한 부제("(나만 봄)")까지 읽힌다.
+    const name = hz.dataset.resizeOf ?? "패널";
+    hz.setAttribute("role", "separator");
+    hz.setAttribute("tabindex", "0");
+    // `horizontal`은 separator의 **기본값**이라 안 적는다(중복). 세로 손잡이만 명시한다.
+    hz.setAttribute("aria-label", `${name} 높이 조절`);
+    if (panel.id) hz.setAttribute("aria-controls", panel.id); // APG 필수 속성
+    hz.removeAttribute("aria-hidden");
+    publishH(panel, hz); // **쓰지 않는다** — 위 `publishH` 주석 참조
+    // ⚠️ 위 호출은 패널이 `.hidden`이면 아무것도 안 쓴다(그게 목적이다) — 그러면
+    //    `aria-valuenow`가 **영영 비어 있다.** `#aiPanel`·`#sugPanel`은 판이 시작된 뒤에야
+    //    `.hidden`을 뗀다.
+    //    `focus` 이벤트에 걸지 않는다 — 그건 **헤드리스에서 검증이 안 된다**(문서 자체가
+    //    포커스를 안 가지면 `.focus()`가 `activeElement`만 바꾸고 이벤트를 안 쏜다 · 실측).
+    //    크기가 **실제로 바뀌는 순간**을 보는 것이 정확하고, 그것이 곧 다시 알려야 할 때다.
+    new ResizeObserver(() => publishH(panel, hz)).observe(panel);
+    makeDrag(hz, (e) => applyPanelH(panel, hz, e.clientY - panel.getBoundingClientRect().top));
+    hz.addEventListener("keydown", (e) => {
+      if (!plainKey(e)) return; // `Alt+←`(뒤로 가기) 등 브라우저 몫을 먹지 않는다
+      const cur = panel.getBoundingClientRect().height;
+      const go: Record<string, number> = {
+        ArrowDown: cur + RESIZE_STEP,
+        ArrowUp: cur - RESIZE_STEP,
+        PageDown: cur + RESIZE_STEP * 4,
+        PageUp: cur - RESIZE_STEP * 4,
+        // APG: **Home = 최소 · End = 최대**(«위/왼쪽»이 아니다). 네 손잡이가 같아야 배운다.
+        Home: 0,
+        End: 1e6,
+      };
+      if (!Object.hasOwn(go, e.key)) return; // 프로토타입 키(`constructor`)를 안 탄다
+      e.preventDefault();
+      applyPanelH(panel, hz, go[e.key] as number);
     });
   }
   // 너비 조절: 컬럼 너비 = 우측 고정 모서리 − 포인터 x
-  makeDrag($("colWResizer"), (e) => {
-    const right = rightCol.getBoundingClientRect().right;
-    const w = Math.max(220, Math.min(680, right - e.clientX));
-    rightCol.style.width = `${w}px`;
-  });
+  {
+    const wz = $("colWResizer");
+    wz.setAttribute("role", "separator");
+    wz.setAttribute("tabindex", "0");
+    wz.setAttribute("aria-orientation", "vertical");
+    wz.setAttribute("aria-label", "우측 컬럼 너비 조절");
+    wz.setAttribute("aria-controls", "rightPanel"); // APG 필수 속성
+    wz.setAttribute("aria-valuemin", "220");
+    wz.setAttribute("aria-valuemax", "680");
+    applyColW(wz, rightCol.getBoundingClientRect().width);
+    makeDrag(wz, (e) => applyColW(wz, rightCol.getBoundingClientRect().right - e.clientX));
+    wz.addEventListener("keydown", (e) => {
+      if (!plainKey(e)) return;
+      const cur = rightCol.getBoundingClientRect().width;
+      // ⚠️ **왼쪽 방향키가 «넓히기»다.** 컬럼이 오른쪽에 붙어 있어 왼쪽으로 끌면 넓어진다 —
+      //    드래그와 같은 방향이어야 한다(반대로 하면 손과 키보드가 서로 다른 말을 한다).
+      const go: Record<string, number> = {
+        ArrowLeft: cur + RESIZE_STEP,
+        ArrowRight: cur - RESIZE_STEP,
+        PageUp: cur + RESIZE_STEP * 4,
+        PageDown: cur - RESIZE_STEP * 4,
+        // ⚠️ 초안은 여기만 `Home = 최대`였다 — **같은 role의 네 컨트롤이 같은 키에 반대로
+        //    반응하면 배울 수 없다.** APG대로 `Home = 최소 · End = 최대`로 맞춘다.
+        Home: 0,
+        End: 1e6,
+      };
+      if (!Object.hasOwn(go, e.key)) return;
+      e.preventDefault();
+      applyColW(wz, go[e.key] as number);
+    });
+  }
 
   // 우측 패널 마우스 드래그 스크롤 — 데스크톱에서 «드래그로 이전 내역 확인»(요청 ①).
   // 터치는 이미 `touch-action:pan-y`로 네이티브 스크롤되므로 마우스에만 건다.

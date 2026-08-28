@@ -579,6 +579,11 @@ function pageProbe(cfg) {
     '[role="tab"]',
     '[role="checkbox"]',
     '[role="switch"]',
+    // 🔴 **포커스 가능한 `separator`는 조작 요소다**(ARIA window splitter).
+    //    `role="separator"`는 `tabindex`가 있을 때만 «조작 가능»이다 — 없으면 그냥 구분선이다.
+    //    49회차 전에는 리사이저 4개가 `<div aria-hidden>`이라 **한 번도 계측되지 않았다**
+    //    (11×868 · 260×14 · 폰 9px). 플랜 45가 `.evi-row`에서 고친 구멍의 재발이었다.
+    '[role="separator"][tabindex]:not([tabindex="-1"])',
   ].join(",");
   const excluded = { hidden: 0, disabled: 0, outsideDoc: 0, exempt: 0 };
   const touchAll = []; // 하한 적용 전 **전부** — 판정은 Node 쪽에서(포인터마다 하한이 다르다)

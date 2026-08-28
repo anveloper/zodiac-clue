@@ -56,6 +56,10 @@
     "dir": "plans/done",
     "items": [
       {
+        "path": "plans/done/49-resizer-control.md",
+        "title": "plan: 패널 리사이저를 진짜 컨트롤로 — 11px 손잡이는 마우스로도 못 잡는다"
+      },
+      {
         "path": "plans/done/48-target-size-fine.md",
         "title": "plan: 마우스 화면의 타깃 크기 — 게이트가 데스크톱을 한 번도 안 쟀다"
       },

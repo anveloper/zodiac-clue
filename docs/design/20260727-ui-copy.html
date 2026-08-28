@@ -466,6 +466,29 @@
     넣은 것인데 데스크톱에 안 넣어 재발했다.
   </div>
 
+  <h3>1.5.0.1 크기 조절 손잡이 <span class="tag t-new">2026-08-29</span></h3>
+  <div class="scroll"><table>
+    <tr><th>자리</th><th>문안</th><th>역할</th></tr>
+    <tr><td>높이 손잡이 ×3</td>
+        <td class="q"><code>title</code> 드래그·방향키로 높이 조절 ·
+            <code>aria-label</code> ${패널 이름} 높이 조절</td>
+        <td><code>role="separator"</code></td></tr>
+    <tr><td>너비 손잡이</td>
+        <td class="q"><code>title</code> 드래그·방향키로 너비 조절 ·
+            <code>aria-label</code> 우측 컬럼 너비 조절</td>
+        <td><code>role="separator"</code></td></tr>
+  </table></div>
+  <div class="box warn">
+    <b style="color:var(--red)">🔴 전에는 «드래그로 …»였고, 그것이 사실의 전부였다.</b>
+    <code>pointerdown</code>만 듣고 있어 <b>키보드로는 기능이 0</b>이었다 —
+    문안이 옳았던 게 아니라 <b>기능이 없었던 것</b>이다. ARIA <b>window splitter</b>
+    (<code>tabindex="0"</code> + <code>aria-valuenow</code>)로 만들고 문안을 사실에 맞췄다.<br>
+    <b><code>aria-hidden="true"</code>를 걷어냈다</b> — 보조기술 사용자는 「패널 크기를 바꿀 수
+    있다」는 사실 자체를 몰랐다.<br>
+    방향키 1스텝 = <b>16px</b> · <code>PageUp/Down</code> 4스텝 · <code>Home</code>/<code>End</code> 양끝.
+    ⚠️ <b>왼쪽 방향키가 «넓히기»다</b> — 컬럼이 오른쪽에 붙어 있어 드래그와 같은 방향이다.
+  </div>
+
   <h3>1.5.1 길이 제약</h3>
   <div class="scroll"><table>
     <tr><th>대상</th><th>상한</th><th>근거</th></tr>

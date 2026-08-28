@@ -969,7 +969,9 @@
         right: calc(16px + var(--sa-r, 0px));
         bottom: calc(16px + var(--sa-b, 0px));
         width: 260px; z-index: 5;
-        display: flex; flex-direction: column; gap: 8px;
+        /* gap 8 → 4: 손잡이가 24px이 되면서 **그 자체가 패널을 갈라 준다**(위 `.rp-hresizer` 주석).
+           6칸 × 4px = 24px을 돌려받아 손잡이 증가분 30px의 대부분을 상쇄한다(순증 +6px). */
+        display: flex; flex-direction: column; gap: 4px;
         pointer-events: none;
       }
       .rp-col > * { pointer-events: auto; }
@@ -1053,30 +1055,47 @@
       .rp-sug { flex: 0 1 auto; }
 
       /* 드래그 핸들 — 잡을 수 있음이 보이도록 강조색(주황) + 그립 */
+      /* 🔴 **24px은 타깃 하한이다**(WCAG 2.5.8 AA · 플랜 48이 마우스 축을 열었다).
+         14px은 마우스로도 조준이 어렵고 폰 9px은 손가락으로 **불가능**했다.
+         레이아웃 비용은 3개 × 10px = 30px인데, 컬럼 `gap`을 8 → 4로 줄여
+         6칸 × 4px = 24px을 돌려받는다(순증 **+6px**). 손잡이 자체가 패널 사이를
+         갈라 주므로 gap이 8일 필요가 없다 — 오히려 «띠 두 개»로 보이던 것이 하나가 된다. */
       .rp-hresizer {
-        flex: none; height: 14px; cursor: row-resize; border-radius: 7px;
+        flex: none; height: 24px; cursor: row-resize; border-radius: 7px;
         display: flex; align-items: center; justify-content: center;
-        background: rgba(180, 98, 43, 0.18);
+        /* 🔴 **불투명이어야 한다.** 반투명(0.18)이면 뒤가 보드라 ① 그립이 «보이는가»가
+           보드 색에 달리고(실측 1.11~3.05 — 대부분 1.4.11 미달) ② 포커스 링이 **보드 위**에
+           그려져 최악 **1.16:1**이 된다(이 파일 §포커스 주석이 이미 적어 둔 함정).
+           불투명 면 위에서는 링 **6.95** · 그립 **4.92**로 둘 다 계산해 둘 수 있다. */
+        background: var(--wds-bg-elevated);
+        border: 1px solid var(--wds-line-normal);
       }
+      /* 링을 **면 안쪽**에 그린다 — 기본 `outline-offset: 2px`는 링을 손잡이 **밖**(=보드 위)에
+         놓는다. 플랜 43·47이 배경음 컨트롤에서 배운 것과 같은 처방이다. */
+      .rp-hresizer:focus-visible,
+      .rp-wresizer:focus-visible { outline-offset: -3px; }
       .rp-hresizer::before {
         content: ""; width: 52px; height: 6px; border-radius: 3px;
         background: var(--wds-primary-normal); box-shadow: 0 0 0 1px var(--wds-primary-normal) inset;
       }
-      .rp-hresizer:hover { background: rgba(180, 98, 43, 0.32); }
+      .rp-hresizer:hover { background: var(--wds-tint-primary); }
       .rp-hresizer:hover::before { background: var(--wds-primary-normal); }
       /* 위 섹션이 접히면(hidden) 그 아래 리사이저도 숨긴다 — 4섹션 각각 사이에만 핸들이 뜬다. */
       .rp-panel.hidden + .rp-hz { display: none; }
       /* 너비 조절 핸들 — 패널 «왼쪽 바깥»의 여백에 띄워 본문과 겹치지 않게(딱 붙던 문제). */
+      /* 너비 손잡이는 `position: absolute`라 **레이아웃 비용이 0**이다 — 11 → 24는 공짜다.
+         `left`는 폭이 커진 만큼 왼쪽으로 밀어 시각적 위치를 유지한다(-16 → -29). */
       .rp-wresizer {
-        position: absolute; left: -16px; top: 0; bottom: 0; width: 11px; border-radius: 8px;
+        position: absolute; left: -29px; top: 0; bottom: 0; width: 24px; border-radius: 8px;
         cursor: col-resize; display: flex; align-items: center; justify-content: center;
-        background: rgba(180, 98, 43, 0.16);
+        background: var(--wds-bg-elevated); /* 위 `.rp-hresizer`와 같은 이유 */
+        border: 1px solid var(--wds-line-normal);
       }
       .rp-wresizer::before {
         content: ""; width: 6px; height: 56px; border-radius: 3px;
         background: var(--wds-primary-normal); box-shadow: 0 0 0 1px var(--wds-primary-normal) inset;
       }
-      .rp-wresizer:hover { background: rgba(180, 98, 43, 0.32); }
+      .rp-wresizer:hover { background: var(--wds-tint-primary); }
       .rp-wresizer:hover::before { background: var(--wds-primary-normal); }
 
       /* ── 스크롤바 톤 통일 ────────────────────────────────────────────────
@@ -1642,10 +1661,20 @@
         .rp-wresizer { display: none; }
         /* 패널 사이 높이 드래그바 — 폰에서도 «조절되게» 두되 슬림하게(14→9px, 그립도 축소).
            앞서 숨겼더니 "위아래 조절이 아예 안 된다"는 피드백 → 여백만 줄이고 기능은 살린다. */
-        .rp-hz { height: 9px; }
+        /* 🔴 **손가락 하한은 44px이다.** 9px 손잡이는 손가락으로 **못 잡는다** — 기능이
+           있는 척만 하고 있었다. 다만 44px «띠»를 셋 세우면 컬럼의 16%가 손잡이가 된다 →
+           **상자만 44로 키우고 배경은 지운다.** 보이는 것은 `::before` 그립 한 줄뿐이라
+           «두꺼운 띠»가 아니라 **패널 사이 숨 쉴 자리**로 읽힌다.
+           대가(3개 × 35px = 105px)는 `gap`을 6 → 0으로 없애 36px 돌려받는다 —
+           44px 손잡이가 이미 패널을 충분히 가른다. */
+        /* ⚠️ 초안은 여기서 `background: none`으로 «숨 쉴 자리»를 만들려 했다 — **틀렸다.**
+           그러면 44px 상자가 **보드가 그대로 비치는 구멍**이 되고, 보이는 단서는 그립
+           40×3(상자의 **0.9%**)뿐이라 «손잡이가 있는지»조차 안 보인다. 게이트도 못 잡는다 —
+           S3는 상자만 재므로 «투명한 44px»을 통과시킨다.
+           불투명 면을 그대로 쓰되 높이만 44로 키운다. */
+        .rp-hz { height: 44px; }
         .rp-hz::before { width: 40px; height: 3px; }
-        /* 패널 사이 간격을 폰에 맞게 좁힌다. (AI는 PC와 동일하게 컬럼의 한 섹션으로 둔다.) */
-        .rp-col { gap: 6px; }
+        .rp-col { gap: 0; }
         #rpToggle { display: flex; }
         .hud-help { display: none; }
         /* 손패 제목과 카드 줄을 한 줄로 눕힌다(세로 2줄이면 보드를 그만큼 더 먹는다). */
@@ -2024,7 +2053,7 @@
       <!-- 우측 컬럼: AI 계측 · 증거노트 · 제안 기록표 · 기록.
            좌측 모서리 드래그=너비, 노트↔기록 사이 드래그=높이 -->
       <div class="rp-col" id="rightPanel">
-        <div class="rp-wresizer" id="colWResizer" title="드래그로 너비 조절"></div>
+        <div class="rp-wresizer" id="colWResizer" title="드래그·방향키로 너비 조절"></div>
         <!-- AI 계측(§7.7) — 판이 시작되면 **자리**가 먼저 뜬다(첫 45초 안에 보이도록).
              칩(`✨LLM n · ♻캐시 n · ⚙폴백 n`)은 첫 계측이 도착해야 붙는다 —
              `0 · 0 · 0`은 서버가 하지 않은 주장이기 때문이다(ui-copy §4.4 "문안 없음이 확정본").
@@ -2056,7 +2085,7 @@
           </details>
         </div>
         <!-- 각 리사이저는 «바로 위» 섹션의 높이를 조절한다. 위 섹션이 접히면(hidden) 리사이저도 숨는다. -->
-        <div class="rp-hresizer rp-hz" title="드래그로 높이 조절" aria-hidden="true"></div>
+        <div class="rp-hresizer rp-hz" data-resize-of="AI 대사" title="드래그·방향키로 높이 조절"></div>
         <div class="rp-panel rp-evi" id="eviPanel">
           <!-- 🔴 머리글은 **헤딩**이어야 한다. `<div>`면 보조기술 사용자가 «헤딩 점프»로
                우측 컬럼을 건너뛸 수 없다 — 증거 노트 툴바 3개를 다 지나야 한다.
@@ -2065,7 +2094,7 @@
           <div id="handPanel" class="rp-hand"></div>
           <div id="evidence" class="rp-body"></div>
         </div>
-        <div class="rp-hresizer rp-hz" id="colResizer" title="드래그로 높이 조절" aria-hidden="true"></div>
+        <div class="rp-hresizer rp-hz" id="colResizer" data-resize-of="증거 노트" title="드래그·방향키로 높이 조절"></div>
         <!-- 제안 기록표(§1.2) — 서버 `suggestLog`가 도착해야 나타난다. -->
         <div class="rp-panel rp-fold rp-sug hidden" id="sugPanel">
           <details open>
@@ -2076,7 +2105,7 @@
             <div id="sugBody" class="rp-body"></div>
           </details>
         </div>
-        <div class="rp-hresizer rp-hz" title="드래그로 높이 조절" aria-hidden="true"></div>
+        <div class="rp-hresizer rp-hz" data-resize-of="제안 기록표" title="드래그·방향키로 높이 조절"></div>
         <div class="rp-panel rp-log" id="logPanel">
           <div class="rp-head" role="heading" aria-level="2">📜 기록 / 알림</div>
           <!-- 🔴 `tabindex="0"`이 없으면 **키보드로 스크롤이 안 된다.** 크롬은 파이어폭스와
