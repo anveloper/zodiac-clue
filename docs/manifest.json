@@ -56,6 +56,10 @@
     "dir": "plans/done",
     "items": [
       {
+        "path": "plans/done/43-bgm-game-placement.md",
+        "title": "plan: 배경음 컨트롤을 우측 컬럼에서 떼어낸다 — 그리고 옮긴 자리의 대가를 갚는다"
+      },
+      {
         "path": "plans/done/42-collapsed-panel-empty-box.md",
         "title": "plan: 접힌 AI 패널의 «빈 상자»를 없앤다 — 예약된 높이를 머리글이 통째로 쓰게"
       },

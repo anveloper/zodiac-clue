@@ -77,8 +77,67 @@
         position: fixed; top: calc(12px + var(--sa-t, 0px)); right: calc(12px + var(--sa-r, 0px));
         z-index: 40; display: flex; align-items: center; gap: 6px; padding: 3px;
         border-radius: 999px; background: rgba(28,20,11,0); transition: background .18s, padding .18s;
+        /* 마크업은 `[버튼][슬라이더]`인데 여기선 **오른쪽 끝에 아이콘**이 서야 하므로 뒤집는다 —
+           안 뒤집으면 슬라이더가 펼쳐질 때 아이콘이 왼쪽으로 밀려 커서 밑에서 달아난다. */
+        flex-direction: row-reverse;
       }
       .bgm-ctrl:hover, .bgm-ctrl:focus-within { background: rgba(28,20,11,0.82); padding: 3px 4px 3px 12px; }
+      /* 🔴 **게임 화면에서는 왼쪽으로 옮긴다.** 오른쪽은 우측 컬럼(`#rightPanel`)의 자리다 —
+         `position: fixed`로 화면 오른쪽 전체 높이를 쓰고 **폭이 220~680px로 사용자가 드래그해
+         바뀐다**(`main.ts` 리사이저). 실제로 데스크톱에서 스피커가 맨 위 패널(🤖 AI 대사)의
+         모서리를 물고 있었다(캡처 · 게이트 쌍 `68×40 = 2720px²`).
+
+         ⚠️ **«유일한 답»은 아니다.** 기각한 대안이 둘 있다 —
+           ① 리사이저가 폭을 CSS 변수로 내보내면 `right: calc(var(--rp-w) + 32px)`가 컬럼을
+              **정확히** 따라간다. 안 고른 이유: 컨트롤 자리가 **컬럼 폭에 묶여** 사용자가
+              컬럼을 넓힐 때마다 같이 움직인다(왼쪽은 고정이다).
+           ② `#bgmCtrl`을 `#gameScreen` 안으로 옮기면 z-index가 정상 동작한다. 안 고른 이유:
+              이 컨트롤은 랜딩·대기실에도 있어야 하고, 화면마다 DOM을 옮기는 것은
+              «표시 상태»를 JS로 관리하는 새 축을 만든다.
+         (z-index만으로는 못 피하는 것은 맞다 — `#gameScreen`이 `position: fixed`라
+          스택 컨텍스트를 만들어 `<body>` 직계인 이 컨트롤이 컬럼 **위에** 칠해진다.)
+
+         왼쪽 세로 줄: `.hud-ctrl`(실측 y 6~50) · `.hud-turnface`(실측 y 52~**108**) · **여기(120~)**. */
+      body.no-scroll .bgm-ctrl {
+        /* 120 = 「지금 차례」의 **실측 바닥 108** + 여유 12.
+           초안은 52+40으로 계산해 100을 넣었다가 **8px 겹쳤고**(`72×8 = 576px²`)
+           게이트 쌍 검사가 잡았다.
+           ⚠️ 「지금 차례」 높이는 **내용에 따라 안 변한다** — 초안 주석이 그렇게 적었는데
+              거짓이다. 높이를 지배하는 것은 `faceIc(..., 44)`의 **고정 44px 원**이고,
+              40자 이름을 넣어도 폭만 늘고 높이는 그대로다(검수 실측).
+              실제로 이 값이 깨지는 조건은 `.tf-tx`가 **3줄**이 될 때다(이름 상한 상향 또는
+              직업·상태 한 줄 추가 → 폰 62 → 73 → 바닥 153 > 150). 그건 쌍 검사가 잡는다.
+           마크업이 `[버튼][슬라이더]` 순서라 **여기서는 뒤집지 않는다** — 아이콘이 왼쪽 끝에
+           고정되고 슬라이더가 오른쪽으로 펼쳐진다. */
+        top: calc(120px + var(--sa-t, 0px));
+        left: calc(16px + var(--sa-l, 0px)); right: auto;
+        flex-direction: row;
+      }
+      body.no-scroll .bgm-ctrl:hover,
+      body.no-scroll .bgm-ctrl:focus-within { padding: 3px 12px 3px 4px; }
+      /* 🔴 **게임 화면에서는 HUD 크롬을 입는다.** 옮기기 전에는 우측 컬럼(크림 패널) 위였고
+         옮기고 나니 **보드 위**다 — 어두운 원의 경계 대비가 데스크톱에서 중앙값 6.08 → 1.50으로
+         떨어졌다(검수 픽셀 실측 · 24방향). 경계선 `rgba(255,255,255,0.28)`은 갈색 방바닥에서
+         **1.00:1**로 사라진다.
+         ⚠️ **어떤 단색으로도 3.0을 못 맞춘다** — 보드가 어두운 벽(74,50,32)부터 노란 돗자리
+            (214,178,88)까지 걸쳐 있어 직접 계산으로 확인했다(어두운 면 최악 1.53 ·
+            크림 면 최악 1.92). 그래서 «색»이 아니라 **크롬**으로 푼다 — 보드 위에 뜨는
+            다른 HUD 카드(`.hud`)가 이미 쓰는 «크림 0.9 + 1px 테두리 + 드리운 그림자» 그대로다.
+            같은 화면에서 바로 위 「지금 차례」가 그 모양이므로 **일관성도 같이 얻는다.**
+            ⚠️ S6는 **글자만** 재므로 이 축은 게이트가 원리적으로 못 본다. */
+      body.no-scroll .bgm-ctrl { background: rgba(255, 248, 239, 0.9); padding: 3px; }
+      body.no-scroll .bgm-ctrl:hover,
+      body.no-scroll .bgm-ctrl:focus-within { background: rgba(255, 248, 239, 0.96); }
+      body.no-scroll .bgm-icon {
+        background: transparent; border: 1px solid var(--wds-line-normal);
+        color: var(--wds-label-strong);
+      }
+      body.no-scroll .bgm-ctrl {
+        border: 1px solid var(--wds-line-normal);
+        box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(3px);
+      }
+
       /* 🔴 전면 모달이 뜨면 **끈다.** z-index로는 못 막는다 — `#gameScreen`이
          `position: fixed`(:452)라 **스택 컨텍스트**를 만들어, 그 안의 모달(z:35·40·45)이
          `<body>` 직계인 이 컨트롤을 **이길 수 없다**(4든 40이든 같다). 데스크톱에선 스택
@@ -92,8 +151,15 @@
         width: 34px; height: 34px; flex: none; border-radius: 50%; padding: 0; font-size: 15px;
         background: rgba(28,20,11,0.7); border: 1px solid rgba(255,255,255,0.28); color: #f4ead7; cursor: pointer;
       }
+      /* 🔴 `width: 0`만으로는 **0이 안 된다.** 전역 `input { padding: 8px 10px; border: 1px }`가
+         `box-sizing: border-box`와 만나 실측 **22×18**이 남고, `opacity: 0`이라 안 보이는데
+         `elementFromPoint`는 이걸 잡는다 — 아이콘 오른쪽에 **보이지 않는 22px 드래그 타깃**이
+         상시 놓여 있었다(38회차부터 큐에 있던 항목). 게임 화면에 크림 면을 입히면서
+         그 22px이 **빈 여백으로 눈에 보이게** 됐고, 여기서 같이 닫는다.
+         `min-width: 0`까지 필요하다 — flex 아이템의 `min-width: auto`가 바닥을 만든다. */
       .bgm-vol {
-        width: 0; opacity: 0; height: 4px; accent-color: #e6b877; cursor: pointer;
+        width: 0; min-width: 0; padding: 0; border: 0;
+        opacity: 0; height: 4px; accent-color: #e6b877; cursor: pointer;
         transition: width .18s, opacity .18s;
       }
       .bgm-ctrl:hover .bgm-vol, .bgm-ctrl:focus-within .bgm-vol { width: 92px; opacity: 1; }
@@ -302,6 +368,17 @@
          고치려던 것과 정확히 같은 결함을 옆 화면에 새로 만든 셈이었다(검수 실측). */
       .bgm-ctrl :focus-visible,
       .codex-overlay :focus-visible { outline-color: var(--wds-accent); }
+      /* 🔴 **게임 화면에서는 그 예외가 뒤집힌다.** 23회차가 이 컨트롤을 보드 위로 옮기면서
+         **크림 면**을 입혔다 — `accent`는 밝은 면에서 지고, 크림 위 실측 최악 1.47:1이다.
+         그리고 기본 `outline-offset: 2px`는 링을 **컨트롤 밖(=보드 위)**에 그리는데
+         보드는 어두운 벽부터 노란 돗자리까지라 **어느 색도 3.0을 못 맞춘다**
+         (`accent` 최악 1.10 · `primary-strong` 최악 1.09 — 직접 계산).
+         → 링을 **크림 면 안쪽**으로 넣는다(`offset: -2px`). 거기서는 `primary-strong`이
+           **최악 5.84:1**이다. 「어두운 면 2종」(§1.5)은 이제 **카드 화면의 배경음 + 도감**이다. */
+      body.no-scroll .bgm-ctrl :focus-visible {
+        outline-color: var(--wds-primary-strong);
+        outline-offset: -2px;
+      }
       /* .hud summary는 outline:none으로 포커스를 지우므로 되살린다. */
       .hud summary:focus-visible { outline: 2px solid var(--wds-primary-strong); outline-offset: 2px; }
 
@@ -1440,8 +1517,24 @@
            (`show()`가 `gameScreen`일 때만 붙인다 · 위 `#scene-bg`·`#lobby-char`·`#leaf-bg`와 같은 신호). */
         body.no-scroll .bgm-ctrl {
           position: fixed;
+          /* 왼쪽 세로 순서: 턴 배너(~74) · 「지금 차례」(80~**142**) · **여기(150~)**.
+             ⚠️ 초안은 「지금 차례(80~108) · 손패(108~142)」라고 적었는데 **둘 다 틀렸다** —
+                폰에서 `.hud-hand`는 `display:none`이고(아래 :1506) 「지금 차례」가 혼자
+                80~142를 쓴다(검수 실측). 여유는 **8px**이고, 그것도 `.hud-turnface`의
+                비대칭 패딩이 `.hud`의 폰 패딩과 특이도 동점으로 져서 생긴 높이(62px)의 결과다.
+                8px은 게이트 최소 교차 변(4px)의 두 배뿐이라 **얕은 회귀는 조용히 통과한다.**
+             폰에서도 오른쪽은 컬럼(`min(86vw,300px)`)과 `#rpToggle`의 자리다. */
           top: calc(150px + var(--sa-t, 0px));
+          left: calc(8px + var(--sa-l, 0px)); right: auto;
         }
+        /* 🔴 **컬럼을 열면 왼쪽도 안전하지 않다.** 컬럼이 390px 화면에서 x82~382을 덮어
+           남는 왼쪽 띠가 x0~82뿐이다 — 평상 8px, 슬라이더가 펼쳐지면 **88px** 겹치고,
+           그때 덮이는 것이 `.rp-hand`(**폰에서 「내 손패」를 보여 주는 유일한 줄**)다.
+           모달과 같은 처방 — 화면을 덮는 것이 떠 있는 동안에는 **끈다**(19회차 §1.6).
+           ⚠️ 폰 블록 **안에만** 둔다. 데스크톱은 컬럼이 늘 열려 있고(리사이저) 왼쪽과
+              겹치지 않는데, 밖에 두면 데스크톱에서 컨트롤이 **영영 사라진다** —
+              21회차가 넣은 «켜는 검사»(`GAME_PROTECT`의 `#bgmToggle`)가 그걸 잡았다. */
+        body.no-scroll:has(#rightPanel:not(.rp-off)) .bgm-ctrl { display: none; }
         /* 폰에서 260px 고정 컬럼이 화면 폭의 2/3를 덮어 보드·턴 배너를 가렸다(§7.8 부수).
            기존 반응형은 DOM에 없는 `.hud-evi`/`.hud-log`를 잡고 있어 죽은 코드였다. */
         .rp-col {
@@ -1581,10 +1674,14 @@
            `max-width:680px` 블록(:1379)에서만 켜지며, 전폭 `.hud-turn`도 넓은 화면에선
            전폭이 아니다. 즉 **coarse 태블릿(681px~)에서 150의 근거는 확인되지 않았다.**
            값을 지금 바꾸지 않는 이유는 하나뿐이다 — **게이트 뷰포트가 폰·데스크톱 둘뿐이라
-           이 구간을 잴 수단이 없다**(아래 원 주석과 같은 사정). 재는 것이 먼저다(플랜 38 큐). */
+           이 구간을 잴 수단이 없다**(아래 원 주석과 같은 사정). 재는 것이 먼저다(플랜 38 큐).
+           `[미확인]` 왼쪽 정렬도 **여기서는 검증되지 않았다.** 이 구간의 `.rp-col`은
+           기본 `width: 260px`(`min(86vw,300px)`는 `max-width:680`에서만)이라 오른쪽에도
+           «피하는 값»이 실제로 존재한다 — 폰과 사정이 다르다. 재고 나서 정한다. */
         body.no-scroll .bgm-ctrl {
           position: fixed;
           top: calc(150px + var(--sa-t, 0px));
+          left: calc(8px + var(--sa-l, 0px)); right: auto;
         }
       }
       /* 폰 폭에서 모달은 **카드 계열과 같은 폭**으로 선다.
@@ -1617,9 +1714,13 @@
          게임화면(body.no-scroll)·모션감소에선 끈다. 순수 장식(pointer-events:none). -->
     <!-- 배경음(8비트 조선풍) — 스피커 아이콘, 호버 시 음량 슬라이더/음소거 -->
     <audio id="bgm" loop preload="auto"><source src="/assets/bgm/joseon.ogg" type="audio/ogg" /></audio>
-    <div id="bgmCtrl" class="bgm-ctrl" aria-label="배경음">
-      <input id="bgmVol" class="bgm-vol" type="range" min="0" max="100" value="20" aria-label="배경음 음량" />
+    <!-- 순서는 `[버튼][슬라이더]`다. 주 컨트롤(음소거)이 DOM·탭 순서에서 **먼저**여야 한다 —
+         뒤집혀 있던 동안 게임 화면에서 첫 Tab이 «보이지 않는 슬라이더»에 먼저 들어갔다.
+         시각 순서는 화면마다 다르므로(카드=우상단·게임=좌측) `flex-direction`으로 맞춘다.
+         `role="group"`이 없으면 `div`의 `aria-label`을 보조기술이 **무시한다**. -->
+    <div id="bgmCtrl" class="bgm-ctrl" role="group" aria-label="배경음">
       <button id="bgmToggle" class="bgm-icon" type="button" title="배경음 켜기/끄기" aria-label="배경음 음소거">🔊</button>
+      <input id="bgmVol" class="bgm-vol" type="range" min="0" max="100" value="20" aria-label="배경음 음량" />
     </div>
     <div id="scene-bg" aria-hidden="true"></div>
     <div id="lobby-char" aria-hidden="true"></div>

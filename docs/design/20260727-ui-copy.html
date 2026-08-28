@@ -403,7 +403,8 @@
   <div class="scroll"><table>
     <tr><th>면</th><th>링 색</th><th>대비</th></tr>
     <tr><td>밝은 면 전부(카드·모달·HUD 패널·D패드)</td><td><b><code>--wds-primary-strong</code></b> <code>#8A4128</code></td><td>카드 <b>6.65</b> · 모달 6.95 · HUD 5.67 · D패드 5.41</td></tr>
-    <tr><td><b>어두운 면 2종</b> — 배경음 컨트롤 · <b>도감 오버레이</b></td><td><code>--wds-accent</code> <code>#E3B873</code></td><td>배경음 <b>7.34</b> · 도감 <b>7.88</b></td></tr>
+    <tr><td><b>어두운 면 2종</b> — <b>카드 화면의</b> 배경음 컨트롤 · <b>도감 오버레이</b></td><td><code>--wds-accent</code> <code>#E3B873</code></td><td>배경음 <b>7.34</b> · 도감 <b>7.88</b></td></tr>
+    <tr><td><b>게임 화면의 배경음 컨트롤</b> <span class="tag t-new">2026-08-28</span></td><td><code>--wds-primary-strong</code> + <b><code>outline-offset: -2px</code></b></td><td>크림 면 <b>안쪽</b> 최악 <b>5.84</b></td></tr>
   </table></div>
   <div class="box crit">
     <b style="color:var(--red)">이전에는 전 화면이 <code>--wds-accent</code> 하나였다.</b>
@@ -417,6 +418,20 @@
     <b>고치려던 것과 같은 결함을 옆 화면에 새로 만들 뻔했다</b>(검수 실측).<br>
     <span class="note">배경음 컨트롤의 기본 배경은 <b>완전 투명</b>이고 0.18s 트랜지션이 있다 —
     포커스 직후 그 시간 동안은 링이 밝은 씬 위에 그려진다. 7.34는 «펼쳐진 뒤»의 값이다.</span>
+  </div>
+
+  <div class="box warn">
+    <b style="color:var(--red)">🔴 게임 화면에서는 그 예외가 뒤집혔다</b>
+    <span class="tag t-new">2026-08-28</span><br>
+    23회차가 배경음 컨트롤을 보드 위로 옮기며 <b>크림 면</b>(HUD 크롬)을 입혔다 —
+    거기서 <code>accent</code>는 최악 <b>1.47:1</b>로 진다. 그리고 기본
+    <code>outline-offset: 2px</code>는 링을 <b>컨트롤 밖(= 보드 위)</b>에 그리는데, 보드는
+    어두운 벽부터 노란 돗자리까지라 <b>어느 색도 3.0을 못 맞춘다</b>
+    (<code>accent</code> 1.10 · <code>primary-strong</code> 1.09).<br>
+    → 게임 화면에서는 링을 <b>면 안쪽</b>으로 넣는다(<code>offset: -2px</code> ·
+    <code>primary-strong</code> <b>5.84</b>).
+    <b>«면이 어두운가»가 아니라 «링이 어디에 그려지는가»가 먼저다</b> — 오프셋이 양수면
+    링의 배경은 컨트롤이 아니라 <b>그 뒤 화면</b>이고, 뒤가 캔버스면 색으로는 못 푼다.
   </div>
 
   <h3>1.5.1 길이 제약</h3>
