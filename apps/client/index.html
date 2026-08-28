@@ -1226,7 +1226,33 @@
         overflow: hidden;
       }
       .evi-row { display: flex; align-items: center; gap: 4px; min-width: 0; white-space: nowrap; }
-      .evi-row > .evi-name { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+      /* 상태 순환 버튼 — 전역 `button` 규칙을 **여기서 눌러 둔다**(칩 안에서 버튼처럼 보이면
+         안 된다 · 15회차 `.cx-thumb`와 같은 처리). 상자는 행 전체를 채워 터치 타깃이 된다. */
+      .evi-hit {
+        flex: 1; min-width: 0; display: flex; align-items: center; gap: 4px;
+        background: none; border: 0; padding: 0; margin: 0; border-radius: 6px;
+        font: inherit; color: inherit; text-align: left; cursor: pointer;
+        /* 위 `.cx-thumb` 주석의 4축을 **그대로** 따른다 — 「같은 처리」라고만 적고
+           빠뜨렸다가 검수에 걸렸다. `appearance`는 사파리/iOS의 `<button>` 렌더를
+           지배하는 축이라 **헤드리스 크롬으로는 안 보인다.** */
+        appearance: none; -webkit-appearance: none; -webkit-tap-highlight-color: transparent;
+        /* 🔴 **행 높이를 그대로 쓴다.** 진짜 `<button>`이 되자마자 S3가 **74.5×20**을 찍었다 —
+           24회차가 «44px을 확보했다»고 적은 것은 ✎ 버튼 얘기였고, **정작 상태를 바꾸는
+           타깃은 20px**이었다(그때는 `<div>`라 계측 대상이 아니어서 안 보였다).
+           `align-self: stretch`면 행(코스에서 44px)을 통째로 채운다 — **높이를 새로
+           더하지 않고** 이미 있는 높이를 쓰는 것이라 레이아웃 비용이 0이다. */
+        align-self: stretch; min-height: 0;
+      }
+      .evi-chip.own .evi-hit { cursor: default; }
+      /* 🔴 **`:hover`는 선언해야 이긴다.** `button:hover`(0,1,1)가 `.evi-hit`(0,1,0)를
+         **특이도로 이겨** 상자 전체가 `--wds-primary-strong`(진갈색)으로 칠해졌다 —
+         실측 대비 미정 1.47 · 제외 1.16 · 의심 1.98:1, 글자가 사라진다.
+         바로 위 `.cx-thumb` 주석이 이 함정을 이미 적어 뒀는데(그쪽은 `.cx-thumb:hover`를
+         **선언해서** 이긴다) 그 한 줄을 빠뜨렸다. 게이트는 «평상 상태만» 재므로 못 잡는다.
+         `.evi-memo-btn`도 같은 이유로 **원래부터 새고 있었다** — 같이 막는다. */
+      .evi-hit:hover,
+      .evi-memo-btn:hover { background: none; }
+      .evi-row > .evi-hit > .evi-name { flex: 1; overflow: hidden; text-overflow: ellipsis; }
       /* 항목별 메모(요청 ②) — ✎ 버튼 + 메모 줄. 상태 순환 클릭과 독립. */
       .evi-memo-btn { flex: none; margin-left: auto; background: none; border: 0;
         color: var(--wds-label-assistive); cursor: pointer; font-size: 12px; line-height: 1; padding: 0 1px; }
@@ -1254,9 +1280,33 @@
       /* 12색(spec §4.2) — 용의자 칩 좌측 3px 스트라이프(inline box-shadow)의 여백. */
       .evi-chip.zc { padding-left: 10px; }
       .evi-chip:hover { border-color: var(--wds-primary-normal); }
-      .evi-chip.cleared { opacity: 0.4; text-decoration: line-through; }
+      /* 🔴 **`opacity`로 상태를 말하지 않는다 — S6가 원리적으로 못 보는 대비 저하다.**
+         여기 `opacity: 0.4`가 있었다. 칩 전체가 투명해져 글자·배경이 **같이** 패널 쪽으로
+         내려가고, 직접 계산하면 **9.78 → 2.12~2.14:1**(AA 4.5 미달)이다.
+         `getComputedStyle`은 합성 **전** 색을 읽으므로 게이트는 이걸 영원히 통과시킨다.
+         13회차가 대기실 캐릭터 격자에서 **같은 함정**(`opacity: 0.35` → 실렌더 1.87)을
+         고쳤는데, 증거 노트에는 그대로 남아 있었다 — 그리고 «제외»는 판에서 **가장 흔한
+         상태**라 패널 대부분이 읽히지 않는 상태였다.
+         → 불투명한 색으로 낮춘다. `--wds-label-alternative` on 칩 배경 **5.72:1**.
+         취소선은 색 단독이 아닌 **모양** 단서다(1.4.1). 11회차 교훈대로 12px 한글에서
+         보이도록 **두께 2px + 강조색**(`primary-normal` ↔ 칩 배경 4.04, 1.4.11 하한 3.0). */
+      .evi-chip.cleared { color: var(--wds-label-alternative); }
+      /* 🔴 **취소선은 «이름»에만 건다.** `.evi-chip`에 걸었더니 `text-decoration`이
+         **자손에서 끌 수 없어**(전파는 페인팅 단계다) 내가 쓴 메모와 `✎` 글리프까지
+         관통했다 — `.evi-memo { text-decoration: none }`은 **죽은 선언**이다.
+         `opacity: 0.4` 시절엔 흐려서 안 보였고, 색·두께를 올리자 전면에 드러났다.
+         두께 2px은 11회차 교훈(12px 한글에서 1px은 안 보인다) · 색 `primary-normal`은
+         칩 배경 대비 **4.71**(1.4.11 하한 3.0). */
+      .evi-chip.cleared .evi-name { text-decoration: line-through 2px var(--wds-primary-normal); }
+      /* 🔴 «의심»은 단서가 **색뿐**이었다 — 면 대비 1.15:1(`tint-primary` ↔ 칩 배경)이라
+         적색맹에겐 같은 면이다. «제외»만 고치고 «의심»을 두면 1.4.1을 반만 지킨 것이다.
+         폭을 안 먹는 축으로 «제외»와 **대칭**인 모양 단서를 준다 — 같은 2px 강조색 선,
+         위치만 아래. 밑줄/취소선은 배우기 쉽고 레이아웃 비용이 0이다. */
+      .evi-chip.suspect .evi-name { text-decoration: underline 2px var(--wds-primary-normal); }
       .evi-chip.suspect { background: var(--wds-tint-primary); border-color: var(--wds-primary-normal); color: var(--wds-label-strong); }
-      .evi-chip.own { cursor: default; opacity: 0.5; border-style: dashed; }
+      /* 자동 제외(내 손패·공통 단서·확정)도 같은 이유로 `opacity: 0.5`를 걷어냈다(실렌더 2.67).
+         «누를 수 없다»는 **파선 테두리**가 말하고, «왜»는 `aria-label`과 `title`이 말한다. */
+      .evi-chip.own { cursor: default; border-style: dashed; }
       .evi-chip.own:hover { border-color: var(--wds-line-normal); }
 
       /* ── AI 계측 패널 (로드맵 §7.7 "칩은 기본 노출, 상세만 접힘" · ④ §4) ── */

@@ -98,6 +98,10 @@
     "dir": "plans/done",
     "items": [
       {
+        "path": "plans/done/45-evi-chip-keyboard.md",
+        "title": "plan: 증거 노트 칸을 «조작 요소»로 만든다 — 계측 밖에 있던 진짜 타깃"
+      },
+      {
         "path": "plans/done/44-gate-phone-column.md",
         "title": "plan: 게이트에 «폰 + 우측 컬럼 펼침» 화면을 넣는다 — 아무도 본 적 없던 화면"
       },

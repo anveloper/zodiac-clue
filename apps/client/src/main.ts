@@ -2352,6 +2352,13 @@ const renderLobbyChars = (state: Room["state"]): void => {
 
 // ── 증거 노트 (개인 추리 메모 · 서버 전송 X · 로컬 저장) ─────────────
 type EviState = "" | "cleared" | "suspect";
+/** 보조기술에 주는 상태 낱말. 화면에는 색·취소선으로만 나오므로 여기서 말로 채운다. */
+const EVI_STATE_WORD: Record<EviState, string> = {
+  "": "미정",
+  cleared: "제외",
+  suspect: "의심",
+};
+
 const EVI_NEXT: Record<EviState, EviState> = {
   "": "cleared",
   cleared: "suspect",
@@ -2448,17 +2455,29 @@ const buildEvidence = (roomId: string): void => {
       const base = "evi-chip" + (colored ? " zc" : "");
       if (colored) chip.style.boxShadow = colorStripe(v);
 
-      // 상단 줄: 아이콘 + 이름 + 메모 버튼(✎). 장소는 이모지 없어 cardIcon()이 📍(§2).
+      // 상단 줄: [상태 버튼(아이콘 + 이름)] + [메모 버튼(✎)]. 장소는 이모지가 없어 cardIcon()이 📍(§2).
       const row = document.createElement("div");
       row.className = "evi-row";
-      row.innerHTML =
+      // 🔴 **상태를 순환시키는 것은 진짜 `<button>`이어야 한다.**
+      //    전에는 `.evi-row`(`<div>`)에 `onclick`만 있었다 → ① 키보드로 **아예 못 쓴다**
+      //    (증거 노트는 이 게임의 추리 도구다) ② role이 없어 화면 게이트 S3의 «조작 요소»에
+      //    안 잡혀 44px 하한을 **한 번도 안 쟀다**(변경 전 행 높이 20px).
+      //    13~15회차가 대기실 격자·도감 썸네일에 한 것과 같은 교정이다.
+      //    ⚠️ 메모 버튼 **안에 넣으면 안 된다** — 버튼 중첩은 무효 HTML이라 두 버튼을
+      //       `.evi-row` 안의 **형제**로 둔다.
+      const hit = document.createElement("button");
+      hit.type = "button";
+      hit.className = "evi-hit";
+      hit.innerHTML =
         `<span>${cardIcon(v)}</span>` +
         `<span class="evi-name">${label(v)}${colored ? cvdTag(v) : ""}</span>`;
+      row.appendChild(hit);
       const memoBtn = document.createElement("button");
       memoBtn.type = "button";
       memoBtn.className = "evi-memo-btn";
       memoBtn.textContent = "✎";
       memoBtn.title = "메모";
+      memoBtn.setAttribute("aria-label", `${label(v)} 메모`);
       row.appendChild(memoBtn);
       chip.appendChild(row);
 
@@ -2479,18 +2498,35 @@ const buildEvidence = (roomId: string): void => {
         chip.className = base + " cleared own";
         // 확정 문안(§4.3). `(자동 제외)`가 빠지면 **클릭에 반응하지 않는 유일한 칩**의
         // 이유가 화면에서 사라진다.
-        row.title = commonSet.has(v)
+        const why = commonSet.has(v)
           ? "공통 단서 — 모두 공개 · 정답 아님 (자동 제외)"
           : myCards.has(v)
             ? "내 손패 — 정답 아님 (자동 제외)"
             : "이미 확인함(엿보기·반박) — 정답 아님 (자동 제외)";
+        hit.title = why;
+        // `disabled`가 아니라 `aria-disabled` — 13회차와 같은 이유로 **포커스에 남긴다.**
+        // 그래야 키보드 사용자가 «왜 이 칸은 안 바뀌는가»를 읽을 수 있다.
+        hit.setAttribute("aria-disabled", "true");
+        // ⚠️ 이름에 사유를 통째로 넣으면 **같은 문장을 두 번 읽는다**(이름 + `title` 설명).
+        //    이름은 짧게, 사유는 `title`에만.
+        hit.setAttribute("aria-label", `${label(v)} — 자동 제외`);
+        // ⚠️ `aria-disabled`는 **동작을 막지 않는다** — Enter·클릭에서 click이 실제로 발화한다
+        //    (검수 실측). 오늘은 듣는 쪽이 없어 무해하지만, `#evidence`에 위임 하나만 붙으면
+        //    잠금 칩이 뚫린다. «듣는 사람이 없다»에 기대지 않고 여기서 막는다.
+        hit.onclick = (e) => e.preventDefault();
       } else {
-        row.title = "클릭: 없음(제외) → 의심 → 초기화";
+        // ⚠️ 「클릭」은 **마우스 전용 말**이고, `title`은 **폰에 절대 안 뜬다**(hover가 없다).
+        //    버튼으로 바꿔 놓고 안내가 클릭만 말하면 안 된다. 그리고 상태 이름은
+        //    `EVI_STATE_WORD`와 **같은 낱말**을 쓴다 — 「없음」/「초기화」로는 순환을 못 읽는다.
+        hit.title = "눌러서 바꾸기 — 미정 → 제외 → 의심 → 미정";
         const apply = (): void => {
           const st = data[v] ?? "";
           chip.className = base + (st ? " " + st : "");
+          // 🔴 상태를 **색·취소선으로만** 말하지 않는다(1.4.1 · §9.0의 교훈).
+          //    보조기술에는 낱말로 준다 — 화면 문안은 좁아서 못 넣는다.
+          hit.setAttribute("aria-label", `${label(v)} — ${EVI_STATE_WORD[st]}`);
         };
-        row.onclick = () => {
+        hit.onclick = () => {
           const next = EVI_NEXT[data[v] ?? ""];
           if (next) data[v] = next;
           else delete data[v];
@@ -2500,7 +2536,11 @@ const buildEvidence = (roomId: string): void => {
         apply();
       }
 
-      // ✎ 클릭 → 인라인 입력. 상태 순환 클릭과 독립(stopPropagation).
+      // ✎ 클릭 → 인라인 입력.
+      // ⚠️ `stopPropagation()`은 **더 이상 필요하지 않다** — 상태 순환은 이제 형제 버튼
+      //    (`.evi-hit`)이 받고 조상에는 위임이 없다. 그래도 남겨 둔다: 나중에 `#evidence`나
+      //    `.evi-chip`에 위임이 붙으면 «메모를 열려다 상태가 바뀌는» 사고가 곧바로 난다.
+      //    (전 주석은 「상태 순환 클릭과 독립」이라 적었는데 그 구조는 이번에 사라졌다.)
       memoBtn.onclick = (e) => {
         e.stopPropagation();
         const input = document.createElement("input");

@@ -730,10 +730,45 @@
     <tr><td>패널 제목</td><td class="q">🔍 증거 노트 <span class="dim">(나만 봄)</span></td><td><span class="tag t-keep">유지</span></td></tr>
     <tr><td>내 패 칩 툴팁</td><td class="q">내 손패 — 정답 아님 (자동 제외)</td><td><span class="tag t-new">교체안</span></td></tr>
     <tr><td>공통 단서 칩 툴팁</td><td class="q">공통 단서 — 모두 공개 · 정답 아님 (자동 제외)</td><td><span class="tag t-new">교체안</span></td></tr>
-    <tr><td>일반 칩 툴팁</td><td class="q">클릭: 없음(제외) → 의심 → 초기화</td><td><span class="tag t-keep">유지</span></td></tr>
+    <tr><td>일반 칩 툴팁</td><td class="q">눌러서 바꾸기 — 미정 → 제외 → 의심 → 미정</td><td><span class="tag t-new">2026-08-28 교체</span></td></tr>
     <tr><td>그룹 라벨</td><td class="q">용의자 / 훔친 것 / 장소</td><td><span class="tag t-keep">유지</span> §2 일치</td></tr>
     <tr><td>빈 상태</td><td class="q">아직 지운 후보가 없어요. 칩을 눌러 표시하세요.</td><td><span class="tag t-soon">선행</span></td></tr>
   </table></div>
+
+  <div class="box warn">
+    <b style="color:var(--red)">🔴 칩의 상태 순환은 «버튼»이다</b> <span class="tag t-new">2026-08-28</span><br>
+    전에는 <code>.evi-row</code>(<code>&lt;div&gt;</code>)의 <code>onclick</code>뿐이라
+    ① <b>키보드로 아예 못 썼고</b>(증거 노트는 이 게임의 추리 도구다)
+    ② role이 없어 화면 게이트 S3의 «조작 요소»에 안 잡혀 <b>44px 하한을 한 번도 안 쟀다</b>
+    (버튼이 되자마자 <code>74.5×20</code> FAIL).
+    §9.0·§1.6이 대기실 격자·도감 썸네일에 한 것과 같은 교정이다.<br>
+    ⚠️ 메모 버튼(<code>✎</code>) <b>안에 넣을 수 없다</b> — 버튼 중첩은 무효 HTML이라 <b>형제</b>로 둔다.
+    잠금 칩은 <code>disabled</code>가 아니라 <b><code>aria-disabled</code></b> —
+    포커스에 남아야 «왜 안 바뀌는지»를 읽는다.
+  </div>
+
+  <div class="box warn">
+    <b style="color:var(--red)">🔴 상태를 <code>opacity</code>로 말하지 않는다</b>
+    <span class="tag t-new">2026-08-28</span><br>
+    <code>.cleared</code>에 <code>opacity: 0.4</code>가 있었다 — 칩 전체가 투명해져
+    <b>9.78 → 2.12:1</b>(AA 미달)이고 <b>S6는 합성 전 색을 읽어 못 본다.</b>
+    §9.0이 대기실 격자에서 고친 <b>같은 함정</b>이 여기 남아 있었고, «제외»는 판에서
+    <b>가장 흔한 상태</b>라 패널 대부분이 안 읽히는 상태였다.<br>
+    → 불투명한 색(<code>--wds-label-alternative</code> <b>5.72</b>) +
+    <b>두께 2px 취소선</b>(<code>primary-normal</code> <b>4.04</b>). 취소선은 색 단독이 아닌
+    <b>모양</b> 단서다(1.4.1). 자동 제외 칩의 <code>opacity: 0.5</code>(2.67)도 걷어냈다 —
+    «못 누른다»는 <b>파선 테두리</b>가 말한다.<br>
+    상태 낱말은 칩 폭이 좁아 화면에 못 넣는다(실측: 이름 상자 60px · 최장 「호랑이 대감」 55.3px →
+    여유 <b>5px</b>) → <code>aria-label = "${이름} — 미정|제외|의심"</code>.
+    잠금 칩은 이름을 <b>짧게</b>(<code>— 자동 제외</code>) 두고 사유는 <code>title</code>에만 —
+    둘 다 넣으면 <b>같은 문장을 두 번 읽는다</b>.<br>
+    <b style="color:var(--red)">🔴 「의심」도 색 단독이었다</b> — <code>.suspect</code> 배경은 칩 배경과
+    <b>1.15:1</b>(면 대비)이라 적색맹에겐 같은 면이다. 「제외」만 고치면 1.4.1을 <b>반만</b> 지킨다.
+    → 「제외」와 <b>대칭</b>인 모양 단서(같은 2px 강조색 선, 위치만 아래 = 밑줄). 폭 비용 0.<br>
+    <b style="color:var(--red)">🔴 툴팁 문안 교체</b> — 옛 <code>클릭: 없음(제외) → 의심 → 초기화</code>는
+    ① 「클릭」이 <b>마우스 전용 말</b>이고 ② <code>title</code>은 <b>폰에 절대 안 뜬다</b>(hover 없음)
+    ③ 상태 이름이 <code>aria-label</code>과 달라 순환을 복원할 수 없었다.
+  </div>
 
   <div class="box good">
     <b><span class="tag t-new">07-29 해소</span> 잠금 칩 툴팁이 확정본과 같다.</b>
