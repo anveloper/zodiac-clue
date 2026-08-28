@@ -56,6 +56,10 @@
     "dir": "plans/done",
     "items": [
       {
+        "path": "plans/done/44-gate-phone-column.md",
+        "title": "plan: 게이트에 «폰 + 우측 컬럼 펼침» 화면을 넣는다 — 아무도 본 적 없던 화면"
+      },
+      {
         "path": "plans/done/43-bgm-game-placement.md",
         "title": "plan: 배경음 컨트롤을 우측 컬럼에서 떼어낸다 — 그리고 옮긴 자리의 대가를 갚는다"
       },

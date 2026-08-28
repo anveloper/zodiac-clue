@@ -1230,6 +1230,20 @@
       /* 항목별 메모(요청 ②) — ✎ 버튼 + 메모 줄. 상태 순환 클릭과 독립. */
       .evi-memo-btn { flex: none; margin-left: auto; background: none; border: 0;
         color: var(--wds-label-assistive); cursor: pointer; font-size: 12px; line-height: 1; padding: 0 1px; }
+      /* 🔴 **손가락에서는 11.5×12px이었다.** 24회차가 게이트에 «폰 + 컬럼 펼침» 화면을 넣자마자
+         S3가 **21개 미달**을 찍었다 — 이 패널은 폰에서 «컬럼을 열어야» 존재하는데 게이트가
+         그 상태를 **한 번도 연 적이 없어서** 23회차까지 아무도 못 봤다.
+
+         ⚠️ **1차 구현은 «2열로는 못 넣는다»며 1열로 흐르게 했다 — 그 근거가 거짓이었다.**
+            이름 폭을 «12px 한글 6자 ≈ 72px»로 **어림잡았는데** 실측은 최장 **55.3px**이다
+            (`canvas.measureText` · `system-ui` 12px · 「호랑이 대감」·「잔나비 광대」).
+            2열에서 44px 버튼을 넣었을 때 잘리는 칩은 **21개 중 하나**, 부족분은 **6px**이었다.
+            1열 전환은 «한 화면에 보이는 칸»을 **8 → 2개**로 줄였다(44px 버튼만으로도 8 → 4).
+            → **2열을 되돌리고 6px만 회수한다.** `margin-right: -7px`이 버튼을 칩의 오른쪽
+              여백 위로 겹쳐 히트 영역 44×44는 그대로 두고 이름에 7px을 돌려준다. */
+      @media (pointer: coarse) {
+        .evi-memo-btn { min-width: 44px; min-height: 44px; padding: 0; margin-right: -7px; }
+      }
       .evi-memo-btn:hover { color: var(--wds-primary-normal); }
       .evi-memo-btn.has { color: var(--wds-primary-normal); }
       .evi-memo { font-size: 12px; color: var(--wds-label-alternative); white-space: normal;

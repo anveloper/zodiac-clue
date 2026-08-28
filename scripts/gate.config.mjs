@@ -506,6 +506,63 @@ export const SCREEN = {
       touchExempt: [],
     },
     {
+      // 🔴 **폰의 «우측 컬럼 펼침»은 23회차까지 통째로 무계측이었다.**
+      // 그 상태에서만 존재하는 것이 셋이다 — ① `.rp-hand`(폰에서 「내 손패」를 보여 주는
+      // **유일한** 줄 · 플로팅 `.hud-hand`는 폰에서 `display:none`) ② 컬럼을 닫는 유일한 길
+      // `#rpToggle.rp-on` ③ 컬럼이 화면의 77%를 덮는 배치. 23회차가 «배경음이 그 줄을 88px
+      // 덮는다»를 검수 실측으로 알아냈는데, **게이트로는 재현할 수단이 없었다.**
+      id: "game-column",
+      label: "게임 + 우측 컬럼 펼침(폰 전용)",
+      url: "/?solo=1&demo=1",
+      onlyViewports: ["phone"],
+      onlyViewportsWhy:
+        "데스크톱은 컬럼이 늘 펼쳐져 있어 `game` 화면이 곧 그 상태다 — 토글 버튼(`#rpToggle`) 자체가 `display:none`이라 도달할 수 없다",
+      steps: [
+        { waitFor: "!document.getElementById('turnInfo').classList.contains('hidden')" },
+        // ⚠️ **«닫힘에서 시작해 열었다»를 못 박는다.** `ready`는 «열려 있다»만 보므로,
+        //    기본값이 열림으로 바뀌면 클릭이 오히려 **닫고** 도달 실패가 되고, 반대로
+        //    클릭이 no-op가 돼도 ready가 즉시 참이라 **`game`과 같은 것을 두 번 재고 통과**한다.
+        { waitFor: "document.getElementById('rightPanel').classList.contains('rp-off')" },
+        { click: "#rpToggle" },
+        // ⚠️ **주사위 오버레이가 사라진 뒤에 잰다.** `.dice-overlay`는 `pointer-events: none`이라
+        //    S1은 원리적으로 침묵하지만, 그 카드가 증거 노트 위 **55,914px²**를 덮어 캡처를
+        //    가리고 무엇보다 **타이머로 사라져** S5·S6가 세는 줄과 S3의 «문서 밖» 개수가
+        //    기동 속도에 따라 달라진다 — 결정론이 아니면 회귀를 판정할 수 없다.
+        { waitFor: "document.getElementById('diceOverlay').classList.contains('hidden')" },
+      ],
+      ready: "!document.getElementById('rightPanel').classList.contains('rp-off')",
+      vscroll: "locked",
+      // 🔴 **컬럼이 게임 HUD를 덮는 것은 «의도»다 — 그 사실을 여기 적는다.**
+      //    컬럼이 열리면 `.hud-ctrl`(액션 바)은 **완전히** 덮이고(교차 300×52 = 15,600px²)
+      //    `#turnInfo`도 5/5점이 `summary`에 맞는다. `main.ts`가 컬럼을 열 때 D-패드·AI HUD를
+      //    **일부러** 끄는 것과 같은 설계다(폰은 화면이 하나뿐이다).
+      //    그래서 `GAME_PROTECT`를 쓰지 않는다 — 쓰면 «의도된 가림»이 매 실행 오탐이 된다.
+      //    (`goal-modal`이 「모달이 뜬 동안 뒤가 가려지는 것은 정상」이라 적은 것과 같은 처리.)
+      //    ⚠️ 초안은 이 사유를 «배경음 하나» 때문이라고만 적었다 — **틀렸다.** 실제로 같이
+      //       빠진 것은 `.hud-ctrl button` 6개 · `#turnInfo` · `GAME_PAIRS` 7종 전부다.
+      protect: [
+        { sel: "#rpToggle", why: "컬럼을 닫는 **유일한** 길. 가려지면 보드로 못 돌아간다" },
+        { sel: ".rp-hand", why: "폰에서 「내 손패」를 보여 주는 **유일한** 줄(`.hud-hand`는 폰에서 `display:none`)" },
+        { sel: "#eviPanel .rp-head", why: "증거 노트 머리글 — 무엇을 보고 있는지" },
+      ],
+      pairs: [
+        // ⚠️ 대상은 `.rp-head`가 **아니다** — 컬럼 맨 위 패널(`#aiPanel`)의 머리글은
+        //    `<summary>`다. 초안이 `.rp-head`로 걸어 **기하 교차 0으로 영원히 침묵**했다.
+        //    그리고 올바른 선택자로 바꾸면 **상자끼리는 실제로 겹친다**(2032px²) —
+        //    `padding-right: 58px`이 **글자만** 비켰고 상자는 그대로이기 때문이다.
+        //    그래서 대상을 «글자»로 잡는다. 사람이 읽어야 하는 것은 제목이지 상자가 아니다.
+        ["#rpToggle", "#aiPanel .ai-title", "닫기 버튼이 맨 위 패널 **제목 글자**를 덮는가"],
+        // ⚠️ 이 쌍은 **지금 침묵한다** — 플랜 43이 「컬럼이 열리면 배경음을 감춘다」로 고쳤다.
+        //    `[미확인]` 감추기를 되돌려도 **평상 상태로는 안 걸린다**(복원 시 오른끝 x=70 ·
+        //    컬럼은 x82부터 → 교차 0). 23회차가 실측한 88px 겹침은 **슬라이더가 펼쳐진**
+        //    상태에서만 나는데, 게이트는 `hover: none`이고 포커스를 주는 step도 없어
+        //    **그 상태에 도달할 수 없다.** 즉 이 쌍은 «되돌림 래칫»으로만 쓸모가 있고
+        //    원래 겨냥한 사고는 **여전히 무계측**이다 — 정직하게 적어 둔다(플랜 44 큐).
+        BGM_OVER_MODAL("#rightPanel"),
+      ],
+      touchExempt: [],
+    },
+    {
       id: "accuse-modal",
       label: "게임 + 신고 모달(select 3개)",
       url: "/?solo=1&demo=1",

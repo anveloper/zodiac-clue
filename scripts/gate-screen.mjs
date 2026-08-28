@@ -2588,6 +2588,29 @@ for (const vp of viewports) {
       });
       continue;
     }
+    // 어떤 화면은 **한 뷰포트에만 존재한다**(예: 폰의 «컬럼 펼침» — 데스크톱은 늘 펼쳐져 있고
+    // 토글 버튼 자체가 `display:none`이라 도달 자체가 불가능하다). 그런 조합은 «도달 실패»가
+    // 아니라 **사유 있는 SKIP**이다 — 조용히 빼지 않는다.
+    if (screen.onlyViewports) {
+      // 오타 하나면 그 화면이 **전 뷰포트에서 조용히 SKIP**되고 exit 0이 난다.
+      const bad = screen.onlyViewports.filter((id) => !SCREEN.viewports.some((v) => v.id === id));
+      if (bad.length)
+        skipOut(
+          `gate.config 오류 — 화면 «${screen.id}»의 onlyViewports에 없는 뷰포트 id: ${bad.join(", ")}`,
+          `쓸 수 있는 id: ${SCREEN.viewports.map((v) => v.id).join(", ")}`,
+        );
+    }
+    if (screen.onlyViewports && !screen.onlyViewports.includes(vp.id)) {
+      results.push({
+        screen: screen.id,
+        label: screen.label,
+        vp: vp.id,
+        vpLabel: vp.label,
+        ms: 0,
+        skip: `이 화면은 ${screen.onlyViewports.join("·")} 뷰포트에만 존재한다 — ${screen.onlyViewportsWhy}`,
+      });
+      continue;
+    }
     step(`${screen.label} · ${vp.label}`);
     const t0 = Date.now();
     const r = await openScreen(screen, vp, null);
@@ -2783,7 +2806,13 @@ const unreachable = results.filter((r) => r.unreachable);
 const skipped = results.filter((r) => r.skip);
 // 도달 못 한 화면이 있으면 «전건 통과»라고 말할 수 없다 → FAIL이 아니라 SKIP(3)으로 끝낸다.
 // `skip`(환경 사유·의도적 제외)은 여기 넣지 않는다 — 그건 «못 쟀다»의 **사유가 밝혀진** 쪽이다.
-const exitCode = failed.length ? 1 : unreachable.length ? 3 : 0;
+//
+// 🔴 **아무것도 안 쟀는데 초록은 최악의 실패다.** `--only`와 `--viewport`가 겹치면
+//    (예: `--only=game-column --viewport=desktop` — 그 화면은 폰 전용) 화면은 목록에 남고
+//    **뷰포트 단계에서 빠져** `screens.length` 가드를 통과한다. 그러면 검사 0건으로
+//    «결과: PASS»에 exit 0이 나온다(24회차 검수 실측).
+//    검사가 하나도 없으면 그건 통과가 아니라 **미측정**이다.
+const exitCode = failed.length ? 1 : unreachable.length || allChecks.length === 0 ? 3 : 0;
 const secs = (ms) => `${(ms / 1000).toFixed(1)}s`;
 
 if (OPT.json) {
@@ -2896,7 +2925,9 @@ console.log(
   exitCode === 0
     ? "  결과: PASS — 기계가 잴 수 있는 항목은 전건 통과. **위 § 사람 확인은 아직 남아 있다.**"
     : exitCode === 3
-      ? "  결과: SKIP — 도달하지 못한 화면이 있다. 통과가 아니라 **미측정**이다."
+      ? allChecks.length === 0
+        ? "  결과: SKIP — **검사를 하나도 못 돌렸다.** `--only`·`--viewport` 조합이 비었을 수 있다. 통과가 아니라 **미측정**이다."
+        : "  결과: SKIP — 도달하지 못한 화면이 있다. 통과가 아니라 **미측정**이다."
       : `  결과: FAIL — [${[...new Set(results.filter((r) => r.checks?.some((c) => c.status === "FAIL")).map((r) => `${r.screen}/${r.vp}`))].join(", ")}]`,
 );
 console.log("  음성 테스트: node scripts/gate-screen.mjs --self-test  (게이트가 정말 잡는지 확인)");
