@@ -160,6 +160,10 @@ const cardMatches = (c: Card, s: Suggestion): boolean =>
   (c.kind === "weapon" && c.value === s.weapon) ||
   (c.kind === "room" && c.value === s.room);
 
+/** 제안 입력 검증용 카드 키 집합 — 클라이언트가 보낸 값이 규칙 엔진 어휘 안인지 본다. */
+const SUSPECT_KEYS: ReadonlySet<string> = new Set<string>(SUSPECTS);
+const WEAPON_KEYS: ReadonlySet<string> = new Set<string>(WEAPONS);
+
 export class ClueRoom extends Room<GameState> {
   maxClients = MAX_PLAYERS;
 
@@ -1359,9 +1363,15 @@ export class ClueRoom extends Room<GameState> {
       seq: this.suggestCount, // 판 시작 시 0 → 이 제안에서 이미 +1 됐다(1부터 증가)
       byId: suggesterId,
       byName: by?.name ?? suggesterId,
-      suspect: label(suggestion.suspect),
-      weapon: label(suggestion.weapon),
-      room: label(suggestion.room),
+      // 🔴 **라벨이 아니라 카드 키를 보낸다**(2026-08-29 · 플랜 50).
+      //    여기서 `label()`을 씌우면 클라의 `faceIc()`/`cardIcon()`이 **영원히 빈 문자열**을
+      //    돌려준다 — `FACE_IDS.has("토끼 낭자")`도 `ROOM_SET.has("대청마루")`도 거짓이기
+      //    때문이다. 제안 기록표의 얼굴·장물·장소 아이콘은 그래서 **처음부터 죽어 있었다**
+      //    (`.sg-combo .face-ic` CSS는 존재하지 않는 요소를 겨냥하고 있었다).
+      //    클라는 이미 `label()`을 한 번 더 거치므로 글자는 그대로다.
+      suspect: suggestion.suspect,
+      weapon: suggestion.weapon,
+      room: suggestion.room,
       disprovedById: disprovedById,
       disprovedByName: dis?.name ?? (disprovedById ? disprovedById : null),
     };
@@ -1512,6 +1522,15 @@ export class ClueRoom extends Room<GameState> {
     // ⚠️ 지목 값은 **자기 손패여도 허용**한다(§7.5.2 "제안에서 자기 손패도 지목 허용").
     // 클루 최강 전술("내 카드를 지목해 반증자를 통제")이라 서버가 막으면 안 된다 —
     // 실제로 여기에 손패 검증은 원래부터 없다. 되살리지 말 것.
+    // 🔴 **다만 «카드 집합 소속»은 검사한다**(2026-08-29 · 플랜 50 검수).
+    //    이것은 손패 검증이 아니라 **입력 검증**이다 — 지금까지 클라이언트가 보낸 임의
+    //    문자열이 그대로 `suggestLog`에 저장되고 전원에게 브로드캐스트됐다(재접속·관전
+    //    리플레이에도 남는다). 진실값은 서버 규칙 엔진에만 있어야 하는데, 규칙 엔진이
+    //    자기 어휘 밖의 값을 받아 상태에 적고 있었다.
+    if (!SUSPECT_KEYS.has(msg?.suspect) || !WEAPON_KEYS.has(msg?.weapon)) {
+      client.send("log", { text: "알 수 없는 카드예요. 다시 골라 주세요." });
+      return;
+    }
     const suggestion: Suggestion = {
       suspect: msg.suspect,
       weapon: msg.weapon,

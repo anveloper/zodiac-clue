@@ -42,7 +42,12 @@ export type SuggestEntry = {
   seq: number;
   byId: string;
   byName: string;
-  /** 한글 라벨. */
+  /**
+   * **카드 키**(`rabbit`·`jabchae`·`daecheong`…) — 한글 라벨이 아니다.
+   * 표시는 받는 쪽이 `label()`로 만든다. 키로 보내야 아이콘(`faceIc`·`cardIcon`)이
+   * 붙는다 — 라벨을 보내던 시절엔 `FACE_IDS.has("토끼 낭자")`가 늘 거짓이라
+   * 제안 기록표의 아이콘이 통째로 죽어 있었다(2026-08-29 · 플랜 50).
+   */
   suspect: string;
   weapon: string;
   room: string;
