@@ -1164,7 +1164,7 @@ watchLedger {                      // roundPhase = dawn→talk 전이에 broadca
 
 ### 8.7 모바일 390×844 — 무엇을 포기했는가
 
-게이트 실측 기준(`gate.config.mjs:310-345`): **S3 44px**(0.5px slack · `aria-disabled`도 계측 대상) · **S5 10px** · **S6 4.5:1** · **S2 세로/가로 스크롤 0** · **S1 겹침**. 실기 뷰포트 390×844 · dsf3 · `pointer: coarse`.
+게이트 실측 기준(`gate.config.mjs` §SCREEN): **S3 손가락 44px · 마우스 24px**(0.5px slack · `aria-disabled`도 계측 대상) · **S5 10px** · **S6 4.5:1** · **S2 세로/가로 스크롤 0** · **S1 겹침**. 실기 뷰포트 390×844 · dsf3 · `pointer: coarse`.
 
 **「44px은 «누를 수 있다»이지 «읽힌다»가 아니다」의 적용**
 

@@ -98,6 +98,10 @@
     "dir": "plans/done",
     "items": [
       {
+        "path": "plans/done/48-target-size-fine.md",
+        "title": "plan: 마우스 화면의 타깃 크기 — 게이트가 데스크톱을 한 번도 안 쟀다"
+      },
+      {
         "path": "plans/done/47-gate-state-contrast.md",
         "title": "plan: 게이트가 «평상 상태»만 재는 구멍을 메운다 — hover·focus 대비"
       },

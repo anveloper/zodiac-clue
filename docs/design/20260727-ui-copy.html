@@ -440,6 +440,32 @@
     링의 배경은 컨트롤이 아니라 <b>그 뒤 화면</b>이고, 뒤가 캔버스면 색으로는 못 푼다.
   </div>
 
+  <h3>1.5.0 타깃 크기 <span class="tag t-new">2026-08-29</span></h3>
+  <div class="scroll"><table>
+    <tr><th>포인터</th><th>하한</th><th>근거</th></tr>
+    <tr><td>손가락</td><td><b>44px</b></td><td class="q"><b>Apple HIG 44pt</b></td></tr>
+    <tr><td>마우스</td><td><b>24px</b></td><td class="q">WCAG 2.2 <b>§2.5.8 (AA)</b></td></tr>
+  </table></div>
+  <p class="note">⚠️ <b>«2.5.8만 포인터 무관»이 아니다.</b> 2.5.5(44)도 포인터를 안 가린다 —
+    <b>등급이 AAA일 뿐</b>이다. 44를 <b>손가락에만</b> 요구하는 근거는 HIG 하나다.</p>
+  <div class="box warn">
+    <b style="color:var(--red)">🔴 27회차까지 마우스 화면은 통째로 무계측이었다.</b>
+    「44를 마우스에 요구하지 않는다」는 옳지만 그 결론이 <b>「아무것도 안 잰다」</b>가 됐다.
+    넓히자마자 <b>43건</b> — <code>game/desktop</code> <b>42건</b>
+    (<code>.evi-hit</code> <b>83×20</b> ×21 · <code>.evi-memo-btn</code> <b>11.5×12</b> ×21) +
+    <b>랜딩 1건</b>(<code>[↻ 새로고침]</code> <b>70×21</b>). 42는 <b>한 화면</b>의 수다.<br>
+    <b style="color:var(--red)">🔴 간격 예외를 못 쓰는 이유를 정확히</b> — 규범문은 «원이
+    <b>다른 타깃</b>과 교차하지 않을 것»인데 두 <b>중심</b>은 약 51px 떨어져 <b>원끼리는 안 겹친다.</b>
+    진짜 이유는 메모 버튼의 24px 원이 <code>.evi-hit</code>의 <b>바운딩 박스</b>를 약 2px
+    파고들기 때문이다. «원이 겹친다»로 적으면 다음 사람이 <b>틀린 면제를 발급한다.</b><br>
+    하한을 <code>.evi-memo-btn</code>에 주면 행이 그 높이가 되고 <code>.evi-hit</code>가
+    <code>align-self: stretch</code>로 <b>따라온다</b> — 한 줄로 둘이 풀린다.<br>
+    ⚠️ <b>폭 보상을 잊지 마라.</b> 버튼이 커지면 이름이 좁아진다 — <code>.evi-hit</code> 83 →
+    <b>72px</b>이 되며 「호랑이 대감」이 처음 잘렸다. <code>margin-right: -7px</code>로
+    되돌린다 → 74.5×24 · <b>잘림 0</b>(실측). 이 보상은 §9.0 계열이 <b>폰에서 이미 한 번</b>
+    넣은 것인데 데스크톱에 안 넣어 재발했다.
+  </div>
+
   <h3>1.5.1 길이 제약</h3>
   <div class="scroll"><table>
     <tr><th>대상</th><th>상한</th><th>근거</th></tr>

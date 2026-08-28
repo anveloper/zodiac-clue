@@ -22,7 +22,14 @@
  *   S2 스크롤      게임 화면: `scrollHeight <= innerHeight` **그리고** `scrollTo(0,9999)` 후 `scrollY === 0`.
  *                  랜딩·대기실은 세로 스크롤이 **정상**이라 기대값을 다르게 둔다(gate.config.mjs).
  *                  가로 스크롤은 어느 화면에서도 사고다 — 전 화면 공통으로 잠근다.
- *   S3 터치 타깃   `pointer: coarse` 에뮬레이션에서 조작 가능한 요소의 최소 변 ≥ 44px.
+ *   S3 타깃 크기   조작 가능한 요소의 최소 변. **하한이 포인터마다 다르다** —
+ *                  손가락 **44px** · 마우스 **24px**(WCAG 2.2 §2.5.8 **AA**).
+ *                  ⚠️ **«2.5.8만 포인터 무관»이 아니다.** 2.5.5(44)도 포인터를 안 가린다 —
+ *                  등급이 AAA일 뿐이다. 44를 **손가락에만** 요구하는 근거는 Apple HIG 하나다.
+ *                  ⚠️ 27회차까지 마우스 뷰포트는 **통째로 SKIP**이었다. 「44를 마우스에
+ *                  요구하지 않는다」는 옳지만 그 결론이 **「아무것도 안 잰다」**가 된 것이
+ *                  구멍이었고, 그래서 `.evi-hit` 83×20 · `.evi-memo-btn` 11.5×12가
+ *                  **한 번도 계측되지 않았다**(28회차 검출 — `game/desktop` 42건 + 랜딩 1건).
  *                  숨김·비활성·문서 밖은 제외하고, **제외한 개수도 인쇄한다.**
  *                  4뷰는 캔버스만 다르고 HUD는 같은 DOM 한 벌이라는 것이 **가설**이고,
  *                  이 검사가 그 가설을 실측으로 확인한다(어긋나면 그 자체가 결함).
@@ -574,7 +581,7 @@ function pageProbe(cfg) {
     '[role="switch"]',
   ].join(",");
   const excluded = { hidden: 0, disabled: 0, outsideDoc: 0, exempt: 0 };
-  const small = [];
+  const touchAll = []; // 하한 적용 전 **전부** — 판정은 Node 쪽에서(포인터마다 하한이 다르다)
   let counted = 0;
   const docW = de.scrollWidth;
   const docH = de.scrollHeight;
@@ -603,16 +610,18 @@ function pageProbe(cfg) {
     }
     counted++;
     const side = Math.min(r.width, r.height);
-    if (side < cfg.minTouchPx - 0.5)
-      small.push({
-        path: path(el),
-        text: (el.textContent || el.value || el.getAttribute("aria-label") || "").trim().slice(0, 20),
-        w: round(r.width),
-        h: round(r.height),
-        side: round(side),
-      });
+    // ⚠️ **여기서 거르지 않는다.** 하한이 포인터마다 다르므로(손가락 44 · 마우스 24)
+    //    판정은 Node 쪽 한 곳에서 한다 — 이 파일의 「관측치만 돌려준다」 규약 그대로다.
+    touchAll.push({
+      path: path(el),
+      text: (el.textContent || el.value || el.getAttribute("aria-label") || "").trim().slice(0, 20),
+      w: round(r.width),
+      h: round(r.height),
+      side: round(side),
+    });
+
   }
-  small.sort((x, y) => x.side - y.side);
+  touchAll.sort((x, y) => x.side - y.side);
 
   // ── S5·S6 글자 크기 · 대비 ──
   // §사람 확인 «읽히는가»에서 **기계가 잴 수 있는 두 조각**만 떼어낸 것이다.
@@ -817,7 +826,7 @@ function pageProbe(cfg) {
     protect,
     pairs,
     scroll,
-    touch: { counted, excluded, small },
+    touch: { counted, excluded, all: touchAll },
     text: { items: textItems, excluded: textExcluded },
   };
 }
@@ -903,20 +912,26 @@ const judge = (screen, viewport, data) => {
       (hFail ? ` · **가로** scrollWidth ${sc.scrollW} > innerWidth ${sc.innerW} (scrollX=${sc.afterX})` : ""),
     {});
 
-  // S3
-  if (!viewport.coarse) {
+  // S3 — 타깃 크기. **하한이 포인터마다 다르다**(손가락 44 = HIG/2.5.5 · 마우스 24 = WCAG 2.5.8 AA).
+  // 🔴 27회차까지 마우스 뷰포트는 **통째로 SKIP**이었다 — 「44를 마우스에 요구하지 않는다」는
+  //    옳지만 그 결론이 「아무것도 안 잰다」가 된 것이 구멍이었다. 2.5.8은 AA이고 포인터를 안 가린다.
+  // ⚠️ **양쪽 다 확인한다.** 예전에는 `!viewport.coarse`면 즉시 SKIP이라 문제가 없었지만,
+  //    이제 마우스 뷰포트도 판정하므로 **에뮬이 새면 조용한 위양성**이 난다 —
+  //    페이지는 44px CSS로 그려지는데 판정은 24로 통과한다(검수 지적).
+  if (viewport.coarse !== data.coarse) {
     add("S3", "SKIP",
-      `터치 타깃은 \`pointer: coarse\`(손가락)에서만 판정한다 — ${viewport.label}는 마우스 전제라 44px 하한을 적용하지 않는다`,
+      `\`pointer: coarse\` 에뮬레이션이 뷰포트 설정과 어긋난다(기대 ${viewport.coarse} · 페이지 ${data.coarse}) — 판정 불가`,
       {});
-  } else if (!data.coarse) {
-    add("S3", "SKIP", "coarse 에뮬레이션이 페이지에 적용되지 않았다(matchMedia false) — 판정 불가", {});
   } else {
+    const floor = viewport.coarse ? SCREEN.minTouchPx : SCREEN.minPointerPx;
     const t = data.touch;
     const ex = t.excluded;
-    add("S3", t.small.length ? "FAIL" : "PASS",
-      `${t.counted}개 검사 · 미달 ${t.small.length}개 (하한 ${SCREEN.minTouchPx}px)` +
+    const small = t.all.filter((s) => s.side < floor - 0.5);
+    add("S3", small.length ? "FAIL" : "PASS",
+      `${t.counted}개 검사 · 미달 ${small.length}개 (하한 ${floor}px — ` +
+        `${viewport.coarse ? "손가락 · HIG 44" : "마우스 · WCAG 2.5.8 AA 24"})` +
         ` · 제외 숨김 ${ex.hidden} · 비활성 ${ex.disabled} · 문서 밖 ${ex.outsideDoc} · 면제 ${ex.exempt}`,
-      { lines: t.small.map((s) => `✗ ${s.path} ${s.w}×${s.h} (최소변 ${s.side}px) "${s.text}"`) });
+      { lines: small.map((s) => `✗ ${s.path} ${s.w}×${s.h} (최소변 ${s.side}px) "${s.text}"`) });
   }
 
   // ── S5 글자 크기 하한 ──
@@ -1219,7 +1234,6 @@ const probeCfg = (screen) => ({
   pairs: screen.pairs,
   touchExempt: screen.touchExempt ?? [],
   textExempt: [...SCREEN.textExempt, ...(screen.textExempt ?? [])],
-  minTouchPx: SCREEN.minTouchPx,
   sampleInsetPct: SCREEN.sampleInsetPct,
   minOverlapPx2: SCREEN.minOverlapPx2,
   minOverlapEdgePx: SCREEN.minOverlapEdgePx,
@@ -2396,6 +2410,37 @@ const FAULTS = [
       // 액션 바 버튼: 평상시 그대로, hover에서만 «거의 같은 두 색»으로 만든다.
       st.textContent = '.hud-ctrl button:hover{background:#8A8A8A !important;color:#828282 !important}';
       document.head.appendChild(st);
+      return 'injected';
+    })()`,
+  },
+  {
+    id: "F4b-마우스타깃",
+    expect: "S3",
+    vp: "desktop", // 28회차 전에는 마우스 뷰포트가 통째로 SKIP이라 이 결함이 **불가능**했다
+    signature: /button#endTurn/,
+    why:
+      "[턴 종료]를 20×20으로 줄인다 — **마우스** 하한 24px(WCAG 2.2 §2.5.8 AA · 포인터 무관) 미달. " +
+      "F4와 같은 결함이지만 **뷰포트가 다르다**: F4는 손가락 44, 이건 마우스 24다. " +
+      "이 결함이 안 잡히면 28회차가 넓힌 것은 «숫자만 바꾼 SKIP»이다.",
+    js: `(() => {
+      const b = document.getElementById('endTurn');
+      b.style.cssText += ';min-width:20px;min-height:20px;width:20px;height:20px;padding:0;font-size:8px';
+      return 'injected';
+    })()`,
+  },
+  {
+    id: "F4c-마우스24통과",
+    expect: "S3",
+    vp: "desktop",
+    shouldPass: true, // **하한이 24임을 고정한다** — 44라면 이 결함이 FAIL을 낸다
+    signature: /button#endTurn/,
+    why:
+      "[턴 종료]를 **30×30**으로 줄인다 — 마우스 하한 24는 **통과**하고 손가락 하한 44라면 **실패**한다. " +
+      "F4b(20×20)는 24·44 **양쪽에서** 잡히므로 «데스크톱을 재기는 한다»만 증명한다. " +
+      "`minPointerPx`를 실수로 44로 적어도 F4b는 그대로 OK를 찍는다 — 그 구멍을 이 결함이 막는다.",
+    js: `(() => {
+      const b = document.getElementById('endTurn');
+      b.style.cssText += ';min-width:30px;min-height:30px;width:30px;height:30px;padding:0;font-size:9px';
       return 'injected';
     })()`,
   },

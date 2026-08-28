@@ -513,8 +513,14 @@
          그 결과 [↻ 새로고침]이 라벨 글자 바로 옆에 붙어 우측 정렬이 죽어 있었다(실측).
          선택자를 같은 층위로 올려 의도한 좌우 축을 되살린다. */
       .field label.rooms-label { display: flex; align-items: center; justify-content: space-between; }
+      /* `min-height: 24px`은 WCAG 2.2 §2.5.8(AA · 포인터 무관) 하한이다 —
+         28회차에 S3를 마우스 뷰포트로 넓히자 `[↻ 새로고침]`이 **21px**로 잡혔다(3px 모자랐다).
+         손가락에서는 아래 `pointer: coarse`의 44px 규칙이 덮는다. */
       .mini { background: var(--wds-bg-alternative); border: 1px solid var(--wds-line-normal);
-              color: var(--wds-label-strong); padding: 2px 8px; font-size: 12px; }
+              color: var(--wds-label-strong); padding: 2px 8px; font-size: 12px;
+              /* 폭도 같이 준다 — 지금 사용처는 `#refreshRooms` 하나(70px)라 여유가 있지만,
+                 `.mini`는 유틸리티 이름이라 두 번째 사용처가 생기는 순간 폭 하한이 없다. */
+              min-height: 24px; min-width: 24px; }
       .mini:hover { background: var(--wds-bg-alternative); }
       /* ⚠️ 오른쪽 여백을 주지 않는다. `.rp-body`는 **있던 12px을 4px로 줄인** 것이라 순손실이
          1px이지만, 여기는 원래 0이라 **더하면 순손실**이다(4 + 스크롤바 9 = 13px). 게다가
@@ -1254,7 +1260,20 @@
       .evi-memo-btn:hover { background: none; }
       .evi-row > .evi-hit > .evi-name { flex: 1; overflow: hidden; text-overflow: ellipsis; }
       /* 항목별 메모(요청 ②) — ✎ 버튼 + 메모 줄. 상태 순환 클릭과 독립. */
+      /* 🔴 **마우스에도 하한이 있다 — WCAG 2.2 §2.5.8은 AA이고 포인터를 안 가린다(24×24).**
+         28회차에 S3를 마우스 뷰포트로 넓히자 이 버튼이 **11.5×12**로, `.evi-hit`가 **83×20**으로
+         잡혔다(각 21개). 27회차까지 데스크톱은 **통째로 무계측**이라 아무도 못 봤다.
+         24를 여기 주면 행이 24px이 되고 `.evi-hit`(`align-self: stretch`)가 **같이 따라온다** —
+         한 줄로 둘이 풀린다. 손가락(44)은 아래 `pointer: coarse`가 덮는다.
+         칩 높이는 30 → 34px(+4)이고, 그 대가로 gap 4px 옆의 두 타깃이 오조작을 덜 낸다. */
       .evi-memo-btn { flex: none; margin-left: auto; background: none; border: 0;
+        min-width: 24px; min-height: 24px;
+        /* ⚠️ **폭 보상을 데스크톱에도 준다.** 24회차가 폰에서 «44px 버튼이 이름을 잘랐다»를
+           `margin-right: -7px`으로 되돌렸는데(칩 오른쪽 여백 위로 겹쳐 7px을 이름에 돌려준다),
+           **데스크톱에는 안 넣어 같은 사고가 재발했다** — 11.5 → 24로 키우자 `.evi-hit`가
+           84.5 → 72px이 되고 「호랑이 대감」이 처음으로 생략표 처리됐다(검수 실측 · 이전 잘림 0건).
+           base로 올리면 hit 79px · 잘림 0이고, coarse 블록이 같은 값을 다시 선언하므로 폰은 무변화다. */
+        margin-right: -7px;
         color: var(--wds-label-assistive); cursor: pointer; font-size: 12px; line-height: 1; padding: 0 1px; }
       /* 🔴 **손가락에서는 11.5×12px이었다.** 24회차가 게이트에 «폰 + 컬럼 펼침» 화면을 넣자마자
          S3가 **21개 미달**을 찍었다 — 이 패널은 폰에서 «컬럼을 열어야» 존재하는데 게이트가
