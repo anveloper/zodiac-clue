@@ -374,8 +374,30 @@ export class GameScene extends Phaser.Scene {
       }
     });
 
+    /**
+     * 🔴 **DOM 컨트롤에 포커스가 있으면 씬은 키를 안 받는다.**
+     *
+     * Phaser의 `KeyboardManager`는 `window`에 붙는다(`target: window` · `preventDefault: false`).
+     * 그래서 HUD 어디에 포커스가 있든 씬 핸들러가 **전부** 받았다. 실제로 난 사고 둘:
+     *   ① **증거 노트 메모를 한글로 쓰면 말이 움직인다.** 이 핸들러는 `e.code`(물리키)를
+     *      쓰는데 — 그것이 「한글 IME도 동작」의 근거다 — `ㅁ`은 `KeyA`, 즉 **왼쪽**이다.
+     *      「알리바이」를 치면 말이 왼쪽으로 걸어간다.
+     *   ② **칸 상태를 Space로 바꾸면 카메라가 자유시점으로 튄다.** 25회차가 증거 노트 칸을
+     *      진짜 `<button>`으로 만들면서 Space가 그 버튼의 활성화 키가 됐는데,
+     *      같은 Space가 `keydown-SPACE`까지 내려간다.
+     *
+     * 화살표만은 우연히 막혀 있었다 — 툴바가 `preventDefault()`를 하기 때문이다.
+     * **우연에 기대지 않고** 여기서 한 번에 막는다: 보드는 «아무 데도 포커스가 없을 때»
+     * 또는 «캔버스가 포커스일 때»만 키를 받는다.
+     */
+    const domHasFocus = (): boolean => {
+      const ae = document.activeElement;
+      return !!ae && ae !== document.body && ae !== this.game.canvas;
+    };
+
     // 특수키(Space, hold) = 자유시점 토글
     this.input.keyboard?.on("keydown-SPACE", () => {
+      if (domHasFocus()) return;
       this.spaceHeld = true;
       this.applyFreeLook();
     });
@@ -387,6 +409,7 @@ export class GameScene extends Phaser.Scene {
     // 이동 / (자유시점 중엔) 방향키 팬
     // e.code(물리키)로 처리 → 한글 IME(ㅈㅁㄴㅇ)·WASD·화살표 모두 동작.
     this.input.keyboard?.on("keydown", (e: KeyboardEvent) => {
+      if (domHasFocus()) return;
       let dx = 0;
       let dy = 0;
       switch (e.code) {

@@ -758,6 +758,19 @@
     <b>두께 2px 취소선</b>(<code>primary-normal</code> <b>4.04</b>). 취소선은 색 단독이 아닌
     <b>모양</b> 단서다(1.4.1). 자동 제외 칩의 <code>opacity: 0.5</code>(2.67)도 걷어냈다 —
     «못 누른다»는 <b>파선 테두리</b>가 말한다.<br>
+    <b style="color:var(--red)">🔴 그룹은 «툴바»다 — 탭 스톱을 그룹당 1개로</b>
+    <span class="tag t-new">2026-08-28</span><br>
+    칩을 버튼으로 만들면서 탭 스톱이 <b>21 → 42</b>로 늘었다(칩 21 × 버튼 2). 증거 노트를 지나
+    제안 기록표·기록/알림에 가려면 Tab을 <b>42번</b> 쳐야 했고, 데스크톱은 컬럼이 늘 열려 있어
+    피할 길이 없다. → APG <b>Toolbar</b>: <code>role="toolbar"</code> + roving tabindex.
+    스톱 <b>42 → 3</b>. <code>←→</code> 버튼 1개씩 · <code>↑↓</code> <b>한 줄</b>(격자 열 수 × 2) ·
+    <code>Home</code>/<code>End</code>. 열 수는 <code>repeat(auto-fill, …)</code>이라 뷰포트에 따라
+    변하므로 <b>누를 때 계산된 값에서 읽는다.</b><br>
+    ⚠️ <b>다시 그리면 포커스가 사라진다</b> — <code>buildEvidence</code>는 손패 배부·반증·엿보기·
+    리매치마다 통째로 다시 만든다. 자리를 기억했다 되돌린다(§9.0과 같은 처방).<br>
+    <b>패널 머리글은 헤딩이다</b> — <code>.rp-head</code>가 <code>&lt;div&gt;</code>라 «헤딩 점프»로도
+    컬럼을 못 건너뛰었다. <code>&lt;h2&gt;</code>는 전역 제목 스타일이 붙으므로
+    <code>role="heading" aria-level="2"</code>만 준다.<br><br>
     상태 낱말은 칩 폭이 좁아 화면에 못 넣는다(실측: 이름 상자 60px · 최장 「호랑이 대감」 55.3px →
     여유 <b>5px</b>) → <code>aria-label = "${이름} — 미정|제외|의심"</code>.
     잠금 칩은 이름을 <b>짧게</b>(<code>— 자동 제외</code>) 두고 사유는 <code>title</code>에만 —

@@ -2420,7 +2420,102 @@ const saveEviMemo = (roomId: string, data: Record<string, string>): void => {
   }
 };
 
+/**
+ * 증거 노트 그룹 하나를 **툴바**로 배선한다(APG Toolbar).
+ *
+ * 스톱은 그룹당 1개다. **이동 단위는 «칸»이지 «버튼»이 아니다** —
+ * `←→`는 칸 1개씩(항상 상태 버튼), `↑↓`는 한 줄(열 수)씩, `Home`/`End`는 처음/끝 칸.
+ * 메모(`✎`)는 칸 위에서 **`F2`**로 연다(APG의 «셀 안 편집» 관례).
+ * 초안은 `←→`가 상태·메모를 번갈아 지나게 했는데, 21칸을 훑는 데 **41번**이 들고 그중
+ * 절반이 부차 기능이었다 — 그리고 「칸마다 메모 버튼이 정확히 하나」라는 가정이
+ * `stride = cols * 2`에 숨어 칸 모양이 바뀌면 **조용히** 틀렸다.
+ *
+ * ⚠️ **열 수는 CSS 문자열을 파싱하지 않는다.** `getComputedStyle(...).gridTemplateColumns`는
+ *    요소가 안 그려지면 `repeat(auto-fill, minmax(112px, 1fr))`를 **그대로** 돌려주고
+ *    (`split(" ").length`가 3이 된다), 트랙에 라인 이름이 붙어도 틀린다.
+ *    **기하로 센다** — 첫 칸과 `offsetTop`이 같은 칸의 수가 곧 열 수다.
+ *    키를 누를 때마다 스타일을 강제로 플러시하지 않는 이점도 있다.
+ */
+const wireEviToolbar = (chips: HTMLElement): void => {
+  const cells = (): HTMLElement[] => Array.from(chips.querySelectorAll<HTMLElement>(".evi-hit"));
+  const first = cells();
+  if (!first.length) return;
+  // 메모 버튼은 탭 순서에서 뺀다 — `F2`로 연다(위 주석). 그래야 이동 비용이 절반이 된다.
+  chips.querySelectorAll<HTMLElement>(".evi-memo-btn").forEach((b) => b.setAttribute("tabindex", "-1"));
+  first.forEach((b, i) => b.setAttribute("tabindex", i === 0 ? "0" : "-1"));
+
+  // tabindex는 **`focusin` 한 곳에서만** 돌린다(단일 출처). `focusAt`은 `.focus()`만 한다.
+  chips.addEventListener("focusin", (e) => {
+    const t = (e.target as HTMLElement).closest<HTMLElement>(".evi-hit");
+    if (!t) return;
+    cells().forEach((b) => b.setAttribute("tabindex", b === t ? "0" : "-1"));
+  });
+
+  chips.addEventListener("keydown", (e) => {
+    const list = cells();
+    const i = list.indexOf((e.target as HTMLElement).closest<HTMLElement>(".evi-hit") as HTMLElement);
+    if (i < 0) return;
+    if (e.key === "F2") {
+      e.preventDefault();
+      list[i]?.parentElement?.querySelector<HTMLElement>(".evi-memo-btn")?.click();
+      return;
+    }
+    const top = list[0]?.offsetTop;
+    const cols = list.filter((c) => c.offsetTop === top).length || 1;
+    const go: Record<string, number> = {
+      ArrowRight: i + 1,
+      ArrowLeft: i - 1,
+      ArrowDown: i + cols,
+      ArrowUp: i - cols,
+      Home: 0,
+      End: list.length - 1,
+    };
+    const next = go[e.key];
+    if (next === undefined) return;
+    e.preventDefault();
+    // ⚠️ **범위를 벗어나면 안 움직인다.** clamp하면 `↓`가 «같은 열»을 안 지켜
+    //    엉뚱한 열로 건너뛴다(초안이 그랬다). 갈 칸이 없으면 제자리가 관례다.
+    if (next < 0 || next >= list.length) return;
+    list[next]?.focus();
+  });
+};
+
+/**
+ * 다시 그린 뒤 포커스를 되돌릴 자리. `#evidence`는 반증·엿보기마다 통째로 다시 그린다.
+ * ⚠️ **«몇 번째»가 아니라 «어느 카드»로 기억한다** — 용의자 그룹은 `participantSuspects()`가
+ *    `room.state.players`에서 만들므로 **사람이 나가면 길이·내용이 변한다.** 이탈 직후
+ *    반증이 오면 같은 index가 다른 카드다.
+ */
+let eviFocus: { card: string; memo: boolean } | null = null;
+
+/**
+ * 🔴 **다시 그리면 포커스가 사라진다.** `buildEvidence`는 손패 배부·반증·엿보기·리매치마다
+ * `innerHTML = ""`로 통째로 만든다 — 반증 한 번이 키보드 사용자의 자리를 날린다.
+ * 14회차가 대기실 격자에서 겪은 것과 같은 구조라 같은 처방을 쓴다.
+ * ⚠️ **메모를 쓰는 중일 수도 있다** — 반증·엿보기는 정확히 그 시간대에 온다.
+ *    입력창은 다시 그리면 사라지므로 그 칸의 **메모 버튼**으로 되돌린다.
+ */
+const rememberEviFocus = (): void => {
+  const el = document.activeElement as HTMLElement | null;
+  const chip = el?.closest<HTMLElement>(".evi-chip");
+  const card = chip?.dataset.card;
+  eviFocus = el && card ? { card, memo: !el.classList.contains("evi-hit") } : null;
+};
+
+const restoreEviFocus = (): void => {
+  const want = eviFocus;
+  eviFocus = null;
+  if (!want) return;
+  const chip = document.querySelector<HTMLElement>(
+    `#evidence .evi-chip[data-card="${CSS.escape(want.card)}"]`,
+  );
+  const btn = chip?.querySelector<HTMLElement>(want.memo ? ".evi-memo-btn" : ".evi-hit");
+  if (!btn || btn.getClientRects().length === 0) return;
+  btn.focus({ preventScroll: true });
+};
+
 const buildEvidence = (roomId: string): void => {
+  rememberEviFocus();
   const host = $("evidence");
   host.innerHTML = "";
   const data = loadEvi(roomId);
@@ -2439,19 +2534,37 @@ const buildEvidence = (roomId: string): void => {
     ["훔친 것", WEAPONS, false],
     ["장소", ROOMS, false],
   ];
-  for (const [cat, values, colored] of groups) {
+  for (const [gi, [cat, values, colored]] of groups.entries()) {
     const g = document.createElement("div");
     g.className = "evi-group";
     const c = document.createElement("div");
     c.className = "cat";
     c.textContent = cat;
+    // 보이는 라벨이 있으면 APG는 `aria-labelledby`다 — `aria-label`로 같은 낱말을 복제하면
+    // 둘이 갈라져도 아무도 모른다.
+    c.id = `evi-cat-${gi}`;
     g.appendChild(c);
     const chips = document.createElement("div");
     chips.className = "evi-chips";
+    // 🔴 **툴바 패턴(APG) — 탭 스톱을 그룹당 1개로 줄인다.**
+    //    25회차가 칩을 진짜 버튼으로 만들면서 탭 스톱이 **21 → 42**로 늘었다(칩 21 × 버튼 2).
+    //    증거 노트를 지나 제안 기록표·기록/알림에 가려면 Tab을 42번 쳐야 했고,
+    //    데스크톱은 컬럼이 늘 열려 있어 피할 길이 없다.
+    //    APG Toolbar: **스톱 1개 + 방향키 이동**. 3그룹이라 42 → **3**이 된다.
+    chips.setAttribute("role", "toolbar");
+    chips.setAttribute("aria-labelledby", c.id);
+    // ⚠️ **명시한다.** 기본값이 `horizontal`이라 안 적으면 «의도»인지 «누락»인지 코드가
+    //    말하지 않는다. 읽기 순서가 선형(row-major)이라 가로가 맞고, `↑↓`는 줄 단위
+    //    **가속기**다(격자 행은 `repeat(auto-fill,…)`가 레이아웃 때 만들어 DOM에 없다 —
+    //    그래서 `role="grid"`는 못 쓴다. `row` 자식을 요구하고, 넣으려면 반응형을 버려야 한다).
+    chips.setAttribute("aria-orientation", "horizontal");
     for (const v of values) {
       const chip = document.createElement("div");
       // §4.2 HUD — 용의자 칩 좌측 3px 스트라이프. 이모지 + 이름이 2차 단서로 남는다.
       // `base`는 아래 apply()가 className을 다시 조립할 때도 스트라이프 여백을 지키기 위함.
+      // 포커스 복원은 **카드 값**으로 잡는다(위 `rememberEviFocus` 주석 — index는 인원이
+      // 바뀌면 다른 카드를 가리킨다).
+      chip.dataset.card = v;
       const base = "evi-chip" + (colored ? " zc" : "");
       if (colored) chip.style.boxShadow = colorStripe(v);
 
@@ -2566,7 +2679,12 @@ const buildEvidence = (roomId: string): void => {
           if (m) memos[v] = m;
           else delete memos[v];
           saveEviMemo(roomId, memos);
+          // `renderMemo()`가 입력창을 **DOM에서 떼어낸다** → 포커스가 `<body>`로 떨어진다.
+          // 스톱을 3개로 줄인 뒤라 되돌아가려면 Tab을 다시 쳐야 했다 → 연 자리로 돌린다.
+          // (키보드로 닫은 경우만. 다른 곳을 눌러 나간 것이라면 그쪽을 뺏으면 안 된다.)
+          const byKeyboard = document.activeElement === document.body;
           renderMemo();
+          if (byKeyboard) memoBtn.focus({ preventScroll: true });
         };
       };
       renderMemo();
@@ -2574,7 +2692,9 @@ const buildEvidence = (roomId: string): void => {
     }
     g.appendChild(chips);
     host.appendChild(g);
+    wireEviToolbar(chips);
   }
+  restoreEviFocus();
 };
 
 // ── 터치 이동 패드 (로드맵 §7.12 T1 — 07-28 컷 결정 복원) ─────────────

@@ -2019,7 +2019,7 @@
         <div class="rp-panel rp-fold rp-ai hidden" id="aiPanel">
           <details>
             <summary>
-              <span class="ai-title">🤖 AI 대사</span>
+              <span class="ai-title" role="heading" aria-level="2">🤖 AI 대사</span>
               <span id="aiChip" class="ai-chip"></span>
               <!-- 전건 폴백 경고(④ §4 요구사항 5). **`<summary>` 안에 둔다** —
                    상세(`#aiDetail`)에 두면 패널이 접혔을 때 사용자에게 도달하지 못한다. -->
@@ -2039,7 +2039,10 @@
         <!-- 각 리사이저는 «바로 위» 섹션의 높이를 조절한다. 위 섹션이 접히면(hidden) 리사이저도 숨는다. -->
         <div class="rp-hresizer rp-hz" title="드래그로 높이 조절" aria-hidden="true"></div>
         <div class="rp-panel rp-evi" id="eviPanel">
-          <div class="rp-head">🔍 증거 노트 <span class="rp-sub">(나만 봄)</span></div>
+          <!-- 🔴 머리글은 **헤딩**이어야 한다. `<div>`면 보조기술 사용자가 «헤딩 점프»로
+               우측 컬럼을 건너뛸 수 없다 — 증거 노트 툴바 3개를 다 지나야 한다.
+               `<h2>`로 바꾸면 전역 제목 스타일이 붙어 레이아웃이 흔들리므로 role만 준다. -->
+          <div class="rp-head" role="heading" aria-level="2">🔍 증거 노트 <span class="rp-sub">(나만 봄)</span></div>
           <div id="handPanel" class="rp-hand"></div>
           <div id="evidence" class="rp-body"></div>
         </div>
@@ -2048,7 +2051,7 @@
         <div class="rp-panel rp-fold rp-sug hidden" id="sugPanel">
           <details open>
             <summary>
-              <span class="ai-title">🧾 제안 기록표</span>
+              <span class="ai-title" role="heading" aria-level="2">🧾 제안 기록표</span>
               <span class="rp-sub">(모두 공개)</span>
             </summary>
             <div id="sugBody" class="rp-body"></div>
@@ -2056,8 +2059,13 @@
         </div>
         <div class="rp-hresizer rp-hz" title="드래그로 높이 조절" aria-hidden="true"></div>
         <div class="rp-panel rp-log" id="logPanel">
-          <div class="rp-head">📜 기록 / 알림</div>
-          <div id="log" class="rp-body"></div>
+          <div class="rp-head" role="heading" aria-level="2">📜 기록 / 알림</div>
+          <!-- 🔴 `tabindex="0"`이 없으면 **키보드로 스크롤이 안 된다.** 크롬은 파이어폭스와
+               달리 스크롤 영역을 자동으로 포커스 대상으로 만들지 않는다. 이 패널은
+               포커스 가능한 요소가 **0개**라 Tab으로 아예 도달할 수 없었다 —
+               26회차 근거가 「여기 오려면 Tab 42번」이라고 적었는데 **거짓이었다.**
+               올 방법이 없었던 것이다. `role="log"`로 새 줄이 읽히게 한다. -->
+          <div id="log" class="rp-body" tabindex="0" role="log" aria-label="기록 / 알림"></div>
         </div>
       </div>
 

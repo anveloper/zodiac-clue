@@ -56,6 +56,10 @@
     "dir": "plans/done",
     "items": [
       {
+        "path": "plans/done/46-evi-roving-tabindex.md",
+        "title": "plan: 증거 노트를 «툴바»로 — 그리고 25회차가 연 키보드 경로의 뒷문을 닫는다"
+      },
+      {
         "path": "plans/done/45-evi-chip-keyboard.md",
         "title": "plan: 증거 노트 칸을 «조작 요소»로 만든다 — 계측 밖에 있던 진짜 타깃"
       },
