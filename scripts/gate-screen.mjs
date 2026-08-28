@@ -2059,15 +2059,28 @@ const runResultFlow = async () => {
         const data = await evalIn(target.sid, READ_RP_COL_JS).catch((e) => ({ err: e.message }));
         if (data?.err) rcSkip(data.err);
         else {
-          rightColumn = { ms: Date.now() - rc0, data, trace, vp: RC.viewport, tab: target.id };
-          // 캡처만 남긴다(pageProbe는 돌리지 않는다 — S8이 재는 것은 배분 하나다).
-          // 사람이 «0줄»을 눈으로 확인할 수 있어야 이 수치가 믿긴다.
+          // 🔴 **30회차까지 여기는 «캡처만» 남겼다** — 「S8이 재는 것은 배분 하나다」라는
+          //    사유였는데, 그 결과 **제안 기록표가 6행 찬 유일한 화면**에서 S1~S6·S9가
+          //    하나도 안 돌았다(설정의 `knownUnmeasured`가 그 사실을 매 실행 인쇄하고 있었다).
+          //    이제 같은 탭에서 `pageProbe`를 돌린다 — `probeTab`이 캡처도 함께 남긴다.
+          //    ⚠️ 실패해도 **S8은 살린다.** 배분 수치는 이미 손에 있고, 새 계측이
+          //       기존 래칫을 무너뜨리는 것은 회귀가 아니라 도구 사고다.
+          let probe = null;
           try {
-            const shot = await cmd("Page.captureScreenshot", { format: "png", captureBeyondViewport: false }, target.sid);
-            writeFileSync(join(outDir, `right-column-${RC.viewport}.png`), Buffer.from(shot.data, "base64"));
-          } catch {
-            /* 캡처 실패는 판정에 영향 없음 */
+            probe = await probeTab(target.sid, RC.probe, `right-column-${RC.viewport}`);
+          } catch (e) {
+            probe = { err: e.message };
           }
+          // ⚠️ hover는 **따로** 감싼다. 한 `try`에 묶으면 hover 예외가 이미 성공한
+          //    S1~S6까지 `{err}`로 덮어 통째로 버린다(검수 지적).
+          if (probe && !probe.err) {
+            try {
+              probe.hover = await probeHoverStates(target.sid);
+            } catch (e) {
+              probe.hover = { skip: `hover 계측 실패 — ${e.message}` };
+            }
+          }
+          rightColumn = { ms: Date.now() - rc0, data, probe, trace, vp: RC.viewport, tab: target.id };
         }
       }
     }
@@ -2968,8 +2981,24 @@ if (!wanted("result")) {
       vpLabel: `${SCREEN.rightColumn.viewport} · 판 중반(제안 ${SCREEN.rightColumn.suggestRows}행)`,
       ms: rc?.ms ?? 0,
     };
-    if (check.status === "SKIP") results.push({ ...base, skip: check.detail, skipLines: check.lines });
-    else results.push({ ...base, checks: [check], shot: join(outDir, `right-column-${SCREEN.rightColumn.viewport}.png`) });
+    // S8 옆에 **같은 탭에서 잰 나머지 검사**를 붙인다(30회차 · 플랜 50).
+    // 이 화면에만 있는 것이 제안 기록표라 여기서만 `.sg-*`가 계측된다.
+    const rcVpObj = SCREEN.viewports.find((v) => v.id === SCREEN.rightColumn.viewport);
+    let rcMore = [];
+    if (rc?.probe?.err) {
+      rcMore = [{ id: "S1~S9", status: "SKIP", detail: `계측 실패 — ${rc.probe.err}` }];
+    } else if (rc?.probe && !rcVpObj) {
+      // 조용히 비우지 않는다 — 사유 없는 미측정이 이 저장소가 가장 경계하는 실패다.
+      rcMore = [{ id: "S1~S9", status: "SKIP", detail: `뷰포트 «${SCREEN.rightColumn.viewport}» 정의를 SCREEN.viewports에서 못 찾았다 — 판정 불가` }];
+    } else if (rc?.probe) {
+      rcMore = judge(SCREEN.rightColumn.probe, rcVpObj, rc.probe);
+    }
+    // 🔴 **S8이 SKIP이어도 나머지는 살린다.** S8이 SKIP되는 흔한 경로는 「기준선 미기록」인데
+    //    그때 `rc.probe`는 **정상 계측돼 있다** — 초안은 그 경우 방금 붙인 S1~S9를
+    //    사유도 없이 통째로 버렸다(검수 지적). 기준선을 새로 박는 회차마다 조용한 미측정이 났을 것이다.
+    if (check.status === "SKIP")
+      results.push({ ...base, skip: check.detail, skipLines: check.lines, checks: rcMore.length ? rcMore : undefined });
+    else results.push({ ...base, checks: [check, ...rcMore], shot: join(outDir, `right-column-${SCREEN.rightColumn.viewport}.png`) });
     rightColumnRun = rc;
   }
   // 폰은 원리적으로 같은 수치가 정의되지 않는다 — **조용히 빼지 않는다.**
