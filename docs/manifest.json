@@ -56,6 +56,10 @@
     "dir": "plans/done",
     "items": [
       {
+        "path": "plans/done/57-modal-control-width.md",
+        "title": "plan: 폼은 카드가 아니다 — 모달 컨트롤 폭 상한"
+      },
+      {
         "path": "plans/done/56-modal-desktop-width.md",
         "title": "plan: 카드 계열 폭 정렬의 나머지 반쪽 — 60초 안내·제안/신고 모달"
       },

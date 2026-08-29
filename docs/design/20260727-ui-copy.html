@@ -509,6 +509,18 @@
     <tr><td>결과 부제</td><td><b>44자</b></td><td><code>.end-sub</code> 1~2행</td></tr>
     <tr><td>목표 카드 1줄</td><td><b>순한글 ≈33자</b><br><span class="note">마커 제외</span></td><td><b>5줄</b> 카드. <b>상한은 글자 수가 아니라 렌더 폭이다</b>(폰 390 가용폭 306px) — ①은 <b>37자인데 1행</b>(숫자·<code>·</code>·공백이 좁다), ⑤는 <b>36자인데 2행</b>(순한글 비중). 2026-08-26 실측 — 1행: ①37·④33 / 2행: ②39·③52·⑤36. ⚠️ ③(52자)이 최장. <b>글자 수로 판정하지 말고 <code>gate-screen.mjs --keep</code> 캡처로 확정하라.</b> <del>«27자 · ③은 44자»는 md의 «32자»와도 어긋났고 둘 다 실측과 불일치 — 폐기</del></td></tr>
     <tr><td>랜딩 <code>.msg</code></td><td><b>40자</b></td><td><code>min-height:16px</code> 1행. <b>폰 기준</b></td></tr>
+    <tr><td><b>모달 select 옵션</b></td>
+      <td><b>글자 예산 265px</b><br><span class="note">현재 최장 <b>213px</b> ≈
+      <code>🐯 호랑이 대감 — 내 패 (정답 아님)</code>(<code>🐵 잔나비 광대…</code>와 동률)</span></td>
+      <td>데스크톱 컨트롤 폭 <b>310</b> = <code>.modal</code> <b>448</b> − 테두리 2 − 패딩 64 −
+      라벨 64 − 간격 8. <b>1차 상수는 448이고 310은 파생값이다</b> —
+      <code>.modal-row label { width: 64px }</code>를 바꾸면 예산이 조용히 깨진다.<br>
+      예산 = 310 − 크롬 45(패딩·화살표·테두리). <b>크롬에는 서체 배수가 안 걸린다.</b><br>
+      서체는 스택 마지막이 <code>sans-serif</code>라 <code>serif</code>·<code>AppleGothic</code>에
+      <b>닿지 않는다</b> — 도달 가능한 최악은 NanumGothic <b>227px</b>(필요 폭 270).
+      남은 여유 <b>265 − 227 = 38px ≈ 한글 2.5자</b>.<br>
+      <b style="color:var(--red)">⚠️ 폰(13px)</b>: 필요 폭 <b>225px</b> vs 컨트롤
+      390→264 · 360→234 · <b>320→194(잘린다 · 선재 결함)</b>.</td></tr>
     <tr><td><b>NPC 대사 — 제안</b></td><td><b>25자</b></td><td>코드 <code>LINE_BUDGET_SUGGEST</code>. 봇 1턴 = <code>npcDelay</code>+<code>BOT_ACT_GAP</code>+<code>bubbleLifeMs(len)</code> ≤ 4s 역산(④ §2.3)</td></tr>
     <tr><td><b>NPC 대사 — 고발·계략</b></td><td><b>40자</b></td><td>코드 <code>LINE_MAX</code>. 홀드 타이머가 없어 클라이맥스 대사의 캐릭터색을 남긴다</td></tr>
     <tr><td>AI 로그 배지</td><td><b>8자</b></td><td><code>.log-badge</code> 1칸 — 폴백 사유 한글 표기(§4.4)가 이 상한에 맞춰져 있다</td></tr>
