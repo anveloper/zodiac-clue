@@ -162,6 +162,30 @@ const PLAQUE_MAX_SCALE = 2;
  */
 const PLAQUE_DEPTH = 3;
 /**
+ * 명패 **말고** 나머지 라벨의 역스케일 상한(토큰 이름표·「나」 배지·계략 태그·「잔치상」).
+ *
+ * `1 / MIN_ZOOM`이면 **줌 전 구간에서 화면 크기가 정확히 고정**된다
+ * (`world × min(1/z, 1/MIN_ZOOM) × z`는 `z ≥ MIN_ZOOM`에서 항상 `world`).
+ * 명패가 2.0에 묶인 것은 **복도 한 줄**이라는 제약 때문인데, 이 라벨들은 토큰에 붙어
+ * 다니므로 그 제약이 없다 — 그래서 여기만 정확한 값을 쓴다.
+ * 효과: 폰(z=0.4)에서 이름표가 **5.2px**(역스케일 전) → **13px**(고정).
+ *   ⚠️ 초안은 「10.4 → 13」이라 적었는데 10.4는 **«명패 상한 2.0을 썼다면»의 반사실**이고
+ *      실제 이전 값이 아니다(검수 지적).
+ *
+ * ⚠️ 대가: 이름표의 **월드 폭**이 2.5배가 된다(≈90 → 225px). 한 칸이 80px이므로
+ *    같은 방에 여럿이 모이면 이름표끼리 겹친다 — 다만 배율 1에서도 이미 90 > 80이라
+ *    **새로 생기는 종류의 문제는 아니고**, 겹침 폭이 커진다.
+ */
+const LABEL_MAX_SCALE = 1 / MIN_ZOOM;
+
+/**
+ * 역스케일 대상이 될 수 있는 것 — **크기를 바꿀 수 있는** 표시 객체.
+ * `GameObject`만으로 잡으면 `setScale`이 없는 것도 목록에 들어가고, 그것을
+ * `setScale?.()`로 넘기면 **조용히 아무 일도 안 하는** 경로가 생긴다(`any` 금지와 같은 냄새).
+ */
+type ScalableGO = Phaser.GameObjects.GameObject &
+  Phaser.GameObjects.Components.Transform;
+/**
  * 토큰(말)의 깊이. **명패·장물·문보다 위**다.
  *
  * 🔴 그전에는 `setDepth`가 없어 **0**이었다 — 즉 내 말이 장물 이모지(2)·문(1) **뒤로**
@@ -318,7 +342,18 @@ export class GameScene extends Phaser.Scene {
    * 방 명패 컨테이너 — **줌에 독립적인 화면 크기**를 유지한다(`applyPlaqueScale`).
    * 보드 위 «글자»는 물체가 아니라 **라벨**이라 물체처럼 멀어지면 안 된다.
    */
-  private plaques: Phaser.GameObjects.Container[] = [];
+  private plaques: ScalableGO[] = [];
+  /**
+   * 명패 말고 **나머지 라벨** — 토큰 이름표 묶음 · 「나」 배지 · 계략 태그.
+   * 31회차는 명패만 고쳐 원칙이 **9/10만** 적용돼 있었다(줌아웃하면 나머지는 여전히 뭉갰다).
+   *
+   * 목록을 나누는 축은 **상한값**이다(`plaques`=2.0 · 여기=`LABEL_MAX_SCALE`).
+   * 마침 생멸 주기도 갈린다 — `plaques`(방 명패·잔치상)는 `drawBoard` 1회의 보드 가구이고
+   * 여기 것은 판 중에 생기고 **사라진다**. 그래서 여기만 죽은 참조를 솎아낸다.
+   * 🔴 초안은 「생멸 주기가 다르다」를 **유일한** 이유로 적었는데, 그때는 잔치상이 이 목록에
+   *    있었다 — 잔치상은 보드 가구라 그 서술이 스스로 틀렸다(검수 지적).
+   */
+  private labels: ScalableGO[] = [];
   /** 마지막으로 역스케일을 적용한 줌 — 매 프레임 같은 값을 다시 쓰지 않는다. */
   private lastPlaqueZoom = 0;
   /** 방 명패의 "살펴봄" ✓ 스탬프 — `setSurveyed`가 켠다. */
@@ -363,9 +398,6 @@ export class GameScene extends Phaser.Scene {
     // 씬 종료·파괴에서 GPU 자원·타이머를 회수한다(§9.3 — dispose 0건이던 지점).
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.dispose());
     this.events.once(Phaser.Scenes.Events.DESTROY, () => this.dispose());
-    this.drawBoard();
-    this.setupPetals();
-
     // ── 카메라: 내 캐릭터 추적 탑뷰 ──
     // bounds는 매 프레임 `applyCamBounds()`가 **인셋·줌을 반영해** 다시 잡는다.
     // 고정 bounds를 여기서 한 번 거는 방식은 쓸 수 없다 — 우측 패널 인셋과 줌이
@@ -375,7 +407,12 @@ export class GameScene extends Phaser.Scene {
     // 넓은 화면에서는 `fitZoom`이 INIT_ZOOM을 그대로 돌려주므로 데스크톱은 불변이다.
     cam.setZoom(fitZoom(Math.min(cam.width, cam.height), INIT_ZOOM, MIN_ZOOM));
     cam.centerOn(BOARD_W / 2, BOARD_H / 2);
+    // ⚠️ **`drawBoard()`보다 먼저** 대입한다. 보드 가구(명패·잔치상)가 `trackLabel`/`plaques`로
+    //    등록될 때 «지금 줌»을 바로 받게 하려는 것이다 — 뒤에 두면 배율 1로 등록됐다가
+    //    첫 `update()`에서 교정되므로 「첫 프레임만 작게 보이는가」를 매번 따져야 한다.
     this.cam = cam;
+    this.drawBoard();
+    this.setupPetals();
     this.applyCamBounds();
 
     this.room.onStateChange((state) => this.render(state));
@@ -637,10 +674,33 @@ export class GameScene extends Phaser.Scene {
    */
   private applyPlaqueScale(): void {
     const z = this.cam?.zoom ?? 1;
-    if (z === this.lastPlaqueZoom || z <= 0) return;
+    if (z <= 0) return;
+    const zoomChanged = z !== this.lastPlaqueZoom;
+    const kl = Math.min(1 / z, LABEL_MAX_SCALE);
+    // ⚠️ 토큰·계략은 **판 중에** 파괴된다(사람이 나가면 `tokens.delete`, 계략이 사라지면
+    //    `helperSprites.delete`). 목록을 그냥 두면 죽은 참조가 계속 쌓이므로 훑으면서 **솎아낸다.**
+    //    `destroy()`한 오브젝트는 `scene`이 지워지므로 그것으로 판별한다
+    //    (`active`는 `setActive(false)`로도 꺼지므로 판별자로 못 쓴다).
+    // 🔴 솎기는 **줌 가드 위**에 있어야 한다. 아래에 두면 폰처럼 **줌이 한 번도 안 바뀌는**
+    //    기기에서 영원히 안 돈다(폰은 휠이 없고 핀치 핸들러도 없다).
+    let n = 0;
+    for (const g of this.labels) {
+      if (!g.scene) continue;
+      if (zoomChanged) g.setScale(kl);
+      this.labels[n++] = g;
+    }
+    this.labels.length = n;
+    if (!zoomChanged) return;
     this.lastPlaqueZoom = z;
     const k = Math.min(1 / z, PLAQUE_MAX_SCALE);
     for (const c of this.plaques) c.setScale(k);
+  }
+
+  /** 새로 만든 라벨을 역스케일 대상에 넣고 **지금 줌을 즉시 적용**한다. */
+  private trackLabel<T extends ScalableGO>(g: T): T {
+    this.labels.push(g);
+    g.setScale(Math.min(1 / (this.cam?.zoom || 1), LABEL_MAX_SCALE));
+    return g;
   }
 
   update(): void {
@@ -788,12 +848,29 @@ export class GameScene extends Phaser.Scene {
     feastEdge.lineStyle(3, BOARD.feastEdge, 1);
     feastEdge.strokeRoundedRect(fx, fy, fw, fh, 16);
     // 「잔치상」 라벨은 목표 식별용이라 유지 — 이미지 하단 위에 얹는다.
-    this.add
-      .text(fx + fw / 2, fy + fh / 2 + 36, "잔치상", {
-        fontSize: "22px",
-        color: hexString(BOARD.feastText),
-      })
-      .setOrigin(0.5);
+    // 명패와 **같은 부류의 장소 라벨**이라 같은 규칙 둘을 받는다:
+    //   ① 화면 크기 고정(`trackLabel`)
+    //   ② 🔴 **나무 칩 배경.** 그전에는 맨 글자를 잔치상 **음식 그림 위**에 얹어서
+    //      사실상 안 읽혔다(캡처 실측). 반투명 판(`#000000aa`)은 최악(흰 음식) 합성에서
+    //      실효 배경 #555555라 `feastText` 대비가 **4.23 — AA 미달**이다.
+    //      명패와 같은 불투명 `BOARD.plaque`를 깔면 **9.03:1**이고, 장소 라벨의
+    //      시각 언어도 방 명패와 하나가 된다.
+    // 🔴 자리도 방 명패와 같게 **바깥 위**로 옮긴다. 예전 자리(`fy + fh/2 + 36`)는
+    //    주석이 「이미지 하단」이라 적었지만 실제로는 **그림 세로 57.5% — 한가운데**였고,
+    //    잔치상은 **모두가 가는 목표 칸**이라 그 위에 선 토큰의 이름표가 라벨을
+    //    통째로 지웠다(캡처 실측). 대비를 9.03으로 올려 놓고 가려지면 의미가 없다.
+    //    앵커는 아래변 — 명패와 같이 위로만 자란다.
+    this.plaques.push(
+      this.add
+        .text(fx + fw / 2, fy - PLAQUE_GAP_PX, "잔치상", {
+          fontSize: "22px",
+          color: hexString(BOARD.feastText),
+          backgroundColor: hexString(BOARD.plaque),
+          padding: { x: 10, y: 4 },
+        })
+        .setOrigin(0.5, 1)
+        .setDepth(PLAQUE_DEPTH),
+    );
 
     // 방 (한지 바닥 + 테두리 + 명패)
     for (const r of ROOM_REGIONS) {
@@ -1039,17 +1116,20 @@ export class GameScene extends Phaser.Scene {
           .circle(0, 0, CELL * 0.42, BOARD.helperDisc)
           .setStrokeStyle(TOKEN_OUTLINE_PX, BOARD.helperEdge);
         const face = this.faceGO(h.value, CELL * 0.74);
+        // 🔴 🃏는 **글자가 아니라 아이콘**이다 — 🚪·장물과 같은 부류라 월드 스케일로 둔다.
+        //    초안은 라벨로 등록했다가 배율 2.5에서 상자가 42.5px가 되어 얼굴(59.2 정사각)을
+        //    **27×27** 덮었다. 얼굴은 «색에 의존하지 않는 1차 식별자»라고 이 파일이 적어 둔 것이다.
         const mark = this.add
           .text(CELL * 0.3, -CELL * 0.3, "🃏", { fontSize: "15px" })
           .setOrigin(0.5);
-        const tag = this.add
-          .text(0, CELL * 0.52, "계략", {
+        const tag = this.trackLabel(
+          this.add.text(0, CELL * 0.52, "계략", {
             fontSize: "12px",
             color: hexString(BOARD.helperTag),
             backgroundColor: "#000000aa",
             padding: { x: 3, y: 1 },
-          })
-          .setOrigin(0.5, 0);
+          }).setOrigin(0.5, 0),
+        );
         c = this.add.container(cx, cy, [disc, face, mark, tag]).setDepth(1);
         this.helperSprites.set(key, c);
       }
@@ -1572,6 +1652,9 @@ export class GameScene extends Phaser.Scene {
     // 들고 있기** 때문이다 — 배열만 비우고 두면 죽은 컨테이너 참조가 남는다.
     this.plaques.forEach((c) => c.destroy());
     this.plaques = [];
+    // 라벨은 **소유자가 따로** 있다(토큰·계략 컨테이너·보드 가구) — 여기서 파괴하지 않는다.
+    // 목록만 비운다. 그러지 않으면 죽은 오브젝트 참조가 남는다.
+    this.labels = [];
     this.lastPlaqueZoom = 0;
     this.roomRects.clear();
     // 절차 생성한 꽃잎 텍스처를 TextureManager에서 회수(§9.3 — generateTexture는 영구 등록).
@@ -1597,7 +1680,8 @@ export class GameScene extends Phaser.Scene {
     if (!cue) return [];
     const d = 1.5; // 도트 1단위(px) → 셀 12px
     const cx = name.width / 2 + (CVD_CELL * d) / 2 + 4;
-    const cy = CELL * 0.55 + name.height / 2;
+    // ⚠️ 이름표 묶음 컨테이너 기준(앵커 = 이름표 윗변)이라 `CELL*0.55`를 더하지 않는다.
+    const cy = name.height / 2;
     // 잔디·방바닥 어디에서도 흰 글리프가 읽히도록 어두운 판을 깐다.
     const out: Phaser.GameObjects.GameObject[] = [
       this.add.rectangle(cx, cy, CVD_CELL * d + 4, CVD_CELL * d + 4, 0x000000, 0.67),
@@ -1651,8 +1735,12 @@ export class GameScene extends Phaser.Scene {
       .setStrokeStyle(TOKEN_OUTLINE_PX, TOKEN_OUTLINE_COLOR);
     // 얼굴 프로필 = 색에 의존하지 않는 1차 식별자(원형 webp). 색 링은 보조 단서다.
     const face = this.faceGO(a.suspect, CELL * 0.74);
+    // 이름표 묶음(이름·스트라이프·탈락 파선·색각 큐)은 **한 컨테이너**에 넣는다.
+    // 스트라이프·파선·큐의 좌표가 전부 `name.width/height`에서 파생되므로 개별로
+    // 스케일하면 서로 어긋난다. 컨테이너 앵커는 **이름표 윗변 중앙**(0, CELL*0.55) —
+    // 커져도 위(얼굴 디스크) 쪽으로 침범하지 않고 아래로만 자란다.
     const name = this.add
-      .text(0, CELL * 0.55, `${a.isBot ? "🤖" : ""}${a.name}`, {
+      .text(0, 0, `${a.isBot ? "🤖" : ""}${a.name}`, {
         fontSize: "13px",
         color: hexString(BOARD.nameText),
         backgroundColor: "#000000aa",
@@ -1663,7 +1751,7 @@ export class GameScene extends Phaser.Scene {
     const stripe = this.add
       .rectangle(
         -name.width / 2 + NAME_STRIPE_PX / 2,
-        CELL * 0.55 + name.height / 2,
+        name.height / 2,
         NAME_STRIPE_PX,
         name.height,
         color,
@@ -1675,32 +1763,36 @@ export class GameScene extends Phaser.Scene {
     drawDashedRect(
       elimDash,
       -name.width / 2 - 2,
-      CELL * 0.55 - 2,
+      -2,
       name.width + 4,
       name.height + 4,
     );
     elimDash.setVisible(false);
     // "나" 배지 — 턴과 무관하게 내 토큰에만 항상 표시(다희 스펙). 새 색 없이 무채색(말풍선 배색) 재사용.
+    // 🔴 앵커는 **아래변**이다(`setOrigin(0.5, 1)`). 가운데 앵커면 역스케일로 커질 때
+    //    절반이 아래로 자라 **얼굴 디스크를 덮는다** — 배율 2.5에서 실측 **10.1px** 침범.
+    //    명패에 이미 쓴 규칙(«라벨은 바깥으로만 자란다»)을 여기에도 적용하지 않은 탓이었다.
     const meBadge = this.add
-      .text(0, -CELL * 0.62, "나", {
+      .text(0, -CELL * 0.44, "나", {
         fontSize: "13px",
         fontStyle: "bold",
         color: hexString(BOARD.bubbleText),
         backgroundColor: hexString(BOARD.bubbleBg),
         padding: { x: 6, y: 2 },
       })
-      .setOrigin(0.5)
+      .setOrigin(0.5, 1)
       .setVisible(id === this.myId);
-    const c = this.add.container(0, 0, [
-      ring,
-      disc,
-      face,
-      name,
-      stripe,
-      elimDash,
-      meBadge,
-      ...this.makeCvdCue(a.suspect, name),
-    ]).setDepth(TOKEN_DEPTH);
+    const tag = this.trackLabel(
+      this.add.container(0, CELL * 0.55, [
+        name,
+        stripe,
+        elimDash,
+        ...this.makeCvdCue(a.suspect, name),
+      ]),
+    );
+    const c = this.add
+      .container(0, 0, [ring, disc, face, tag, this.trackLabel(meBadge)])
+      .setDepth(TOKEN_DEPTH);
     const token: Token = {
       c,
       ring,
