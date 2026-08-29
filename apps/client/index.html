@@ -1823,6 +1823,7 @@
         line-height: 1.45; margin-bottom: 14px;
       }
       .modal-note { font-size: 12px; color: var(--wds-label-alternative); margin-top: 12px; line-height: 1.45; }
+
       /* 제안 모달 장소 고정행 — 읽기 전용(사용자가 고르는 값이 아니다) */
       .modal-fixed { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
       .modal-fixed label { flex: none; width: 52px; font-size: 12px; color: var(--wds-label-alternative); }
@@ -1833,6 +1834,43 @@
       }
       .modal .danger { background: var(--wds-status-negative); }
       .modal .danger:hover { background: var(--wds-status-negative); }
+      /* 🔴 **카드 계열 폭 정렬의 나머지 반쪽** (36회차).
+         35회차가 `.card` 380 → 520(= `.end-card` 상한)으로 맞췄는데 `.goal-card`(380)·
+         `.modal`(300)은 데스크톱 분기가 없어 남았다.
+         특히 신고 모달은 **판을 끝내는 결정**(틀리면 즉시 탈락)을 받는 자리인데
+         1440px 화면에서 300px였다. 60초 안내는 **새 플레이어가 처음 읽는 글**이다.
+
+         ⚠️ **이 블록은 반드시 `.modal-fixed *` 규칙들보다 «아래»에 있어야 한다.**
+            초안은 위에 뒀다가 `.modal-fixed label`·`.mf-val`과 **특정도 동률**이 되어
+            소스 순서에서 졌다 — 제안 모달의 장소행만 폰 크기(52px/12px/13px)로 남아
+            **데스크톱에서만 라벨 열이 12px 어긋났다.** 정렬을 명분으로 한 회차가
+            정작 모달 내부 정렬을 깬 것이다(검수 실측).
+            35회차가 `.card`에서 겪은 것과 **같은 실패**다.
+
+         조건·타이포 층은 `.card` 분기와 같은 것을 쓴다(높이 660 가드 포함).
+         ⚠️ 660은 **랜딩에서 빌려온 값**이다 — 그쪽 근거는 「문서를 스크롤하는 카드에서
+            「잔치 시작」이 첫 화면 밖으로 나간다」인데, 이 둘은 **뷰포트 중앙 정렬 오버레이**라
+            그 논증이 성립하지 않는다. 실측상 높이 **560에서도** 잘림·스크롤이 없다.
+            즉 501~659 구간이 근거 없이 옛 크기로 남는다 — 값을 나누는 것이 남은 일이다. */
+      @media (min-width: 761px) and (min-height: 660px) {
+        .goal-card { width: 520px; padding: 28px 32px; }
+        .goal-lines div { font-size: 15px; }
+        .goal-actions button { font-size: 16px; min-height: 54px; }
+        .goal-again { font-size: 13px; }
+
+        .modal { width: 520px; padding: 28px 32px; }
+        .modal h2 { font-size: 18px; margin: 0 0 16px; }
+        .modal-row label,
+        .modal-fixed label { width: 64px; font-size: 14px; }
+        .modal select,
+        .modal-fixed .mf-val { font-size: 15px; }
+        .modal select { padding: 9px 10px; }
+        /* 배지도 같은 행에 있다 — 빼면 고정행 3요소 중 하나만 폰 크기로 남는다. */
+        .modal-fixed .mf-badge { font-size: 13px; }
+        .modal-warn { font-size: 14px; padding: 10px 12px; }
+        .modal-note { font-size: 13px; }
+        .modal .actions button { font-size: 15px; }
+      }
 
       /* ── 게임 화면 밖(랜딩·대기실·모달·목표 카드·결과)의 폰 대응 ───────────
          게임 HUD는 위 §터치 T1에서 이미 44px 하한을 잡았는데, 랜딩·대기실·모달은
