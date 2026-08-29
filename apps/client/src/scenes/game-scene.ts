@@ -577,8 +577,18 @@ export class GameScene extends Phaser.Scene {
   }
 
   /**
-   * 보이는 영역 중앙에 대상이 오도록 하는 followOffset (월드 단위).
+   * 대상이 **보이는 영역 한가운데**에 오도록 하는 followOffset (월드 단위).
+   * `startFollow`·`centerOn`·`pan`이 모두 이 값을 거친다.
    * 인셋은 `hud-inset`이 ResizeObserver로 캐시한 값 — 여기서 측정하지 않는다(리플로우 0).
+   *
+   * ⚠️ **이 식은 줌에 무관하게 맞다. 34회차가 «줌에서 틀렸다»고 오진해 고쳤다가 되돌렸다.**
+   *    Phaser는 `preRender`에서 원점을 빼고(`sx = fx − originX`) **렌더 행렬에서 다시 더한다**
+   *    (`matrix.applyITRS(x + originX, …)` → `matrix.translate(−originX, −originY)`).
+   *    그래서 실제 매핑은 `(world − scroll) · z`가 **아니라**
+   *    **`z · (world − scroll − size/2) + size/2`**이고, 여기에 `scroll = t − off − size/2`를 넣으면
+   *    **`screen = off·z + size/2`** — `off = −inset/(2z)`면 결과가 `(size − inset)/2`로
+   *    **z가 소거된다.** 즉 이 식이 줌 전 구간에서 정확히 «보이는 영역의 중앙»을 준다.
+   *    (검산은 이 파일 `viewOrigin()`으로 하면 된다 — 그것이 `screen = 0`을 푼 값이다.)
    */
   private insetOffset(): number {
     return -hudInset().right / 2 / this.cam.zoom;
@@ -587,6 +597,43 @@ export class GameScene extends Phaser.Scene {
   /** 하단 시트 레이아웃일 때의 세로 보정. 우측 컬럼 레이아웃에서는 항상 0. */
   private insetOffsetY(): number {
     return -hudInset().bottom / 2 / this.cam.zoom;
+  }
+
+  /**
+   * **게이트 계측용** — 추적 대상이 지금 화면 어디에 그려지는가.
+   *
+   * 🔴 왜 씬이 직접 알려 주는가: 34회차가 게이트/스크립트에서 화면 좌표를 손으로
+   *    `(world − scroll) × zoom`이라 써서 **오진했다.** Phaser의 실제 매핑은
+   *    `z·(world − scroll − size/2) + size/2`라 그 식은 줌이 1이 아니면 틀린다.
+   *    계측기가 틀리면 «고쳐야 할 것»과 «고친 것»이 둘 다 거짓이 된다 — 실제로 그랬다.
+   *    그래서 **좌표를 만드는 쪽(`viewOrigin`)이 좌표를 알려 준다.** 재는 쪽은 식을 쓰지 않는다.
+   *
+   * 반환은 화면 CSS px. 「보이는 영역」은 카메라가 아는 인셋(`#rightPanel`)만 뺀 값이다 —
+   * 턴 배너·액션 바·D패드는 카메라가 모른다(그 사실 자체가 문서에 적혀 있다).
+   */
+  camFraming(): {
+    x: number;
+    y: number;
+    wantX: number;
+    wantY: number;
+    vw: number;
+    vh: number;
+    zoom: number;
+  } | null {
+    const cam = this.cam;
+    const t = this.cam && this.followId ? this.tokens.get(this.followId) : null;
+    if (!cam || !t) return null;
+    const v = this.viewOrigin();
+    const ins = hudInset();
+    return {
+      x: Math.round((t.c.x - v.x) * v.z * 10) / 10,
+      y: Math.round((t.c.y - v.y) * v.z * 10) / 10,
+      wantX: Math.round(((cam.width - ins.right) / 2) * 10) / 10,
+      wantY: Math.round(((cam.height - ins.bottom) / 2) * 10) / 10,
+      vw: cam.width,
+      vh: cam.height,
+      zoom: Math.round(v.z * 1000) / 1000,
+    };
   }
 
   /**
