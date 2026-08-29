@@ -98,6 +98,14 @@
     "dir": "plans/done",
     "items": [
       {
+        "path": "plans/done/51-board-label-zoom.md",
+        "title": "plan: 보드 «라벨»을 줌에서 떼어낸다 — 방 명패"
+      },
+      {
+        "path": "plans/done/50-suggest-row-hierarchy.md",
+        "title": "plan: 제안 기록표 — 행의 위계를 정보 가치 순으로 (+ 이 화면 첫 계측)"
+      },
+      {
         "path": "plans/done/49-resizer-control.md",
         "title": "plan: 패널 리사이저를 진짜 컨트롤로 — 11px 손잡이는 마우스로도 못 잡는다"
       },

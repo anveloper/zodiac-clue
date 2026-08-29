@@ -156,7 +156,53 @@
     <p><b>구현</b>: <code>setBounds</code> 미사용(우측 패널만큼 밀 수 있게), 시작 시 <code>setZoom(INIT_ZOOM)·centerOn(중앙)</code>. 추적 대상은 <b>현재 턴 캐릭터</b>(내 턴이면 나, 아니면 그 상대). 턴 전환 시 <code>CAM_SWITCH_DELAY=900ms</code>(내 턴 150ms) 뒤 <code>cam.pan()</code>으로 부드럽게 이동(반증 먼저 인지). lerp = 내 턴 <code>0.12</code>/남 턴 <code>0.06</code>. 우측 패널만큼 <code>followOffset.x</code> 인셋 보정.</p>
 
     <h3>3. 줌 (휠)</h3>
-    <p><code>input.on('wheel', …)</code> → <code>cam.setZoom(clamp(zoom×배율, MIN, MAX))</code>. <del>기본 1.6~2.0배, MIN≈0.6, MAX≈3.</del> <span style="opacity:.7">(갱신 2026-07-21)</span> <b>구현: INIT_ZOOM=1.0, MIN_ZOOM=0.3, MAX_ZOOM=1.25.</b></p>
+    <p><code>input.on('wheel', …)</code> → <code>cam.setZoom(clamp(zoom×배율, MIN, MAX))</code>. <del>기본 1.6~2.0배, MIN≈0.6, MAX≈3.</del> <span style="opacity:.7">(갱신 2026-07-21)</span> <b>구현: INIT_ZOOM=1.0, <del>MIN_ZOOM=0.3</del> MIN_ZOOM=0.4, MAX_ZOOM=1.25.</b> <span style="opacity:.7">(정정 2026-08-29 — 셀 40→80과 함께 올렸는데 이 문서만 옛 값에 남아 있었다)</span></p>
+
+    <h3>3.1 초기 줌 — <code>fitZoom</code> <span style="opacity:.7">(정정 2026-08-29)</span></h3>
+    <p>짧은 변에 <code>INIT_MIN_CELLS=17</code>칸을 넣으려 시도하되 <code>MIN_ZOOM</code>으로 clamp한다:
+      <code>min(INIT_ZOOM, max(MIN_ZOOM, short / (17 × 80)))</code>.</p>
+    <p><b>데스크톱 1440×900 → 짧은 변 900 → 줌 <span style="color:var(--gold)">0.662</span>.</b>
+      기본 줌 1.0에 clamp되지 <b>않는다</b> — 즉 <b>데스크톱 줌을 정하는 것이 바로 이 상수</b>이고
+      짧은 변에 정확히 17칸이 들어온다. <span style="opacity:.7">(옛 문서의 「1.32 → clamp 1.0 ·
+      데스크톱은 영향 없음」은 <code>CELL_PX=40</code> 시절 값이다.)</span></p>
+    <p><b>⚠️ <code>short &lt; 0.4 × 17 × 80 = 544px</code>이면 <code>MIN_ZOOM</code>이 이기고 17칸은
+      실현되지 않는다.</b> 게이트 폰 뷰포트 <b>390</b>에서는 <b>12.2칸</b>이다(그 외 폭은 미확인).</p>
+    <p><b>⚠️ 이것은 원저자의 잘못이 아니다.</b> 도입 시점(<code>a5a9e31</code>)에는
+      <code>CELL_PX=40</code>·<code>MIN_ZOOM=0.3</code>이라 폰 줌이 <code>390/(17×40)=0.574</code>로
+      <b>상수가 실제로 지배했다</b>. 무효가 된 것은 <code>eff7c0f</code>(셀 40→80 ·
+      <code>MIN_ZOOM</code> 0.3→0.4)가 <b>이 상수를 조용히 무효화하고 문서를 안 고쳤기</b> 때문이다.</p>
+
+    <h3>3.2 보드 위 «라벨»은 줌을 따라 작아지지 않는다 <span style="opacity:.7">(2026-08-29)</span></h3>
+    <p>방 명패는 컨테이너에 <code>min(1/zoom, PLAQUE_MAX_SCALE=2)</code> 역스케일을 걸어
+      <b>화면 크기를 고정</b>한다(<code>zoom ≥ 0.5</code>에서 정확히 30px, <b>폰 0.4에서 24px</b>).
+      <b>데스크톱도 줌 0.662라 배율 1.511</b>이 걸린다 — 이 변경은 데스크톱에서도 명패를 51% 키운다.
+      그 전에는 폰(zoom 0.4)에서 칩 30 → <b>12px</b>, 이름 18 → <b>7.2px</b>여서
+      「여기가 어느 방인가」가 <b>안 읽혔다</b> — 클루에서 가장 자주 읽는 값이다.</p>
+    <ul>
+      <li>명패는 <b>아래변 기준</b>으로 자란다 → 커져도 <b>문(방 경계)을 절대 안 덮는다</b>(위로만).</li>
+      <li>깊이 <code>PLAQUE_DEPTH=3</code> — 문(1)·장물(2) 위. <b>깊이 3군의 일시 표기</b>
+        (<code>focusRoom</code>·<code>pulseCell</code>·워프 잔상)와는 같은 깊이라 <b>삽입 순서</b>로 갈린다
+        (명패가 먼저 생기므로 일시 표기가 위). <del>4</del>는 과했다 — 정적 라벨을
+        「지금 여기를 봐라」 표기 위에 두면 순서가 뒤집힌다.</li>
+      <li><b>토큰 <code>TOKEN_DEPTH=5</code></b> — 그전에는 <code>setDepth</code>가 없어 <b>0</b>이라
+        내 말이 장물(2)·문(1) <b>뒤로</b> 들어갔다. 명패를 올리면서 같이 푼다. 말은 판에서 가장 앞이다.</li>
+      <li><b>윗벽 문 3방(안방·행랑채·별당)의 <code>🚪</code>는 방 안쪽으로 뒤집는다</b> —
+        바깥 🚪(world y=1406)가 명패 띠 안이라 <b>데스크톱 배율 1.511에서도 통째로 가려졌다</b>.
+        아랫벽·옆벽 문은 명패와 안 부딪히므로 <b>그대로 둔다</b>(초안은 9방 전부를 뒤집어 과잉이었다).</li>
+      <li><b>상한 2배의 근거는 「복도 한 줄」 하나다</b> — <code>(80 − 6) / 30 = <b>2.467</b></code>.
+        배율 2에서 같은 행 이웃과 최소 <b>432px</b>(정지(부엌) ↔ 대청마루) 떨어진다.<br>
+        <del>「2.5배에서 보드 밖으로 나간다」</del>는 <b>근거가 못 된다</b> — 복도는 칠하지 않고
+        투명 캔버스 뒤 DOM 잔디가 비치므로 <code>y=−1</code>과 <code>y=+1</code>이 시각적으로 같다.<br>
+        <b style="color:var(--gold)">⚠️ 초안의 「전수 계산」은 방 이름을 손으로 타이핑해 틀렸다</b> —
+        <code>정지(부엌)</code>은 2글자가 아니라 <b>6글자</b>라 <code>plW</code>가 64가 아니라 <b>144</b>다.
+        그래서 최소 간격이 512가 아니라 <b>432</b>였다.</li>
+      <li><b>⚠️ 윗줄 3방은 카메라 위치에 따라 상단 HUD 뒤로 들어갈 수 있다.</b>
+        <code>applyCamBounds</code>는 <code>ins.right</code>·<code>ins.bottom</code>만 보상하고
+        <code>HudInset</code>에 <b><code>top</code>이 없다</b>. 말풍선이 쓰는 <code>hudSafe()</code>가
+        상단 밴드를 이미 알므로 경로는 있다(플랜 51 큐).</li>
+      <li><b>⚠️ 토큰 이름표(월드 13px)·잔치상 라벨(22px)은 아직 역스케일이 없다.</b>
+        <code>MIN_ZOOM</code>을 더 내려 「판이 판으로 보이게」 하려면 <b>그것이 먼저다</b> —
+        지금 원칙은 9/10만 적용됐다.</li>
 
     <h3>4. 자유시점 (특수키 hold)</h3>
     <p><kbd>Space</kbd> keydown → <code>cam.stopFollow()</code>, 드래그 팬 + 방향키 팬. keyup → <code>startFollow</code>로 현재 대상에 부드럽게 복귀. <b>자유시점 중에는 캐릭터 이동(<code>move</code> 전송) 잠금</b>(키 충돌 방지).</p>
