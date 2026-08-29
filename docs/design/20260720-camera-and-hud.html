@@ -153,7 +153,31 @@
 
     <h3>2. 추적 카메라 <span class="badge b-key">Phaser Camera</span></h3>
     <p><del><code>cam.setBounds(...)</code> + <code>startFollow(myDisc)</code>(내 토큰만 추적)</del> <span style="opacity:.7">(갱신 2026-07-21)</span></p>
-    <p><b>구현</b>: <code>setBounds</code> 미사용(우측 패널만큼 밀 수 있게), 시작 시 <code>setZoom(INIT_ZOOM)·centerOn(중앙)</code>. 추적 대상은 <b>현재 턴 캐릭터</b>(내 턴이면 나, 아니면 그 상대). 턴 전환 시 <code>CAM_SWITCH_DELAY=900ms</code>(내 턴 150ms) 뒤 <code>cam.pan()</code>으로 부드럽게 이동(반증 먼저 인지). lerp = 내 턴 <code>0.12</code>/남 턴 <code>0.06</code>. 우측 패널만큼 <code>followOffset.x</code> 인셋 보정.</p>
+    <p><b>구현</b>: <code>setBounds</code> 미사용(우측 패널만큼 밀 수 있게), 시작 시 <code>setZoom(INIT_ZOOM)·centerOn(중앙)</code>. 추적 대상은 <b>현재 턴 캐릭터</b>(내 턴이면 나, 아니면 그 상대). 턴 전환 시 <code>CAM_SWITCH_DELAY=900ms</code>(내 턴 150ms) 뒤 <code>cam.pan()</code>으로 부드럽게 이동(반증 먼저 인지). lerp = 내 턴 <code>0.12</code>/남 턴 <code>0.06</code>. 우측 패널만큼 <code>followOffset</code> 인셋 보정.</p>
+
+    <div class="box warn">
+      <b>⚠️ 인셋 보정 식 <code>off = −inset / (2·zoom)</code>은 줌에 무관하게 맞다.</b>
+      34회차가 「줌에서 틀렸다」고 <b>오진해 고쳤다가 되돌렸다.</b><br>
+      Phaser는 <code>preRender</code>에서 뺀 원점을 <b>렌더 행렬에서 다시 더한다</b>
+      (<code>applyITRS(x + originX, …)</code> → <code>translate(−originX, −originY)</code>).
+      그래서 실제 매핑은 <code>(world − scroll)·z</code>가 <b>아니라</b>
+      <b><code>z·(world − scroll − size/2) + size/2</code></b>이고,
+      <code>scroll = t − off − size/2</code>를 넣으면 <b><code>screen = off·z + size/2</code></b> —
+      <code>off = −inset/(2z)</code>면 <b>z가 소거되어</b> 언제나 <code>(size − inset)/2</code>다.<br>
+      <span class="note">검산은 저장소의 <code>viewOrigin()</code>으로 한다 —
+      그것이 <code>screen = 0</code>을 푼 값이다. 손으로 <code>(t − scroll)·z</code>를 쓰면 오진한다.</span>
+    </div>
+
+    <div class="box warn">
+      <b>⚠️ 카메라가 아는 가림은 <code>#rightPanel</code> 하나뿐이다.</b>
+      <span style="opacity:.7">(실측 2026-08-29)</span>
+      <code>hudInset()</code>의 <code>measure()</code>가 그 요소만 잰다 —
+      <b>턴 배너·액션 바·D패드는 카메라가 모른다.</b><br>
+      폰의 <b>전폭</b> 조각만 세면 상단 74(턴 배너)·하단 60(액션 바)로 거의 대칭이라 순효과 ~7px이지만,
+      <b style="color:var(--red)">🔴 폰에서 가장 크게 가리는 것은 전폭 조각이 아니라 우하단 D패드</b>
+      (≈150×150 CSS px)다 — 「전폭만 센다」는 규칙은 그것을 <b>구조적으로 못 본다</b>.
+      넣는다면 밴드도 전폭도 아닌 <b>«가림 조각 ∩ 대상 주변 상자»</b>여야 한다.
+    </div>
 
     <h3>3. 줌 (휠)</h3>
     <p><code>input.on('wheel', …)</code> → <code>cam.setZoom(clamp(zoom×배율, MIN, MAX))</code>. <del>기본 1.6~2.0배, MIN≈0.6, MAX≈3.</del> <span style="opacity:.7">(갱신 2026-07-21)</span> <b>구현: INIT_ZOOM=1.0, <del>MIN_ZOOM=0.3</del> MIN_ZOOM=0.4, MAX_ZOOM=1.25.</b> <span style="opacity:.7">(정정 2026-08-29 — 셀 40→80과 함께 올렸는데 이 문서만 옛 값에 남아 있었다)</span></p>

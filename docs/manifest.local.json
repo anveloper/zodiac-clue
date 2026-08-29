@@ -98,6 +98,10 @@
     "dir": "plans/done",
     "items": [
       {
+        "path": "plans/done/54-camera-zoom-center.md",
+        "title": "plan: 카메라 프레이밍을 게이트가 재게 한다 (+ 내 오진 기록)"
+      },
+      {
         "path": "plans/done/53-plaque-under-hud.md",
         "title": "plan: 명패를 상단 HUD 아래로 — 그리고 게임 화면을 «볼 수» 있게"
       },
