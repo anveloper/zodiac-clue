@@ -122,6 +122,29 @@ const covers = (r: DOMRect, el: Element, vw: number, vh: number): boolean => {
   );
 };
 
+/**
+ * **상단에 붙은 HUD 조각 각각**의 가로 범위와 아래변. `HudSafe.top`은 이들의 최댓값인데,
+ * 그것을 그대로 쓰면 **화면 왼쪽에만 있는 조각이 오른쪽까지 밀어낸다**(실측: 폰에서
+ * 「지금 차례」 얼굴 카드 bottom 142가 전폭 턴 배너 74.4를 덮어써 밴드가 142가 된다).
+ *
+ * 말풍선이 밴드를 쓰는 사유는 「개별 사각형 회피는 프레임마다 해가 바뀌어 떨린다」인데,
+ * **y만 아래로 미는 1차원 문제에는 그 사유가 성립하지 않는다** — 단조라 떨림이 없다.
+ * 그래서 그런 용도에만 개별 조각을 준다.
+ */
+export type HudTopPiece = { left: number; right: number; bottom: number };
+
+let cachedTopPieces: HudTopPiece[] = [];
+
+/** `[x0, x1]`(화면 px)와 **가로로 겹치는** 상단 조각들의 아래변 최댓값. */
+export const hudTopAt = (x0: number, x1: number): number => {
+  let y = 0;
+  for (const p of cachedTopPieces) {
+    if (p.right <= x0 || p.left >= x1) continue;
+    if (p.bottom > y) y = p.bottom;
+  }
+  return y;
+};
+
 const measureSafe = (): HudSafe => {
   const vw = window.innerWidth;
   const vh = window.innerHeight;
@@ -130,6 +153,7 @@ const measureSafe = (): HudSafe => {
   let right = 0;
   let bottom = 0;
   let left = 0;
+  const pieces: HudTopPiece[] = [];
   for (const el of Array.from(document.querySelectorAll(OVERLAY_SELECTOR))) {
     const r = el.getBoundingClientRect();
     if (!covers(r, el, vw, vh)) continue;
@@ -140,12 +164,14 @@ const measureSafe = (): HudSafe => {
       else left = Math.max(left, r.right);
     } else if (r.bottom <= vh * 0.5) {
       top = Math.max(top, r.bottom);
+      pieces.push({ left: r.left, right: r.right, bottom: r.bottom });
     } else if (r.top >= vh * 0.5) {
       bottom = Math.max(bottom, vh - r.top);
     }
     // 화면 한가운데 떠 있는 짧은 조각(모달 등)은 밴드를 만들지 않는다 —
     // 전면을 막는 것들이라 그 순간에는 말풍선을 옮겨 봐야 의미가 없다.
   }
+  cachedTopPieces = pieces;
   return {
     top: clamp(top, 0, vh * MAX_BAND_FRAC),
     right: clamp(right, 0, vw * MAX_BAND_FRAC),
@@ -253,4 +279,5 @@ export const releaseHudInset = (): void => {
   }
   cached = ZERO;
   cachedSafe = ZERO_SAFE;
+  cachedTopPieces = [];
 };

@@ -40,6 +40,7 @@ import {
   acquireHudInset,
   clampToSafe,
   hudInset,
+  hudTopAt,
   releaseHudInset,
   safeWidth,
 } from "./hud-inset";
@@ -158,7 +159,12 @@ const PLAQUE_MAX_SCALE = 2;
  *
  * ⚠️ 명패는 방 위 복도 한 줄을 덮는다. 그래서 **토큰을 명패 위로 올린다**(`TOKEN_DEPTH`) —
  *    초안은 이것을 「이전부터의 문제」라며 큐로 미뤘는데, 그 사이 회귀를 남기는 선택이었다.
- *    세로로는 **아래변 고정**이라 문(방 경계)은 절대 안 덮는다 — 위로만 자란다.
+ *    세로로는 **아래변 고정**이라 커질 때는 위로만 자란다.
+ *    ⚠️ 「문을 **절대** 안 덮는다」였는데 33회차에 **조건부**가 됐다 — `applyPlaqueSafeTop`이
+ *       상단 HUD 밑으로 밀 때 최대 한 칸 **내려간다.** 윗벽 문 3방(안방·행랑채·별당)은
+ *       그때 문·문설주·`🚪`를 덮을 여지가 있다(`PLAQUE_DEPTH 3` > 문 1).
+ *       `[실측]` 그 세 방은 보드 아래쪽(y 18·18·20)이라 **현재 카메라 bounds로는 밀기 조건에
+ *       도달하지 못한다** — 오늘은 잠재 결함이다. `MIN_ZOOM`을 내리거나 상단 HUD가 커지면 실현된다.
  */
 const PLAQUE_DEPTH = 3;
 /**
@@ -185,6 +191,12 @@ const LABEL_MAX_SCALE = 1 / MIN_ZOOM;
  */
 type ScalableGO = Phaser.GameObjects.GameObject &
   Phaser.GameObjects.Components.Transform;
+
+/**
+ * 보드 가구 라벨 — 스케일에 더해 **가로 범위**를 물어볼 수 있어야 한다
+ * (상단 HUD 조각과 x가 겹치는지 보려면 `getBounds()`가 필요하다).
+ */
+type BoardLabelGO = ScalableGO & { getBounds(): Phaser.Geom.Rectangle };
 /**
  * 토큰(말)의 깊이. **명패·장물·문보다 위**다.
  *
@@ -342,7 +354,12 @@ export class GameScene extends Phaser.Scene {
    * 방 명패 컨테이너 — **줌에 독립적인 화면 크기**를 유지한다(`applyPlaqueScale`).
    * 보드 위 «글자»는 물체가 아니라 **라벨**이라 물체처럼 멀어지면 안 된다.
    */
-  private plaques: ScalableGO[] = [];
+  /**
+   * 보드 가구 라벨(방 명패 · 잔치상). `baseY`는 밀기 전 기준 y다.
+   * `push: false`면 상단 HUD 밀기 대상에서 뺀다 — 잔치상이 그렇다(아래 사유).
+   * 판 중에 죽지 않으므로 `labels`와 달리 죽은 참조 솎기가 필요 없다.
+   */
+  private plaques: { go: BoardLabelGO; baseY: number; push: boolean }[] = [];
   /**
    * 명패 말고 **나머지 라벨** — 토큰 이름표 묶음 · 「나」 배지 · 계략 태그.
    * 31회차는 명패만 고쳐 원칙이 **9/10만** 적용돼 있었다(줌아웃하면 나머지는 여전히 뭉갰다).
@@ -693,7 +710,57 @@ export class GameScene extends Phaser.Scene {
     if (!zoomChanged) return;
     this.lastPlaqueZoom = z;
     const k = Math.min(1 / z, PLAQUE_MAX_SCALE);
-    for (const c of this.plaques) c.setScale(k);
+    for (const p of this.plaques) p.go.setScale(k);
+  }
+
+  /**
+   * 명패를 **상단 HUD 밴드 아래로** 밀어 넣는다.
+   *
+   * 🔴 판 시작 프레이밍이 정확히 이 상태다 — `centerOn(보드 중앙)` + 폰(zoom 0.4)이면
+   *    보드 위끝(world 0)이 화면 y≈38에 오고, 윗줄 방 명패 띠(world 14~74)는
+   *    화면 [43.6, 67.6] → **턴 배너(y 10~74) 뒤**다. 즉 «가끔»이 아니라
+   *    **판을 열자마자 정지(부엌)·대청마루·후원 세 방의 이름이 안 보인다.**
+   *
+   * 밀어 넣기지 **클램프가 아니다** — 말풍선(`clampToSafe`)은 화자를 가리키므로 어디로든
+   * 옮길 수 있지만, 방 이름은 **그 방 위**에 있어야 뜻이 산다. 그래서 x는 절대 안 건드리고
+   * y만 필요한 만큼 내린다. 내려간 명패는 제 방의 윗줄을 덮지만,
+   * **안 보이는 이름보다 방을 조금 덮는 이름이 낫다.**
+   *
+   * 한도는 **한 칸(`CELL`)**이다. 그 줄은 서버 `freeCellIn()`이 「명패행은 최후순위」로
+   * 이미 비워 두는 방의 첫 줄이라, 명패가 내려앉아도 토큰과 다툴 확률이 가장 낮다.
+   * 그보다 더 내려야 한다면 방 자체가 HUD 뒤라 이름표를 붙일 대상이 화면에 없다 —
+   * 무한정 따라 내려오면 그것대로 «떠다니는 라벨»이 된다.
+   *
+   * ⚠️ 초안은 한도를 `PLAQUE_H × 배율`(폰 60px)로 뒀는데, **정작 필요한 값이 76px**이라
+   *    판 시작 프레이밍에서 6.4px가 여전히 배너 뒤에 남았다 — 고치려던 그 경우를
+   *    한도가 막고 있었다(계산으로 발견).
+   */
+  private applyPlaqueSafeTop(): void {
+    const cam = this.cam;
+    if (!cam || !this.plaques.length) return;
+    // 🔴 `cam.worldView`가 아니라 `viewOrigin()`이다 — 이 파일이 바로 위에
+    //    「`worldView`는 preRender 시점 값이라 직접 계산한다」고 적어 뒀는데
+    //    초안이 그 규약을 어겼다(첫 프레임엔 `worldView`가 아예 0이다 · 검수 지적).
+    const view = this.viewOrigin();
+    const z = view.z || 1;
+    for (const p of this.plaques) {
+      if (!p.push) continue;
+      // 명패는 아래변 앵커라 위끝은 `y − 높이×배율`이다.
+      const hWorld = PLAQUE_H * p.go.scaleY;
+      const screenTop = (p.baseY - hWorld - view.y) * z;
+      // 🔴 밴드(`hudSafe().top`)가 아니라 **가로로 겹치는 조각만** 본다.
+      //    밴드는 최댓값이라, 화면 왼쪽에만 있는 「지금 차례」 카드(bottom 142)가
+      //    오른쪽 방까지 밀어냈다 — 실측에서 세 방 모두 한도 80에 붙어
+      //    **안 가리는 상황에도 영구히 방 안에 앉아** 라벨 언어가 둘로 갈렸다.
+      //    전폭 턴 배너만 보면 필요 밀기가 80 → **37 world px**로 준다.
+      // 가로 범위는 월드 bounds에서 얻어 화면 x로 옮긴다.
+      const b = p.go.getBounds();
+      const x0 = (b.x - view.x) * z;
+      const need = hudTopAt(x0, x0 + b.width * z) - screenTop;
+      const push = need > 0 ? Math.min(need / z, CELL) : 0;
+      // 같은 값이면 쓰지 않는다 — 매 프레임 dirty를 만들지 않기 위해.
+      if (p.go.y !== p.baseY + push) p.go.y = p.baseY + push;
+    }
   }
 
   /** 새로 만든 라벨을 역스케일 대상에 넣고 **지금 줌을 즉시 적용**한다. */
@@ -707,6 +774,7 @@ export class GameScene extends Phaser.Scene {
     this.updatePassageHover();
     this.applyCamBounds();
     this.applyPlaqueScale();
+    this.applyPlaqueSafeTop();
     this.bubbles.forEach((b, id) => {
       const anchor = this.tokens.get(id)?.c ?? this.helperSprites.get(id);
       if (!anchor) return;
@@ -849,7 +917,8 @@ export class GameScene extends Phaser.Scene {
     feastEdge.strokeRoundedRect(fx, fy, fw, fh, 16);
     // 「잔치상」 라벨은 목표 식별용이라 유지 — 이미지 하단 위에 얹는다.
     // 명패와 **같은 부류의 장소 라벨**이라 같은 규칙 둘을 받는다:
-    //   ① 화면 크기 고정(`trackLabel`)
+    //   ① 화면 크기 고정 — 단 `plaques[]` 소속이라 상한은 `PLAQUE_MAX_SCALE`(2.0)이다.
+    //      `trackLabel`(=`LABEL_MAX_SCALE` 2.5)이 아니다.
     //   ② 🔴 **나무 칩 배경.** 그전에는 맨 글자를 잔치상 **음식 그림 위**에 얹어서
     //      사실상 안 읽혔다(캡처 실측). 반투명 판(`#000000aa`)은 최악(흰 음식) 합성에서
     //      실효 배경 #555555라 `feastText` 대비가 **4.23 — AA 미달**이다.
@@ -860,8 +929,8 @@ export class GameScene extends Phaser.Scene {
     //    잔치상은 **모두가 가는 목표 칸**이라 그 위에 선 토큰의 이름표가 라벨을
     //    통째로 지웠다(캡처 실측). 대비를 9.03으로 올려 놓고 가려지면 의미가 없다.
     //    앵커는 아래변 — 명패와 같이 위로만 자란다.
-    this.plaques.push(
-      this.add
+    this.plaques.push({
+      go: this.add
         .text(fx + fw / 2, fy - PLAQUE_GAP_PX, "잔치상", {
           fontSize: "22px",
           color: hexString(BOARD.feastText),
@@ -870,7 +939,13 @@ export class GameScene extends Phaser.Scene {
         })
         .setOrigin(0.5, 1)
         .setDepth(PLAQUE_DEPTH),
-    );
+      baseY: fy - PLAQUE_GAP_PX,
+      // 🔴 **잔치상은 밀지 않는다.** 방 라벨이 아니라 판 중앙 목표 칸의 라벨이고,
+      //    이 자리(바깥 위)는 **직전 회차가 실측 근거로 내린 결정**이다 —
+      //    안쪽에 두면 그 칸에 선 토큰의 이름표가 라벨을 통째로 지웠다.
+      //    밀어 내리면 그 결정을 부분적으로 되돌린다(검수 지적).
+      push: false,
+    });
 
     // 방 (한지 바닥 + 테두리 + 명패)
     for (const r of ROOM_REGIONS) {
@@ -936,9 +1011,13 @@ export class GameScene extends Phaser.Scene {
         .setOrigin(0, 0.5)
         .setVisible(false);
       this.surveyMarks.set(r.name, check);
-      this.plaques.push(
-        this.add.container(x + w / 2, chipBottomY, [plaque, nameText, check]).setDepth(PLAQUE_DEPTH),
-      );
+      this.plaques.push({
+        go: this.add
+          .container(x + w / 2, chipBottomY, [plaque, nameText, check])
+          .setDepth(PLAQUE_DEPTH),
+        baseY: chipBottomY,
+        push: true,
+      });
 
       // ── 소환 앵커(§5 행 18) ──
       // 제안이 성립하면 지목된 인물이 **이 칸을 기준으로** 방 안에 선다.
@@ -1650,7 +1729,7 @@ export class GameScene extends Phaser.Scene {
     // 명패는 `drawBoard`가 1회 만드는 **보드 가구**라 방 바닥·문·소환 앵커처럼
     // 원래는 씬 파괴에 맡겨도 된다. 그래도 명시 파괴하는 것은 `plaques[]`가 **참조를
     // 들고 있기** 때문이다 — 배열만 비우고 두면 죽은 컨테이너 참조가 남는다.
-    this.plaques.forEach((c) => c.destroy());
+    this.plaques.forEach((p) => p.go.destroy());
     this.plaques = [];
     // 라벨은 **소유자가 따로** 있다(토큰·계략 컨테이너·보드 가구) — 여기서 파괴하지 않는다.
     // 목록만 비운다. 그러지 않으면 죽은 오브젝트 참조가 남는다.
