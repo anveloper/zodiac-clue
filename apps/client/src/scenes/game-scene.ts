@@ -124,6 +124,51 @@ const ROOM_IMAGE_KEYS = [
 /** 방 명패 칩 — 방 **바깥 위쪽 중앙**에 두고(다희), 방 위 경계와 `PLAQUE_GAP_PX`만큼 띄운다. */
 const PLAQUE_H = 30;
 const PLAQUE_GAP_PX = 6;
+/**
+ * 명패 역스케일 상한. 보드 위 «글자»는 물체가 아니라 **라벨**이므로 줌을 따라
+ * 작아지면 안 된다 — 폰(zoom 0.4)에서 칩 30 → **12 CSS px**, 이름 18 → **7.2 CSS px**로
+ * 못 읽었다. 화면 크기 = `PLAQUE_H × min(1/zoom, 이 값) × zoom`이므로 zoom ≥ 1/이 값
+ * 구간에서는 **정확히 30px 고정**이고, 그 아래에서만 서서히 줄어든다(0.4 → 24px).
+ *
+ * 상한의 근거는 **복도 한 줄** 하나다: 세로 자람이 `PLAQUE_GAP_PX + PLAQUE_H×배율`이므로
+ * `(80 − 6) / 30 = **2.467**`을 넘으면 두 번째 복도 줄까지 먹는다. 2.0은 그 안이다.
+ *
+ * 🔴 초안이 근거로 든 「2.5배에서 보드 밖으로 나간다」는 **근거가 못 된다**(검수 지적) —
+ *    복도는 칠하지 않고 투명 캔버스 뒤 DOM 잔디가 비치므로 `y=-1`과 `y=+1`이 시각적으로
+ *    구분되지 않는다. 넘는 것은 격자선 하나뿐이다.
+ * 🔴 그리고 초안의 「전수 계산」은 방 이름을 **손으로 타이핑해서** 틀렸다 —
+ *    `정지(부엌)`은 2글자가 아니라 **6글자**(`cards.ts` LABELS)라 `plW`가 64가 아니라 **144**다.
+ *    실제 최소 가로 간격은 512가 아니라 **432px**(정지(부엌)↔대청마루, 배율 2).
+ *    «측정하지 말고 읽어라»가 이 저장소가 반복해서 배운 것인데 또 같은 데서 걸렸다.
+ */
+const PLAQUE_MAX_SCALE = 2;
+/**
+ * 명패의 깊이. **월드 오브젝트보다 위**다(문 1 · 장물 2 · 계략 토큰 1).
+ *
+ * 예전에는 깊이를 안 줘서 0이었고, 그래서 문설주·장물이 명패 **글자 위로** 그려졌다.
+ * 명패가 작을 때는 눈에 안 띄었는데, 역스케일로 커지자 폰에서 「행」이 통째로
+ * 가려졌다(실측 캡처). 가려지는 방 이름은 **없는 것과 같다** — 라벨은 물체 뒤로
+ * 들어가면 안 된다.
+ *
+ * 🔴 초안은 **4**로 뒀는데 그건 너무 높았다(검수 지적). 깊이 3은 `focusRoom`·`pulseCell`·
+ *    워프 잔상 — 전부 **「지금 여기를 봐라」 일시 표기**다. 정적 라벨을 일시 주목 표기 위에
+ *    두면 순서가 뒤집힌다(`pulseCell`은 플레이어가 선 칸을 가리키는데 그 칸이 명패 밑
+ *    복도면 펄스가 안 보인다). **3**이면 같은 깊이 안에서 삽입 순서가 갈라 준다 —
+ *    명패는 `drawBoard`에서 먼저 만들어지므로 나중에 생기는 일시 표기 **아래**에 온다.
+ *
+ * ⚠️ 명패는 방 위 복도 한 줄을 덮는다. 그래서 **토큰을 명패 위로 올린다**(`TOKEN_DEPTH`) —
+ *    초안은 이것을 「이전부터의 문제」라며 큐로 미뤘는데, 그 사이 회귀를 남기는 선택이었다.
+ *    세로로는 **아래변 고정**이라 문(방 경계)은 절대 안 덮는다 — 위로만 자란다.
+ */
+const PLAQUE_DEPTH = 3;
+/**
+ * 토큰(말)의 깊이. **명패·장물·문보다 위**다.
+ *
+ * 🔴 그전에는 `setDepth`가 없어 **0**이었다 — 즉 내 말이 장물 이모지(2)·문(1) **뒤로**
+ *    들어갔다. 이 회차 이전부터의 결함인데, 명패를 올리면서 «명패 뒤로도 들어가는» 경우가
+ *    더해졌다. 말은 판에서 **가장 앞**에 있어야 하는 것이라 한 줄로 함께 푼다.
+ */
+const TOKEN_DEPTH = 5;
 
 /** `pulseCell`의 의미 → 뷰1 팔레트 번역(색이 아니라 의미를 받는다). */
 const TONE_COLOR: Record<PulseTone, number> = {
@@ -269,6 +314,13 @@ export class GameScene extends Phaser.Scene {
   private insetHeld = false;
   /** 지금 턴(계약 `setCurrent`). 진실값은 서버 상태이며 여기엔 사본만 둔다. */
   private currentId: string | null = null;
+  /**
+   * 방 명패 컨테이너 — **줌에 독립적인 화면 크기**를 유지한다(`applyPlaqueScale`).
+   * 보드 위 «글자»는 물체가 아니라 **라벨**이라 물체처럼 멀어지면 안 된다.
+   */
+  private plaques: Phaser.GameObjects.Container[] = [];
+  /** 마지막으로 역스케일을 적용한 줌 — 매 프레임 같은 값을 다시 쓰지 않는다. */
+  private lastPlaqueZoom = 0;
   /** 방 명패의 "살펴봄" ✓ 스탬프 — `setSurveyed`가 켠다. */
   private surveyMarks = new Map<string, Phaser.GameObjects.Text>();
   /** 방 강조 사각형(포커스/서베이 공용). */
@@ -578,9 +630,23 @@ export class GameScene extends Phaser.Scene {
   }
 
   /** 매 프레임: 말풍선 위치 + HUD 패널 보정(줌·드래그에 실시간 반응). */
+  /**
+   * 명패를 **화면 크기 고정**으로 유지한다. `setZoom` 호출부가 아니라 `update()`에서
+   * 거는 이유: 줌을 바꾸는 경로가 지금 둘(초기 fit·휠)인데, 새 경로(핀치·리사이즈)가
+   * 생겨도 여기 하나면 따라온다. 값이 그대로면 아무 것도 하지 않는다.
+   */
+  private applyPlaqueScale(): void {
+    const z = this.cam?.zoom ?? 1;
+    if (z === this.lastPlaqueZoom || z <= 0) return;
+    this.lastPlaqueZoom = z;
+    const k = Math.min(1 / z, PLAQUE_MAX_SCALE);
+    for (const c of this.plaques) c.setScale(k);
+  }
+
   update(): void {
     this.updatePassageHover();
     this.applyCamBounds();
+    this.applyPlaqueScale();
     this.bubbles.forEach((b, id) => {
       const anchor = this.tokens.get(id)?.c ?? this.helperSprites.get(id);
       if (!anchor) return;
@@ -761,15 +827,24 @@ export class GameScene extends Phaser.Scene {
       // 명패: 방 **바깥 위쪽 중앙**, 방과 6px 간격(다희). 방 바닥이 이미지가 되면서
       // 방 안 좌상단 명패가 화로 등 그림과 겹쳐 안 읽혔다 → 바깥으로 뺀다. radius 10(몽타주 칩).
       const name = label(r.name);
-      const plW = Math.min(w, name.length * 20 + 24);
-      const chipX = x + w / 2 - plW / 2;
-      const chipY = y - PLAQUE_GAP_PX - PLAQUE_H;
-      const chipMidY = chipY + PLAQUE_H / 2;
+      // ⚠️ `min(w, …)`의 뜻은 «명패가 방보다 넓지 않게»인데, 역스케일이 붙은 뒤로는
+      //    화면 폭이 `plW × 배율`이라 그 불변식이 **배율에서 깨진다**(검수 지적).
+      //    지금 콘텐츠에서는 우연히 안전하지만(최대 정지(부엌) 144×2 = 288 < 방 400),
+      //    CLAUDE.md의 «교체 가능한 콘텐츠» 전제에서 이름이 길거나 방이 좁은 주제는 즉시 깨진다.
+      //    그래서 가드를 **배율까지 포함해** 건다. 현 콘텐츠에서는 값이 안 바뀐다.
+      const plW = Math.min(w / PLAQUE_MAX_SCALE, name.length * 20 + 24);
+      // 앵커는 명패의 **아래변**이다(중앙이 아니다) — 역스케일로 커질 때 위로만 자라
+      // 방을 덮지 않는다. 중앙 앵커면 절반이 방 안으로 들어간다(2배에서 9 world px).
+      const chipBottomY = y - PLAQUE_GAP_PX;
+      // 🔴 **명패는 컨테이너 안에 (0,0) 기준으로 그린다** — 줌 역스케일을 걸기 위해서다.
+      //    예전에는 셋(칩·이름·✓)이 전부 절대 월드 좌표라 줌아웃하면 같이 작아졌다:
+      //    폰(zoom 0.4)에서 칩 30 → **12 CSS px**, 이름 18 → **7.2 CSS px**로 못 읽었다.
+      //    「여기가 어느 방인가」는 클루에서 가장 자주 읽는 값인데 그것이 안 읽혔다.
       const plaque = this.add.graphics();
       plaque.fillStyle(BOARD.plaque, 0.92);
-      plaque.fillRoundedRect(chipX, chipY, plW, PLAQUE_H, 10);
-      this.add
-        .text(chipX + plW / 2, chipMidY, name, {
+      plaque.fillRoundedRect(-plW / 2, -PLAQUE_H, plW, PLAQUE_H, 10);
+      const nameText = this.add
+        .text(0, -PLAQUE_H / 2, name, {
           fontSize: "18px",
           color: hexString(BOARD.plaqueText),
         })
@@ -777,13 +852,16 @@ export class GameScene extends Phaser.Scene {
       // "이미 살펴본 방" ✓ 스탬프 — 명패 **내부 좌측**(사유는 `SURVEY_CHECK_*` 주석).
       // 기본 숨김, `setSurveyed`가 켠다(§5 행 16).
       const check = this.add
-        .text(chipX + SURVEY_CHECK_INSET_PX, chipMidY, "✓", {
+        .text(-plW / 2 + SURVEY_CHECK_INSET_PX, -PLAQUE_H / 2, "✓", {
           fontSize: `${SURVEY_CHECK_FONT_PX}px`,
           color: hexString(BOARD.gold),
         })
         .setOrigin(0, 0.5)
         .setVisible(false);
       this.surveyMarks.set(r.name, check);
+      this.plaques.push(
+        this.add.container(x + w / 2, chipBottomY, [plaque, nameText, check]).setDepth(PLAQUE_DEPTH),
+      );
 
       // ── 소환 앵커(§5 행 18) ──
       // 제안이 성립하면 지목된 인물이 **이 칸을 기준으로** 방 안에 선다.
@@ -858,11 +936,19 @@ export class GameScene extends Phaser.Scene {
           jh,
         );
       }
-      // ④ 🚪는 **복도 쪽 바깥**에 작게. 방 안에 두면 명패·✓·토큰과 자리를 다툰다.
+      // ④ 🚪는 **복도 쪽 바깥**에 작게. 방 안에 두면 토큰과 자리를 다툰다.
+      // 🔴 예외 하나 — **윗벽 문(안방·행랑채·별당)만 방 안쪽**으로 뒤집는다.
+      //    명패가 방 바깥 **위**로 나가 있어서, 바깥에 둔 🚪가 명패와 **같은 복도 칸**을
+      //    다툰다. 명패에 역스케일이 붙자 그 3방에서 **🚪가 통째로 사라졌다**
+      //    (실측: 🚪 y=1406이 명패 띠 [1374,1434] 안 · 데스크톱 배율 1.511에서도 [1389,1434]).
+      //    ⚠️ 초안은 **9방 전부**를 안쪽으로 뒤집었다 — 아랫벽·옆벽 문은 명패와 애초에
+      //       안 부딪히는데 같이 옮겨 «과잉 억제»가 됐다(플랜 23이 같은 실수를 기록해 뒀다).
+      const doorInward = out.y < 0; // 윗벽 문 = 바깥이 위 = 명패가 있는 쪽
+      const doorSign = doorInward ? -1 : 1;
       this.add
         .text(
-          wx + out.x * CELL * 0.42,
-          wy + out.y * CELL * 0.42,
+          wx + doorSign * out.x * CELL * 0.42,
+          wy + doorSign * out.y * CELL * 0.42,
           "🚪",
           { fontSize: `${Math.floor(CELL * 0.38)}px` },
         )
@@ -1481,6 +1567,12 @@ export class GameScene extends Phaser.Scene {
     this.passageLayer?.destroy(true);
     this.passageLayer = undefined;
     this.surveyMarks.clear();
+    // 명패는 `drawBoard`가 1회 만드는 **보드 가구**라 방 바닥·문·소환 앵커처럼
+    // 원래는 씬 파괴에 맡겨도 된다. 그래도 명시 파괴하는 것은 `plaques[]`가 **참조를
+    // 들고 있기** 때문이다 — 배열만 비우고 두면 죽은 컨테이너 참조가 남는다.
+    this.plaques.forEach((c) => c.destroy());
+    this.plaques = [];
+    this.lastPlaqueZoom = 0;
     this.roomRects.clear();
     // 절차 생성한 꽃잎 텍스처를 TextureManager에서 회수(§9.3 — generateTexture는 영구 등록).
     if (this.textures.exists("zc-petal")) this.textures.remove("zc-petal");
@@ -1608,7 +1700,7 @@ export class GameScene extends Phaser.Scene {
       elimDash,
       meBadge,
       ...this.makeCvdCue(a.suspect, name),
-    ]);
+    ]).setDepth(TOKEN_DEPTH);
     const token: Token = {
       c,
       ring,
