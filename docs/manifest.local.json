@@ -98,6 +98,10 @@
     "dir": "plans/done",
     "items": [
       {
+        "path": "plans/done/58-landscape-modal-cap.md",
+        "title": "plan: 폰 가로·짧은 화면 모달 폭 상한"
+      },
+      {
         "path": "plans/done/57-modal-control-width.md",
         "title": "plan: 폼은 카드가 아니다 — 모달 컨트롤 폭 상한"
       },

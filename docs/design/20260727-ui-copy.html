@@ -519,8 +519,22 @@
       서체는 스택 마지막이 <code>sans-serif</code>라 <code>serif</code>·<code>AppleGothic</code>에
       <b>닿지 않는다</b> — 도달 가능한 최악은 NanumGothic <b>227px</b>(필요 폭 270).
       남은 여유 <b>265 − 227 = 38px ≈ 한글 2.5자</b>.<br>
-      <b style="color:var(--red)">⚠️ 폰(13px)</b>: 필요 폭 <b>225px</b> vs 컨트롤
-      390→264 · 360→234 · <b>320→194(잘린다 · 선재 결함)</b>.</td></tr>
+      <b style="color:var(--red)">⚠️ 폰(13px)</b>: 실측 필요 폭 <b>225px</b>
+      (글자 <b>186.64</b> + 크롬 38.36) · 도달 최악 서체(NanumGothic <b>1.053</b>) 기준 <b>235px</b>.
+      vs 컨트롤 390→264 · 360→234 · <b>320→194(잘린다 · 선재 결함)</b>.<br>
+      <b>폰 가로·짧은 화면</b>(<code>max-height: 500px</code>)은 상한 <b>380</b>
+      (= <code>.card</code>·<code>.goal-card</code>와 같은 축) → 컨트롤 <b>286</b>
+      (스크롤바가 뜨면 277). 그 전에는 상한이 없어 932×430에서 select <b>797px</b>,
+      1440×480에서 <b>1314px</b>이었다.<br>
+      <b style="color:var(--red)">🔴 <code>select</code>에는 저작자 <code>font-family</code>가 없었다</b> —
+      폼 컨트롤은 상속하지 않아 실측 <b>Arial</b>로 그려졌다
+      (이 파일이 <code>.cx-thumb</code>·<code>.char</code>에 <b>두 번</b> 적어 둔 사실).
+      그래서 「스택 마지막이 <code>sans-serif</code>라 <code>serif</code>·<code>AppleGothic</code>에
+      닿지 않는다」가 <b>select에는 성립하지 않았다</b>.
+      2026-08-30에 <code>font-family: inherit</code>를 넣어 논증을 실제로 참으로 만들었다.<br>
+      <b style="color:var(--gold)">⚠️ <del>「상한을 경고 1행 폭(348)보다 좁게 잡으면 스크롤이 생긴다」</del></b>
+      는 <b>하네스 인공물이었다</b> — 348은 데스크톱 14px 값이고 이 분기의 실제 12px에서는
+      <b>333.4</b>라 360에서도 한 줄로 선다(실측 <code>scrollH</code> 전후 315 동일).</td></tr>
     <tr><td><b>NPC 대사 — 제안</b></td><td><b>25자</b></td><td>코드 <code>LINE_BUDGET_SUGGEST</code>. 봇 1턴 = <code>npcDelay</code>+<code>BOT_ACT_GAP</code>+<code>bubbleLifeMs(len)</code> ≤ 4s 역산(④ §2.3)</td></tr>
     <tr><td><b>NPC 대사 — 고발·계략</b></td><td><b>40자</b></td><td>코드 <code>LINE_MAX</code>. 홀드 타이머가 없어 클라이맥스 대사의 캐릭터색을 남긴다</td></tr>
     <tr><td>AI 로그 배지</td><td><b>8자</b></td><td><code>.log-badge</code> 1칸 — 폴백 사유 한글 표기(§4.4)가 이 상한에 맞춰져 있다</td></tr>
