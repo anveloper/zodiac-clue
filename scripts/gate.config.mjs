@@ -489,7 +489,19 @@ export const SCREEN = {
       label: "게임 뷰1(솔로 즉시 진입 · 안내 카드 없음)",
       // ?solo=1 = 원클릭 솔로(create→start). demo=1 = 60초 안내 카드 생략.
       url: "/?solo=1&demo=1",
-      steps: [],
+      // 🔴 **주사위 오버레이가 사라진 뒤에 잰다.** 바로 아래 `game-column`이 같은 사유를
+      //    적어 뒀는데(「타이머로 사라져 … 기동 속도에 따라 달라진다 — 결정론이 아니면
+      //    회귀를 판정할 수 없다」) **정작 가장 많이 재는 이 화면에는 안 걸려 있었다.**
+      //    실제로 33회차에 캡처를 세 번 찍는 동안 세 번 다 주사위 카드가 보드를 덮어
+      //    «눈으로 본다»가 불가능했다.
+      steps: [
+        // ⚠️ **순서가 보증이다.** `#diceOverlay`는 `class="dice-overlay hidden"`으로 **시작**하므로
+        //    「숨겨져 있다」만 보면 **판이 시작되기도 전에 통과**한다 — 지금 통과하는 유일한
+        //    이유가 «에셋 로딩이 판 시작보다 느려서»라면 캐시가 데워지는 순간 깨진다(검수 지적).
+        //    `game-column`이 이 함정을 피한 방법도 순서였다. 먼저 판이 섰는지부터 본다.
+        { waitFor: "!document.getElementById('turnInfo').classList.contains('hidden')" },
+        { waitFor: "document.getElementById('diceOverlay').classList.contains('hidden')" },
+      ],
       ready:
         "!document.getElementById('gameScreen').classList.contains('hidden')" +
         " && !document.getElementById('turnInfo').classList.contains('hidden')",
@@ -947,6 +959,12 @@ export const SCREEN = {
     /**
      * **이 검사가 도달시킨 화면에서 «봤지만 이번엔 판정하지 않는» 것.** 매 실행 인쇄된다.
      * 조용히 빼면 그 순간 은폐가 된다 — 이 저장소가 가장 경계하는 실패 방식이다.
+     */
+    /**
+     * ⚠️ **주사위 카드(`#diceOverlay`)를 재는 화면이 저장소에 하나도 없다**(2026-08-29 · 33회차).
+     * `game`과 `game-column`이 **둘 다** 그것이 사라진 뒤에 재기 때문이다. 사라지기를 기다리는
+     * 것은 결정론 때문에 옳지만(같은 사유를 두 화면이 적어 뒀다), 그 대가로 `.dice-label`의
+     * 글자 크기·대비는 **사람 몫**이 됐다. 조용히 빠지지 않게 여기 적는다.
      */
     knownUnmeasured:
       "**제안 기록표(`.sg-*`)의 글자는 어떤 검사도 대비를 재지 않는다.** S6는 `screens` 목록의 " +
