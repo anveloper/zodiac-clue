@@ -56,6 +56,10 @@
     "dir": "plans/done",
     "items": [
       {
+        "path": "plans/done/56-modal-desktop-width.md",
+        "title": "plan: 카드 계열 폭 정렬의 나머지 반쪽 — 60초 안내·제안/신고 모달"
+      },
+      {
         "path": "plans/done/55-desktop-card-layout.md",
         "title": "plan: 데스크톱에 데스크톱 조판을 준다 — 랜딩·대기실 카드"
       },
