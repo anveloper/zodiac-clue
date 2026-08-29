@@ -396,6 +396,51 @@
       }
       .card h1 { font-size: 20px; margin: 0 0 4px; }
       .card .subtitle { font-size: 12px; color: var(--wds-label-alternative); margin: 0 0 20px; }
+      /* 🔴 **데스크톱에 데스크톱 조판이 없었다.** 실측(랜딩): 1440×900에서 카드 콘텐츠 폭
+         **330px(화면의 23%)**, `h1` **20px** — 폰 390에서의 308px·20px와 **사실상 같다.**
+         첫 화면에서 게임 제목이 20px이면 배경 그림에 묻힌다.
+         색·구조는 안 건드린다 — 대비는 색을 안 바꾸므로 불변이고, 글자가 커지는 방향이라
+         읽기는 나빠질 수 없다.
+
+         **값은 저장소 안의 축에서 가져온다**(35회차 검수):
+         · 폭 **520** = `.end-card`의 상한. 초안의 560은 **어느 축과도 안 맞았고**,
+           오히려 «`.card` 380 == `.goal-card` 380»이라는 **기존 등식을 깼다.**
+         · `h1` **26** = `.end-title`. 초안의 32는 **판의 클라이맥스 제목보다 커져** 위계를 뒤집었다.
+         ⚠️ 남은 어긋남: `.goal-card` 380 · `.modal` 300은 데스크톱 분기가 없다.
+            이 파일이 적어 둔 원칙(「화면마다 카드 폭이 다르면 그 자체가 정렬 축의 부재다」)은
+            **같은 뷰포트의 카드 계열 전부**를 말한다 — 그 둘까지 맞추는 것이 남은 일이다.
+
+         **높이 조건을 함께 건다.** 이 파일의 다른 분기가 전부 그렇게 한다
+         (`(max-width: 680px), (max-height: 500px)`). 초안은 폭만 걸어서
+         1440×420 같은 가로 창에도 큰 카드가 떴고, 실측상 **높이 655px 미만에서
+         「잔치 시작」이 첫 화면 밖**으로 나갔다. */
+      @media (min-width: 761px) and (min-height: 660px) {
+        .card { width: 520px; padding: 28px 32px; }
+        .card h1 { font-size: 26px; margin: 0 0 6px; }
+        .card .subtitle { font-size: 15px; margin: 0 0 22px; }
+        /* 카드만 넓히면 **폭 456px 막대에 13px 글자**가 얇게 늘어난다(초안 캡처).
+           ⚠️ `.char`는 뺀다 — 캐릭터 칸이 `<button>`이라 `.card button`(0,1,1)이
+           `.char`(0,1,0)를 **특정도로 이겨** 12px 의도를 15px로 덮었다. */
+        .card button:not(.char),
+        .card input { font-size: 15px; }
+        /* 🔴 이 셋은 `.card button/input`이 **못 잡는다** — 각자 더 뒤에서 12px을 다시 건다.
+           안 올리면 «넓어진 막대에 작은 글자»가 카드 안에 그대로 남는다(검수 실측).
+           특히 `#inviteLink`는 대기실에서 가장 중요한 텍스트다. */
+        .card .invite input { font-size: 15px; }
+        .card #lobbyPersona,
+        .card #gameMeta,
+        .card .divider,
+        .card .room-empty,
+        .card .host-hint { font-size: 13px; }
+        .card .seg-btn { padding: 11px 0; }
+        .card .codex-open { padding: 11px 12px; margin-bottom: 10px; }
+        /* 1차 행동은 카드에서 **가장 큰 컨트롤**이어야 한다.
+           ⚠️ `font-size`만으로는 안 된다 — 2차 버튼들은 이모지(🎭/🌐)가 라인박스를 키워
+           실측 높이가 오히려 **더 컸다**(1차 45 vs 2차 49). 높이를 직접 못 박는다. */
+        .card .full { padding: 14px 12px; font-size: 16px; min-height: 54px; }
+        .card .hint-sm,
+        .card .field label { font-size: 13px; }
+      }
       .field { margin-bottom: 12px; }
       .field label { display: block; font-size: 12px; color: var(--wds-label-alternative); margin-bottom: 4px; }
       .field input { width: 100%; }
