@@ -50,6 +50,10 @@
  *                  판을 새로 돌리지 않는다: 아래 6탭 실판에 **관측 탭 하나**를 붙여
  *                  같은 세션의 세 시점(대기 중 / 정원 초과 / 종료됨)에서 목록을 읽는다.
  *   S9 상태 대비   **`:hover`에서** 색이 바뀐 글자의 명암비. 하한은 S6와 같은 함수다.
+ *   S10 프레이밍  추적 대상이 «보이는 영역» 중앙에 오는가(`camFrame: true`인 화면만).
+ *                 **DOM으로는 안 보이는 축**이다 — 34회차가 카메라를 «고쳐» 내 말을
+ *                 화면 80%(D패드 뒤)로 밀어 놓았는데 S1~S9는 전건 PASS였다.
+ *                 좌표는 **씬이 낸다**(`camFraming()`) — 재는 쪽이 식을 쓰면 오진한다.
  *                  25회차에 전역 `button:hover`가 커스텀 버튼으로 새어 대비가 1.16:1이
  *                  됐는데 S6는 **원리적으로 못 봤다**(평상 상태만 잰다) — 그 구멍이다.
  *                  JS로는 `:hover`를 못 만들므로 **진짜 마우스를 움직인다**
@@ -833,6 +837,19 @@ function pageProbe(cfg) {
     scroll,
     touch: { counted, excluded, all: touchAll },
     text: { items: textItems, excluded: textExcluded },
+    /**
+     * S10 — 카메라 프레이밍. **씬이 계산한 값을 그대로 받는다.**
+     * 여기서 `(world − scroll) × zoom` 같은 식을 쓰면 안 된다 — Phaser의 실제 매핑은
+     * `z·(world − scroll − size/2) + size/2`라 줌이 1이 아니면 틀리고,
+     * 34회차가 정확히 그 식으로 오진해 **멀쩡한 카메라를 «고쳐서» 망가뜨렸다.**
+     * 좌표를 만드는 쪽이 좌표를 알려 준다.
+     */
+    cam: (() => {
+      const g = window.__zcGame;
+      if (!g) return null;
+      const sc = g.scene.getScenes(true).find((x) => typeof x.camFraming === "function");
+      return sc ? sc.camFraming() : null;
+    })(),
   };
 }
 
@@ -984,6 +1001,38 @@ const judge = (screen, viewport, data) => {
           ...unmeasured.map((i) => `· ${i.path} 판정 불가 — ${i.why} "${i.text}"`),
         ],
       });
+  }
+
+  // ── S10 카메라 프레이밍 ──
+  // 추적 대상이 «보이는 영역» 중앙에 오는가. **DOM으로는 안 보이는 축**이라,
+  // 게이트가 전건 PASS를 찍는 동안 34회차가 내 말을 화면 80% 지점(D패드 뒤)으로
+  // 밀어 놓고도 몰랐다 — 서브에이전트 검수가 캡처를 보고서야 잡았다.
+  // 그래서 **씬이 자기 좌표를 직접 낸다**(`camFraming()`). 재는 쪽은 식을 쓰지 않는다.
+  {
+    const cm = data.cam;
+    if (!screen.camFrame) {
+      // 🔴 **조용히 빼지 않는다.** 이 축은 «평상 판»에서만 계약이 성립한다 —
+      //    모달이 열려 있거나(목표 카드·신고 모달) 판이 끝난 화면은 카메라가
+      //    추적 대상을 중앙에 둘 이유가 없고, 턴 전환 `pan` 도중이면 정의상 어긋나 있다.
+      //    실측으로 그 화면들에서 16~213px 어긋난다 — **결함이 아니라 다른 상태**다.
+      add("S10", "SKIP",
+        "이 화면은 «평상 판»이 아니다(모달·종료·전환 중) — 프레이밍 계약이 성립하지 않는다. " +
+        (cm
+          ? `참고 실측: 대상 (${cm.x}, ${cm.y}) · 중앙 (${cm.wantX}, ${cm.wantY})`
+          : "보드 씬 없음"));
+    } else if (!cm) {
+      add("S10", "SKIP", "이 화면에는 추적 중인 보드 씬이 없다 — 프레이밍은 판정 대상이 아니다");
+    } else {
+      const dx = Math.abs(cm.x - cm.wantX);
+      const dy = Math.abs(cm.y - cm.wantY);
+      const tol = SCREEN.camCenterTolPx;
+      const bad = dx > tol || dy > tol;
+      add("S10", bad ? "FAIL" : "PASS",
+        `추적 대상 화면 (${cm.x}, ${cm.y}) · 보이는 영역 중앙 (${cm.wantX}, ${cm.wantY}) · ` +
+        `어긋남 (${dx.toFixed(1)}, ${dy.toFixed(1)}) ≤ ${tol}px · zoom ${cm.zoom}` +
+        (bad ? " — **프레이밍이 어긋났다**" : ""),
+        {});
+    }
   }
 
   // ── S9 상태(hover) 대비 ──
@@ -2443,6 +2492,24 @@ const FAULTS = [
     js: `(() => {
       const b = document.getElementById('endTurn');
       b.style.cssText += ';min-width:20px;min-height:20px;width:20px;height:20px;padding:0;font-size:8px';
+      return 'injected';
+    })()`,
+  },
+  {
+    id: "F11-카메라프레이밍",
+    expect: "S10",
+    vp: "phone",
+    signature: /프레이밍이 어긋났다/,
+    why:
+      "씬의 `insetOffsetY()`를 **200(월드)**로 덮어써 추적 오프셋을 어긋나게 한다 — " +
+      "34회차가 실제로 만든 회귀와 **같은 종류**다(오프셋 식이 틀린 경우). " +
+      "폰 zoom 0.4에서 화면 **80px** 밀리므로 한계 24px을 확실히 넘는다. " +
+      "이 축은 **DOM으로는 안 보인다** — S1~S9가 전건 PASS인 채로 내 말이 D패드 뒤로 사라졌었다.",
+    js: `(() => {
+      const g = window.__zcGame; if (!g) return 'no game';
+      const sc = g.scene.getScenes(true).find((x) => typeof x.camFraming === 'function');
+      if (!sc) return 'no scene';
+      sc.insetOffsetY = () => 200;   // \`update()\`가 매 프레임 이 값을 followOffset에 넣는다
       return 'injected';
     })()`,
   },
