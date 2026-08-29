@@ -200,9 +200,41 @@
         <code>applyCamBounds</code>는 <code>ins.right</code>·<code>ins.bottom</code>만 보상하고
         <code>HudInset</code>에 <b><code>top</code>이 없다</b>. 말풍선이 쓰는 <code>hudSafe()</code>가
         상단 밴드를 이미 알므로 경로는 있다(플랜 51 큐).</li>
-      <li><b>⚠️ 토큰 이름표(월드 13px)·잔치상 라벨(22px)은 아직 역스케일이 없다.</b>
-        <code>MIN_ZOOM</code>을 더 내려 「판이 판으로 보이게」 하려면 <b>그것이 먼저다</b> —
-        지금 원칙은 9/10만 적용됐다.</li>
+      <li><b>나머지 라벨도 같은 규칙을 받는다</b> <span style="opacity:.7">(2026-08-29 · 32회차)</span> —
+        토큰 이름표 묶음(이름·색 스트라이프·탈락 파선·색각 큐) · 「나」 배지 · 계략 태그 · 🃏 · 「잔치상」.<br>
+        상한은 <code>LABEL_MAX_SCALE = 1 / MIN_ZOOM = <b>2.5</b></code> —
+        <code>world × min(1/z, 1/MIN_ZOOM) × z</code>는 <code>z ≥ MIN_ZOOM</code>에서 항상 <code>world</code>라
+        <b>줌 전 구간에서 화면 크기가 정확히 고정</b>된다. 명패만 2.0인 것은
+        <b>복도 한 줄</b> 제약이 명패에만 있기 때문이다.
+        폰(z=0.4)에서 이름표 <b>5.2px</b>(역스케일 전) → <b>13px 고정</b>.<br>
+        <b>⚠️ 대가</b> — 이름표 <b>월드 폭</b>이 2.5배가 된다. 한 칸 80px이라 같은 방에 모이면
+        겹친다(배율 1에서도 이미 넘었으므로 새 종류의 문제는 아니고 폭이 커진다).</li>
+      <li><b>「잔치상」은 나무 칩 위에 얹는다</b> — 맨 글자를 음식 그림 위에 두면 안 읽힌다.
+        반투명 <code>#000000aa</code>는 최악(흰 음식) 합성에서 실효 배경 <code>#555555</code>라
+        <code>feastText</code> <b>4.23(AA 미달)</b>, 불투명 <code>BOARD.plaque</code>면 <b>9.03</b>이다.
+        장소 라벨의 시각 언어가 방 명패와 하나가 된다.</li>
+    </ul>
+
+    <h3>3.3 <code>MIN_ZOOM</code>을 내려 판을 한눈에 — <b>지금 구조로는</b> 안 된다
+      <span style="opacity:.7">(32회차 계산)</span></h3>
+    <p>상한이 <code>1/MIN_ZOOM</code>이라 <code>MIN_ZOOM</code>을 내려도
+      <b>화면 크기는 13px 그대로</b>다. 막는 것은 <b>월드 폭</b>이다
+      (최장 이름 「호랑이 대감」 실측 base <b>89px</b>).</p>
+    <table>
+      <tr><th>MIN_ZOOM</th><th>보이는 칸</th><th>배율</th><th>이름표 월드 폭</th></tr>
+      <tr><td>0.400 <span class="note">(현재)</span></td><td>12.2</td><td>2.50</td><td>223px = <b>2.8칸</b></td></tr>
+      <tr><td>0.287</td><td>17.0</td><td>3.48</td><td>310px = <b>3.9칸</b></td></tr>
+      <tr><td>0.203</td><td><b>24.0</b>(전체)</td><td>4.93</td><td>438px = <b>5.5칸</b></td></tr>
+    </table>
+    <p>한 칸이 80px이라 줌아웃할수록 이름표가 <b>판을 뒤덮는다.</b></p>
+    <p><b style="color:var(--gold)">⚠️ 구조를 바꾸면 길이 있다.</b>
+      ① <b>화면 공간 라벨</b> — 말풍선(<code>placeBubble</code>)이 <b>이미 하는 방식</b>
+      (월드 앵커를 화면 좌표로 투영 + 역스케일 + 안전영역 클램프)이면 라벨 크기와 월드 점유가
+      <b>분리</b>되고 겹침은 2D 배치(declutter) 문제가 된다.
+      ② <b>LOD</b> — 임계 줌 아래에서 이름표를 끄고 얼굴+색만 남긴다.
+      ③ <b>declutter</b> — 줌아웃 시 현재 턴·내 토큰만 이름표를 켠다.<br>
+      <span style="opacity:.7">(초안은 「줌아웃과 인월드 라벨은 양립하지 않는다」로 단정했다 —
+      ①을 안 본 결론이었다.)</span></p>
 
     <h3>4. 자유시점 (특수키 hold)</h3>
     <p><kbd>Space</kbd> keydown → <code>cam.stopFollow()</code>, 드래그 팬 + 방향키 팬. keyup → <code>startFollow</code>로 현재 대상에 부드럽게 복귀. <b>자유시점 중에는 캐릭터 이동(<code>move</code> 전송) 잠금</b>(키 충돌 방지).</p>
