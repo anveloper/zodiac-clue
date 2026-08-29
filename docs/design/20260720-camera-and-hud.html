@@ -196,12 +196,52 @@
         <b style="color:var(--gold)">⚠️ 초안의 「전수 계산」은 방 이름을 손으로 타이핑해 틀렸다</b> —
         <code>정지(부엌)</code>은 2글자가 아니라 <b>6글자</b>라 <code>plW</code>가 64가 아니라 <b>144</b>다.
         그래서 최소 간격이 512가 아니라 <b>432</b>였다.</li>
-      <li><b>⚠️ 윗줄 3방은 카메라 위치에 따라 상단 HUD 뒤로 들어갈 수 있다.</b>
-        <code>applyCamBounds</code>는 <code>ins.right</code>·<code>ins.bottom</code>만 보상하고
-        <code>HudInset</code>에 <b><code>top</code>이 없다</b>. 말풍선이 쓰는 <code>hudSafe()</code>가
-        상단 밴드를 이미 알므로 경로는 있다(플랜 51 큐).</li>
+      <li><b>명패는 상단 HUD 밴드 아래로 «밀어 넣는다»</b>
+        <span style="opacity:.7">(2026-08-29 · 33회차 · <code>applyPlaqueSafeTop</code>, 매 프레임)</span><br>
+        <b style="color:var(--gold)">🔴 판 시작 프레이밍은 «보드 중앙»이 아니라 «내 토큰 중심»이다</b> —
+        <code>create()</code>의 <code>centerOn(보드 중앙)</code>은 같은 함수가 동기로 부르는
+        <code>render()</code> → <code>startFollow()</code>가 <b>즉시 스냅</b>해 덮으므로
+        <b>한 프레임도 화면에 안 나온다.</b> 내 토큰이 보드 상반부에 있으면 윗줄 명패가 배너에 걸린다.<br>
+        실측(폰 390×844): <code>viewOrigin().y = <b>−135</b></code>
+        <span style="opacity:.7">(초안이 적은 <code>scrollY = −95</code>는 이름도 값도 틀렸다)</span>
+        → 명패 띠 화면 <b>[59.6, 83.6]</b>, 턴 배너 <code>[10, 74.4]</code>와
+        <b>24px 중 14.8px(62%)</b>가 겹친다. <span style="opacity:.7">(«통째로 뒤»는 과장이었다.)</span>
+        <ul>
+          <li><b>클램프가 아니라 밀어 넣기다.</b> 말풍선(<code>clampToSafe</code>)은 화자를
+            가리키므로 어디로든 옮겨도 되지만 <b>방 이름은 그 방 위에 있어야 뜻이 산다</b>
+            → <b>x는 안 건드리고 y만</b> 내린다.</li>
+          <li><b>밴드가 아니라 «가로로 겹치는 조각»만 본다</b>(<code>hudTopAt</code>).
+            <code>hudSafe().top</code>은 상단 조각 <b>아래변의 최댓값</b>이라, 화면 왼쪽에만 있는
+            「지금 차례」 카드(bottom <b>142</b>)가 전폭 턴 배너(74.4)를 덮어써
+            <b>안 가리는 방까지 밀어냈다</b> — 실측에서 세 방 모두 한도에 붙어
+            <b>영구히 방 안에 앉고</b> 장소 라벨 언어가 둘로 갈렸다.
+            전폭 배너만 보면 필요 밀기가 80 → <b>37 world px</b>로 준다.<br>
+            <span style="opacity:.7">(말풍선이 밴드를 쓰는 사유 「개별 사각형은 프레임마다 해가
+            바뀌어 떨린다」는 <b>y만 내리는 1차원·단조 문제에는 성립하지 않는다</b>.)</span></li>
+          <li>한도는 <b>한 칸(<code>CELL</code>)</b>. 더 내려야 하면 방 자체가 HUD 뒤라
+            이름표를 붙일 대상이 없다.<br>
+            <b style="color:var(--red)">⚠️ <del>「초안 한도 60px이 필요값 76px을 막아 6.4px 남았다」</del>
+            는 틀린 근거였다.</b> 그 산수는 틀린 전제(<code>viewOrigin.y = −95</code>, 밴드 74)
+            안에서만 맞다. 실측 전제에서 필요값은 <b>37</b>이라 60으로 충분했고,
+            코드의 실제 기준(밴드 142)에서는 60도 80도 부족했다.
+            <b>계산했으면 실측으로 봉인해야 한다</b> — 이 회차의 교훈이다.</li>
+          <li><b>⚠️ 뷰포트 한정</b> — 데스크톱(z=0.662)에서는 이 프레이밍에서 명패가 이미
+            화면 밖 위라 한 칸을 밀어도 <b>순 효과 0</b>이다(조건을 채우려면 3.7칸이 더 필요).
+            「고쳤다」는 <b>폰 한정</b>이다.</li>
+          <li><b>⚠️ 원인이 아니라 증상을 고쳤다.</b> 근본은 <code>HudInset</code>에 <code>top</code>이
+            없어 카메라가 상단 HUD를 한 번도 보상하지 않는 것이다.</li>
+          <li>내려간 명패는 제 방 윗줄을 덮는다.
+            <b>안 보이는 이름보다 방을 조금 덮는 이름이 낫다.</b></li>
+          <li><b>⚠️ 쓰는 것은 <code>hudSafe()</code></b>(말풍선용 4방향 <b>밴드</b>)다.
+            <code>HudInset</code>에는 <b>여전히 <code>top</code>이 없고</b>
+            <code>applyCamBounds</code>도 그대로 <code>ins.right</code>·<code>ins.bottom</code>만
+            보상한다 — <b>카메라는 안 건드렸다.</b></li>
+        </ul></li>
       <li><b>나머지 라벨도 같은 규칙을 받는다</b> <span style="opacity:.7">(2026-08-29 · 32회차)</span> —
-        토큰 이름표 묶음(이름·색 스트라이프·탈락 파선·색각 큐) · 「나」 배지 · 계략 태그 · 🃏 · 「잔치상」.<br>
+        토큰 이름표 묶음(이름·색 스트라이프·탈락 파선·색각 큐) · 「나」 배지 · 계략 태그.
+        <b style="color:var(--gold)">⚠️ <del>🃏·「잔치상」</del></b> 은 여기 <b>안 들어간다</b> —
+        🃏는 아이콘이라 월드 스케일이고, 「잔치상」은 <code>plaques[]</code> 소속이라 상한이 <b>2.0</b>이다
+        (초안이 둘 다 잘못 적었다).<br>
         상한은 <code>LABEL_MAX_SCALE = 1 / MIN_ZOOM = <b>2.5</b></code> —
         <code>world × min(1/z, 1/MIN_ZOOM) × z</code>는 <code>z ≥ MIN_ZOOM</code>에서 항상 <code>world</code>라
         <b>줌 전 구간에서 화면 크기가 정확히 고정</b>된다. 명패만 2.0인 것은

@@ -56,6 +56,10 @@
     "dir": "plans/done",
     "items": [
       {
+        "path": "plans/done/53-plaque-under-hud.md",
+        "title": "plan: 명패를 상단 HUD 아래로 — 그리고 게임 화면을 «볼 수» 있게"
+      },
+      {
         "path": "plans/done/52-board-label-rest.md",
         "title": "plan: 보드 라벨 나머지 — 원칙을 10/10으로"
       },
