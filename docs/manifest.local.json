@@ -98,6 +98,10 @@
     "dir": "plans/done",
     "items": [
       {
+        "path": "plans/done/59-modal-base-width.md",
+        "title": "plan: 모달 기본 폭 — 「어느 분기도 안 걸리는 구간」을 없앤다"
+      },
+      {
         "path": "plans/done/58-landscape-modal-cap.md",
         "title": "plan: 폰 가로·짧은 화면 모달 폭 상한"
       },

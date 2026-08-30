@@ -519,12 +519,19 @@
       서체는 스택 마지막이 <code>sans-serif</code>라 <code>serif</code>·<code>AppleGothic</code>에
       <b>닿지 않는다</b> — 도달 가능한 최악은 NanumGothic <b>227px</b>(필요 폭 270).
       남은 여유 <b>265 − 227 = 38px ≈ 한글 2.5자</b>.<br>
-      <b style="color:var(--red)">⚠️ 폰(13px)</b>: 실측 필요 폭 <b>225px</b>
+      <b style="color:var(--red)">⚠️ 폰(13px)</b>: 실측 필요 폭 <b>224px</b>
       (글자 <b>186.64</b> + 크롬 38.36) · 도달 최악 서체(NanumGothic <b>1.053</b>) 기준 <b>235px</b>.
       vs 컨트롤 390→264 · 360→234 · <b>320→194(잘린다 · 선재 결함)</b>.<br>
-      <b>폰 가로·짧은 화면</b>(<code>max-height: 500px</code>)은 상한 <b>380</b>
-      (= <code>.card</code>·<code>.goal-card</code>와 같은 축) → 컨트롤 <b>286</b>
-      (스크롤바가 뜨면 277). 그 전에는 상한이 없어 932×430에서 select <b>797px</b>,
+      <b>폭은 2층이다</b> <span class="tag t-new">2026-08-30</span> —
+      기본 <b>380</b>(= <code>.card</code>·<code>.goal-card</code>와 같은 축) + <b>데스크톱 예외</b> 448.
+      폰 가로·짧은 화면 분기는 폭을 따로 안 쓴다(기본과 같다 · 패딩만 다르다 →
+      컨트롤 <b>286</b>, 스크롤바가 뜨면 277).<br>
+      <b style="color:var(--red)">🔴 그전에는 3층이었고 두 분기 사이</b>
+      (폭 681~760 · 높이 501~659 전 폭 = <b>창을 세로로 줄인 데스크톱 전부</b>)가
+      기본값 300으로 떨어져 컨트롤 <b>198 &lt; 필요 224</b>로 <b>잘렸다</b>.
+      지금 그 구간은 <b>380/278</b>이다.<br>
+      <b>⚠️ 기본에는 <code>width</code>만 올리고 상한은 안 심는다</b> —
+      <code>max-width</code>는 <code>width</code>를 이겨 데스크톱 448을 380으로 깎는다(실측). 그 전에는 상한이 없어 932×430에서 select <b>806px</b>,
       1440×480에서 <b>1314px</b>이었다.<br>
       <b style="color:var(--red)">🔴 <code>select</code>에는 저작자 <code>font-family</code>가 없었다</b> —
       폼 컨트롤은 상속하지 않아 실측 <b>Arial</b>로 그려졌다
