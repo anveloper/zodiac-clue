@@ -534,6 +534,9 @@ export const SCREEN = {
    *   url/steps/ready — 어떻게 그 화면에 도달하는가(파라미터 없는 진입을 기본으로 둔다).
    *   vscroll        — "locked": 문서가 세로로 스크롤되면 FAIL / "allow": 스크롤이 정상
    *   protect        — **무엇이 가려도 안 되는가.** 심사자가 눌러야 하는 것들.
+   *                    ⚠️ 2026-08-31(45회차)부터 **«그리고 조상 스크롤 상자의 접힘 «위»에
+   *                    있어야 한다»**도 계약한다 — 모달·우측 컬럼처럼 `overflow: auto`인 상자
+   *                    «안»에서 접힘 아래로 내려간 것은 뷰포트로는 멀쩡해 보인다.
    *                    ⚠️ 2026-08-30(41회차)부터 **«그리고 뷰포트 안에 통째로 들어와야 한다»**
    *                    도 함께 계약한다(S1 「뷰포트에 잘림」). `vscroll: "allow"` 화면에서도
    *                    그렇다 — 스크롤하면 닿는다는 것과 «첫 화면에 있다»는 다른 말이고,
@@ -682,7 +685,10 @@ export const SCREEN = {
       id: "game-column",
       label: "게임 + 우측 컬럼 펼침(폰 전용)",
       url: "/?solo=1&demo=1",
-      onlyViewports: ["phone", "land"],
+      /* 🔴 **하한(`edge`)을 넣고서야 컬럼이 가장 빡빡한 지점이 계측됐다**(45회차 검수 지적).
+         새 «접힘 아래» 검사가 가장 값진 자리가 바로 `.rp-col { overflow-y: auto }`인데
+         그 뷰포트가 빠져 있었다 — 넣자마자 `#handPanel`이 2px 접혀 있는 것이 나왔다. */
+      onlyViewports: ["phone", "land", "edge"],
       onlyViewportsWhy:
         "데스크톱은 컬럼이 늘 펼쳐져 있어 `game` 화면이 곧 그 상태다 — 토글 버튼(`#rpToggle`) 자체가 `display:none`이라 도달할 수 없다",
       steps: [

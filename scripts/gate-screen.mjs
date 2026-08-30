@@ -19,6 +19,12 @@
  *                  기하만 보면 오탐이 난다(의도된 겹침·투명 컨테이너·`pointer-events:none` 래퍼).
  *                  히트 테스트는 브라우저 자신의 스택 순서(z-index·페인트 순서·pointer-events)를
  *                  그대로 쓰므로 «실제로 가려졌는가»에 가장 가깝다.
+ *                  ⚠️ **가림만이 아니다** — 보호 대상은 «잘려도» 안 된다:
+ *                    · 41회차 «뷰포트에 잘림» — 「뷰포트 밖」(넓이 0)과 「멀쩡함」 사이가
+ *                      통째로 사각지대였다(실측 11.6px 잘림이 초록이었다).
+ *                    · 45회차 «상자 안에서 접힘 아래» — `overflow: auto`인 **조상**이 자른 것.
+ *                      뷰포트로는 멀쩡해 보인다(실측 모달 주 행동 1.8px · 손패 줄 2px).
+ *                  판정문이 원인을 구분한다 — 처방이 다르기 때문이다.
  *   S2 스크롤      게임 화면: `scrollHeight <= innerHeight` **그리고** `scrollTo(0,9999)` 후 `scrollY === 0`.
  *                  랜딩·대기실은 세로 스크롤이 **정상**이라 기대값을 다르게 둔다(gate.config.mjs).
  *                  가로 스크롤은 어느 화면에서도 사고다 — 전 화면 공통으로 잠근다.
@@ -440,13 +446,97 @@ function pageProbe(cfg) {
     return true;
   };
   /** 뷰포트와의 교차(= 지금 화면에서 실제로 보이는 부분). */
-  const visBox = (el) => {
+  /**
+   * 요소를 자르는 **조상**들의 클립 상자.
+   *
+   * 🔴 44회차까지 `visBox`는 **뷰포트만** 잘랐다. 그래서 모달처럼
+   *    `max-height: 100%` + `overflow-y: auto`인 상자 «안»에서 접힘 아래로 내려간 것은
+   *    **원리적으로 안 보였다** — 실측 `620×340`에서 `[신고한다]`가 1.8px 모자랐는데
+   *    S1은 전건 PASS였고, 44회차는 캡처를 **눈으로 보고** 「전부 보인다」고 닫았다.
+   *
+   * **포함 블록 규칙을 지킨다**(검수 지적 — 초안은 둘 다 틀렸다):
+   *   · `static`/`relative` … : 모든 조상이 자른다.
+   *   · `absolute` : 포함 블록(= 가장 가까운 위치 지정 조상) **부터** 바깥으로 자른다.
+   *     초안은 「static 조상은 전부 건너뛴다」였는데, 포함 블록 **위**의 static +
+   *     `overflow:hidden` 조상은 그 포함 블록을 자르므로 절대 요소도 잘린다(크롬 실측).
+   *   · `fixed` : 보통은 아무도 못 자르지만, `transform`·`filter`·`backdrop-filter`·
+   *     `perspective`·`will-change`·`contain`이 걸린 조상은 **포함 블록이 되어 자른다**
+   *     (크롬 실측 6000px² → 2000px²). 초안은 「fixed는 조상 클립을 안 받는다」였다.
+   *
+   * ⚠️ 클립 영역은 **padding box에서 스크롤바를 뺀 것**이지 border box가 아니다.
+   *    `getBoundingClientRect()`를 쓰면 테두리+스크롤바만큼 **매번 낙관적**이다
+   *    (실측 `.modal`: 테두리 1+1 · 스크롤바 9). `client*`로 정확히 잡는다.
+   * ⚠️ `<body>`/`<html>`의 computed `overflow`는 **used 값이 아니다**(루트로 전파된다) —
+   *    자르지 않으므로 건너뛴다.
+   * ⚠️ 아직 안 보는 것: `contain: paint` · `clip-path`. 지금 저장소에 해당 경로는 없다.
+   */
+  const CB_MAKERS = /(transform|filter|backdrop-filter|perspective|will-change|contain)/;
+  const makesFixedCB = (cs) =>
+    cs.transform !== "none" ||
+    cs.filter !== "none" ||
+    cs.backdropFilter !== "none" ||
+    cs.perspective !== "none" ||
+    (cs.willChange && CB_MAKERS.test(cs.willChange)) ||
+    (cs.contain && cs.contain !== "none");
+  const clipBoxes = (el) => {
+    const pos = getComputedStyle(el).position;
+    const out = [];
+    let reachedCB = pos !== "absolute" && pos !== "fixed"; // 흐름 안이면 처음부터 다 센다
+    for (let a = el.parentElement; a; a = a.parentElement) {
+      if (a === document.body || a === document.documentElement) continue;
+      const cs = getComputedStyle(a);
+      if (!reachedCB) {
+        const isCB = pos === "fixed" ? makesFixedCB(cs) : cs.position !== "static" || makesFixedCB(cs);
+        if (!isCB) continue;
+        reachedCB = true; // 포함 블록 «자신»부터 자른다
+      }
+      const ox = cs.overflowX;
+      const oy = cs.overflowY;
+      if (ox === "visible" && oy === "visible") continue;
+      const r = a.getBoundingClientRect();
+      const pl = r.left + a.clientLeft;
+      const pt = r.top + a.clientTop;
+      out.push({
+        l: ox === "visible" ? -Infinity : pl,
+        r: ox === "visible" ? Infinity : pl + a.clientWidth,
+        t: oy === "visible" ? -Infinity : pt,
+        b: oy === "visible" ? Infinity : pt + a.clientHeight,
+      });
+    }
+    return out;
+  };
+  const clampBox = (r, boxes) => {
+    let l = r.left;
+    let t = r.top;
+    let rr = r.right;
+    let bb = r.bottom;
+    for (const c of boxes) {
+      l = Math.max(l, c.l);
+      t = Math.max(t, c.t);
+      rr = Math.min(rr, c.r);
+      bb = Math.min(bb, c.b);
+    }
+    return { l, t, r: rr, b: bb, w: Math.max(0, rr - l), h: Math.max(0, bb - t) };
+  };
+  const VIEWPORT_BOX = [{ l: 0, t: 0, r: VW, b: VH }];
+  const visBox = (el) => clampBox(el.getBoundingClientRect(), [...VIEWPORT_BOX, ...clipBoxes(el)]);
+  /**
+   * 뷰포트가 잘랐는가, 조상 스크롤 상자가 잘랐는가, 둘 다인가.
+   * 🔴 초안은 「요소가 뷰포트 안이면 조상」이라는 **추정식**이었다 — 둘 다 자르면
+   *    무조건 «뷰포트»라 적고 수치에는 조상 몫이 섞였다(검수 지적). 각각 따로 잰다.
+   */
+  const cutOf = (el) => {
     const r = el.getBoundingClientRect();
-    const l = Math.max(0, r.left);
-    const t = Math.max(0, r.top);
-    const rr = Math.min(VW, r.right);
-    const bb = Math.min(VH, r.bottom);
-    return { l, t, r: rr, b: bb, w: rr - l, h: bb - t };
+    const v = clampBox(r, VIEWPORT_BOX);
+    const a = clampBox(r, clipBoxes(el));
+    const dv = Math.max(r.width - v.w, r.height - v.h);
+    const da = Math.max(r.width - a.w, r.height - a.h);
+    const both = clampBox(r, [...VIEWPORT_BOX, ...clipBoxes(el)]);
+    return {
+      w: round(Math.max(0, r.width - both.w)),
+      h: round(Math.max(0, r.height - both.h)),
+      by: dv > 1 && da > 1 ? "both" : da > 1 ? "ancestor" : "viewport",
+    };
   };
   const hitInfo = (el) => {
     if (!el) return null;
@@ -463,7 +553,10 @@ function pageProbe(cfg) {
     for (const el of vis) {
       const v = visBox(el);
       if (v.w < 1 || v.h < 1) {
-        items.push({ path: path(el), rect: rectOf(el), offscreen: true, blocked: [] });
+        /* 🔴 **완전히 접힌 것을 «뷰포트 밖»이라 적으면 안 된다.** 초안은 그랬고,
+           실측에서 **844px 뷰포트의 y=642에 있는 버튼**을 «뷰포트 밖»으로 인쇄했다 —
+           이번 회차가 없애려던 오해 그 자체다(검수 지적). 원인을 함께 낸다. */
+        items.push({ path: path(el), rect: rectOf(el), offscreen: true, blocked: [], cut: cutOf(el) });
         continue;
       }
       const ins = cfg.sampleInsetPct;
@@ -505,7 +598,7 @@ function pageProbe(cfg) {
       //    `getBoundingClientRect()`를 불러 **서로 다른 순간의 값**이 될 수 있었고,
       //    그러면 `rect`와 `cut`이 원리적으로 어긋난다(검수 지적).
       const rr = el.getBoundingClientRect();
-      const cut = { w: round(Math.max(0, rr.width - v.w)), h: round(Math.max(0, rr.height - v.h)) };
+      const cut = cutOf(el);
       const rect = { x: Math.round(rr.x), y: Math.round(rr.y), w: round(rr.width), h: round(rr.height) };
       items.push({ path: path(el), rect, samples: pts.length, ancestorHits, blocked, cut });
     }
@@ -967,17 +1060,20 @@ const judge = (screen, viewport, data) => {
       continue;
     }
     for (const it of p.items) {
+      const WHERE = { ancestor: "상자 안에서 접힘 아래(스크롤 상자가 자름)", both: "뷰포트·스크롤 상자 둘 다 자름", viewport: "뷰포트 밖" };
       if (it.offscreen) {
         s1bad++;
-        s1.push(`✗ ${it.path} — 뷰포트 밖 (rect ${it.rect.x},${it.rect.y} ${it.rect.w}×${it.rect.h}) · ${p.why}`);
+        s1.push(
+          `✗ ${it.path} — ${it.cut ? WHERE[it.cut.by] : "뷰포트 밖"}(통째로) ` +
+          `(rect ${it.rect.x},${it.rect.y} ${it.rect.w}×${it.rect.h}) · ${p.why}`);
         continue;
       }
       // 잘림 — 「보이는데 못 쓴다」의 다른 얼굴이다. 한계 1px은 서브픽셀 몫.
       if (it.cut && (it.cut.w > 1 || it.cut.h > 1)) {
         s1bad++;
         s1.push(
-          `✗ ${it.path} — 뷰포트에 잘림 (밖으로 ${it.cut.w}×${it.cut.h}px · rect ` +
-          `${it.rect.x},${it.rect.y} ${it.rect.w}×${it.rect.h}) · ${p.why}`);
+          `✗ ${it.path} — ${it.cut.by === "viewport" ? "뷰포트에 잘림" : WHERE[it.cut.by]} ` +
+          `(밖으로 ${it.cut.w}×${it.cut.h}px · rect ${it.rect.x},${it.rect.y} ${it.rect.w}×${it.rect.h}) · ${p.why}`);
         continue; // `offscreen` 분기와 대칭 — 안 그러면 잘림+가림인 요소를 두 번 센다
       }
       const centerBlocked = it.blocked.some((b) => b.i === 0);
@@ -2630,6 +2726,27 @@ const FAULTS = [
     js: `(() => {
       const b = document.getElementById('endTurn');
       b.style.cssText += ';min-width:20px;min-height:20px;width:20px;height:20px;padding:0;font-size:8px';
+      return 'injected';
+    })()`,
+  },
+  {
+    id: "F18-스크롤상자접힘",
+    expect: "S1",
+    screen: "accuse-modal",
+    vp: "phone",
+    signature: /button\.(ghost|danger).*상자 안에서 접힘 아래/,
+    why:
+      "모달의 `max-height`를 300px으로 줄여 `[취소]`/`[신고한다]`가 **상자 안에서 부분만** 보이게 한다. " +
+      "🔴 초안은 160px이었는데 그러면 버튼이 **통째로** 접혀 `offscreen` 분기로 새어 나가, " +
+      "정작 지문에 걸린 것은 `select` 하나뿐이었다 — **자기가 말하는 것을 시험하지 않았다**(검수 지적). " +
+      "**뷰포트로는 멀쩡하다** — 요소가 화면 안에 있고 잘린 것은 스크롤 상자다. " +
+      "44회차까지 `visBox`가 뷰포트만 잘라서 이 축은 **원리적으로 안 보였고**, " +
+      "실측 620×340에서 주 행동이 44px 중 7px만 보이는데 S1은 전건 PASS였다.",
+    js: `(() => {
+      const st = document.createElement('style');
+      st.id = 'zc-fault-clipbox';
+      st.textContent = '.modal { max-height: 300px !important; }';
+      document.head.appendChild(st);
       return 'injected';
     })()`,
   },
