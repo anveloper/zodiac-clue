@@ -501,6 +501,7 @@ export const SCREEN = {
      */
     { id: "gap", label: "빈 구간 720×620", width: 720, height: 620, dsf: 1, mobile: false, coarse: false },
     { id: "short", label: "넓고 짧은 1280×450", width: 1280, height: 450, dsf: 1, mobile: false, coarse: false },
+    { id: "land", label: "폰 가로 844×390", width: 844, height: 390, dsf: 3, mobile: true, coarse: true },
   ],
 
   /**
@@ -537,6 +538,13 @@ export const SCREEN = {
         //    매 실행 FAIL을 찍어 게이트 전체의 신뢰도를 갉아먹는다.
       ],
       pairs: [
+        /* 🔴 **42회차가 이 겹침을 캡처로 발견하고서야 여기 넣었다.**
+           `.game-meta`는 `margin-top: -14px`으로 **부제 밑에 붙는 줄**이라, 41회차가
+           짧은 화면에서 부제를 감추자 **제목을 파고들었다** — 글자끼리 겹쳐 그려졌는데
+           S1~S11 어느 것도 안 잡았다(그때 게이트는 «글자 겹침»을 재는 축이 없었다).
+           이 파일이 스스로 적어 둔 규약이 「상태를 만드는 일과 재는 일은 다르다」인데
+           42회차가 상태만 고치고 재는 일을 안 할 뻔했다(검수 지적). */
+        ["#gameMeta", "#landing h1", "소개 줄이 제목을 파고드는가 — 음수 마진의 전제가 사라지면 겹친다"],
         ["#createBtn", ".join-row", "«방 만들기»와 «초대 코드» 줄이 겹치면 둘 다 오조작"],
         ["#landingMsg", "#roomList", "상태 문구가 공개방 목록을 덮으면 참여 경로가 사라진다"],
       ],
@@ -626,7 +634,7 @@ export const SCREEN = {
       id: "game-column",
       label: "게임 + 우측 컬럼 펼침(폰 전용)",
       url: "/?solo=1&demo=1",
-      onlyViewports: ["phone"],
+      onlyViewports: ["phone", "land"],
       onlyViewportsWhy:
         "데스크톱은 컬럼이 늘 펼쳐져 있어 `game` 화면이 곧 그 상태다 — 토글 버튼(`#rpToggle`) 자체가 `display:none`이라 도달할 수 없다",
       steps: [
