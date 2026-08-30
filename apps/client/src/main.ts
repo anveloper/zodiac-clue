@@ -3176,7 +3176,14 @@ const enterGame = async (): Promise<void> => {
     // 화면 한가운데 오른쪽에 떠 있으면 무엇을 닫는 버튼인지 읽히지 않는다.
     rpToggle.classList.toggle("rp-on", open);
   };
-  const narrow = window.matchMedia?.("(max-width: 680px)");
+  // 🔴 **이 질의는 `index.html`의 좁은 화면 분기와 «글자 그대로» 같아야 한다.**
+  //    그 분기가 `.rp-col`을 «전체 높이 오버레이 컬럼»으로 바꾸는데, 여기서 열린 채로 두면
+  //    컬럼이 하단 컨트롤 데크를 덮는다 — 실측 720×620에서 300×52 겹침으로
+  //    [턴 종료]·[도움말]이 **중심까지 가려졌다.**
+  //    40회차에 CSS 경계를 680 → 760으로 옮기면서 이 줄이 680에 남아 정확히 그 상태가 됐다.
+  //    ⚠️ `max-height` 팔도 같이 든다 — CSS가 그 조건에서도 폰 조판을 주므로
+  //       («넓고 짧은 화면») 열린 채로 두면 같은 겹침이 난다. 그쪽은 **아직 계측 뷰포트가 없다.**
+  const narrow = window.matchMedia?.("(max-width: 760px), (max-height: 500px)");
   const applyNarrow = (): void => {
     // 넓은 화면에선 토글 자체가 CSS로 숨겨지므로 항상 펼친 상태로 되돌린다.
     setRpOpen(!narrow?.matches);
