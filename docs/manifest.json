@@ -56,6 +56,10 @@
     "dir": "plans/done",
     "items": [
       {
+        "path": "plans/done/64-height-floor.md",
+        "title": "plan: 세로 하한 — 게이트가 재던 높이는 «기기 크기»이지 «브라우저가 주는 높이»가 아니었다"
+      },
+      {
         "path": "plans/done/63-narrow-landscape.md",
         "title": "plan: 좁은 폰 가로(667×375) — 하한을 «빌려온 수»에서 «실측»으로"
       },
