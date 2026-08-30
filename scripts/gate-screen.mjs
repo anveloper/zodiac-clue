@@ -54,6 +54,9 @@
  *                 **DOM으로는 안 보이는 축**이다 — 34회차가 카메라를 «고쳐» 내 말을
  *                 화면 80%(D패드 뒤)로 밀어 놓았는데 S1~S9는 전건 PASS였다.
  *                 좌표는 **씬이 낸다**(`camFraming()`) — 재는 쪽이 식을 쓰면 오진한다.
+ *   S11 잘림       고를 수 있는 최장 옵션이 컨트롤 안에 들어가는가.
+ *                 폭은 **브라우저가 낸다**(사본의 폭 제약을 풀고 잰다) — S10과 같은 이유로
+ *                 재는 쪽이 글자 폭을 계산하지 않는다. `disabled` 옵션은 표시되지 않으므로 뺀다.
  *                  25회차에 전역 `button:hover`가 커스텀 버튼으로 새어 대비가 1.16:1이
  *                  됐는데 S6는 **원리적으로 못 봤다**(평상 상태만 잰다) — 그 구멍이다.
  *                  JS로는 `:hover`를 못 만들므로 **진짜 마우스를 움직인다**
@@ -844,6 +847,85 @@ function pageProbe(cfg) {
      * 34회차가 정확히 그 식으로 오진해 **멀쩡한 카메라를 «고쳐서» 망가뜨렸다.**
      * 좌표를 만드는 쪽이 좌표를 알려 준다.
      */
+    /**
+     * S11 — 선택 컨트롤 잘림. **브라우저에게 자연폭을 물어본다.**
+     * `<select>`는 원래 «가장 긴 옵션에 맞춰» 커진다. 그 기본 동작을
+     * `.modal select { min-width: 0 }`이 끈다(38회차가 세 줄의 좌측 모서리를
+     * 맞추려고 넣었고, 그건 그것대로 옳다) — 그러자 **잘림이 가능해졌는데
+     * 그 대가를 재는 검사가 없었다.** 39회차가 실제로 그 구멍에 빠졌다.
+     *
+     * 🔴 여기서 글자 폭을 **직접 계산하지 않는다.** 화살표·패딩·서체 폴백까지
+     *    맞히려면 브라우저를 흉내 내야 하고, 34·37·38회차가 «재는 쪽이 식을 쓰면
+     *    틀린다»를 세 번 증명했다. 대신 **같은 부모 안에** 사본을 놓고
+     *    폭 제약만 풀어 `offsetWidth`를 읽는다 — 계산은 브라우저가 한다.
+     *    같은 부모라야 `.modal select` 같은 후손 선택자가 동일하게 걸린다.
+     */
+    clip: (() => {
+      const out = [];
+      let hidden = 0;
+      for (const sel of document.querySelectorAll("select")) {
+        const r = sel.getBoundingClientRect();
+        if (!r.width || !r.height) { hidden++; continue; }
+        /*
+         * 🔴 **선택 «가능한» 옵션만 잰다.**
+         *    초안은 select 전체의 자연폭을 한 번에 읽었는데, 신고 모달에서 가장 긴 옵션
+         *    (`— 내 패 (정답 아님)`)은 **전부 `disabled`다** — `openPicker(lockKnown:true)`가
+         *    `myCards`를 잠그고, 접미가 붙는 것이 정확히 그 `myCards`다(main.ts).
+         *    disabled 옵션은 선택될 수 없고, 닫힌 컨트롤에 표시되는 것은 **선택된 옵션뿐**이며
+         *    펼친 팝업은 컨트롤 폭과 무관하게 자기 크기를 잡는다.
+         *    → 그 폭으로 낸 FAIL은 **사용자가 볼 수 없는 잘림**이었다(검수 지적, 코드로 확인).
+         *
+         * 🔴 그리고 「최장」을 **글자 수**로 고르지 않는다. 이모지·한글·라틴이 섞이면
+         *    글자 수와 폭은 다르고, 그건 이 파일이 금지한 「재는 쪽이 식을 쓴다」 그 자체다.
+         *    옵션마다 사본을 하나씩 만들어 **브라우저가 낸 폭**을 비교한다.
+         */
+        // 「기본 라벨 + 최악 접미」로 잰다 — 이번 판이 아니라 **최악의 판**에 대한 계약이다.
+        // 옵션 글자에 이미 붙어 있는 접미(` — …`)는 떼고 다시 붙인다. `disabled`도 뺴지 않는다:
+        // 신고 모달에서 잠긴 카드가 제안 모달에서는 **선택된다**(같은 CSS를 공유한다).
+        const worst = [...sel.options].map((o) => o.text.split(" — ")[0] + cfg.clipWorstSuffix);
+        if (!worst.length) { hidden++; continue; } // 옵션이 없으면 폭 계약이 없다
+        let need = 0;
+        let longest = "";
+        for (const t of worst) {
+          const probeEl = sel.cloneNode(false); // 옵션 없이 껍데기만 — 아래에서 하나만 넣는다
+          const only = document.createElement("option");
+          only.textContent = t;
+          probeEl.appendChild(only);
+          // `id`/`name`은 `cloneNode`가 복제한다 — 사본이 DOM에 있는 동안 `getElementById`가
+          // 앞엣것을 돌려주고 같은 `name`은 폼을 오염시킨다. 계측기가 페이지를 바꾸면 안 된다.
+          probeEl.removeAttribute("id");
+          probeEl.removeAttribute("name");
+          probeEl.setAttribute("data-zc-clip-probe", "1");
+          /*
+           * 🔴 **`cssText`에 대입하지 않는다** — 원본이 인라인 스타일을 갖는 순간
+           *    그것까지 지워져 **존재하지 않는 컨트롤을 재게 된다.** 속성만 덧건다.
+           * 🔴 **`!important`로 건다** — 자기시험 F16이 `width: 90px !important`로 결함을
+           *    만들자 사본까지 묶여 «필요폭 = 실제폭»이 나왔고 게이트가 결함을 놓쳤다.
+           * 🔴 **`position: absolute`가 핵심이다.** 흐름에서 빠지므로 부모의 flex/grid 배치를
+           *    흔들지 않는다 — 즉 **계측이 계측 대상을 교란하지 않는다.** 이 줄을 지우면
+           *    조용히 오염된다. (부수로 abspos의 shrink-to-fit이 자연폭을 만든다.)
+           */
+          for (const [k, v] of [
+            ["position", "absolute"], ["left", "-99999px"], ["top", "0"],
+            ["visibility", "hidden"], ["width", "auto"], ["min-width", "auto"], ["max-width", "none"],
+          ]) probeEl.style.setProperty(k, v, "important");
+          sel.parentNode.insertBefore(probeEl, sel.nextSibling);
+          const w = probeEl.getBoundingClientRect().width;
+          probeEl.remove();
+          if (w > need) { need = w; longest = t; }
+        }
+        // 라벨로 어느 줄인지 말한다 — select에는 `id`도 `name`도 없다(`openPicker`가 안 붙인다).
+        const rowLabel = sel.closest(".modal-row")?.querySelector("label")?.textContent?.trim();
+        out.push({
+          path: sel.id ? `select#${sel.id}` : rowLabel ? `select「${rowLabel}」` : "select[무명]",
+          have: r.width,
+          need,
+          total: sel.options.length,
+          longest,
+        });
+      }
+      return { items: out, hidden };
+    })(),
     cam: (() => {
       const g = window.__zcGame;
       if (!g) return null;
@@ -1032,6 +1114,40 @@ const judge = (screen, viewport, data) => {
         `어긋남 (${dx.toFixed(1)}, ${dy.toFixed(1)}) ≤ ${tol}px · zoom ${cm.zoom}` +
         (bad ? " — **프레이밍이 어긋났다**" : ""),
         {});
+    }
+  }
+
+  // ── S11 선택 컨트롤 잘림 ──
+  // 「고를 수 있는 옵션이 컨트롤 안에 들어가는가」. 필요폭은 **브라우저가 낸 자연폭**이다.
+  // 이 축이 없어서 39회차 결함(창을 세로로 줄인 데스크톱 전부에서 옵션이 잘림)이 세 회차를 살았다.
+  // ⚠️ **뷰포트를 늘리는 것만으로는 안 잡힌다** — 40회차가 결함을 되주입해 확인했다
+  //    (빈 구간에서도 S1~S10 전건 PASS). 상태를 만드는 것과 재는 것은 다른 일이다.
+  {
+    const items = data.clip?.items ?? [];
+    const hidden = data.clip?.hidden ?? 0;
+    if (!items.length) {
+      add("S11", "SKIP",
+        `이 화면에 폭 계약을 가진 \`<select>\`가 없다 — 제외 ${hidden}개(숨김·선택 가능한 옵션 0)`);
+    } else {
+      const tol = SCREEN.clipTolPx;
+      const px = (n) => Math.round(n * 10) / 10;      // 표시용 — **비교는 원값으로 한다**
+      const bad = items.filter((it) => it.need > it.have + tol);
+      const line = (it) =>
+        `${it.path} — 폭 ${px(it.have)}px · 고를 수 있는 최장 옵션에 필요한 폭 ${px(it.need)}px ` +
+        `(선택 가능 ${it.usable}/${it.total}개 · 최장 「${it.longest}」)`;
+      add("S11", bad.length ? "FAIL" : "PASS",
+        // **판정 기준을 판정문에 적는다.** 「이번 판」이 아니라 「최악의 판」이다 —
+        // 모든 옵션에 `clipWorstSuffix`를 붙여 재므로 딜과 무관하고 실행마다 같은 값이 나온다
+        // (실측: 같은 결함을 2회 연속 동일하게 잡는다). 그전 초안은 그 판에 있는 글자를 그대로
+        // 재서 필요폭이 209~219px로 흔들렸고, **아슬아슬한 회귀가 운으로 통과할 수 있었다.**
+        `선택 컨트롤 ${items.length}개 · 잘림 ${bad.length}개 (한계 ${tol}px · 제외 ${hidden}개) — ` +
+        `기준은 **최악의 판**이다(모든 옵션에 「${SCREEN.clipWorstSuffix.trim()}」를 붙여 잰다 · 딜 무관)`,
+        {
+          lines: items.map((it) =>
+            it.need > it.have + tol
+              ? `✗ ${line(it)} — **${px(it.need - it.have)}px 모자라 잘린다**`
+              : `· ${line(it)}`),
+        });
     }
   }
 
@@ -1291,6 +1407,7 @@ const probeCfg = (screen) => ({
   sampleInsetPct: SCREEN.sampleInsetPct,
   minOverlapPx2: SCREEN.minOverlapPx2,
   minOverlapEdgePx: SCREEN.minOverlapEdgePx,
+  clipWorstSuffix: SCREEN.clipWorstSuffix,
 });
 
 /** 한 탭에서 계측 + 캡처. */
@@ -2492,6 +2609,26 @@ const FAULTS = [
     js: `(() => {
       const b = document.getElementById('endTurn');
       b.style.cssText += ';min-width:20px;min-height:20px;width:20px;height:20px;padding:0;font-size:8px';
+      return 'injected';
+    })()`,
+  },
+  {
+    id: "F16-선택컨트롤잘림",
+    expect: "S11",
+    screen: "accuse-modal", // select가 있는 유일한 도달 가능 화면(제안 모달은 방 진입이 필요하다)
+    vp: "phone",
+    signature: /모자라 잘린다/,
+    why:
+      "모달 select를 90px으로 좁힌다 — 최장 옵션이 들어가지 못한다. " +
+      "**39회차가 실제로 겪은 결함과 같은 종류다**(기본 폭이 좁아 옵션이 잘렸다). " +
+      "그때 S1~S10은 전건 PASS였다 — 40회차가 결함을 되주입해 확인했다. " +
+      "`.modal select { min-width: 0 }`이 브라우저의 «최장 옵션에 맞추기»를 끄기 때문에 " +
+      "이 축은 **CSS로 언제든 다시 열린다.** 잡히지 않으면 그 문이 무방비다.",
+    js: `(() => {
+      const st = document.createElement('style');
+      st.id = 'zc-fault-clip';
+      st.textContent = '.modal select { width: 90px !important; flex: 0 0 90px !important; }';
+      document.head.appendChild(st);
       return 'injected';
     })()`,
   },
