@@ -98,6 +98,14 @@
     "dir": "plans/done",
     "items": [
       {
+        "path": "plans/done/61-short-viewport-lobby.md",
+        "title": "plan: 짧은 화면을 계측한다 — 대기실 1차 행동이 접힘 아래 있었다"
+      },
+      {
+        "path": "plans/done/60-gate-control-clip.md",
+        "title": "plan: 게이트가 «잘린 컨트롤»을 보게 한다 — 빈 구간 뷰포트 + S11"
+      },
+      {
         "path": "plans/done/59-modal-base-width.md",
         "title": "plan: 모달 기본 폭 — 「어느 분기도 안 걸리는 구간」을 없앤다"
       },
