@@ -628,6 +628,43 @@
         border-radius: 6px; margin-bottom: 6px; font-size: 13px;
       }
       .host-hint { font-size: 12px; color: var(--wds-label-alternative); margin-top: 10px; text-align: center; }
+      /* ── 세로가 모자라면 **여백부터 내놓는다** `[2026-08-31 · 44회차]` ──────────────
+         🔴 **조이기는 «2단»의 일이 아니다.** 43·44회차가 여백 회수를 2단 블록
+         (`max-height: 500 and min-width: 620`) 안에 넣어 뒀는데, 세로가 모자란 화면은
+         그보다 넓다 — 실측 `720×620`에서 대기실 `#hostHint`가 **화면 밖**이었다
+         (그 구간은 데스크톱 조판(`min-height: 660`)도 2단도 안 걸리는 빈 띠다).
+         계약에 `#hostHint`를 넣고서야 드러났다 — 「비방장이 «왜 못 누르는지»를 아는 유일한 자리」인데
+         **계약 밖이라 잘려도 초록이었다.**
+         → 조이기를 **높이 ≤660 전체**로 올린다. 정보는 하나도 안 지운다. */
+      @media (max-height: 659px) {
+        .card { padding: 6px 20px; }
+        /* 대기실 안내는 좁은 열에서 2줄이 된다 — 그만큼 위 여백을 내놓는다. */
+        .host-hint { margin-top: 2px; }
+        .card h1 { margin-bottom: 2px; }
+        /* 🔴 **랜딩은 못 조인다 — `.game-meta`가 `margin-top: -14px`으로 부제 밑에 붙는다.**
+           초안이 8px으로 내렸더니 인접 형제 마진이 상쇄돼 **8 + (−14) = −6px**,
+           소개 줄이 부제를 **6px 파고들었다**(실측 4뷰포트에서 교차 235~379×6).
+           42회차가 «부제를 감춰» 낸 겹침과 **같은 사고를 여백으로 다시 낸 것**이다.
+           불변량: `.subtitle`의 `margin-bottom`은 **14 이상**이어야 한다.
+           → 조이기는 그 규칙이 없는 **대기실에만** 건다. */
+        #lobby .card .subtitle { margin-bottom: 8px; }
+        .invite { margin-bottom: 6px; }
+        #playerList { margin: 2px 0 2px; }
+        #landing .game-meta { margin-bottom: 6px; }
+        #landing .hint-sm { margin: 2px 0 4px; }
+        #landing .field { margin-bottom: 4px; }
+        #landing .codex-open { margin-bottom: 6px; }
+        /* 🔴 **세로 짧은 화면(폭 <620)은 2단이 안 서므로 격자가 그대로 3행이다.**
+           실측 `375×553`(SE2 세로 — 기기 667pt에서 툴바를 뺀 실제 높이)에서
+           `[잔치 시작]`이 **26px** 넘쳤다. 이 회차의 전제(«375·390은 기기 크기다»)가
+           가장 크게 걸리는 축인데 계측 뷰포트가 하나도 없었다(검수 지적).
+           칸과 직업 설명에서 세로를 내놓는다 — 초상 크기는 JS가 정하므로 건드리지 않는다. */
+        .char { padding: 3px 2px; }
+        .char-grid { gap: 3px; margin-top: 2px; }
+        .pick-label { margin-bottom: 2px; }
+        #lobbyPersona { margin-top: 2px; min-height: 0; padding: 6px 10px; }
+      }
+
       /* ── 짧은 화면: 세로가 없으면 **가로를 쓴다** `[2026-08-30]` ─────────────────
          🖼 41회차 실측 1280×450: `#startBtn`이 y 579 — 뷰포트 밖. 방장이 잔치를 시작하는
          **단 하나의 버튼**이 로드 시점에 안 보였다.
@@ -664,7 +701,13 @@
         /* 🔴 폭은 **파생값**이다 — 뷰포트에서 역산한 수가 아니다(41회차가 «761에서 1 뺀 760»으로
            기각당한 그 실수를 되풀이하지 않는다). 2단이므로 **기본 카드 380 두 벌**:
            380×2 + gap 24 + 좌우 패딩 40 = **824**. */
-        .card { width: min(824px, 100%); padding: 14px 20px; }
+        .card { width: min(824px, 100%); }
+        /* 🔴 **세로 하한은 320이다** `[2026-08-31 · 44회차]`. 게이트가 쓰던 375·390은
+           **기기 포인트 크기**이지 브라우저가 주는 높이가 아니다 — 실기는 툴바만큼 덜 준다.
+           실측으로 320에서 랜딩 `[방 만들기]`가 **26px**, 대기실 `[잔치 시작]`이 **15.5px**
+           넘쳤다(43회차가 큐로 넘긴 것). 가로 모드의 최소 높이는 320이므로
+           (iPhone SE 1세대 568×320) 거기까지는 서야 «상용»이다.
+           → 아래 여백을 42px 회수한다. **정보는 하나도 안 지운다.** */
         /* 🔴 **오른쪽에 «배경음 버튼의 자리»를 비운다** — 대칭이 아닌 것은 의도다.
            짧은 화면에서 카드는 사실상 전폭이라 `#bgmCtrl`이 **카드 안으로 들어온다.**
            실측 겹침: 대기실 격자 **31×11** · 랜딩 오른쪽 열 **31×16**(`land`·`se` 둘 다) —
@@ -695,15 +738,17 @@
            `.codex-open`이 **동시에** 접혀 한 번에 +27px이 되고, 그 순간 `[방 만들기]`가
            16px 넘친다 — 그게 43회차 초안이 하한을 «절벽 가장자리»에 세운 이유였다.
            여백을 24px 회수해 접히더라도 넘치지 않게 한다(정보는 하나도 안 지운다). */
-        #landing .game-meta { margin-bottom: 12px; }
-        #landing .hint-sm { margin: 4px 0 8px; }
-        #landing .field { margin-bottom: 8px; }
         /* 메시지는 두 열 아래 전폭 한 줄로 — 누른 버튼이 어느 열이든 눈에 든다. */
         #landing .card { flex-wrap: wrap; }
         #landing #landingMsg { flex: 1 0 100%; margin-top: 4px; }
 
         /* 대기실 — B(캐릭터)를 오른쪽 열에 2행 걸친다. A·C는 왼쪽에 위아래로. */
+        /* 🔴 **행 크기를 못 박는다.** `grid-template-rows`가 없으면 오른쪽 열(2행 걸침)의
+           높이가 **두 행에 나뉘어** 1행을 부풀리고, 그만큼 왼쪽에 «빈 구간»이 생긴다
+           (실측 `620×340` 캡처 — 참가자 목록과 `[잔치 시작]` 사이가 텅 빈다).
+           `auto 1fr`이면 남는 높이는 전부 2행이 받아 버튼이 머리 바로 아래로 붙는다. */
         #lobby .card { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+                       grid-template-rows: auto 1fr;
                        column-gap: 24px; align-items: start; }
         #lobby .lobby-head { grid-column: 1; grid-row: 1; }
         #lobby .lobby-pick { grid-column: 2; grid-row: 1 / span 2; }
@@ -716,6 +761,9 @@
            왼쪽 열 예산은 390에서 ≈180px이다(h1 28 + 부제 18 + 초대 52 + 참가자 18 +
            [시작] 48 + 안내 18 + 패딩 28 = 210을 뺀 값) — 3행은 그 안이고,
            **상한이 곧 «최악의 성장»**이라 6인이 차도 +80px에서 멈춘다. */
+        /* 🔴 42회차가 2단 블록으로 갈아엎으면서 **41회차의 여백 회수가 통째로 빠졌다** —
+           `.invite`(16) · `#playerList`(8/16)가 기본값 그대로였다. 320에서 4.5px이 모자란
+           이유가 그것이다. 왼쪽 열은 여기서 32px을 되찾는다. */
         #playerList { max-height: 120px; overflow-y: auto; }
         /* 카드는 `--wds-bg-elevated`인데 전역 트랙은 `--wds-bg-normal`이라 불투명 트랙을
            올리면 더 어두운 9px 띠가 선다(`.rp-body`와 같은 처방). */
@@ -2011,6 +2059,23 @@
 
       /* 제안 모달 장소 고정행 — 읽기 전용(사용자가 고르는 값이 아니다) */
       .modal-fixed { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+      /* 🔴 **모달 조이기는 «여기» 있어야 한다** `[2026-08-31 · 44회차]`.
+         카드 조이기 tier(`max-height: 659`)에 같이 넣었더니 **아무 일도 안 했다** —
+         `.modal h2`·`.modal-row`·`.modal-note`·`.modal .actions`의 **기본 정의가 그 뒤**라
+         특이도 동률에서 **소스 순서로 졌다**(36·41회차와 같은 함정 · 세 번째).
+         🔴 **그러고도 `.modal-fixed` 하나를 또 놓쳤다** — 기본 정의(바로 위)가 그 뒤였다.
+            **같은 커밋 안에서 네 번째**다(검수 지적). 그래서 이제 `.modal-fixed`보다도 뒤에 둔다.
+         실측 `620×340`에서 `[취소]`/`[신고한다]`가 44px 중 **7px만 보였다** — 모달은
+         `max-height: 100%` + 내부 스크롤이라 «잘림»이 아니라 «접힘 아래»고,
+         **S1은 뷰포트 교집합만 보므로 원리적으로 못 잡는다.** 그 둘은 주 행동이다. */
+      @media (max-height: 659px) {
+        .modal { padding: 12px 16px; }
+        .modal h2 { margin-bottom: 8px; }
+        .modal-row, .modal-fixed { margin-bottom: 6px; }
+        .modal-warn { margin-bottom: 8px; }
+        .modal-note { margin-top: 6px; }
+        .modal .actions { margin-top: 8px; }
+      }
       .modal-fixed label { flex: none; width: 52px; font-size: 12px; color: var(--wds-label-alternative); }
       .modal-fixed .mf-val { flex: 1; font-size: 13px; color: var(--wds-label-strong); }
       .modal-fixed .mf-badge {
