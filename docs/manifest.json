@@ -56,6 +56,10 @@
     "dir": "plans/done",
     "items": [
       {
+        "path": "plans/done/62-landscape-phone.md",
+        "title": "plan: 폰 가로를 연다 — 3화면이 깨져 있었고, 41회차가 남긴 사본이 하나 더 있었다"
+      },
+      {
         "path": "plans/done/61-short-viewport-lobby.md",
         "title": "plan: 짧은 화면을 계측한다 — 대기실 1차 행동이 접힘 아래 있었다"
       },
