@@ -56,6 +56,10 @@
     "dir": "plans/done",
     "items": [
       {
+        "path": "plans/done/63-narrow-landscape.md",
+        "title": "plan: 좁은 폰 가로(667×375) — 하한을 «빌려온 수»에서 «실측»으로"
+      },
+      {
         "path": "plans/done/62-landscape-phone.md",
         "title": "plan: 폰 가로를 연다 — 3화면이 깨져 있었고, 41회차가 남긴 사본이 하나 더 있었다"
       },

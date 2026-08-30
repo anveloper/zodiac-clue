@@ -673,6 +673,33 @@
       카드 오른쪽 <code>640.5</code> vs <code>#bgmCtrl</code> 왼쪽 <code>699</code> →
       <b>여유 58.5px</b>. 카드 폭을 657px 이상으로 올리거나 분기를 761 아래로 내리면
       <b>그 순간 되살아난다</b>.<br>
+      <b style="color:var(--red)">🔴 2026-08-30 — 41·42회차가 「둘 다」 했고, 그래서 되살아났다.</b>
+      카드를 <code>min(824, 100%)</code>로 올리고 분기를 681로 내렸다. 여유는 18.5px이 아니라
+      <b>음수</b>가 됐다(실측 겹침: 대기실 격자 <b>31×11</b> · 랜딩 오른쪽 열 <b>31×16</b>).<br>
+      <b>이 절이 숫자로 경고했는데 두 회차가 그 위를 지나갔다</b> — 기록할 것은 「세 번째가 났다」가
+      아니라 <b>「문서가 예언했는데 아무도 다시 읽지 않았다」</b>다.
+      <ul>
+        <li><b>불변량을 식으로 다시 쓴다</b>:
+          <code>카드 콘텐츠 오른쪽 ≤ 100vw − (bgm right + bgm 폭)</code>.
+          값은 <b>분기마다 다르다</b> — 데스크톱 <code>right 12 · 폭 50</code> /
+          <code>(max-width:760), (max-height:500)</code> 분기는 <b><code>right 8 · 폭 60</code></b>.
+          <b style="color:var(--red)">🔴 43회차 초안이 「12 · 44」로 계산했는데</b> 12는 기본 규칙이라
+          그 분기에 안 걸리고 44는 <code>#bgmToggle</code>의 폭이었다 — <b>두 수 다 틀렸다</b>.</li>
+        <li><b>처방은 「내용을 줄이지 말고 자리를 만든다」</b> — 짧은 화면에서 카드 오른쪽에
+          <b>72px 거터</b>(= 버튼 왼쪽 68 − 카드 바깥 여백 16 + 여유 20). 비대칭은 의도다.<br>
+          ⚠️ 거터는 <b>폭 ≤920에서만</b> 건다(= <code>824 + 2×(68−20)</code>) — 그 위에서는 카드가
+          버튼에 애초에 안 닿는데 초안이 전 구간에 걸어 <code>1280×450</code>에서 폭 36px을
+          헛되이 내주고 있었다.</li>
+        <li>✅ <b>이제 게이트가 잰다</b> — 대기실 <code>#bgmCtrl</code>↔<code>#lobbyChars</code> ·
+          랜딩 <code>#bgmCtrl</code>↔오른쪽 열.<br>
+          <b style="color:var(--red)">🔴 초안의 랜딩 쌍 <code>.join-row</code>는 원리적으로 못 잡았다</b>
+          (버튼 y 12..62 vs 줄 y 63..107 — <b>1px 차로 안 겹친다</b>).
+          주석에는 정답(<code>.divider</code>)을 적어 놓고 다른 선택자를 코딩했다.</li>
+        <li><b style="color:var(--red)">⚠️ 평상 상태만 덮는다</b> —
+          <code>.bgm-ctrl:hover, :focus-within</code>이 열리면 버튼이 왼쪽으로 <b>97px</b> 커져
+          콘텐츠를 덮는다(검수 실측). Tab 한 번이면 닿는다. S1은 평상 상태만 재므로
+          이 축은 <b>여전히 사람 몫</b>이다.</li>
+      </ul>
       <b style="color:var(--red)">⚠️ 게이트 S1 PASS는 이 쌍의 안전 근거가 못 된다</b> —
       1440에서 둘은 <b>378px 떨어져</b> 있어 y가 어떻게 움직여도 원리적으로 FAIL이 날 수 없다.
       바로 위 「게이트가 잡아 준다고 배치가 맞는 것은 아니다」의 <b>실례</b>다.</li>
@@ -805,7 +832,13 @@
       <span class="tag t-new">2026-08-30</span> — 폰은 <code>max-width: 680px</code>,
       데스크톱은 <code>min-width: 761px</code>. 실측(720×900): 우측 컬럼은 이미 데스크톱 배치인데
       <b>카드만 380·13px</b>로 남는다. 분기를 681로 내리면 덮이지만
-      <code>.card</code>의 <code>#bgmCtrl</code> 가로 여유가 58.5 → <b>18.5px</b>로 준다.</li>
+      <code>.card</code>의 <code>#bgmCtrl</code> 가로 여유가 58.5 → <b>18.5px</b>로 준다.<br>
+      <b style="color:var(--red)">🔴 41·42회차가 실제로 내렸고(681), 카드도 824로 넓혔다 —
+      여유는 18.5가 아니라 음수가 됐다.</b> 위 §1.7 참조.
+      43회차가 <b>72px 거터</b>로 막고 쌍 검사를 붙였다.
+      그리고 하한은 다시 <b>620</b>으로 올라갔다 — 681은 「모달 축에서 빌려온 수」였고,
+      실제 경계는 <b>손가락 하한 44px</b>이 정한다
+      (실측 585에서 <code>[참가]</code> 42.5px · 590부터 PASS).</li>
     <li><span class="tag t-soon">미확인</span> <b>coarse 태블릿(681px~)의 <code>150px</code>은
       근거가 확인되지 않았다</b> — 그 구간엔 <code>#rpToggle</code>이 없고
       (<code>display:flex</code>는 <code>max-width:680px</code>에서만) 배너도 전폭이 아니다.
