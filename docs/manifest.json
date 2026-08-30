@@ -56,6 +56,10 @@
     "dir": "plans/done",
     "items": [
       {
+        "path": "plans/done/66-narrow-320.md",
+        "title": "plan: 320px 폭을 연다 — S11이 40회차부터 있었는데 «그 폭의 뷰포트»가 없어 잠들어 있었다"
+      },
+      {
         "path": "plans/done/65-ancestor-clip.md",
         "title": "plan: 「접힘 아래」를 재게 만든다 — 뷰포트만 보던 잘림 검사를 조상까지"
       },

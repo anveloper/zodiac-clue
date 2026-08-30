@@ -501,7 +501,15 @@
   </div>
   <div class="scroll"><table>
     <tr><th>대상</th><th>상한</th><th>근거</th></tr>
-    <tr><td>버튼 라벨</td><td><b>8자</b></td><td><code>.hud-ctrl</code> 버튼 5개가 한 줄에 들어가야 함</td></tr>
+    <tr><td>버튼 라벨</td><td><b>8자</b></td><td><code>.hud-ctrl</code> <b>6개</b> 버튼이 한 줄에 들어가야 함.<br>
+      <b style="color:var(--red)">🔴 실제 지배 제약은 글자 수가 아니라
+      <code>repeat(6, 1fr)</code>의 <code>1fr</code>이 <code>minmax(auto, 1fr)</code>이라는 것</b>이다 —
+      <b>최장 라벨이 제 몫을 넘게 가져가고 짧은 칸(<code>[?]</code>)이 그만큼 깎인다.</b>
+      실측 320에서 <code>[?]</code>가 <b>13.4px</b>(손가락 하한 44)이었다.<br>
+      → 폭 ≤380에서는 <code>minmax(0, 1fr)</code> + <code>white-space: normal</code>로
+      <b>칸을 똑같이 나누고 라벨을 두 줄로 앉힌다</b>(데크 높이는 54px 그대로).<br>
+      ⚠️ <b>라벨을 늘릴 때는 <code>[?]</code>의 폭을 확인하라</b> — 그 인과가 없어서 46회차가
+      3칸 두 줄이라는 <b>과한 처방</b>을 먼저 냈다(데크 54 → 101px · HUD가 캔버스의 40%).</td></tr>
     <tr><td>툴팁 <code>title</code></td><td><b>40자</b></td><td>초과 시 OS 툴팁이 줄바꿈되어 커서를 덮음</td></tr>
     <tr><td>로그 1줄</td><td><b>48자</b></td><td><code>.rp-col</code> 기본 260px에서 2행 이내</td></tr>
     <tr><td>턴 배너 상태줄</td><td><b>28자</b></td><td><code>.hud-turn</code>이 <code>white-space:nowrap</code></td></tr>
@@ -521,7 +529,14 @@
       남은 여유 <b>265 − 227 = 38px ≈ 한글 2.5자</b>.<br>
       <b style="color:var(--red)">⚠️ 폰(13px)</b>: 실측 필요 폭 <b>224px</b>
       (글자 <b>186.64</b> + 크롬 38.36) · 도달 최악 서체(NanumGothic <b>1.053</b>) 기준 <b>235px</b>.
-      vs 컨트롤 390→264 · 360→234 · <b>320→194(잘린다 · 선재 결함)</b>.<br>
+      vs 컨트롤 390→264 · 360→234 · <del>320→194(잘린다)</del>.<br>
+      <b>✅ 2026-08-31(46회차) 해소</b> — 폭 <b>≤380</b>에서 라벨을 위로 올려
+      컨트롤이 <b>254 ≥ 224</b>가 된다(문안은 안 줄였다).<br>
+      <b style="color:var(--red)">🔴 여유가 0인 지점을 경계로 삼지 마라</b> —
+      초안은 계산으로 나온 <b>350</b>(여유 <b>0.0px</b>)을 쓰려다 검수에서 뒤집혔다.
+      380은 저장소가 이미 가진 상수이고 여유가 <b>+31px</b>이다.<br>
+      ⚠️ <b>폭 381~389는 계측 뷰포트가 없다</b>(<code>n320</code> 320 · <code>p553</code> 375 ·
+      <code>phone</code> 390) — 접미나 이름이 한 글자 늘면 그 띠가 조용히 깨진다.<br>
       <b>폭은 2층이다</b> <span class="tag t-new">2026-08-30</span> —
       기본 <b>380</b>(= <code>.card</code>·<code>.goal-card</code>와 같은 축) + <b>데스크톱 예외</b> 448.
       폰 가로·짧은 화면 분기는 폭을 따로 안 쓴다(기본과 같다 · 패딩만 다르다 →
