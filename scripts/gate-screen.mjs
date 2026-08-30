@@ -494,7 +494,20 @@ function pageProbe(cfg) {
         if (kind === "foreign" || kind === "none")
           blocked.push({ i, at: [Math.round(x), Math.round(y)], ...(hitInfo(hit) ?? { by: null }) });
       });
-      items.push({ path: path(el), rect: rectOf(el), samples: pts.length, ancestorHits, blocked });
+      /*
+       * 🔴 **부분 잘림은 여기서만 보인다.** 위 `pts`는 «보이는 상자»(`visBox`) 안에서만
+       *    찍히므로, 요소의 절반이 뷰포트 밖이어도 나머지 절반에서 전부 self가 잡혀 **PASS**다.
+       *    41회차 실측: 1280×450에서 `[잔치 시작]`이 아래 **11.6px** 잘린 채로 게이트를 통과했다 —
+       *    «뷰포트 밖»(넓이 0)과 «멀쩡함» 사이가 통째로 사각지대였다.
+       *    `protect`는 「이건 반드시 쓸 수 있어야 한다」는 선언이므로, 잘린 것도 위반이다.
+       */
+      // 🔴 **레이아웃은 한 번만 읽는다.** 초안은 `visBox`·`rectOf`·여기서 각각
+      //    `getBoundingClientRect()`를 불러 **서로 다른 순간의 값**이 될 수 있었고,
+      //    그러면 `rect`와 `cut`이 원리적으로 어긋난다(검수 지적).
+      const rr = el.getBoundingClientRect();
+      const cut = { w: round(Math.max(0, rr.width - v.w)), h: round(Math.max(0, rr.height - v.h)) };
+      const rect = { x: Math.round(rr.x), y: Math.round(rr.y), w: round(rr.width), h: round(rr.height) };
+      items.push({ path: path(el), rect, samples: pts.length, ancestorHits, blocked, cut });
     }
     protect.push({
       sel: p.sel,
@@ -958,6 +971,14 @@ const judge = (screen, viewport, data) => {
         s1bad++;
         s1.push(`✗ ${it.path} — 뷰포트 밖 (rect ${it.rect.x},${it.rect.y} ${it.rect.w}×${it.rect.h}) · ${p.why}`);
         continue;
+      }
+      // 잘림 — 「보이는데 못 쓴다」의 다른 얼굴이다. 한계 1px은 서브픽셀 몫.
+      if (it.cut && (it.cut.w > 1 || it.cut.h > 1)) {
+        s1bad++;
+        s1.push(
+          `✗ ${it.path} — 뷰포트에 잘림 (밖으로 ${it.cut.w}×${it.cut.h}px · rect ` +
+          `${it.rect.x},${it.rect.y} ${it.rect.w}×${it.rect.h}) · ${p.why}`);
+        continue; // `offscreen` 분기와 대칭 — 안 그러면 잘림+가림인 요소를 두 번 센다
       }
       const centerBlocked = it.blocked.some((b) => b.i === 0);
       if (centerBlocked || it.blocked.length >= SCREEN.blockedFailCount) {
@@ -2609,6 +2630,22 @@ const FAULTS = [
     js: `(() => {
       const b = document.getElementById('endTurn');
       b.style.cssText += ';min-width:20px;min-height:20px;width:20px;height:20px;padding:0;font-size:8px';
+      return 'injected';
+    })()`,
+  },
+  {
+    id: "F17-보호대상뷰포트잘림",
+    expect: "S1",
+    vp: "phone",
+    signature: /뷰포트에 잘림/,
+    why:
+      "액션 바를 아래로 30px 밀어 버튼 절반이 뷰포트 밖으로 나가게 한다. " +
+      "**«뷰포트 밖»(넓이 0)과 «멀쩡함» 사이가 통째로 사각지대였다** — 표본점은 " +
+      "«보이는 상자» 안에서만 찍히므로 절반이 잘려도 나머지 절반에서 self가 잡혀 PASS였다. " +
+      "41회차 실측: 1280×450에서 [잔치 시작]이 아래 11.6px 잘린 채로 게이트를 통과했다.",
+    js: `(() => {
+      const el = document.querySelector('.hud-ctrl');
+      el.style.cssText += ';transform:translateY(30px)';
       return 'injected';
     })()`,
   },

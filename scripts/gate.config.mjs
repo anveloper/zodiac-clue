@@ -500,6 +500,7 @@ export const SCREEN = {
      *    **상태를 만드는 일과 재는 일은 다르다.**
      */
     { id: "gap", label: "빈 구간 720×620", width: 720, height: 620, dsf: 1, mobile: false, coarse: false },
+    { id: "short", label: "넓고 짧은 1280×450", width: 1280, height: 450, dsf: 1, mobile: false, coarse: false },
   ],
 
   /**
@@ -507,6 +508,10 @@ export const SCREEN = {
    *   url/steps/ready — 어떻게 그 화면에 도달하는가(파라미터 없는 진입을 기본으로 둔다).
    *   vscroll        — "locked": 문서가 세로로 스크롤되면 FAIL / "allow": 스크롤이 정상
    *   protect        — **무엇이 가려도 안 되는가.** 심사자가 눌러야 하는 것들.
+   *                    ⚠️ 2026-08-30(41회차)부터 **«그리고 뷰포트 안에 통째로 들어와야 한다»**
+   *                    도 함께 계약한다(S1 「뷰포트에 잘림」). `vscroll: "allow"` 화면에서도
+   *                    그렇다 — 스크롤하면 닿는다는 것과 «첫 화면에 있다»는 다른 말이고,
+   *                    1차 행동이 접힘 아래면 «있는데 못 찾는» 것과 같다.
    *   pairs          — 서로 가리면 안 되는 **요소 쌍**(관계로만 드러나는 사고).
    *   touchExempt    — 타깃 하한에서 제외할 선택자. **사유 없이는 추가하지 마라.**
    *                    ⚠️ 하한이 **둘**이다(손가락 44 · 마우스 24) — 폰 사유로 넣은 면제가
