@@ -6,5 +6,6 @@
 
 export * from "./ai";
 export * from "./color";
+export * from "./room-code";
 export * from "./view-notation";
 export * from "./view-timing";

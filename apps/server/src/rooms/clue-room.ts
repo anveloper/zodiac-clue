@@ -1,8 +1,10 @@
-import { Room, type Client } from "colyseus";
+import { randomBytes } from "node:crypto";
+import { Room, isDevMode, matchMaker, type Client } from "colyseus";
 import {
   GRID_HEIGHT,
   GRID_WIDTH,
   MAX_PLAYERS,
+  ROOM_CODE_LEN,
   ROOM_REGIONS,
   ROOMS,
   SUSPECTS,
@@ -17,6 +19,7 @@ import {
   regionOf,
   roomAt,
   roomCenter,
+  roomCodeFromBytes,
   voice,
   type AiStats,
   type Card,
@@ -274,7 +277,12 @@ export class ClueRoom extends Room<GameState> {
   private avgHumanTurnMs = 0;
   private turnStartedAt = 0;
 
-  onCreate(options: CreateOptions = {}): void {
+  /**
+   * ⚠️ **`async`인 이유는 방 코드 중복 확인 하나다.** Colyseus는 `await room.onCreate(...)`로
+   * 부르므로(`MatchMaker.js:323`) Promise를 돌려줘도 된다.
+   */
+  async onCreate(options: CreateOptions = {}): Promise<void> {
+    await this.assignRoomCode();
     this.setState(new GameState());
 
     // 공개/비공개: 비공개면 목록(getAvailableRooms)에서 숨김(코드 참가는 가능).
@@ -379,6 +387,53 @@ export class ClueRoom extends Room<GameState> {
   /** 공통 단서처럼 전원이 동시에 보는 정보만 여기로(공개 정보 → 비대칭 아님). */
   private markSeenForAll(value: string): void {
     this.state.players.forEach((_p, id) => this.markSeen(id, value));
+  }
+
+  /**
+   * 방 id를 **사람이 부를 수 있는 코드**로 바꾼다.
+   *
+   * 🔑 **새 계층을 안 만든다.** `roomId` 세터는 `_internalState === CREATING`일 때만 허용되고
+   * (`Room.js:118-122`), `onCreate()`가 정확히 그 구간이다 — `MatchMaker.js`는 `onCreate`를
+   * `await`한 **뒤에** `CREATED`로 올리고 `listing.roomId = room.roomId`를 복사한다(:335-336).
+   * 그래서 여기서 바꾼 값이 **진짜 방 id**가 되고, 초대 링크·`joinById`·증거노트 저장키·
+   * 게이트가 **한 줄도 안 바뀐 채** 그대로 돈다.
+   * (코드↔id 매핑 테이블 + 조회 엔드포인트를 두는 안은 그래서 기각했다 —
+   *  새 계층은 게이트가 못 재는 상태를 만든다.)
+   *
+   * 난수는 `crypto`다. **비공개 방은 이 코드가 유일한 자물쇠**이므로 예측 가능한
+   * `Math.random`을 쓰면 안 된다.
+   * ⚠️ ~~«그 점에서 Colyseus 기본 `nanoid`와 같은 급을 유지한다»~~ 는 **거짓이었다**(검수 지적).
+   *    난수원만 같고 **엔트로피는 2⁵⁴ → 2⁴⁰**이다. 자세한 수치·근거는 `room-code.ts`의
+   *    `ROOM_CODE_LEN` 주석에 있다. 남은 격차는 **참가 실패 레이트리밋**으로 갚아야 한다.
+   *
+   * ⚠️ 중복 확인은 **이미 살아 있는 방**만 막는다. 두 방이 «같은 순간에» 같은 코드를
+   * 뽑는 경우는 못 막는다(listing은 `onCreate` 뒤에 채워진다) — 32⁶ ≈ 10.7억이라
+   * 무시 가능하고, Colyseus 기본 경로도 같은 성질을 갖는다.
+   */
+  private async assignRoomCode(): Promise<void> {
+    /* devMode의 방 복원은 `MatchMaker`가 넣어 준 **옛 id**로 되살아나야 한다
+       (`MatchMaker.js`의 `restoringRoomId`). 여기서 덮으면 복원이 깨진다 —
+       지금 서버는 devMode를 안 켜므로 무해하지만, 켜는 순간 조용히 깨질 자리다(검수 지적). */
+    if (isDevMode) return;
+    for (let i = 0; i < 8; i++) {
+      const code = roomCodeFromBytes(randomBytes(ROOM_CODE_LEN));
+      try {
+        const taken = await matchMaker.query({ roomId: code });
+        if (taken.length > 0) continue;
+      } catch (e) {
+        /* 드라이버 조회 실패는 «중복 아님»으로 본다 — 방 생성을 막는 것보다 낫다.
+           다만 **조용히 넘기지는 않는다**: 이게 계속 나면 중복 검사가 통째로 없는 것과 같다. */
+        console.warn("[zodiac-clue] 방 코드 중복 검사 실패(중복 아님으로 진행):", e);
+      }
+      this.roomId = code;
+      return;
+    }
+    /* 8번을 내리 부딪히는 것은 사실상 불가능하다. 그래도 방은 열려야 하므로
+       Colyseus가 준 기본 id를 그대로 쓴다 — 못 부르는 코드가 «방이 안 열림»보다 낫다.
+       **말은 남긴다** — 이 회차가 없애려던 바로 그 상태로 되돌아가는 경로이기 때문이다. */
+    console.warn(
+      `[zodiac-clue] 방 코드를 8회 안에 못 뽑았다 — 기본 id(${this.roomId})로 연다. 부를 수 없는 코드다.`,
+    );
   }
 
   /**
