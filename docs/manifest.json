@@ -56,6 +56,10 @@
     "dir": "plans/done",
     "items": [
       {
+        "path": "plans/done/70-banner-top-row.md",
+        "title": "plan: 배너를 상단 줄로 되돌린다 — 「측정 충돌」은 내 grep 오독이었다"
+      },
+      {
         "path": "plans/done/69-phone-layout-rules.md",
         "title": "plan: 폰 분기의 «의도»를 규칙으로 — 가장 흔한 실기에 조판 규칙이 0건이었다"
       },
