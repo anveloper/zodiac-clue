@@ -371,6 +371,12 @@
       input {
         background: var(--wds-bg-normal); color: var(--wds-label-strong); border: 1px solid var(--wds-line-normal);
         border-radius: 6px; padding: 8px 10px; font-size: 13px;
+        /* 🔴 **폼 컨트롤은 `font-family`를 상속하지 않는다** — 이 파일이 두 번 적어 두고
+           `select`에만 고쳤다(:2157). 그래서 입력칸은 UA 기본 **Arial**로 그려졌고,
+           Arial에서 `I`와 `l`은 **같은 막대**다. 53회차가 방 코드를 등폭으로 갈라 놓고도
+           **손님이 그 코드를 받아 적는 칸**에서는 도로 붙어 있었다(검수 픽셀 실측:
+           `<input>` ↔ Arial 차분 bbox = None). 논거의 절반만 적용돼 있던 것이다. */
+        font-family: inherit;
       }
       h1 { color: var(--wds-label-strong); }
 
@@ -477,6 +483,8 @@
         .card { width: 520px; padding: 28px 32px; }
         .card h1 { font-size: 26px; margin: 0 0 6px; }
         .card .subtitle { font-size: 15px; margin: 0 0 22px; }
+        /* 위 줄은 로비에서 죽었다(53회차가 부제를 코드 줄로 대체) — 그 자리를 잇는다. */
+        .card .inv-code-k { font-size: 13px; }
         /* 카드만 넓히면 **폭 456px 막대에 13px 글자**가 얇게 늘어난다(초안 캡처).
            ⚠️ `.char`는 뺀다 — 캐릭터 칸이 `<button>`이라 `.card button`(0,1,1)이
            `.char`(0,1,0)를 **특정도로 이겨** 12px 의도를 15px로 덮었다. */
@@ -675,12 +683,43 @@
         word-break: keep-all; padding: 12px; text-align: center; color: var(--wds-label-alternative); font-size: 12px; }
       .divider { text-align: center; color: var(--wds-label-alternative); font-size: 12px; margin: 16px 0; }
       .join-row { display: flex; gap: 8px; }
-      .join-row input { flex: 1; }
+      /* 🔴 `min-width: 0`이 없으면 flex 항목의 바닥이 **내용 폭**이라 입력칸이 옆 버튼을 민다.
+         53회차가 `input`에 `font-family: inherit`를 넣자 그 바닥이 넓어져
+         `[참가]`가 **41×48**로 눌렸다(하한 44 · 게이트 S3 실측). 이 파일이 같은 함정을
+         `select`에서 한 번 겪고 `min-width: 0`으로 풀어 뒀다(:2160). */
+      .join-row input { flex: 1; min-width: 0; }
+      .join-row button { flex: none; }
       .msg { font-size: 12px; color: var(--wds-primary-normal); margin-top: 12px; min-height: 16px; }
 
       /* ── 로비(대기실) ── */
       .invite { display: flex; gap: 8px; margin-bottom: 16px; }
       .invite input { flex: 1; font-size: 12px; }
+      /* 라벨과 값이 **한 줄**이다 — 두 줄로 쌓으면 그만큼 카드가 자란다(위 마크업 주석). */
+      /* 코드를 «갈라 그리는» 서체는 호스트 화면만이 아니라 **받아 적는 칸**에도 걸려야 한다. */
+      .code-in { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+      .inv-code { display: flex; align-items: baseline; gap: 8px; margin: 0 0 12px; }
+      /* 12px은 이 파일의 라벨 축이다(`.field label`·`.pick-label`·`.hint-sm`·`.divider`·`.host-hint`).
+         초안의 11px은 **저장소에 없는 일회성 값**이었고, 데스크톱 분기가 부제·라벨을 15/13px로
+         올리는데 로비에서 그 규칙이 `.subtitle`과 함께 죽어 «카드에서 가장 작은 글자»가 됐다. */
+      .inv-code-k { font-size: 12px; color: var(--wds-label-alternative); flex: none; }
+      /* `user-select: all`은 한 번의 탭·클릭으로 **코드 전체**가 잡히게 한다 — 사람이 부분 선택으로
+         한 글자를 흘리면 참가가 조용히 실패한다.
+         ⚠️ `overflow` 상자를 만들지 않는다 — 잘리지 않게 하는 것이 이 줄의 목적이므로,
+            안 들어가면 «스크롤»이 아니라 **글자 크기 분기**로 푼다(아래 320 분기). */
+      /* 🔴 **불러 주라고 키운 글자는 «구분되는» 글자꼴이어야 한다.** 실측 코드가
+         `K080FL1k1`·`6rLjQ-Z0x`처럼 나온다 — 본문 서체로는 `0`/`O`, `1`/`l`/`I`가
+         사실상 같은 그림이다. 등폭 서체는 그 둘을 갈라 그리고, 자간과 함께 «한 글자씩
+         받아 적는» 읽기를 돕는다. ⚠️ 값 자체는 **가공하지 않는다** — 랜딩 `#codeInput`이
+         그대로 받는 문자열이고 대소문자가 유효하다(`main.ts`의 `joinById`). */
+      .inv-code-v {
+        display: block; font-size: 20px; font-weight: 800; letter-spacing: 0.06em;
+        line-height: 1.2; color: var(--wds-label-strong);
+        /* 접두는 이 파일의 다른 세 곳(:346·:348·:1328)이 이미 짝을 맞춰 둔 규약이다. */
+        -webkit-user-select: all; user-select: all;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+      /* 성공 문안(`복사됨`)이 라벨보다 짧아 버튼이 줄어들면 그 순간 줄 전체가 흔들린다. */
+      #copyBtn { min-width: 84px; }
       #playerList { list-style: none; padding: 0; margin: 8px 0 16px; }
       #playerList li {
         padding: 8px 10px; background: var(--wds-bg-normal); border: 1px solid var(--wds-bg-alternative);
@@ -706,7 +745,12 @@
            42회차가 «부제를 감춰» 낸 겹침과 **같은 사고를 여백으로 다시 낸 것**이다.
            불변량: `.subtitle`의 `margin-bottom`은 **14 이상**이어야 한다.
            → 조이기는 그 규칙이 없는 **대기실에만** 건다. */
-        #lobby .card .subtitle { margin-bottom: 8px; }
+        /* 🔴 부제를 대신한 코드 줄도 **같은 자리에서 조인다.** 안 조이면 카드가 자라
+           `guard 1024×630`·`cardGuard 1024×600`에서 `#hostHint`가 화면 밖으로 나간다(실측 9·6px).
+           옛 부제는 여기서 `14.4 + 8 = 22.4px`을 썼다 — 코드 줄을 `19.2 + 4 = 23.2px`으로 맞춰
+           **높이를 사실상 그대로** 둔다. 16px은 본문(12)보다 크고 굵어 여전히 주인공이다. */
+        #lobby .card .inv-code { margin-bottom: 4px; }
+        #lobby .inv-code-v { font-size: 16px; }
         .invite { margin-bottom: 6px; }
         #playerList { margin: 2px 0 2px; }
         #landing .game-meta { margin-bottom: 6px; }
@@ -2514,7 +2558,13 @@
         <div class="card-col">
         <div class="divider">— 또는 초대 코드로 —</div>
         <div class="join-row">
-          <input id="codeInput" placeholder="초대 코드" />
+          <!-- 🔴 **자동 대문자화를 끈다.** 방 코드는 `nanoid(9)`이고 알파벳 64자 중 소문자가 26자라
+               **첫 글자가 소문자일 확률이 40.6%**다(실측 `aE5sox2sU`·`gkzuKFC5_`).
+               모바일 소프트 키보드는 text input을 문장으로 보고 첫 글자를 올리므로
+               `aE5…` → `AE5…`가 되어 `joinById`가 실패한다 — 53회차가 코드를 «받아 적으라»고
+               크게 띄워 놓고 **받는 칸을 안 고친** 상태였다(검수 지적). -->
+          <input id="codeInput" class="code-in" placeholder="초대 코드"
+                 autocapitalize="off" autocorrect="off" spellcheck="false" />
           <button id="joinBtn">참가</button>
         </div>
         <div class="field" style="margin-top: 16px">
@@ -2539,10 +2589,29 @@
       <div class="card">
         <div class="lobby-head">
         <h1>🏮 대기실</h1>
-        <p class="subtitle">초대 링크를 친구에게 공유하세요</p>
+
+        <!-- 🔴 **읽는 것과 보내는 것을 가른다.** 그전에는 초대 줄이 링크 원문 하나였고,
+             320px에서 `…/room/jMN`으로 **방 코드가 시작되는 자리에서 잘렸다** —
+             「링크를 공유하세요」라고 써 놓고 링크를 읽을 수 없었다.
+             방 코드는 랜딩 `#codeInput`이 받는 **1급 참가 경로**인데 그 코드를 만드는
+             호스트에게만 안 보였다. 코드는 «불러 주는» 정보라 **잘리면 안 되고**,
+             링크는 «보내는» 것이라 버튼이 가져간다. -->
+        <!-- 🔴 **부제 줄을 «대신한다» — 얹지 않는다.** 얹었더니 카드가 46px 자라
+             `cardGuard 1024×600`에서 `[잔치 시작]`이 화면 밖으로 밀렸다(게이트 S1 실측).
+             13·17·37회차가 전부 같은 곳에서 걸린 함정이다.
+             없앤 문장은 「초대 링크를 친구에게 공유하세요」인데, **읽을 수 없는 링크를
+             공유하라는 문장**이었다. 지금은 코드가 보이고 버튼이 «링크 복사»라고 말한다. -->
+        <p class="inv-code">
+          <span class="inv-code-k">방 코드</span>
+          <strong id="roomCode" class="inv-code-v">—</strong>
+        </p>
+        <!-- 🔴 이 줄은 **손대지 않는다.** 초안이 링크 원문을 11px muted로 «강등»했다가
+             게이트 S3에 걸렸다 — `#inviteLink`는 `readonly`여도 **입력 컨트롤**이라
+             포인터 타깃 하한(마우스 24 · 손가락 44)이 걸린다(실측 454×17로 FAIL).
+             강등할 필요도 없었다: 코드가 위에 있으므로 **여기서 잘리는 것은 이제 무해하다.** -->
         <div class="invite">
-          <input id="inviteLink" readonly />
-          <button id="copyBtn">복사</button>
+          <input id="inviteLink" readonly aria-label="초대 링크" />
+          <button id="copyBtn">링크 복사</button>
         </div>
         <!-- 사람이 들어오면 수가 바뀐다 → 보조 기술에 알린다. `keep-all`은 한국어를 어절 단위로 끊는다. -->
         <div style="font-size: 12px; color: var(--wds-label-alternative); word-break: keep-all;"

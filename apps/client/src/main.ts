@@ -1104,6 +1104,8 @@ const wireRoom = (r: Room): void => {
 
   const link = `${location.origin}/room/${r.roomId}`;
   ($("inviteLink") as HTMLInputElement).value = link;
+  // 방 코드는 랜딩 `#codeInput`이 그대로 받는 값이다 — 가공하면 참가가 깨진다.
+  $("roomCode").textContent = r.roomId;
   try {
     // 쿼리스트링을 버리지 않는다 — `?demo=1`·`?motion=`·`?cvd=` 는 진입 후에도 읽힌다.
     history.replaceState({}, "", `/room/${r.roomId}${stickySearch()}`);
@@ -3236,7 +3238,9 @@ let createPublic = true;
  */
 const showJoinFailed = (e?: unknown): void => {
   if (e !== undefined) console.warn("[room-join]", e);
-  setLandingMsg("없는 방이거나 이미 시작한 판이에요. 코드를 확인해 주세요.");
+  // 방 코드는 대소문자를 구분한다(`nanoid` 알파벳에 대소문자가 섞여 있다).
+  // 그 사실을 안 말하면 사람은 «없는 방»으로 읽고 다시 시도할 단서를 못 얻는다.
+  setLandingMsg("없는 방이거나 이미 시작한 판이에요. 대소문자까지 그대로 입력했는지 확인해 주세요.");
 };
 
 const wireVisibilityToggle = (): void => {
@@ -3482,14 +3486,23 @@ const init = async (): Promise<void> => {
 
   ($("copyBtn") as HTMLButtonElement).onclick = async () => {
     const link = ($("inviteLink") as HTMLInputElement).value;
+    // 라벨의 출처는 마크업 하나다 — 여기에 다시 적으면 1.5초 뒤 옛 라벨로 되돌아간다.
+    const btn = $("copyBtn") as HTMLButtonElement;
+    const label = btn.textContent ?? "";
     try {
       await navigator.clipboard.writeText(link);
-      ($("copyBtn") as HTMLButtonElement).textContent = "복사됨!";
+      btn.textContent = "복사됨";
       window.setTimeout(() => {
-        ($("copyBtn") as HTMLButtonElement).textContent = "복사";
+        btn.textContent = label;
       }, 1500);
     } catch {
+      // 클립보드가 막힌 환경(비보안 컨텍스트 등)에서는 **말없이 아무 일도 안 일어난 것**처럼 보였다.
+      // 링크를 잡아 주고, 잡아 줬다는 사실을 말한다.
       ($("inviteLink") as HTMLInputElement).select();
+      btn.textContent = "직접 복사해 주세요";
+      window.setTimeout(() => {
+        btn.textContent = label;
+      }, 2500);
     }
   };
 
