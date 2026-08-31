@@ -6,8 +6,11 @@ import {
   WEAPONS,
   ZODIAC,
   emoji,
+  formatRoomCode,
   job,
   label,
+  normalizeRoomCode,
+  ROOM_CODE_LEN,
   passageOf,
   persona,
   timingOf,
@@ -1104,8 +1107,10 @@ const wireRoom = (r: Room): void => {
 
   const link = `${location.origin}/room/${r.roomId}`;
   ($("inviteLink") as HTMLInputElement).value = link;
-  // 방 코드는 랜딩 `#codeInput`이 그대로 받는 값이다 — 가공하면 참가가 깨진다.
-  $("roomCode").textContent = r.roomId;
+  /* 끊어 주면 한 번에 세 글자씩 부르고 받아 적는다. **값은 안 바꾼다** —
+     `formatRoomCode`는 보기용이고, 랜딩 입력은 하이픈을 받아 준다(`normalizeRoomCode`).
+     옛 형식 id는 모양이 안 맞아 그대로 나온다. */
+  $("roomCode").textContent = formatRoomCode(r.roomId);
   try {
     // 쿼리스트링을 버리지 않는다 — `?demo=1`·`?motion=`·`?cvd=` 는 진입 후에도 읽힌다.
     history.replaceState({}, "", `/room/${r.roomId}${stickySearch()}`);
@@ -3238,9 +3243,11 @@ let createPublic = true;
  */
 const showJoinFailed = (e?: unknown): void => {
   if (e !== undefined) console.warn("[room-join]", e);
-  // 방 코드는 대소문자를 구분한다(`nanoid` 알파벳에 대소문자가 섞여 있다).
-  // 그 사실을 안 말하면 사람은 «없는 방»으로 읽고 다시 시도할 단서를 못 얻는다.
-  setLandingMsg("없는 방이거나 이미 시작한 판이에요. 대소문자까지 그대로 입력했는지 확인해 주세요.");
+  /* 🔴 53회차 문안(«대소문자까지 그대로 입력했는지»)은 **54회차에 거짓이 됐다** —
+     코드는 대문자 전용이고 `normalizeRoomCode`가 어차피 올린다. 대소문자는 실패의 원인이
+     **될 수 없는데** 화면이 그것을 원인으로 지목하고 있었다(검수 지적).
+     지금 사람이 확인할 수 있는 것은 «글자 수»와 «글자 자체»다. */
+  setLandingMsg(`없는 방이거나 이미 시작한 판이에요. 코드 ${ROOM_CODE_LEN}글자를 다시 확인해 주세요.`);
 };
 
 const wireVisibilityToggle = (): void => {
@@ -3468,11 +3475,15 @@ const init = async (): Promise<void> => {
   };
 
   ($("joinBtn") as HTMLButtonElement).onclick = async () => {
-    const code = ($("codeInput") as HTMLInputElement).value.trim();
-    if (!code) {
+    const typed = ($("codeInput") as HTMLInputElement).value.trim();
+    if (!typed) {
       setLandingMsg("초대 코드를 입력하세요.");
       return;
     }
+    /* 보이는 것(`ABC-123`)과 칠 수 있는 것이 어긋나면 안 된다 — 하이픈·공백·소문자를 받아 준다.
+       `null`이면 **새 코드 모양이 아니다**: 옛 형식(`nanoid`) id를 대문자로 올려
+       망가뜨리지 않도록 그대로 넘긴다. */
+    const code = normalizeRoomCode(typed) ?? typed;
     setLandingMsg("참가하는 중…");
     try {
       wireRoom(await (await loadNet()).joinRoomById(code));
