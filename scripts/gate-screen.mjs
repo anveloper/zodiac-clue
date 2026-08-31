@@ -1005,9 +1005,24 @@ function pageProbe(cfg) {
            (배치가 필요 없다 — 검수 실측). 전부에 걸었더니 같은 화면에서 측정이
            **3/3 → 2/3 + notRendered 1**로 줄었다. **자기가 만든 구멍을 자기 안에서 메운 것**이다.
            배치가 끝나야 값이 생기는 것은 grid 트랙뿐이다. */
-        const needsLayout = r.expect === "equal-tracks" || r.expect === "below";
+        const needsLayout = r.expect === "equal-tracks" || r.expect === "below" || r.expect === "same-row";
         const el = needsLayout ? all.find(rendered) : all[0];
         if (!el) return { sel: r.sel, prop: r.prop, why: r.why, notRendered: true };
+        if (r.expect === "same-row") {
+          /* 🔴 **`below`의 거울상.** 「위에 있어야 한다」가 아니라 「**같은 줄**에 있어야 한다」다.
+             50회차 검수가 잡았다: 상한(`max-width: 1359`)을 1500으로 올려도 **전건 PASS**였다 —
+             규칙이 경계를 따라가서 침묵하기 때문이다. 「배너는 넓은 화면에서 상단 줄에 선다」는
+             이번 회차가 되돌린 «의도»인데 **아무도 주장하지 않고 있었다.** */
+          const other = document.querySelector(r.with);
+          if (!other || !rendered(other)) return { sel: r.sel, prop: r.prop, why: r.why, notRendered: true };
+          const a = el.getBoundingClientRect();
+          const b = other.getBoundingClientRect();
+          const overlap = Math.round((Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top)) * 10) / 10;
+          return {
+            sel: r.sel, prop: `${r.with}와 세로 교차`, why: r.why,
+            expect: `> 0(같은 줄)`, got: `${overlap}px`, ok: overlap > 0,
+          };
+        }
         if (r.expect === "below") {
           /* 🔴 **관계는 관계로 적는다.** 초안은 `top: 62px`이라는 **결과값**을 박았는데,
              액션 바 높이가 44 → 52로 바뀌면 **규칙은 그대로 통과하면서 겹침이 자란다**(검수 지적).
@@ -2824,6 +2839,26 @@ const FAULTS = [
     js: `(() => {
       const b = document.getElementById('endTurn');
       b.style.cssText += ';min-width:20px;min-height:20px;width:20px;height:20px;padding:0;font-size:8px';
+      return 'injected';
+    })()`,
+  },
+  {
+    id: "F22-배너가상단을떠남",
+    expect: "S12",
+    screen: "game",
+    vp: "bannerTop", // 🔴 `desktop`을 고르면 규칙이 안 걸린다 — F19가 겪은 실수와 같다
+    signature: /\.hud-ctrl와 세로 교차/,
+    why:
+      "넓은 화면(폭 ≥1360)에서 배너를 **아래 줄로 내린다** — 47회차가 조건 없이 내려 " +
+      "«겹침이 애초에 없는 화면까지» 보드 위로 내려앉았던 그 상태다. " +
+      "🔴 **50회차 초안은 이 방향을 «`bannerTop`이 잡는다»고 적었는데 거짓이었다** — " +
+      "상한을 1500으로 올려도 전건 PASS였다(규칙이 경계를 따라가서 침묵한다). " +
+      "F를 붙였으면 착수 중에 드러났다.",
+    js: `(() => {
+      const st = document.createElement('style');
+      st.id = 'zc-fault-banner-down';
+      st.textContent = '@media (min-width: 1360px) { .hud-turn { top: 62px !important; } }';
+      document.head.appendChild(st);
       return 'injected';
     })()`,
   },
