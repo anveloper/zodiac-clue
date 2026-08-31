@@ -2828,6 +2828,44 @@ const FAULTS = [
     })()`,
   },
   {
+    id: "F20-덱이상단으로",
+    expect: "S12",
+    screen: "game",
+    vp: "phone",
+    signature: /\.hud-turn 아래 여유/,
+    why:
+      "하단 데크를 **상단으로 되돌린다** — 폰 분기가 스스로 「상단 좌측에 두면 6개 버튼이 폭을 " +
+      "거의 다 먹어 배너와 겹친다」고 적어 둔 그 회귀다. " +
+      "🔴 **49회차 초안은 이걸 `display: grid`로 재려 했고, 검수가 «덱을 위로 올리되 `grid`는 " +
+      "유지»한 상태를 되주입하니 S12가 침묵했다** — `display`는 의도의 «상관관계»일 뿐이었다. " +
+      "이 결함이 그때 있었으면 착수 중에 드러났다. 그래서 관계(`below`)로 고쳤다.",
+    js: `(() => {
+      const st = document.createElement('style');
+      st.id = 'zc-fault-deck-top';
+      st.textContent = '.hud-ctrl { top: 6px !important; bottom: auto !important; }';
+      document.head.appendChild(st);
+      return 'injected';
+    })()`,
+  },
+  {
+    id: "F21-컬럼스크롤해제",
+    expect: "S12",
+    screen: "game-column",
+    vp: "phone",
+    signature: /\.rp-col \{ overflowY \}/,
+    why:
+      "우측 컬럼의 `overflow-y`를 `visible`로 되돌린다. **S1은 원리적으로 침묵한다** — " +
+      "흘러넘치는 `#logPanel`이 `protect`에 없기 때문이다(검수 실측: 컬럼 접힘 아래 27px에 있어 " +
+      "상자 밖으로 흘러 보드 위에 그려지고 뷰포트 밖으로 19px 나간다). 이 축은 S12만 본다.",
+    js: `(() => {
+      const st = document.createElement('style');
+      st.id = 'zc-fault-col-overflow';
+      st.textContent = '.rp-col { overflow-y: visible !important; }';
+      document.head.appendChild(st);
+      return 'injected';
+    })()`,
+  },
+  {
     id: "F19-조판분기되돌림",
     expect: "S12",
     screen: "lobby",

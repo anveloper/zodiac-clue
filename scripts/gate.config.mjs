@@ -452,6 +452,41 @@ export const SCREEN = {
         "배너는 액션 바 **아래 줄**이어야 한다 — 같은 줄에 서면 폭 761~1286에서 덮는다(47회차 실측). " +
         "S1 쌍은 «이미 겹쳤는가»를 재고 이 규칙은 «겹치기 전 여유»를 잰다",
     },
+    /* 🔴 **가장 흔한 실기(폰 390×844)에 규칙이 0건이었다**(48회차 검수 지적).
+       분기가 가장 많이 갈리는 곳인데 «의도한 조판이 섰는가»를 아무도 안 쟀다.
+       아래 셋은 폰 분기가 **스스로 주석에 적어 둔 의도**를 그대로 규칙으로 옮긴 것이다. */
+    {
+      when: "(max-width: 760px), (max-height: 500px)",
+      screen: ["game", "game-column", "goal-modal", "accuse-modal"],
+      /* 🔴 **관계로 적는다 — `display`는 «상관관계»일 뿐이다.** 초안은 `display: grid`를 썼는데,
+         검수가 **덱을 위로 올리면서 `grid`는 그대로 둔** 상태를 되주입하니 **S12가 침묵했다**.
+         이 규칙이 말하는 의도는 «어디에 섰는가»이고, 그건 이 파일에 이미 있는 `below`
+         프리미티브가 잰다(48회차 데스크톱 규칙의 **정확한 거울상**이다 — 축이 안 늘어난다).
+         🔴 그리고 `top: auto`로는 못 잰다 — **그려진** 위치 지정 요소의 `top`은 사용값(px)으로
+            해석된다(실측 784/560/390/330/280/508/493). */
+      sel: ".hud-ctrl", expect: "below", after: ".hud-turn", gap: 12,    },
+    {
+      when: "(max-width: 760px), (max-height: 500px)",
+      screen: ["game", "game-column", "goal-modal", "accuse-modal"],
+      sel: ".rp-col", prop: "overflowY", expect: "auto",
+      why:
+        "우측 컬럼은 **컬럼 안에서** 스크롤해야 한다 — 문서를 스크롤시키면 보드가 통째로 " +
+        "밀려 올라간다(분기 주석). " +
+        "🔴 초안은 「`visible`로 돌아가면 45회차의 «접힘 아래» 검사가 무력해진다」고 적었는데 " +
+        "**틀렸다**(검수 실측: `.rp-hand`를 자르는 조상은 `.rp-col`이 아니라 `#eviPanel`이고, " +
+        "되주입해도 S1은 한 건도 안 운다). 진짜 근거는 더 강하다 — `#logPanel`은 이미 컬럼 접힘 " +
+        "아래 27px에 있어서, `overflow-y`가 사라지면 **컬럼 상자 밖으로 흘러 보드 위에 그려지고 " +
+        "뷰포트 밖으로 19px 나간다.** 그런데 `#logPanel`은 `protect`에 없어 **S1이 원리적으로 " +
+        "침묵한다** — 이 규칙만 본다(실측 순증 1건).",
+    },
+    {
+      when: "(max-width: 760px), (max-height: 500px)",
+      screen: ["game", "game-column", "goal-modal", "accuse-modal"],
+      sel: "#rpToggle", prop: "display", expect: "flex",
+      why:
+        "폰에서 우측 컬럼을 여닫는 **유일한 길**이다(데스크톱에선 CSS가 숨긴다). " +
+        "`display: none`으로 돌아가면 컬럼이 열린 채 갇히거나 영영 못 연다",
+    },
     {
       when: "(max-width: 380px)", screen: ["game", "game-column", "goal-modal", "accuse-modal"],
       sel: ".hud-ctrl", prop: "gridTemplateColumns",
