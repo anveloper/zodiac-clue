@@ -56,6 +56,10 @@
     "dir": "plans/done",
     "items": [
       {
+        "path": "plans/done/69-phone-layout-rules.md",
+        "title": "plan: 폰 분기의 «의도»를 규칙으로 — 가장 흔한 실기에 조판 규칙이 0건이었다"
+      },
+      {
         "path": "plans/done/68-layout-branch-check.md",
         "title": "plan: S12 «조판 분기» — 게이트가 «들어가는가»만 재고 «어느 조판으로 섰는가»는 안 쟀다"
       },
