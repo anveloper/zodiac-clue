@@ -712,8 +712,12 @@
           주석에는 정답(<code>.divider</code>)을 적어 놓고 다른 선택자를 코딩했다.</li>
         <li><b style="color:var(--red)">⚠️ 평상 상태만 덮는다</b> —
           <code>.bgm-ctrl:hover, :focus-within</code>이 열리면 버튼이 왼쪽으로 <b>97px</b> 커져
-          콘텐츠를 덮는다(검수 실측). Tab 한 번이면 닿는다. S1은 평상 상태만 재므로
-          이 축은 <b>여전히 사람 몫</b>이다.</li>
+          콘텐츠를 덮는다. Tab 한 번이면 닿는다.<br>
+          <b style="color:var(--red)">🔴 51회차에 <code>hoverPairs</code>로 선언은 됐지만 아직 안 잡힌다</b> —
+          ① 프로브가 만드는 것은 <b>마우스 hover뿐</b>이고 이 축은 <code>:focus-within</code>이며
+          ② 결함은 <b>coarse 뷰포트에만</b> 있는데 그쪽은 통째로 SKIP이다
+          (실측 <code>land</code>·<code>n320</code>·<code>edge</code>·<code>p553</code>에서 81~133px 겹침).
+          <b>「선언됐으니 안전하다」로 읽지 마라</b> — 여전히 사람 몫이다.</li>
       </ul>
       <b style="color:var(--red)">⚠️ 게이트 S1 PASS는 이 쌍의 안전 근거가 못 된다</b> —
       1440에서 둘은 <b>378px 떨어져</b> 있어 y가 어떻게 움직여도 원리적으로 FAIL이 날 수 없다.
@@ -945,8 +949,15 @@
           <code>minOverlapEdgePx</code>에 안 걸린다.</li>
         <li>⚠️ <b>컬럼을 최대(680px)로 끌면</b> 배너와 179px 겹친다(내려가 있을 때는 97px —
           이번 변경이 82px 악화시켰다). 쌍을 새로 걸어 재게 했다.</li>
-        <li>⚠️ <b>배너에 hover하면</b> 이름이 펼쳐져 폭이 611.9가 되어 액션 바를 106px 덮는다 —
-          S1은 평상 상태만 재므로 <b>사람 몫</b>이다.</li>
+        <li><b>✅ 배너 hover 펼침은 51회차에 고쳤다</b> —
+          <code>.hud-turn:hover</code>(이름 <b>6개</b> 동시 · 폭 611.9 · 액션 바를 <b>106px</b> 덮음 @1360)를
+          <code>.ti-chip:hover</code>(가리킨 <b>하나</b>)로 줄였다.
+          폭 상한을 깎는 쪽은 답이 아니었다 — <b>개수가 지배한다</b>.<br>
+          <b style="color:var(--red)">🔴 실측 여유는 1360 최악 칸에서 7.7px뿐이다.</b>
+          이름은 <b>콘텐츠</b>이므로(좌석 수·칩 패딩·<code>.ti-order</code> 간격이 움직이면)
+          금방 없어진다.<br>
+          ✅ 그 축은 이제 <b>S13이 잰다</b> — 칩 <b>전부</b>를 돌아 최악을 취하고,
+          hover가 안 걸렸으면 「통과」가 아니라 <b>「못 쟀다」</b>로 인쇄한다.</li>
       </ul>
       조건은 <b>덱이 상단에 있을 때의 정확한 여집합</b>
       (<code>min-width: 761 and min-height: 501</code>)이고, 자리는 「뷰포트 중앙」이 아니라

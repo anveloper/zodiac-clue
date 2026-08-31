@@ -56,6 +56,10 @@
     "dir": "plans/done",
     "items": [
       {
+        "path": "plans/done/71-hover-geometry.md",
+        "title": "plan: S13 «hover 기하» — 마우스를 움직이는 장치를 갖고도 «색»만 읽고 있었다"
+      },
+      {
         "path": "plans/done/70-banner-top-row.md",
         "title": "plan: 배너를 상단 줄로 되돌린다 — 「측정 충돌」은 내 grep 오독이었다"
       },
