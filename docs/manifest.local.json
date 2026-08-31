@@ -98,6 +98,10 @@
     "dir": "plans/done",
     "items": [
       {
+        "path": "plans/done/67-height-guard.md",
+        "title": "plan: 660 가드의 근거 — 세 회차가 「근거 없다」고 적어 두고 아무도 재지 않았다"
+      },
+      {
         "path": "plans/done/66-narrow-320.md",
         "title": "plan: 320px 폭을 연다 — S11이 40회차부터 있었는데 «그 폭의 뷰포트»가 없어 잠들어 있었다"
       },
