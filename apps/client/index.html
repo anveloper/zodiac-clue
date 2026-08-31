@@ -951,8 +951,20 @@
         .ti-chip.cur { transform: scale(1.1); }
         .ti-arrow { font-size: 11px; }
         .hud-turn:hover { z-index: 20; }
-        .hud-turn:hover .ti-chip .ti-nm { max-width: 6em; opacity: 1; margin-left: 3px; }
-        .hud-turn:hover .ti-chip.cur .ti-nm { color: var(--wds-label-strong); }
+        /* 🔴 **한 번에 하나만 편다** `[2026-08-31 · 51회차]`.
+           전에는 `.hud-turn:hover`가 **이름 6개를 한꺼번에** 펼쳐 배너 폭이
+           326 → **611.9**가 됐고, 50회차가 배너를 상단 줄로 되돌리자
+           그 상태에서 **액션 바를 106×40px 덮었다**(경계 1360 실측 · 그전에는 줄이 달라 교차 0).
+           🔴 초안이 적은 «66×40»은 **`desktop 1440`의 값**이었다 — 다른 형상의 수를 옮겨 적었다.
+           «이 칩이 누구인가»에 답하는 것이 이 펼침의 목적이므로 **가리킨 칩 하나면 충분하다** —
+           그러면 늘어나는 폭이 1/6이 되어 배너가 제 차선을 안 벗어난다.
+           ⚠️ **개수가 지배한다.** 실측(1360, 칸별 hover): 최악 칸 「호랑이 대감」에서 배너 384.2 ·
+              여유 **7.7px**. 🔴 초안이 근거로 댄 «half 200.6 vs 199.8»은 **실측이 아니라
+              `max-width: 6em`이 포화했을 때의 값**이고, 오늘 이름은 상한에 안 닿는다(≈55px).
+              그 수는 오히려 «상한이 유일한 지배자»임을 보여 준다 — 근거가 결론을 뒤집었다.
+              처방(개수 줄이기)은 옳지만 **여유가 7.7px뿐**이라, 이름은 콘텐츠임을 기억하라. */
+        .ti-chip:hover .ti-nm { max-width: 6em; opacity: 1; margin-left: 3px; }
+        .ti-chip:hover.cur .ti-nm { color: var(--wds-label-strong); }
       }
       .ti-chip.cur {
         transform: scale(1.2); opacity: 1;
