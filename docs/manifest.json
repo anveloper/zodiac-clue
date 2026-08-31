@@ -56,6 +56,10 @@
     "dir": "plans/done",
     "items": [
       {
+        "path": "plans/done/74-speakable-room-code.md",
+        "title": "plan: 방 코드를 «부를 수 있는» 코드로 — roomId 자체를 바꾼다"
+      },
+      {
         "path": "plans/done/73-lobby-room-code.md",
         "title": "plan: 대기실의 주인공을 «방 코드»로 — 호스트만 자기 코드를 못 보고 있었다"
       },

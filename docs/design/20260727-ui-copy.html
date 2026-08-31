@@ -2008,7 +2008,7 @@
     <tr><td><code>.room-empty</code> 실패</td><td class="q dim">목록을 불러오지 못했어요.</td><td class="q good">목록을 불러오지 못했어요. [↻ 새로고침]을 눌러보세요.</td></tr>
     <tr><td>공개방 버튼</td><td class="q dim">참여 / 만석</td><td class="q good">참가 / 만석 <span class="note">§2 통일</span></td></tr>
     <tr><td><code>.hint-sm</code></td><td class="q dim">캐릭터는 대기실에서 고릅니다. 공개방은 목록에 노출됩니다.</td><td class="q good">캐릭터는 대기실에서 골라요. 공개방은 목록에 보여집니다.</td></tr>
-    <tr><td>참가 실패</td><td class="q dim">없는 방이거나 참가할 수 없어요. 코드를 확인하거나 새 방을 만드세요. (원문 오류)</td><td class="q good">없는 방이거나 이미 시작한 판이에요. 코드를 확인해 주세요. <span class="note">원문 오류는 콘솔로</span></td></tr>
+    <tr><td>참가 실패</td><td class="q dim">없는 방이거나 참가할 수 없어요. 코드를 확인하거나 새 방을 만드세요. (원문 오류)</td><td class="q good">없는 방이거나 이미 시작한 판이에요. 코드 8글자를 다시 확인해 주세요. <span class="note">원문 오류는 콘솔로</span></td></tr>
     <tr><td>목록 항목 제목 <span class="tag t-bug">조사</span></td><td class="q dim">${방장}님의 방 · 이름이 없으면 <b>대기 중님의 방</b></td><td class="q good">${방장} 님의 방 <span class="note">R1 — 님 앞에 한 칸</span><br>이름 없음 → <b>방장 대기 중</b></td></tr>
     <tr><td>공개방 참가 진행</td><td class="q dim">참여하는 중…</td><td class="q good">참가하는 중… <span class="note">초대 코드 참가와 글자 그대로 같은 문자열</span></td></tr>
     <tr><td>공개방 참가 실패</td><td class="q dim">참여 실패: (원문)</td><td class="q good">위 «참가 실패» 행과 같은 문장 <span class="note">경로가 둘이라고 문장을 둘로 만들지 않는다</span></td></tr>
@@ -2174,7 +2174,7 @@
   <div class="scroll"><table>
     <tr><th>자리</th><th>확정 문안</th><th>무엇</th></tr>
     <tr><td>라벨</td><td class="q">방 코드</td><td>12px muted · 데스크톱 13px (<code>label-alternative</code> <b>5.97:1</b>)</td></tr>
-    <tr><td>값</td><td class="q">${roomId} — <b>가공 없이</b></td><td>20px 800 등폭 · 자간 .06em (짧은 화면 <b>16px</b>) (<code>label-strong</code> <b>13.78:1</b>)</td></tr>
+    <tr><td>값</td><td class="q">${roomId} — 보기용으로 <b>4자씩 끊는다</b>(<code>ABCD-EFGH</code>)</td><td>20px 800 등폭 · 자간 .06em (짧은 화면 <b>16px</b>) · 끊음은 <b>보기용</b>이고 서버에 가는 값은 민값이다 (<code>label-strong</code> <b>13.78:1</b>)</td></tr>
     <tr><td>행동</td><td class="q">링크 복사 → 누르면 복사됨 1.5초</td><td>그전 <code>복사</code>는 <b>무엇을</b> 복사하는지 안 말했다</td></tr>
     <tr><td>확인</td><td class="q">링크 원문(<code>#inviteLink</code>)</td><td>코드가 위에 있으므로 <b>여기서 잘리는 것은 무해하다</b></td></tr>
   </table></div>
@@ -2182,12 +2182,68 @@
     <li><b>방 코드는 1급 참가 경로다</b> — 랜딩 <code>#codeInput</code>이 받는 값이고
       <code>[참가]</code>가 그것으로 붙는다. 그런데 <b>코드를 만드는 호스트에게만</b> 코드가
       안 보였다. 옆 사람에게 불러 줄 수 없었다.</li>
-    <li><b>값을 가공하지 않는다</b>(대문자화·하이픈 삽입 금지) — 서버 id는 대소문자가 유효하고
-      이미 하이픈을 포함할 수 있다(실측 <code>6rLjQ-Z0x</code>). 보기 좋게 바꾸면
-      <b>참가가 조용히 깨진다.</b></li>
-    <li><b>등폭 서체</b> — 실측 코드가 <code>K080FL1k1</code>처럼 나온다. 본문 서체로는
-      <code>0</code>/<code>O</code>, <code>1</code>/<code>l</code>/<code>I</code>가 사실상 같은
-      그림이다. 불러 주라고 키운 글자는 <b>구분돼야</b> 한다.<br>
+    <li><b style="color:var(--grn,#2e7d32)">✅ 2026-09-01 · 54회차 — 그 위험을 뿌리에서 없앴다.
+      id 공간을 바꿨다.</b><br>
+      <s style="opacity:.55">서버 id는 대소문자가 유효하고 이미 하이픈을 포함할 수 있다
+      (<code>6rLjQ-Z0x</code>)</s> 는 <b>더 이상 사실이 아니다.</b> 방 id는 이제
+      <b>Crockford base32 6자</b>(<code>CSP-3TM</code>)다.
+      <ul>
+        <li>알파벳 <code>0123456789ABCDEFGHJKMNPQRSTVWXYZ</code> —
+          <b><code>I</code>·<code>L</code>·<code>O</code>·<code>U</code>가 없다.</b>
+          <code>O</code>가 없으니 <code>0</code>이, <code>I</code>/<code>L</code>이 없으니
+          <code>1</code>이 <b>혼동 상대를 잃는다.</b> <code>U</code>는 욕설 회피 관례.</li>
+        <li><b>8자</b> = 32⁸ = <b>2⁴⁰ ≈ 1.1조</b> + 생성 시 <code>matchMaker.query({ roomId })</code> 중복 재시도 8회.</li>
+        <li><b style="color:var(--red)">🔴 길이는 「부르기 편함」이 아니라 「자물쇠 세기」가 정한다.</b>
+          초안은 6자(2³⁰)였는데 검수가 <b>실제로 뚫었다</b>: localhost 병렬 20연결로 없는 코드에
+          <code>joinById</code>를 던져 <b>초당 9,615회</b>, 동시 방 100개면 아무 비공개 방이나
+          <b>평균 18.6분</b>에 열렸다. 비공개 방은 이 코드가 <b>유일한 자물쇠</b>이고 참가 실패에
+          레이트리밋이 없다(<code>grep rateLimit|throttle|onAuth</code> → <b>0건</b>).
+          8자로 올려 같은 속도·동시 방 1000개 기준 <b>1.9분 → 약 34시간</b>이 됐다.<br>
+          ⚠️ <b>그래도 옛 <code>nanoid(9)</code>(2⁵⁴)보다 2¹⁴ = 16,384배 약하다</b> —
+          초안 주석이 「같은 급을 유지한다」고 적었는데 <b>거짓이었다.</b> 남은 격차는
+          <b>참가 실패 레이트리밋</b>으로 갚아야 한다(다음 회차 후보 1번).</li>
+        <li><b>🔑 새 계층을 안 만들었다.</b> <code>roomId</code> 세터는
+          <code>_internalState === CREATING</code>일 때만 열리고 <code>onCreate()</code>가 정확히
+          그 구간이다 — Colyseus는 <code>onCreate</code>를 <code>await</code>한 <b>뒤에</b>
+          <code>listing.roomId</code>를 복사한다. 그래서 초대 링크·<code>joinById</code>·
+          증거노트 저장키·게이트가 <b>한 줄도 안 바뀐 채</b> 그대로 돈다.
+          (코드↔id 매핑 테이블 + 조회 엔드포인트를 두는 안은 <b>기각</b> —
+          새 계층은 게이트가 못 재는 상태를 만든다.)</li>
+        <li>난수는 <code>crypto</code>다 — <b>비공개 방은 이 코드가 유일한 자물쇠</b>다.</li>
+      </ul></li>
+    <li><b>보이는 것과 칠 수 있는 것이 어긋나면 안 된다</b> — 표시는 <code>ABCD-EFGH</code>로 끊고,
+      입력은 <b>하이픈·공백·소문자를 받아 준다.</b> Crockford 입력 규약대로 <code>O</code>는
+      <code>0</code>, <code>I</code>/<code>L</code>은 <code>1</code>로 읽는다(그 글자들은 알파벳에
+      없으므로 되돌릴 값이 하나뿐이라 모호하지 않다).<br>
+      실증: 화면에 뜬 코드를 소문자·하이픈째로 쳐서 <b>참가 성공</b>(실서버 왕복).<br>
+      <b style="color:var(--red)">🔴 하이픈은 「보이는 자리」에서만 받는다.</b> 초안은 하이픈을
+      아무 데서나 벗겨서 <code>"xy-z1-2-3"</code> → <code>"XYZ123"</code>이 됐다 —
+      <b>옛 링크가 조용히 남의 방으로 가는</b> 실패다(검수 실증). 지금 받는 모양은
+      민값(<code>ABCDEFGH</code>)과 화면 그대로(<code>ABCD-EFGH</code>) <b>둘뿐</b>이다.</li>
+    <li><b>옛 형식은 건드리지 않는다</b> — <code>normalizeRoomCode</code>는 새 모양이 아니면
+      <code>null</code>을 주고, 호출부는 원문을 그대로 넘긴다. 배포 전에 만들어진 방·북마크가
+      살아 있어야 한다.</li>
+    <li><b style="color:var(--grn,#2e7d32)">✅ 이 축에 게이트가 붙었다</b>
+      (<code>scripts/gate-room-code.mjs</code> · <code>verify</code>의 <code>roomcode</code>).
+      <b style="color:var(--red)">🔴 검수가 이 게이트에 결함 4종을 주입해 전부 조용히
+      통과시켰다.</b> 그래서 다시 지었다 — 이제 ① 서버 <code>assignRoomCode</code> 본문이
+      <code>roomCodeFromBytes</code>·<code>randomBytes</code>를 실제로 쓰는지(공용 모듈만 보면
+      서버가 자기 알파벳을 써도 초록이다) ② 서로 다른 바이트열이 다른 코드를 내는지
+      ③ <b>바이트 0~255를 전부 넣어 출력에</b> 알파벳의 모든 글자가 나오는지(선언의
+      <code>256 % 32</code>만 검산하면 구현의 <code>% 31</code>을 못 본다) ④ 끊음 단위가 3~4자이고
+      길이를 나눠떨어뜨리는지(같은 상수로 양변을 만들면 <b>항진식</b>이다) ⑤ 짧은 바이트를
+      거부하는지 ⑥ 하이픈이 낀 옛 id 5종을 새 코드로 오인하지 않는지를 본다.
+      결함 5종 재주입 결과 <b>전부 FAIL</b>.<br>
+      ⚠️ 실행기가 TS 모듈을 직접 못 읽으면 동작 검사는 <b>exit 3(판정 불가)</b>다 —
+      이 저장소의 하한 Node 20에는 타입 스트리핑이 없고, 초안은 그 경우
+      <b>조용히 exit 0</b>을 줬다(검수 지적).</li>
+    <li><b>등폭 서체</b> — 알파벳이 <code>O</code>·<code>I</code>·<code>L</code>을 지웠으니
+      <code>0</code>/<code>O</code>·<code>1</code>/<code>l</code> 쌍은 <b>애초에 안 생긴다.</b>
+      그래도 등폭을 쓰는 이유는 남는다: <code>8</code>/<code>B</code>, <code>5</code>/<code>S</code>,
+      <code>2</code>/<code>Z</code>는 알파벳에 <b>둘 다 있고</b>, 등폭은 글자마다 같은 자리를 줘
+      <b>한 글자씩 세어 받아 적기</b>를 돕는다.<br>
+      ⚠️ <s style="opacity:.55">「실측 코드가 <code>K080FL1k1</code>처럼 나온다」</s> 는
+      <b>옛 id 공간의 예다</b>(54회차 이전). 지금은 <code>CSP-3TM</code> 꼴이다.<br>
       <s style="opacity:.55"><code>font-variant-numeric: slashed-zero</code></s> 는 <b>뺐다</b> —
       이 스택의 기본 <code>0</code>이 이미 슬래시라 선언이 <b>아무 일도 안 했다</b>
       (검수 픽셀 차분: 있음/없음 두 줄이 완전 동일).</li>
@@ -2197,13 +2253,19 @@
       상속하지 않는다 — 이 파일이 두 번 적어 두고 <code>select</code>에만 고쳤다).
       Arial에서 <code>I</code>와 <code>l</code>은 <b>같은 막대</b>다. 논거가 경로의 절반에만
       적용돼 있었다.</li>
-    <li><b style="color:var(--red)">🔴 자동 대문자화를 끈다</b> — 방 코드는 <code>nanoid(9)</code>이고
-      알파벳 64자 중 <b>소문자가 26자</b>라 첫 글자가 소문자일 확률이 <b>40.6%</b>다
-      (실측 <code>aE5sox2sU</code>·<code>gkzuKFC5_</code>). 모바일 소프트 키보드는 첫 글자를
-      올리므로 <code>aE5…</code> → <code>AE5…</code>가 되어 참가가 실패한다 →
-      <code>autocapitalize="off" autocorrect="off" spellcheck="false"</code>.
-      실패 문안도 대소문자 구분을 말하지 않았다 →
-      <span class="q">없는 방이거나 이미 시작한 판이에요. 대소문자까지 그대로 입력했는지 확인해 주세요.</span></li>
+    <li><b style="color:var(--red)">🔴 <code>autocapitalize</code>는 <code>off</code>가 아니라
+      <code>characters</code>다</b> —
+      <code>autocapitalize="characters" autocorrect="off" spellcheck="false"</code>.<br>
+      53회차의 <code>off</code>는 옛 id가 키보드에 의해 대문자로 올라가 참가가 깨지는 것을
+      막으려던 것이다. 54회차에 그 근거가 사라졌고, <code>off</code>는 이제 <b>반대로</b> 해롭다 —
+      키보드를 소문자로 고정해 사용자가 매 글자 Shift를 누르게 만든다.<br>
+      ⚠️ <b>사유가 54회차에 바뀌었다.</b> 53회차의 근거(「<code>nanoid</code> 알파벳에 소문자가
+      26자라 첫 글자가 소문자일 확률 <b>40.6%</b>이고 키보드가 그걸 올려 참가가 깨진다」)는
+      <b>옛 id 공간의 이야기다</b> — 지금 코드는 대문자뿐이고 입력도 어차피 대문자로 정규화한다.
+      남는 사유는 <code>autocorrect</code>/<code>spellcheck</code>다: iOS가 6자리 문자열을
+      「단어」로 보고 고쳐 놓으면 사람은 자기가 뭘 쳤는지도 모른 채 실패한다.<br>
+      실패 문안 →
+      <span class="q">없는 방이거나 이미 시작한 판이에요. 코드 8글자를 다시 확인해 주세요.</span></li>
     <li><code>user-select: all</code> — 한 번의 탭으로 <b>코드 전체</b>가 잡힌다.
       부분 선택으로 한 글자를 흘리면 참가가 조용히 실패한다.</li>
     <li><b style="color:var(--red)">🔴 부제 줄을 「대신한다」 — 얹지 않는다.</b> 얹었더니 카드가
@@ -2215,12 +2277,12 @@
       11px muted로 낮췄다가 게이트 S3에 걸렸다(실측 <code>454×17</code>).
       <code>readonly</code>여도 <b>입력 컨트롤</b>이라 포인터 타깃 하한(마우스 24 · 손가락 44)이
       걸린다. 강등할 필요도 없었다 — 코드가 위에 있으면 원문은 이미 「확인」으로 읽힌다.</li>
-    <li><b>⚠️ 남은 위험은 서체로 못 없앤다.</b> 초안은 이 위험을 「<code>0O1lI</code> 혼동」으로만
-      적었는데 <b>주축을 빠뜨렸다</b>: 알파벳에 <b>대소문자가 섞여 있고</b>(9자를 「대문자 케이 /
-      소문자 지」로 불러야 한다) <b><code>-</code>와 <code>_</code>가 둘 다 있다</b>
-      (9자 중 하나라도 포함할 확률 <b>24.8%</b> · 실측 <code>gkzuKFC5_</code>는 밑줄로 끝난다).
-      한국어로 불러 줄 자연스러운 말이 없다 → <b>표시·구술용 코드는 서버 id 공간을 바꿔야 한다</b>
-      (대문자 전용 Crockford base32 등). 다음 회차 후보 1번.</li>
+    <li><s style="opacity:.55">⚠️ 남은 위험은 서체로 못 없앤다 … 서버 id 공간을 바꿔야 한다.
+      다음 회차 후보 1번.</s><br>
+      <b style="color:var(--grn,#2e7d32)">✅ 2026-09-01 · 54회차 해소.</b> 그 위험 수치는
+      <b>옛 id 공간</b>(<code>nanoid(9)</code>)의 것이다 — 대소문자 혼용 · 9자 중 <b>24.8%</b>
+      확률로 <code>-</code>/<code>_</code> 포함(실측 <code>gkzuKFC5_</code>는 밑줄로 끝난다).
+      지금 알파벳에는 소문자도 <code>-</code>도 <code>_</code>도 없고, <b>게이트가 그것을 지킨다.</b></li>
     <li><b>⚠️ 「코드만 복사」는 이 화면에 없다</b> — <code>#copyBtn</code>은 링크를 복사하고
       <code>#roomCode</code>는 <code>&lt;strong&gt;</code>이라 키보드로 도달할 수 없다.
       이번 회차는 <b>읽기</b>를 고쳤고 그 행동은 안 넣었다 — 버튼을 하나 더 놓으면
@@ -2338,7 +2400,7 @@
     <tr><td>8.5</td><td>공개방 상태 배지 <span class="tag t-done">적용 완료</span></td><td class="q">server/clue-room.ts · client/network.ts · main.ts · index.html</td><td class="q"><code>syncMeta()</code>의 <code>phase</code> → <code>PublicRoomMeta</code> → loadPublicRooms()의 <code>li</code> 조립 · <code>.ri-badge</code></td></tr>
     <tr><td>9.0</td><td>대기실 캐릭터 그리드 <span class="tag t-done">완료</span></td><td class="q">client/index.html · main.ts</td><td class="q"><code>.char.selected</code>/<code>.locked</code>·<code>.char-state</code> · <code>renderLobbyChars()</code></td></tr>
     <tr><td>9.0.1</td><td>참가자 수 · 빈 좌석 <span class="tag t-done">완료</span></td><td class="q">client/index.html · main.ts</td><td class="q"><code>#playerCount</code>/<code>#playerMax</code>/<code>#seatHint</code> · <code>renderLobby()</code></td></tr>
-    <tr><td>9.0.2</td><td>초대 — 방 코드 <span class="tag t-done">완료 2026-09-01</span></td><td class="q">client/index.html · main.ts</td><td class="q"><code>.inv-code</code>/<code>#roomCode</code> · <code>wireRoom()</code>에서 <code>r.roomId</code> 주입 · <code>#codeInput</code>의 <code>autocapitalize="off"</code> · <code>#copyBtn</code> 라벨 <code>링크 복사</code>/<code>복사됨</code>/<code>직접 복사해 주세요</code></td></tr>
+    <tr><td>9.0.2</td><td>초대 — 방 코드 <span class="tag t-done">완료 2026-09-01</span></td><td class="q">client/index.html · main.ts · server/clue-room.ts · shared/room-code.ts · scripts/gate-room-code.mjs</td><td class="q"><code>.inv-code</code>/<code>#roomCode</code>(<code>formatRoomCode</code>) · <code>joinBtn</code>의 <code>normalizeRoomCode</code> · <code>ClueRoom.assignRoomCode()</code>가 <code>onCreate</code>에서 <code>roomId</code>를 Crockford base32로 · <code>#codeInput</code>의 <code>autocorrect="off"</code> · <code>#copyBtn</code> 라벨 3종</td></tr>
     <tr><td>9.1</td><td>대기실 피드백 <span class="tag t-soon">선행</span></td><td class="q">client/index.html · main.ts · clue-room.ts</td><td class="q">신규 <code>#lobbyMsg</code> · renderLobby() · onJoin / removePlayer / handleChooseCharacter</td></tr>
     <tr><td>9.2</td><td>닉네임 <span class="tag t-soon">선행</span></td><td class="q">packages/shared · clue-room.ts · index.html</td><td class="q"><code>Player.name</code> 분리 · 대기실 <code>.field</code> 추가</td></tr>
     <tr><td>9.3</td><td>대리 NPC 표기 <span class="tag t-soon">선행</span></td><td class="q">packages/shared · 3개 렌더러</td><td class="q"><code>displayName(p)</code> · renderLobby / renderTurnStrip / openTurnCircle</td></tr>
@@ -2368,6 +2430,13 @@
 
   <footer>
     <b>변경 이력</b><br>
+    <b>2026-09-01(54회차)</b>: <b>§9.0.2 — 방 코드를 「부를 수 있는」 코드로. <code>roomId</code> 자체를 바꿨다.</b>
+    53회차가 코드를 대기실 1층으로 올려 놓고 <b>부를 수 없는 값</b>을 올렸다(<code>nanoid(9)</code> —
+    대소문자 혼용 · 9자 중 24.8%가 <code>-</code>/<code>_</code> 포함).
+    이제 <b>Crockford base32 6자</b>(<code>CSP-3TM</code>)다.
+    🔑 새 계층을 안 만들었다 — <code>roomId</code> 세터가 <code>onCreate</code> 동안 열려 있어
+    그 자리에서 바꾸면 <b>진짜 방 id</b>가 된다. 표시는 3자씩 끊고 입력은 하이픈·공백·소문자를 받는다
+    (실서버 왕복으로 실증). 그리고 이 축에 <b>게이트를 붙였다</b>(<code>roomcode</code> · quick).<br>
     <b>2026-09-01(53회차)</b>: <b>§9.0.2 신설 — 대기실의 주인공을 「방 코드」로.</b>
     캡처를 열고 정했다: <code>n320</code>에서 초대 줄이 <b>코드가 시작되는 자리에서 잘려</b> 있었다.
     🔴 두 번 뒤집혔다 — ① 링크 원문을 11px로 강등했다가 S3(포인터 타깃 24/44)에 걸렸고
