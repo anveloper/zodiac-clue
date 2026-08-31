@@ -713,11 +713,37 @@
         <li><b style="color:var(--red)">⚠️ 평상 상태만 덮는다</b> —
           <code>.bgm-ctrl:hover, :focus-within</code>이 열리면 버튼이 왼쪽으로 <b>97px</b> 커져
           콘텐츠를 덮는다. Tab 한 번이면 닿는다.<br>
-          <b style="color:var(--red)">🔴 51회차에 <code>hoverPairs</code>로 선언은 됐지만 아직 안 잡힌다</b> —
-          ① 프로브가 만드는 것은 <b>마우스 hover뿐</b>이고 이 축은 <code>:focus-within</code>이며
-          ② 결함은 <b>coarse 뷰포트에만</b> 있는데 그쪽은 통째로 SKIP이다
-          (실측 <code>land</code>·<code>n320</code>·<code>edge</code>·<code>p553</code>에서 81~133px 겹침).
-          <b>「선언됐으니 안전하다」로 읽지 마라</b> — 여전히 사람 몫이다.</li>
+          <s style="opacity:.55">🔴 51회차에 <code>hoverPairs</code>로 선언은 됐지만 아직 안 잡힌다 …
+          여전히 사람 몫이다.</s><br>
+          <b style="color:var(--grn,#2e7d32)">✅ 2026-09-01 · 52회차 정정 — 이제 잡힌다.</b>
+          <b>S14 「포커스 기하」</b>가 <code>focus()</code>만 쓰므로 <b>마우스 없는 coarse에서도 돈다</b> —
+          S1(평상 상태만)과 S13(마우스 hover만·coarse SKIP)의 <b>교집합</b>이 은신처였다.
+          43회차가 큐에 남긴 뒤 <b>아홉 회차를 살아남은</b> 결함이고, 프로브를 켠 첫 판에 재현됐다:
+          <code>edge 620×340</code>에서 컨테이너 <b>60 → 162</b>, 1차 컨트롤을 <b>46.5×7px</b> 침범.
+          <code>F24</code>가 이 수치를 지킨다.</li>
+        <li><b>세로 불변량</b> <span class="tag t-new">2026-09-01</span> —
+          가로만으로는 부족하다. 짧은 화면에서 슬라이더를 <b>세로로</b> 펴면 이번엔 아래가 문제가 된다:
+          <code>bgm 바닥(= top 12 + 펼친 높이) &lt; 카드 첫 컨트롤 줄의 top</code>.
+          <ul>
+            <li><b>여는 방향은 <code>column</code>이지 <code>column-reverse</code>가 아니다.</b>
+              컨테이너가 <code>top</code> 고정이라 위로 자라면 아이콘이 <b>아래로 15px 달아난다</b>(실측) —
+              <code>.bgm-ctrl</code> 주석이 가로축에 대해 금지해 둔 바로 그 동작을 세로로 재현한 것이다.</li>
+            <li><b>조건은 재본 축에만 건다.</b> 초안이
+              <code>(max-width: 760px), (max-height: 500px)</code>로 걸었는데 46.5×7 침범이 실측된 곳은
+              <code>edge 620×340</code>·<code>land 844×390</code> — <b>둘 다 「짧은」 쪽</b>이다.
+              <code>max-width</code>가 따라붙어 세로 열기를 좁은 <b>세로</b> 폰까지 끌고 갔고,
+              <code>n320</code>·<code>p553</code>의 <code>[복사]</code> 여유가 <b>16 → −4px</b>(=덮음)이 됐다.</li>
+            <li><b>실측 여유</b>(초점 열림 기준):
+              <code>edge</code>·<code>land</code> <b>27px</b> · <code>n320</code>·<code>p553</code> <b>16px</b> ·
+              <code>gap 720×620</code> <b>60px</b> · 데스크톱 <b>329px</b>. 최소는 16px이다.</li>
+          </ul></li>
+        <li><b style="color:var(--red)">🔴 S14는 「겹쳤나」가 아니라 「얼마나 남았나」를 적는다</b>
+          <span class="tag t-new">2026-09-01</span> — 이번 회차가 여유 16px을 <b>−4px</b>로 바꿔 놓고도
+          PASS를 받았다. 이유가 둘이다: ① S1은 겹침을 <code>&lt; minOverlapEdgePx</code>로,
+          S13/S14는 <code>&gt;</code>로 판정해 <b>경계가 1px 어긋나</b> 있었고 4px짜리 침범이 정확히 그 틈에
+          앉았다(→ 셋 다 <code>&gt;=</code>로 통일). ② PASS/FAIL만 적으면
+          <b>여유 0.1px과 40px이 같은 글자</b>로 보인다(→ 안 겹칠 때는 최근접 상대까지의 거리를 적는다).
+          <b>벼랑을 벼랑으로 보이게 하는 것이 게이트의 일이다.</b></li>
       </ul>
       <b style="color:var(--red)">⚠️ 게이트 S1 PASS는 이 쌍의 안전 근거가 못 된다</b> —
       1440에서 둘은 <b>378px 떨어져</b> 있어 y가 어떻게 움직여도 원리적으로 FAIL이 날 수 없다.
@@ -2221,6 +2247,7 @@
   <div class="scroll"><table>
     <tr><th>§</th><th>문안 묶음</th><th>파일</th><th>함수 / 요소</th></tr>
     <tr><td>1.7</td><td>부유 컨트롤 배치 <span class="tag t-done">적용 완료</span></td><td class="q">client/index.html</td><td class="q"><code>.bgm-ctrl</code> — 폰 · <code>pointer:coarse</code> 두 블록의 <code>top</code>을 <code>body.no-scroll</code>로 한정</td></tr>
+    <tr><td>1.7</td><td>부유 컨트롤 <b>여는 방향</b> <span class="tag t-done">적용 완료 2026-09-01</span></td><td class="q">client/index.html · scripts/gate.config.mjs · scripts/gate-screen.mjs</td><td class="q"><code>@media (max-height: 500px)</code>의 <code>#bgmCtrl:hover, :focus-within { flex-direction: column }</code> — 게이트는 <code>focusPairs</code> + <b>S14</b>(<code>probeFocusGeometry</code>)가 재고 <code>F24</code>가 지킨다</td></tr>
     <tr><td>3</td><td>목표 카드 <span class="tag t-soon">선행</span></td><td class="q">client/index.html · client/src/main.ts</td><td class="q">신규 <code>#goalCard</code> · <code>enterGame()</code> 말미 · <code>.hud-ctrl</code> 끝 <code>[?]</code></td></tr>
     <tr><td>4.1</td><td>손패 라벨</td><td class="q">client/src/main.ts</td><td class="q">onMessage("hand") ≈212 · <code>#hand</code> 초기 텍스트</td></tr>
     <tr><td>4.2</td><td>공통 단서</td><td class="q">server/rooms/clue-room.ts · client/src/main.ts</td><td class="q">startGame() ≈546 · buildEvidence()</td></tr>
@@ -2272,6 +2299,13 @@
 
   <footer>
     <b>변경 이력</b><br>
+    <b>2026-09-01</b>: <b>§1.7 — 43회차가 큐에 남긴 슬라이더 침범을 아홉 회차 만에 잡았다(게이트 S14 신설).</b>
+    <code>focus()</code>만 쓰는 프로브라 마우스 없는 coarse에서도 돈다 — S1과 S13의 <b>교집합</b>이 은신처였다.
+    실측 <code>edge 620×340</code>에서 컨테이너 <b>60 → 162</b>, 1차 컨트롤을 <b>46.5×7px</b> 침범.
+    🔴 수리 초안이 <b>결함을 옮겼다</b> — 근거 없는 <code>max-width: 760px</code>가 붙어
+    <code>n320</code>·<code>p553</code>의 여유가 <b>16 → −4px</b>이 됐고, S1(<code>&lt;</code>)과
+    S13/S14(<code>&gt;</code>)의 <b>1px 어긋난 경계</b> 틈에 앉아 PASS로 통과했다.
+    조건을 실측된 축으로 좁히고 연산자를 통일했으며, <b>S14는 이제 여유 거리를 적는다</b>.<br>
     <b style="color:var(--gold)">2026-08-29 — §4.5 제안 기록표 신설 · 행의 위계를 정보 가치 순으로 뒤집었다.</b>
     화면 게이트가 이 화면을 <b>처음 계측</b>하고(그전까지 S8 하나만 돌았다) 나온 실측이 근거다 —
     «누가 물었나»가 16px·<b>11.45:1</b>인데 «무엇을 물었나»가 같은 16px에 <b>4.96:1</b>이었다.
