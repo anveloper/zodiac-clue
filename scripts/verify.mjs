@@ -61,6 +61,14 @@ const RUNNERS = {
     // 3 = 측정 불가(dist 없음/낡음) → 실패가 아니라 SKIP으로 승격해 사유를 남긴다.
     skipCodes: { 3: "산출물 측정 불가 — 하위 게이트가 사유를 인쇄했다" },
   },
+  roomcode: {
+    cmd: process.execPath,
+    args: ["scripts/gate-room-code.mjs"],
+    jsonArgs: ["scripts/gate-room-code.mjs", "--json"],
+    // 3 = 실행기가 TS 모듈을 직접 못 읽어 **동작 검사를 못 돌렸다.** 통과로 세지 않는다 —
+    //     이 저장소의 하한은 Node 20이고 거기엔 타입 스트리핑이 없다.
+    skipCodes: { 3: "동작 검사 불가(실행기가 TS를 직접 못 읽는다) — 선언 검사만 돌았다" },
+  },
   sim: {
     cmd: process.execPath,
     args: ["scripts/sim-balance.mjs", "--gate"],
@@ -102,7 +110,9 @@ const RUNNERS = {
   },
 };
 
-const ORDER = ["typecheck", "docs", "gpu", "sim", "narrator", "build", "bundle", "screen"];
+/* ⚠️ **`ITEMS`에 넣는 것만으로는 안 돈다** — 도는 것은 이 배열이다.
+   54회차가 `roomcode`를 `ITEMS`에만 넣고 «PASS 5»가 그대로인 것을 보고 알았다. */
+const ORDER = ["typecheck", "roomcode", "docs", "gpu", "sim", "narrator", "build", "bundle", "screen"];
 
 if (OPT.list) {
   console.log("항목            quick  근거");

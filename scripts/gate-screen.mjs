@@ -1968,7 +1968,24 @@ const probeHoverStates = async (sid, cfgHoverPairs = SCREEN.hoverPairs ?? []) =>
   } catch (e) {
     // ⚠️ **S9가 화면 전체를 인질로 잡으면 안 된다.** 여기서 예외가 새면 `openScreen`의 catch가
     //    받아 그 화면이 «도달 실패»가 되고 S1~S6 판정이 통째로 버려진다.
-    return { items, candidates: cands.length, unavailable: `계측 중 예외 — ${e.message}` };
+    //
+    // 🔴 **«TypeError»가 아니라 «무슨 일이 있었는지»를 적는다.** 주입한 계측 도구는
+    //    페이지가 이동하면 통째로 사라진다 — 클라는 탈락·종료에서 `location.href = "/"`로
+    //    나간다(`main.ts`의 `exitToMain`). 그러면 여기서 `__zcState`가 `undefined`가 되고
+    //    초안은 그 원본 TypeError를 그대로 인쇄했다. 54회차가 서버 방 생성에 왕복 하나를
+    //    더하자 판 시각이 밀려 그 이동이 **계측 창 안으로** 들어왔고, 리포트에는
+    //    「Cannot read properties of undefined (reading 'measure')」만 남아 **원인을 못 읽었다.**
+    //    도구가 사라진 것이 확인되면 그 사실을 그대로 말한다.
+    const gone = await evalIn(sid, `typeof window.__zcState === "undefined"`).catch(() => false);
+    const url = gone ? await evalIn(sid, `location.href`).catch(() => null) : null;
+    return {
+      items,
+      candidates: cands.length,
+      unavailable: gone
+        ? `계측 도중 **페이지가 이동했다** — 주입한 계측 도구가 사라졌다(지금 ${url ?? "?"}). ` +
+          `클라는 탈락·종료에서 «/»로 나간다(\`exitToMain\`) — 이 탭은 hover를 못 잰다`
+        : `계측 중 예외 — ${e.message}`,
+    };
   } finally {
     // 커서를 화면 밖으로 뺀다(잔상 방지) · 전이를 되살리고 계측 도구를 지운다.
     await cmd("Input.dispatchMouseEvent", { type: "mouseMoved", x: -20, y: -20, buttons: 0 }, sid).catch(() => {});
