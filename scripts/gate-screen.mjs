@@ -56,13 +56,6 @@
  *                  판을 새로 돌리지 않는다: 아래 6탭 실판에 **관측 탭 하나**를 붙여
  *                  같은 세션의 세 시점(대기 중 / 정원 초과 / 종료됨)에서 목록을 읽는다.
  *   S9 상태 대비   **`:hover`에서** 색이 바뀐 글자의 명암비. 하한은 S6와 같은 함수다.
- *   S10 프레이밍  추적 대상이 «보이는 영역» 중앙에 오는가(`camFrame: true`인 화면만).
- *                 **DOM으로는 안 보이는 축**이다 — 34회차가 카메라를 «고쳐» 내 말을
- *                 화면 80%(D패드 뒤)로 밀어 놓았는데 S1~S9는 전건 PASS였다.
- *                 좌표는 **씬이 낸다**(`camFraming()`) — 재는 쪽이 식을 쓰면 오진한다.
- *   S11 잘림       고를 수 있는 최장 옵션이 컨트롤 안에 들어가는가.
- *                 폭은 **브라우저가 낸다**(사본의 폭 제약을 풀고 잰다) — S10과 같은 이유로
- *                 재는 쪽이 글자 폭을 계산하지 않는다. `disabled` 옵션은 표시되지 않으므로 뺀다.
  *                  25회차에 전역 `button:hover`가 커스텀 버튼으로 새어 대비가 1.16:1이
  *                  됐는데 S6는 **원리적으로 못 봤다**(평상 상태만 잰다) — 그 구멍이다.
  *                  JS로는 `:hover`를 못 만들므로 **진짜 마우스를 움직인다**
@@ -72,6 +65,20 @@
  *                  ⚠️ **마우스 뷰포트에서만** 돈다(폰은 `hover: none` 에뮬 → SKIP + 사유).
  *                  ⚠️ 후보는 **조작 요소**뿐이다 — `.hud-turn`처럼 조작 요소가 아닌 주체의
  *                     hover, 그리고 `opacity`·`filter`·배경 이미지 축은 **아직 못 본다**(플랜 47 큐).
+ *   S10 프레이밍  추적 대상이 «보이는 영역» 중앙에 오는가(`camFrame: true`인 화면만).
+ *                 **DOM으로는 안 보이는 축**이다 — 34회차가 카메라를 «고쳐» 내 말을
+ *                 화면 80%(D패드 뒤)로 밀어 놓았는데 S1~S9는 전건 PASS였다.
+ *                 좌표는 **씬이 낸다**(`camFraming()`) — 재는 쪽이 식을 쓰면 오진한다.
+ *   S11 잘림       고를 수 있는 최장 옵션이 컨트롤 안에 들어가는가.
+ *                 폭은 **브라우저가 낸다**(사본의 폭 제약을 풀고 잰다) — S10과 같은 이유로
+ *                 재는 쪽이 글자 폭을 계산하지 않는다. `disabled` 옵션은 표시되지 않으므로 뺀다.
+ *   S12 조판 분기  **의도한 조판이 섰는가**(`gate.config.mjs`의 `layoutRules`가 선언한다).
+ *                 S1~S11은 「들어가는가·가려졌는가·읽히는가」만 재므로 **분기 경계의 회귀를
+ *                 원리적으로 못 본다** — 47회차 실증: 카드 가드를 되돌려도 «더 작아질» 뿐
+ *                 여전히 들어가서 전건 PASS였다. 39~47회차가 다툰 것이 그 경계값들이다.
+ *                 조건은 CSS 문자열 그대로 `matchMedia`에 묻고, 값은 계산된 스타일을 **읽기만** 한다.
+ *                 ⚠️ **경계값 자체는 아직 못 잡는다** — 조건이 CSS와 같아 규칙이 경계를 따라간다.
+ *                    그래서 **경계 그 자체를 뷰포트로** 둔다(`cardGuard` · `tierTop`).
  *
  *   ⚠️ S5·S6·S9는 §사람 확인 «읽히는가»에서 **기계가 잴 수 있는 조각만** 떼어낸 것이다.
  *      줄바꿈·서체·행간, 그리고 **`:active`·`:focus` 상태의 색**은 여전히 사람 몫이고
@@ -966,6 +973,65 @@ function pageProbe(cfg) {
      *    폭 제약만 풀어 `offsetWidth`를 읽는다 — 계산은 브라우저가 한다.
      *    같은 부모라야 `.modal select` 같은 후손 선택자가 동일하게 걸린다.
      */
+    /**
+     * S12 — **조판이 «어느 분기로» 섰는가.**
+     *
+     * 🔴 47회차가 이 사각지대를 실증했다: `.card`의 데스크톱 가드를 600 → 660으로 **되돌려도
+     *    게이트가 침묵한다.** 카드가 «더 작은» 폰 조판으로 떨어질 뿐 **여전히 들어가기** 때문이다.
+     *    S1~S11은 전부 「들어가는가 · 가려졌는가 · 읽히는가」를 재고, **«의도한 조판이 섰는가»는
+     *    아무도 안 잰다.** 그래서 분기 경계(가드·tier)의 회귀는 원리적으로 안 보였다 —
+     *    이 저장소가 39~47회차 내내 다툰 것이 정확히 그 경계값들이다.
+     *
+     * 규칙은 `gate.config.mjs`의 `layoutRules`가 선언한다: 「이 뷰포트 조건에서 이 선택자의
+     * 이 속성은 이 값이어야 한다」. 재는 쪽은 **계산된 스타일을 읽기만** 한다 —
+     * 34·37·38회차가 「재는 쪽이 식을 쓰면 틀린다」를 세 번 증명했다.
+     */
+    layout: (cfg.layoutRules ?? [])
+      /* 🔴 **조건은 CSS 문자열 그대로 `matchMedia`에 묻는다.** 초안은 `minW/maxH` 같은 **숫자로
+         재구현**했는데, 그건 34·37·38회차가 세 번 지적받은 「재는 쪽이 식을 쓰면 오진한다」다.
+         게다가 `innerWidth`와 CSS의 레이아웃 뷰포트는 스크롤바가 있으면 갈린다.
+         문자열로 두면 **검수자가 CSS와 문자 단위로 대조**할 수도 있다. */
+      .filter((r) => matchMedia(r.when).matches)
+      .filter((r) => !r.screen || r.screen.includes(cfg.screenId))
+      .map((r) => {
+        const all = [...document.querySelectorAll(r.sel)];
+        if (!all.length) return { ...r, missing: true };
+        const rendered = (e) => {
+          const b = e.getBoundingClientRect();
+          return b.width > 0 && b.height > 0;
+        };
+        /* 🔴 **렌더 게이트는 `equal-tracks`에만 건다.** 초안은 모든 규칙에 걸었는데,
+           `display: none` 요소도 `width`·`top` 같은 **절대 길이는 계산값이 그대로 나온다**
+           (배치가 필요 없다 — 검수 실측). 전부에 걸었더니 같은 화면에서 측정이
+           **3/3 → 2/3 + notRendered 1**로 줄었다. **자기가 만든 구멍을 자기 안에서 메운 것**이다.
+           배치가 끝나야 값이 생기는 것은 grid 트랙뿐이다. */
+        const needsLayout = r.expect === "equal-tracks" || r.expect === "below";
+        const el = needsLayout ? all.find(rendered) : all[0];
+        if (!el) return { sel: r.sel, prop: r.prop, why: r.why, notRendered: true };
+        if (r.expect === "below") {
+          /* 🔴 **관계는 관계로 적는다.** 초안은 `top: 62px`이라는 **결과값**을 박았는데,
+             액션 바 높이가 44 → 52로 바뀌면 **규칙은 그대로 통과하면서 겹침이 자란다**(검수 지적).
+             재는 쪽은 두 사각형을 읽어 비교만 한다 — 식을 쓰지 않는다. */
+          const above = document.querySelector(r.after);
+          if (!above || !rendered(above)) return { sel: r.sel, prop: r.prop, why: r.why, notRendered: true };
+          const gap = Math.round((el.getBoundingClientRect().top - above.getBoundingClientRect().bottom) * 10) / 10;
+          return {
+            sel: r.sel, prop: `${r.after} 아래 여유`, why: r.why,
+            expect: `≥ ${r.gap}px`, got: `${gap}px`, ok: gap >= r.gap,
+          };
+        }
+        const got = getComputedStyle(el)[r.prop];
+        if (r.expect === "equal-tracks") {
+          const t = got.split(/\s+/).map(parseFloat).filter((n) => !Number.isNaN(n));
+          const spread = t.length ? Math.max(...t) - Math.min(...t) : Infinity;
+          return {
+            sel: r.sel, prop: r.prop, why: r.why, expect: `균등 ${r.tracks}칸`,
+            got: `${t.length}칸 · 최대-최소 ${Math.round(spread * 10) / 10}px`,
+            ok: t.length === r.tracks && spread <= 0.5,
+          };
+        }
+        return { sel: r.sel, prop: r.prop, expect: r.expect, why: r.why, got, ok: got === r.expect };
+      }),
     clip: (() => {
       const out = [];
       let hidden = 0;
@@ -1231,6 +1297,36 @@ const judge = (screen, viewport, data) => {
         `어긋남 (${dx.toFixed(1)}, ${dy.toFixed(1)}) ≤ ${tol}px · zoom ${cm.zoom}` +
         (bad ? " — **프레이밍이 어긋났다**" : ""),
         {});
+    }
+  }
+
+  // ── S12 조판 분기 ──
+  // 「의도한 조판이 섰는가」. S1~S11은 «들어가는가»만 재므로 분기 경계의 회귀를 못 본다
+  // (47회차 실증: 가드를 되돌려도 카드가 더 작아질 뿐이라 전건 PASS였다).
+  {
+    const rules = data.layout ?? [];
+    if (!rules.length) {
+      add("S12", "SKIP", "이 뷰포트에 걸리는 조판 규칙이 없다 — 선언은 `gate.config.mjs`의 `layoutRules`에 있다");
+    } else {
+      const bad = rules.filter((r) => r.missing || r.ok === false);
+      const skipped = rules.filter((r) => r.notRendered).length;
+      add("S12", bad.length ? "FAIL" : "PASS",
+        `조판 규칙 ${rules.length}건 · 어긋남 ${bad.length}건 · 안 그려져 못 잼 ${skipped}건`,
+        {
+          /* 🔴 **PASS여도 접지 않는다.** 초안은 접혀서, 규칙 88건 중 **50건이 «안 그려져 못 잼»**인
+             사실이 사람 눈에 한 번도 안 닿았다(검수 실측) — 이 파일이 S8에 `always`를 박아 둔
+             이유(「통과가 «정상»이 아니라 «안 나빠졌다»는 뜻이라 접히는 순간 게이트가 거짓말을
+             시작한다」)와 같다. */
+          always: true,
+          lines: rules.map((r) =>
+            r.missing
+              ? `✗ ${r.sel} — 이 화면에 없다(규칙이 낡았거나 선택자가 죽었다) · ${r.why}`
+              : r.notRendered
+                ? `- ${r.sel} { ${r.prop} } — 이 화면에서는 안 그려진다(배치 전 값이라 못 잰다) · ${r.why}`
+              : r.ok === false
+                ? `✗ ${r.sel} { ${r.prop} } — 기대 «${r.expect}» · 실제 «${r.got}» · ${r.why}`
+                : `· ${r.sel} { ${r.prop} } = ${r.got} · ${r.why}`),
+        });
     }
   }
 
@@ -1525,6 +1621,8 @@ const probeCfg = (screen) => ({
   minOverlapPx2: SCREEN.minOverlapPx2,
   minOverlapEdgePx: SCREEN.minOverlapEdgePx,
   clipWorstSuffix: SCREEN.clipWorstSuffix,
+  layoutRules: SCREEN.layoutRules ?? [],
+  screenId: screen.id,
 });
 
 /** 한 탭에서 계측 + 캡처. */
@@ -2726,6 +2824,27 @@ const FAULTS = [
     js: `(() => {
       const b = document.getElementById('endTurn');
       b.style.cssText += ';min-width:20px;min-height:20px;width:20px;height:20px;padding:0;font-size:8px';
+      return 'injected';
+    })()`,
+  },
+  {
+    id: "F19-조판분기되돌림",
+    expect: "S12",
+    screen: "lobby",
+    vp: "cardGuard", // 🔴 초안은 `desktop`(1440×900)이라 **진짜 가드 회귀가 재현되지 않았다**
+    signature: /\.card \{ width \}/,
+    why:
+      "`.card`의 데스크톱 폭을 380으로 되돌린다 — **가드가 회귀한 것과 같은 상태**다. " +
+      "47회차가 실증했듯 S1~S11은 이걸 **원리적으로 못 본다**: 카드가 «더 작아질» 뿐 " +
+      "여전히 화면에 들어가서 전건 PASS다. 39~47회차가 내내 다툰 것이 그 경계값들인데, " +
+      "그 값은 **회귀해도 화면이 깨지지 않고 그냥 나빠진다.** 그 축을 재는 것이 S12다.",
+    js: `(() => {
+      const st = document.createElement('style');
+      st.id = 'zc-fault-layout';
+      // 🔴 초안은 높이 조건이 없어 «모든 높이에서 380»이었다 — 실제 가드 회귀(600→660)는
+      //    높이 600~659에서만 나타난다. 「가드가 회귀한 것과 같은 상태」라던 설명이 거짓이었다.
+      st.textContent = '@media (min-width: 761px) and (min-height: 600px) { .card { width: 380px !important; } }';
+      document.head.appendChild(st);
       return 'injected';
     })()`,
   },
