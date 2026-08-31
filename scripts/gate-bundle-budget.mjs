@@ -315,7 +315,14 @@ if (baseline) {
   const pctDelta = (delta / baseline.initialJsBytes) * 100;
   console.log(
     `\n  기준선 대비 ${delta >= 0 ? "+" : ""}${kb(delta)} kB (${pctDelta >= 0 ? "+" : ""}${pctDelta.toFixed(1)}%)` +
-      ` · §9.1 목표 ${BUNDLE.targetInitialJsKb} kB까지 ${kb(Math.max(0, metrics.initialJsBytes - targetBytes))} kB 남음`,
+      /* 🔴 뺄셈이 뒤집혀 있었다 — `초기 − 목표`를 `max(0, …)`로 감싸는 바람에 **목표 아래일 때
+         언제나 «0 kB 남음»**이 찍혔다. 여유가 가장 많은 상태가 «여유 없음»으로 읽힌다.
+         실측 53.8 kB / 목표 120 kB인데 여러 회차의 머지 보고가 이 문장을 그대로 인용했다.
+         목표를 넘었을 때는 «남음»이 아니라 «초과»라고 말해야 뜻이 맞는다. */
+      ` · §9.1 목표 ${BUNDLE.targetInitialJsKb} kB` +
+      (metrics.initialJsBytes <= targetBytes
+        ? `까지 ${kb(targetBytes - metrics.initialJsBytes)} kB 남음`
+        : ` ${kb(metrics.initialJsBytes - targetBytes)} kB 초과`),
   );
   if (-pctDelta >= BUNDLE.ratchetTightenPct)
     console.log(
