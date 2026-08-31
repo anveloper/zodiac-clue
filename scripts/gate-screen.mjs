@@ -79,6 +79,13 @@
  *                 조건은 CSS 문자열 그대로 `matchMedia`에 묻고, 값은 계산된 스타일을 **읽기만** 한다.
  *                 ⚠️ **경계값 자체는 아직 못 잡는다** — 조건이 CSS와 같아 규칙이 경계를 따라간다.
  *                    그래서 **경계 그 자체를 뷰포트로** 둔다(`cardGuard` · `tierTop`).
+ *   S13 hover 기하 **hover에서 «커지는» 것이 남을 덮는가**(`hoverPairs`가 선언한다).
+ *                 S1은 평상 상태만, S9는 **색**만 잰다 — 그 사이가 사각지대였고 실측으로
+ *                 배너 이름 펼침(**106px** @1360)이 거기 있었다 — 마우스를 진짜로 움직이는
+ *                 장치는 S9가 이미 갖고 있었는데 **색만 읽고 있었다.**
+ *                 ⚠️ **아직 못 보는 것**: `:focus-within`(마우스 hover만 만든다)과
+ *                    **손가락 뷰포트**(hover가 없어 SKIP) — 배경음 슬라이더(97px)가 정확히
+ *                    그 교집합에 있어 **선언은 됐지만 아직 안 잡힌다.**
  *
  *   ⚠️ S5·S6·S9는 §사람 확인 «읽히는가»에서 **기계가 잴 수 있는 조각만** 떼어낸 것이다.
  *      줄바꿈·서체·행간, 그리고 **`:active`·`:focus` 상태의 색**은 여전히 사람 몫이고
@@ -1379,6 +1386,54 @@ const judge = (screen, viewport, data) => {
     }
   }
 
+  // ── S13 hover 기하 ──
+  // 「hover에서 커지는 것이 남을 덮는가」. S1은 평상 상태만, S9는 색만 잰다 —
+  // 그 사이가 사각지대였고 실측으로 배너(106px)·배경음(97px)이 거기 있었다.
+  {
+    const g = data.hover?.geo;
+    if (!SCREEN.hoverPairs?.length) {
+      add("S13", "SKIP", "선언된 hover 쌍이 없다 — 선언은 `gate.config.mjs`의 `hoverPairs`에 있다");
+    } else if (!data.hover) {
+      add("S13", "SKIP", "이 화면은 hover 계측 경로를 안 탄다(결과 흐름은 `grab()`이 본 계측만 부른다)");
+    } else if (data.hover.skip) {
+      add("S13", "SKIP", data.hover.skip);
+    } else if (data.hover.geoFail) {
+      add("S13", "FAIL", `기하를 못 쟀다 — ${data.hover.geoFail}. **«쌍 0개»로 조용히 넘어가지 않는다.**`);
+    } else if (data.hover.unavailable) {
+      /* 🔴 초안은 이 경우에도 「색 계측은 돌았으므로」라고 적었는데 **거짓**이다 —
+         계측 도구 자체를 못 불렀으면 색도 안 돌았다(검수 지적). */
+      add("S13", "SKIP", `계측 도구를 못 불렀다 — ${data.hover.unavailable}(색 계측도 함께 못 돌았다)`);
+    } else if (!g) {
+      add("S13", "SKIP", "기하 계측이 안 돌았다 — 사유가 없으므로 «못 쟀다»로 남긴다");
+    } else {
+      const seen = g.filter((x) => !x.missing);
+      const over = (x) => x.w > SCREEN.minOverlapEdgePx && x.h > SCREEN.minOverlapEdgePx;
+      /* 🔴 **hover가 안 걸린 것은 «통과»가 아니다.** 초안은 그것을 «덮음 0»으로 찍어
+         「안 덮는다」처럼 읽혔다 — 실제로는 아무것도 안 잰 것이었다(검수가 되주입으로 증명). */
+      const notHovered = seen.filter((x) => !x.applied && !x.blocked);
+      const bad = seen.filter(over);
+      add("S13", bad.length || notHovered.length ? "FAIL" : "PASS",
+        `hover 쌍 ${g.length}개 · 덮음 ${bad.length}개 · **사유 없이 hover 안 걸림 ${notHovered.length}개** · ` +
+        `덮여서 불가 ${seen.filter((x) => !x.applied && x.blocked).length}개 · ` +
+        `이 화면에 없음 ${g.length - seen.length}개`,
+        {
+          always: true,
+          /* 🔴 PASS 줄은 **`□`로 시작해야 인쇄된다** — 인쇄부가 `✗`/`□` 아닌 줄을 버린다.
+             초안은 `·`라 `always: true`가 **무력**했고 계측 수치가 한 줄도 안 나왔다. */
+          lines: g.map((x) =>
+            x.missing
+              ? `□ ${x.hover} — 이 화면에 없다(또는 안 그려졌다) · ${x.why}`
+              : !x.applied
+                ? x.blocked
+                  ? `□ ${x.hover} — **${x.blocked}이 덮고 있어 hover가 원리적으로 불가능**하다(모달 등) — 결함이 아니라 다른 상태다 · ${x.why}`
+                  : `✗ ${x.hover} — **hover가 한 번도 안 걸렸다**(${x.tried}개 시도) — 못 잰 것이지 «안 덮는» 것이 아니다 · ${x.why}`
+                : over(x)
+                  ? `✗ ${x.hover}에 hover → ${x.vs}를 **${x.w}×${x.h}px 덮는다**(그때 폭 ${x.on} · ${x.applied}/${x.tried}칸) · ${x.why}`
+                  : `□ ${x.hover}에 hover → ${x.vs}와 교차 ${x.w}×${x.h} · 최악 칸의 폭 ${x.on} · ${x.applied}/${x.tried}칸 · ${x.why}`),
+        });
+    }
+  }
+
   // ── S9 상태(hover) 대비 ──
   // 하한은 S6와 **같다**(AA 4.5 / 큰 글자 3.0) — 상태가 바뀐다고 읽기 기준이 느슨해지지 않는다.
   // 🔴 **«없음»으로 조용히 빠지지 않는다.** 이 파일 머리글이 「은폐된 미측정이 회귀보다
@@ -1663,7 +1718,7 @@ const probeTab = async (sid, screen, shotName) => {
  * ⚠️ **«달라진 것»만 잰다.** hover에서 색이 안 바뀌는 요소는 S6가 이미 쟀다 —
  *    여기서 또 세면 같은 위반을 두 번 세고, 어느 검사가 잡은 것인지 흐려진다.
  */
-const probeHoverStates = async (sid) => {
+const probeHoverStates = async (sid, cfgHoverPairs = SCREEN.hoverPairs ?? []) => {
   let cands = [];
   try {
     // 🔴 **손가락 화면에서는 아예 안 잰다.** 게이트가 폰 뷰포트에 `hover: none`을
@@ -1686,6 +1741,89 @@ const probeHoverStates = async (sid) => {
   } catch (e) {
     return { items: [], candidates: 0, unavailable: `계측 도구를 못 불렀다 — ${e.message}` };
   }
+  /* ── S13 hover 기하 ────────────────────────────────────────────────
+     🔴 **hover에서 «커지는» 요소가 남을 덮는 축을 아무도 안 쟀다.**
+        S1은 평상 상태만, S9는 **색**만 잰다. 그래서 실측으로 이런 것이 통과했다:
+          · 배너에 hover → 이름 6개가 펼쳐져 폭 326 → **612**, 액션 바를 **106px** 덮는다
+            (50회차가 배너를 상단 줄로 되돌리며 **되살린 축**이다)
+          · 배경음 컨트롤에 `:focus-within` → 왼쪽으로 **97px** 커져 카드 내용을 덮는다(43회차 큐)
+        마우스를 진짜로 움직이는 장치가 **바로 여기 있는데** 색만 읽고 있었다.
+        재는 쪽은 사각형 둘을 읽어 교차만 낸다 — 식을 쓰지 않는다. */
+  const geo = [];
+  let geoFail = null;
+  for (const hp of cfgHoverPairs) {
+    /* 🔴 **매치 «전부»를 돌아 최악을 취한다.** 초안은 `querySelector`로 첫 매치의 **중심**에
+       마우스를 놓았는데, `.hud-turn` 중심은 상태 줄과 칩 줄 사이의 **여백**이라
+       `elementFromPoint`가 배너 자신을 돌려준다 — `.ti-chip:hover`가 **한 번도 안 걸렸다.**
+       그래서 «덮음 0»은 「안 덮는다」가 아니라 **「hover를 안 만들었다」**였다(검수가 되주입
+       140.8×40px으로 증명했다). 이제 `hover: ".ti-chip"`이라 선언하면 **가장 긴 이름**이
+       자동으로 잡힌다.
+       🔴 그리고 **hover가 실제로 걸렸는지 확인한다** — 안 걸렸으면 «못 쟀다»로 남긴다.
+          바로 옆 `stateCand`가 이미 같은 패턴을 쓴다. */
+    try {
+      const pts = await evalIn(sid, `(() => {
+        const vis = (e) => {
+          const r = e.getBoundingClientRect();
+          return r.width > 0 && r.height > 0;
+        };
+        return [...document.querySelectorAll(${JSON.stringify(hp.hover)})].filter(vis).map((e, i) => {
+          const r = e.getBoundingClientRect();
+          return { i, x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
+        });
+      })()`);
+      if (!pts?.length) { geo.push({ ...hp, missing: true }); continue; }
+      let worst = null;
+      let applied = 0;
+      let blocked = null;
+      for (const pt of pts) {
+        await cmd("Input.dispatchMouseEvent", { type: "mouseMoved", x: pt.x, y: pt.y, buttons: 0 }, sid);
+        const m = await evalIn(sid, `(() => {
+          const all = [...document.querySelectorAll(${JSON.stringify(hp.hover)})];
+          const a = all[${pt.i}];
+          if (!a) return null;
+          /* vs 쪽은 **보이는 것**만 본다 — 초안은 querySelector라 숨은 랜딩 카드를 잡아
+             0x0을 «교차 없음»으로 통과시켰다(검수 실측). S1은 filter(shown)을 쓴다. */
+          const bs = [...document.querySelectorAll(${JSON.stringify(hp.vs)})].filter((e) => {
+            const r = e.getBoundingClientRect();
+            return r.width > 0 && r.height > 0;
+          });
+          const ra = a.getBoundingClientRect();
+          const r10 = (n) => Math.round(Math.max(0, n) * 10) / 10;
+          let best = { w: 0, h: 0 };
+          for (const b of bs) {
+            if (a.contains(b) || b.contains(a)) continue; // 포함관계는 «가림»이 아니다
+            const rb = b.getBoundingClientRect();
+            const w = r10(Math.min(ra.right, rb.right) - Math.max(ra.left, rb.left));
+            const h = r10(Math.min(ra.bottom, rb.bottom) - Math.max(ra.top, rb.top));
+            if (w * h > best.w * best.h) best = { w, h };
+          }
+          /* 🔴 hover가 안 걸린 «사유»를 읽는다 — 모달이 열려 있으면 오버레이가 칩을 덮어
+             hover가 원리적으로 불가능하다. 그건 결함이 아니라 **다른 상태**다.
+             바로 옆 stateCand가 이미 같은 패턴(중심이 남에게 가려졌는지)을 쓴다. */
+          const hovered = a.matches(":hover");
+          let blockedBy = null;
+          if (!hovered) {
+            const hit = document.elementFromPoint(${pt.x}, ${pt.y});
+            blockedBy = !hit ? "화면 밖" : (hit === a || a.contains(hit)) ? null
+              : hit.tagName.toLowerCase()
+                + (hit.id ? "#" + hit.id : "")
+                + (hit.className && typeof hit.className === "string"
+                    ? "." + hit.className.trim().split(/\s+/)[0] : "");
+          }
+          return { ...best, on: r10(ra.width), hovered, blockedBy };
+        })()`);
+        if (!m) continue;
+        if (m.hovered) applied++;
+        else if (m.blockedBy) blocked = m.blockedBy;
+        if (!worst || m.w * m.h > worst.w * worst.h) worst = m;
+      }
+      geo.push({ ...hp, ...(worst ?? {}), tried: pts.length, applied, blocked });
+    } catch (e) {
+      geoFail = `기하 계측 중 예외 — ${e.message}`;
+    }
+  }
+  await cmd("Input.dispatchMouseEvent", { type: "mouseMoved", x: -20, y: -20, buttons: 0 }, sid).catch(() => {});
+
   const items = [];
   try {
     for (const c of cands) {
@@ -1705,7 +1843,7 @@ const probeHoverStates = async (sid) => {
     await cmd("Input.dispatchMouseEvent", { type: "mouseMoved", x: -20, y: -20, buttons: 0 }, sid).catch(() => {});
     await evalIn(sid, `window.__zcState.done()`).catch(() => {});
   }
-  return { items, candidates: cands.length };
+  return { items, candidates: cands.length, geo, geoFail };
 };
 
 /** 한 화면 × 한 뷰포트를 연다. 반환: { data } / { unreachable } / { skip } */
@@ -2839,6 +2977,27 @@ const FAULTS = [
     js: `(() => {
       const b = document.getElementById('endTurn');
       b.style.cssText += ';min-width:20px;min-height:20px;width:20px;height:20px;padding:0;font-size:8px';
+      return 'injected';
+    })()`,
+  },
+  {
+    id: "F23-hover가남을덮음",
+    expect: "S13",
+    screen: "game",
+    vp: "bannerTop",
+    signature: /hover → \.hud-ctrl를/,
+    why:
+      "칩 hover에서 이름을 **크게** 펼치게 만든다 — **배포된 셀렉터(`.ti-chip:hover`)를 탄다.** " +
+      "🔴 초안은 옛 셀렉터(`.hud-turn:hover`)만 시험해서, **수리한 자리를 재는 결함이 하나도 없었다** " +
+      "— 검수가 되주입으로 그 침묵을 증명했다(140.8×40px에 S13이 조용했다). " +
+      "**S1은 평상 상태만, S9는 색만 재므로 이 축은 원리적으로 안 보였다**: 실측 폭 326 → 611.9, " +
+      "액션 바를 66×40px 덮는다. 50회차가 배너를 상단 줄로 되돌리며 되살린 축이고, " +
+      "마우스를 진짜로 움직이는 장치는 S9가 이미 갖고 있었는데 **색만 읽고 있었다.**",
+    js: `(() => {
+      const st = document.createElement('style');
+      st.id = 'zc-fault-hover-grow';
+      st.textContent = '.ti-chip:hover .ti-nm { max-width: 30em !important; opacity: 1 !important; margin-left: 300px !important; }';
+      document.head.appendChild(st);
       return 'injected';
     })()`,
   },
