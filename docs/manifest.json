@@ -56,6 +56,10 @@
     "dir": "plans/done",
     "items": [
       {
+        "path": "plans/done/73-lobby-room-code.md",
+        "title": "plan: 대기실의 주인공을 «방 코드»로 — 호스트만 자기 코드를 못 보고 있었다"
+      },
+      {
         "path": "plans/done/72-focus-geometry.md",
         "title": "plan: S14 «포커스 기하» — 아홉 회차를 살아남은 결함이 «두 검사의 교집합»에 숨어 있었다"
       },

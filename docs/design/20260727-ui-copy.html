@@ -2162,6 +2162,74 @@
       <del>«카드가 ~40px 자라 S1 FAIL»</del> — 그 사유는 <b>§1.7에서 해소됐다.</b> ①의 사유는 그대로 산다.</li>
   </ul>
 
+  <h3>9.0.2 초대 — 방 코드가 주인공이다 <span class="tag t-done">적용 완료 2026-09-01</span></h3>
+  <p><b>읽는 것과 보내는 것을 가른다.</b> 그전에는 초대 줄이 링크 원문 하나였고,
+    <b>좁은 폭에서</b> <code>http://…/room/5o…</code>처럼 <b>방 코드가 시작되는 자리에서 잘렸다</b>
+    (<code>n320</code> 실측) — 「초대 링크를 친구에게 공유하세요」라고 써 놓고
+    <b>링크를 읽을 수 없었다.</b><br>
+    <b style="color:var(--red)">⚠️ 넓은 화면에서는 잘리지 않았다</b>(<code>desktop 1440×900</code>은
+    코드까지 다 보인다) — 「호스트가 코드를 못 본다」를 전 구간의 사실로 적으면 거짓이다.
+    주소창에도 코드가 있다 — 다만 <b>모바일에서는 주소창이 접히고</b>, 그 경로는
+    「불러 주는 값」으로 쓰라고 만든 자리가 아니다.</p>
+  <div class="scroll"><table>
+    <tr><th>자리</th><th>확정 문안</th><th>무엇</th></tr>
+    <tr><td>라벨</td><td class="q">방 코드</td><td>12px muted · 데스크톱 13px (<code>label-alternative</code> <b>5.97:1</b>)</td></tr>
+    <tr><td>값</td><td class="q">${roomId} — <b>가공 없이</b></td><td>20px 800 등폭 · 자간 .06em (짧은 화면 <b>16px</b>) (<code>label-strong</code> <b>13.78:1</b>)</td></tr>
+    <tr><td>행동</td><td class="q">링크 복사 → 누르면 복사됨 1.5초</td><td>그전 <code>복사</code>는 <b>무엇을</b> 복사하는지 안 말했다</td></tr>
+    <tr><td>확인</td><td class="q">링크 원문(<code>#inviteLink</code>)</td><td>코드가 위에 있으므로 <b>여기서 잘리는 것은 무해하다</b></td></tr>
+  </table></div>
+  <ul>
+    <li><b>방 코드는 1급 참가 경로다</b> — 랜딩 <code>#codeInput</code>이 받는 값이고
+      <code>[참가]</code>가 그것으로 붙는다. 그런데 <b>코드를 만드는 호스트에게만</b> 코드가
+      안 보였다. 옆 사람에게 불러 줄 수 없었다.</li>
+    <li><b>값을 가공하지 않는다</b>(대문자화·하이픈 삽입 금지) — 서버 id는 대소문자가 유효하고
+      이미 하이픈을 포함할 수 있다(실측 <code>6rLjQ-Z0x</code>). 보기 좋게 바꾸면
+      <b>참가가 조용히 깨진다.</b></li>
+    <li><b>등폭 서체</b> — 실측 코드가 <code>K080FL1k1</code>처럼 나온다. 본문 서체로는
+      <code>0</code>/<code>O</code>, <code>1</code>/<code>l</code>/<code>I</code>가 사실상 같은
+      그림이다. 불러 주라고 키운 글자는 <b>구분돼야</b> 한다.<br>
+      <s style="opacity:.55"><code>font-variant-numeric: slashed-zero</code></s> 는 <b>뺐다</b> —
+      이 스택의 기본 <code>0</code>이 이미 슬래시라 선언이 <b>아무 일도 안 했다</b>
+      (검수 픽셀 차분: 있음/없음 두 줄이 완전 동일).</li>
+    <li><b style="color:var(--red)">🔴 서체는 「받는 칸」에도 걸어야 한다</b> —
+      <code>#roomCode</code>만 등폭으로 갈라 놓고 손님이 그 코드를 <b>받아 적는</b>
+      <code>#codeInput</code>은 UA 기본 <b>Arial</b>이었다(폼 컨트롤은 <code>font-family</code>를
+      상속하지 않는다 — 이 파일이 두 번 적어 두고 <code>select</code>에만 고쳤다).
+      Arial에서 <code>I</code>와 <code>l</code>은 <b>같은 막대</b>다. 논거가 경로의 절반에만
+      적용돼 있었다.</li>
+    <li><b style="color:var(--red)">🔴 자동 대문자화를 끈다</b> — 방 코드는 <code>nanoid(9)</code>이고
+      알파벳 64자 중 <b>소문자가 26자</b>라 첫 글자가 소문자일 확률이 <b>40.6%</b>다
+      (실측 <code>aE5sox2sU</code>·<code>gkzuKFC5_</code>). 모바일 소프트 키보드는 첫 글자를
+      올리므로 <code>aE5…</code> → <code>AE5…</code>가 되어 참가가 실패한다 →
+      <code>autocapitalize="off" autocorrect="off" spellcheck="false"</code>.
+      실패 문안도 대소문자 구분을 말하지 않았다 →
+      <span class="q">없는 방이거나 이미 시작한 판이에요. 대소문자까지 그대로 입력했는지 확인해 주세요.</span></li>
+    <li><code>user-select: all</code> — 한 번의 탭으로 <b>코드 전체</b>가 잡힌다.
+      부분 선택으로 한 글자를 흘리면 참가가 조용히 실패한다.</li>
+    <li><b style="color:var(--red)">🔴 부제 줄을 「대신한다」 — 얹지 않는다.</b> 얹었더니 카드가
+      <b>46px</b> 자라 <code>cardGuard 1024×600</code>에서 <code>[잔치 시작]</code>이 화면 밖으로
+      밀렸다(게이트 S1 실측). 13·17·37회차가 전부 같은 곳에서 걸린 함정이다.
+      짧은 화면에서는 옛 부제가 쓰던 <code>14.4 + 8 = 22.4px</code>에 맞춰
+      <b><code>19.2 + 4 = 23.2px</code></b>으로 조인다.</li>
+    <li><b style="color:var(--red)">🔴 <code>#inviteLink</code>를 「강등」하지 마라</b> — 초안이
+      11px muted로 낮췄다가 게이트 S3에 걸렸다(실측 <code>454×17</code>).
+      <code>readonly</code>여도 <b>입력 컨트롤</b>이라 포인터 타깃 하한(마우스 24 · 손가락 44)이
+      걸린다. 강등할 필요도 없었다 — 코드가 위에 있으면 원문은 이미 「확인」으로 읽힌다.</li>
+    <li><b>⚠️ 남은 위험은 서체로 못 없앤다.</b> 초안은 이 위험을 「<code>0O1lI</code> 혼동」으로만
+      적었는데 <b>주축을 빠뜨렸다</b>: 알파벳에 <b>대소문자가 섞여 있고</b>(9자를 「대문자 케이 /
+      소문자 지」로 불러야 한다) <b><code>-</code>와 <code>_</code>가 둘 다 있다</b>
+      (9자 중 하나라도 포함할 확률 <b>24.8%</b> · 실측 <code>gkzuKFC5_</code>는 밑줄로 끝난다).
+      한국어로 불러 줄 자연스러운 말이 없다 → <b>표시·구술용 코드는 서버 id 공간을 바꿔야 한다</b>
+      (대문자 전용 Crockford base32 등). 다음 회차 후보 1번.</li>
+    <li><b>⚠️ 「코드만 복사」는 이 화면에 없다</b> — <code>#copyBtn</code>은 링크를 복사하고
+      <code>#roomCode</code>는 <code>&lt;strong&gt;</code>이라 키보드로 도달할 수 없다.
+      이번 회차는 <b>읽기</b>를 고쳤고 그 행동은 안 넣었다 — 버튼을 하나 더 놓으면
+      「무엇을 복사하는가」가 다시 흐려지기 때문이다. 큐에 남긴다.</li>
+    <li>복사 실패(클립보드가 막힌 비보안 컨텍스트)에는 <b>말없이 아무 일도 안 일어난 것처럼</b>
+      보였다. 이제 링크를 선택해 주고 버튼이 <span class="q">직접 복사해 주세요</span>라고
+      2.5초 말한다.</li>
+  </ul>
+
   <h3>9.1 대기실 서버 피드백</h3>
   <div class="box crit">
     <b>현재 대기실 단계의 서버 메시지는 전부 무음으로 사라진다.</b> <code>addLog</code>가 쓰는 <code>#log</code>는 <code>#gameScreen</code> 안쪽인데 대기실 화면은 <code>#lobby</code>다.
@@ -2270,6 +2338,7 @@
     <tr><td>8.5</td><td>공개방 상태 배지 <span class="tag t-done">적용 완료</span></td><td class="q">server/clue-room.ts · client/network.ts · main.ts · index.html</td><td class="q"><code>syncMeta()</code>의 <code>phase</code> → <code>PublicRoomMeta</code> → loadPublicRooms()의 <code>li</code> 조립 · <code>.ri-badge</code></td></tr>
     <tr><td>9.0</td><td>대기실 캐릭터 그리드 <span class="tag t-done">완료</span></td><td class="q">client/index.html · main.ts</td><td class="q"><code>.char.selected</code>/<code>.locked</code>·<code>.char-state</code> · <code>renderLobbyChars()</code></td></tr>
     <tr><td>9.0.1</td><td>참가자 수 · 빈 좌석 <span class="tag t-done">완료</span></td><td class="q">client/index.html · main.ts</td><td class="q"><code>#playerCount</code>/<code>#playerMax</code>/<code>#seatHint</code> · <code>renderLobby()</code></td></tr>
+    <tr><td>9.0.2</td><td>초대 — 방 코드 <span class="tag t-done">완료 2026-09-01</span></td><td class="q">client/index.html · main.ts</td><td class="q"><code>.inv-code</code>/<code>#roomCode</code> · <code>wireRoom()</code>에서 <code>r.roomId</code> 주입 · <code>#codeInput</code>의 <code>autocapitalize="off"</code> · <code>#copyBtn</code> 라벨 <code>링크 복사</code>/<code>복사됨</code>/<code>직접 복사해 주세요</code></td></tr>
     <tr><td>9.1</td><td>대기실 피드백 <span class="tag t-soon">선행</span></td><td class="q">client/index.html · main.ts · clue-room.ts</td><td class="q">신규 <code>#lobbyMsg</code> · renderLobby() · onJoin / removePlayer / handleChooseCharacter</td></tr>
     <tr><td>9.2</td><td>닉네임 <span class="tag t-soon">선행</span></td><td class="q">packages/shared · clue-room.ts · index.html</td><td class="q"><code>Player.name</code> 분리 · 대기실 <code>.field</code> 추가</td></tr>
     <tr><td>9.3</td><td>대리 NPC 표기 <span class="tag t-soon">선행</span></td><td class="q">packages/shared · 3개 렌더러</td><td class="q"><code>displayName(p)</code> · renderLobby / renderTurnStrip / openTurnCircle</td></tr>
@@ -2299,6 +2368,11 @@
 
   <footer>
     <b>변경 이력</b><br>
+    <b>2026-09-01(53회차)</b>: <b>§9.0.2 신설 — 대기실의 주인공을 「방 코드」로.</b>
+    캡처를 열고 정했다: <code>n320</code>에서 초대 줄이 <b>코드가 시작되는 자리에서 잘려</b> 있었다.
+    🔴 두 번 뒤집혔다 — ① 링크 원문을 11px로 강등했다가 S3(포인터 타깃 24/44)에 걸렸고
+    ② 코드 줄을 부제 「위에 얹었다」가 카드가 46px 자라 <code>cardGuard</code>에서
+    <code>[잔치 시작]</code>이 화면 밖으로 나갔다. 지금은 <b>부제를 대신하고</b> 높이는 사실상 그대로다.<br>
     <b>2026-09-01</b>: <b>§1.7 — 43회차가 큐에 남긴 슬라이더 침범을 아홉 회차 만에 잡았다(게이트 S14 신설).</b>
     <code>focus()</code>만 쓰는 프로브라 마우스 없는 coarse에서도 돈다 — S1과 S13의 <b>교집합</b>이 은신처였다.
     실측 <code>edge 620×340</code>에서 컨테이너 <b>60 → 162</b>, 1차 컨트롤을 <b>46.5×7px</b> 침범.
