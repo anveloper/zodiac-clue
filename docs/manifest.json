@@ -56,6 +56,10 @@
     "dir": "plans/done",
     "items": [
       {
+        "path": "plans/done/76-copy-room-code.md",
+        "title": "plan: 방 코드를 «누를 수 있게» — 코드만 복사 · 키보드 도달"
+      },
+      {
         "path": "plans/done/75-join-rate-limit.md",
         "title": "plan: 참가 시도에 대가를 붙인다 — 54회차가 깎은 자물쇠를 갚는다"
       },

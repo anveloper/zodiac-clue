@@ -2283,10 +2283,75 @@
       <b>옛 id 공간</b>(<code>nanoid(9)</code>)의 것이다 — 대소문자 혼용 · 9자 중 <b>24.8%</b>
       확률로 <code>-</code>/<code>_</code> 포함(실측 <code>gkzuKFC5_</code>는 밑줄로 끝난다).
       지금 알파벳에는 소문자도 <code>-</code>도 <code>_</code>도 없고, <b>게이트가 그것을 지킨다.</b></li>
-    <li><b>⚠️ 「코드만 복사」는 이 화면에 없다</b> — <code>#copyBtn</code>은 링크를 복사하고
-      <code>#roomCode</code>는 <code>&lt;strong&gt;</code>이라 키보드로 도달할 수 없다.
-      이번 회차는 <b>읽기</b>를 고쳤고 그 행동은 안 넣었다 — 버튼을 하나 더 놓으면
-      「무엇을 복사하는가」가 다시 흐려지기 때문이다. 큐에 남긴다.</li>
+    <li><s style="opacity:.55">⚠️ 「코드만 복사」는 이 화면에 없다 … 큐에 남긴다.</s><br>
+      <b style="color:var(--grn,#2e7d32)">✅ 2026-09-01 · 56회차 해소 — 버튼을 늘리지 않고
+      「코드 자신」을 누를 수 있게 했다.</b>
+      「버튼을 하나 더 놓으면 흐려진다」는 걱정은 옳았으므로, 대신 <b>누르는 것이 곧 복사되는 것</b>이
+      되게 했다. <code>&lt;strong&gt;</code> → <code>&lt;button&gt;</code>이 되면서
+      <b>키보드 도달과 역할이 공짜로 따라온다</b>(그전에는 Tab이 이 줄을 지나쳤다).
+      <div class="scroll"><table>
+        <tr><th>대상</th><th>하는 일</th></tr>
+        <tr><td>방 코드(그 자체)</td><td><b>코드</b>를 복사(<code>ABCD-EFGH</code> — 보이는 그대로)</td></tr>
+        <tr><td><code>[링크 복사]</code></td><td><b>링크</b>를 복사</td></tr>
+      </table></div>
+      <ul>
+        <li><b>생김새는 안 바꾼다</b> — 상자·배경을 주면 위계가 무너져 <code>[링크 복사]</code>와
+          같은 무게로 보인다. 마우스에서는 <b>hover·focus의 밑줄</b>로 말한다.<br>
+          <b style="color:var(--red)">🔴 터치에는 hover가 없다</b> — 신호를 hover에만 두면
+          폰에서 이 기능은 <b>발견 자체가 불가능하다</b>(실측: 탭 「전」에
+          <code>text-decoration: none</code> · <code>(hover: none)</code> = true).
+          방을 공유하는 주된 맥락이 폰인데 그랬다 → <code>@media (hover: none)</code>에서
+          <b>점선 밑줄을 상시</b> 둔다. 그리고 이 파일의 다른 커스텀 버튼이 전부 지우는
+          <code>appearance</code>·<code>-webkit-tap-highlight-color</code>를 새 버튼만 빠뜨려,
+          터치에서 유일하게 보이는 피드백이 <b>UA 기본 회색 상자</b>였다.</li>
+        <li><b>피드백은 옆 라벨이 낸다</b> — <span class="q">방 코드</span> →
+          <span class="q">복사됨</span>(1.5초). 코드 자신을 바꾸면 정작 공유할 값이 사라진다.
+          <code>aria-live="polite"</code>. 복사가 막힌 환경에서는 코드를 <b>선택해 주고</b>
+          <span class="q">직접 복사</span>(2.5초) — <code>#copyBtn</code>도 <b>같은 문장</b>을 쓴다.<br>
+          🔴 <s style="opacity:.55">「둘 다 3글자라 안 흔들린다」</s> 는 <b>공백을 안 셌다</b>
+          (실측 37.33 · 33.75 · 48.56px). 코드 왼쪽 모서리가 −3.58 ~ +11.23px 움직였다 →
+          라벨에 <code>min-width: 49px</code>. <b>바로 아래 <code>#copyBtn</code>이 같은 결함에
+          같은 처방을 이미 갖고 있었다.</b></li>
+        <li><b style="color:var(--red)">🔴 연타하면 확인이 잘렸다</b> — 앞 타이머를 안 지워서
+          1초 뒤 다시 누르면 두 번째 확인이 500ms만 살았다. 같은 구조였던 <code>#copyBtn</code>도
+          함께 고쳤다.</li>
+        <li><b style="color:var(--red)">🔴 스크린리더가 「무엇을 하는지」를 못 듣는다</b> —
+          AX 이름이 코드 문자열뿐이었다. 역할은 <code>&lt;button&gt;</code>이 줬지만
+          <b>용도는 안 따라온다</b>(WCAG 2.4.6) →
+          <code>aria-label="방 코드 … — 눌러서 복사"</code>.</li>
+        <li><b style="color:var(--red)">🔴 전역 <code>button:hover</code>가 여기까지 샜다</b> —
+          <code>background: var(--wds-primary-strong)</code>가 특이도 (0,1,1)로 평상 규칙(0,1,0)을
+          <b>hover에서만</b> 이겨 코드 위에 진갈색이 깔렸고 대비가 <b>1.98:1</b>로 떨어졌다.
+          25회차가 「<code>button:hover</code>가 커스텀 버튼으로 새어 1.16:1이 됐다」고 기록한
+          <b>바로 그 사고</b>다 → 상태 규칙끼리 (0,2,0)으로 이긴다.</li>
+        <li><b style="color:var(--red)">🔴 <code>&lt;strong&gt;</code>이 <code>&lt;button&gt;</code>이
+          되는 순간 「버튼용 규칙」이 전부 달라붙는다.</b> 데스크톱 tier의
+          <code>.card button:not(.char)</code>(0,2,1)가 <code>.inv-code-v</code>(0,1,0)를 이겨
+          코드를 <b>20px → 15px로 깎았다</b>(실측 <code>119.2×24</code> → <code>89.4×24</code>).
+          아래 초대 링크와 같은 무게가 돼 「코드는 이 카드의 1층」이 무너졌다.
+          <b>그 파일이 <code>.char</code>에 대해 같은 함정을 바로 위 줄에 적어 뒀는데 반복했다.</b></li>
+        <li><b style="color:var(--red)">🔴 포인터 하한</b>(S3 · 손가락 44 · 마우스 24):
+          코드 줄은 짧은 화면에서 <b>19.2px</b>이라 마우스 하한에 미달이었다
+          (실측 <code>95.3×19.2</code>) → <code>min-height: 24px</code>.<br>
+          ⚠️ 손가락 44는 <b>여기서 안 준다</b> — <code>@media (pointer: coarse)</code>의
+          <code>.card button</code>(0,1,1)이 이미 주고 있다. 초안의
+          <code>.inv-code-v { min-height: 44px }</code>는 <b>아무 일도 안 하는 규칙</b>이었다.
+          <s style="opacity:.55">「실측 <code>89.4×18</code>」</s> 도 <b>거짓</b>이었다 —
+          그 값은 15px로 깎인 「수리 전 상태」의 것이다.</li>
+        <li><b style="color:var(--red)">🔴 자라는 조건과 되받는 조건이 같아야 한다.</b>
+          코드 줄이 자라는 것은 <code>pointer: coarse</code> 때문인데 초안은 되받기를
+          <code>max-height: 719px</code>에만 걸었다 — <b>두 조건은 독립이다.</b>
+          마우스·짧은 화면 8개는 4.8px만 자랐는데 <b>25~28px을 깎였고</b>(5배 과잉),
+          정작 <code>phone</code>은 되받기가 안 걸려 <b>+8px</b> 자랐다 →
+          <code>(pointer: coarse) and (max-height: 719px)</code>로 좁혔다.
+          되받는 곳은 <b>네 곳</b>이다(칸 패딩 · 격자 간격·위 여백 · 목록 여백 · 소개 아래 16→2).
+          <b>정보는 하나도 안 지웠다.</b><br>
+          ⚠️ <b>검수가 여기서 틀렸다</b>: 「<code>.persona</code>에 <code>margin-bottom</code>이
+          없으니 그 줄은 2px을 더한다」고 했는데 <code>#lobbyPersona</code>가 <b>16px</b>을 갖고 있다.
+          그 줄은 <b>14px을 되받는</b> 규칙이고, 지웠더니 <code>n320</code>이 5px 넘쳤다(실측).
+          <b>서브에이전트도 틀린다 — 코드로 재확인한다.</b></li>
+        <li>대비: 코드 <b>13.78:1</b> · 밑줄 <code>label-alternative</code> <b>5.97:1</b>(직접 계산).</li>
+      </ul></li>
     <li>복사 실패(클립보드가 막힌 비보안 컨텍스트)에는 <b>말없이 아무 일도 안 일어난 것처럼</b>
       보였다. 이제 링크를 선택해 주고 버튼이 <span class="q">직접 복사해 주세요</span>라고
       2.5초 말한다.</li>
@@ -2506,6 +2571,11 @@
 
   <footer>
     <b>변경 이력</b><br>
+    <b>2026-09-01(56회차)</b>: <b>§9.0.2 — 방 코드를 「누를 수 있게」 했다(코드만 복사 · 키보드 도달).</b>
+    버튼을 늘리는 대신 <b>코드 자신을 버튼으로</b> 만들었다. 생김새는 그대로, 신호는 hover·focus뿐.
+    🔴 그 순간 <b>전역 <code>button:hover</code>가 새어</b> 대비가 <b>1.98:1</b>이 됐고(25회차와 같은 사고),
+    <b>포인터 하한</b>이 걸려 줄이 19.2 → 44px로 자라 <code>[잔치 시작]</code>을 3px 밀었다.
+    둘 다 게이트가 잡았고, 높이는 <b>격자의 장식 여백 한 군데</b>에서 되받았다.<br>
     <b>2026-09-01(55회차)</b>: <b>§9.0.3 신설 — 없는 방을 찍어 보는 데 값을 붙였다.</b>
     54회차가 자물쇠를 2⁵⁴ → 2⁴⁰으로 깎으며 진 빚을 갚는다. 실측 <b>초당 9,615 → 분당 20</b>.
     🔴 <b>세는 대상을 두 번 좁혔다</b> — 「시도」는 한 Wi-Fi에 모인 사람들을 막았고,
