@@ -1110,7 +1110,12 @@ const wireRoom = (r: Room): void => {
   /* 끊어 주면 한 번에 세 글자씩 부르고 받아 적는다. **값은 안 바꾼다** —
      `formatRoomCode`는 보기용이고, 랜딩 입력은 하이픈을 받아 준다(`normalizeRoomCode`).
      옛 형식 id는 모양이 안 맞아 그대로 나온다. */
-  $("roomCode").textContent = formatRoomCode(r.roomId);
+  const shownCode = formatRoomCode(r.roomId);
+  $("roomCode").textContent = shownCode;
+  /* 스크린리더는 버튼의 이름으로 «WETR-4CDG»만 읽는다 — 역할은 따라왔지만 **용도는 안 따라온다**
+     (WCAG 2.4.6 · 검수가 AX 트리로 실측). 이름에 «무엇을 하는지»를 넣는다.
+     ⚠️ 시각 라벨(`#roomCodeMsg`)은 `복사됨`으로 잠깐 바뀌므로 이름의 출처로 쓰면 안 된다. */
+  $("roomCode").setAttribute("aria-label", `방 코드 ${shownCode} — 눌러서 복사`);
   try {
     // 쿼리스트링을 버리지 않는다 — `?demo=1`·`?motion=`·`?cvd=` 는 진입 후에도 읽힌다.
     history.replaceState({}, "", `/room/${r.roomId}${stickySearch()}`);
@@ -3507,25 +3512,70 @@ const init = async (): Promise<void> => {
 
   ($("startBtn") as HTMLButtonElement).onclick = () => room?.send("start", {});
 
+  /* 코드 자신이 «코드 복사» 버튼이다 — `[링크 복사]`와 대상이 갈리므로 라벨이 필요 없다.
+     복사하는 것은 **화면에 보이는 그대로**(`ABCD-EFGH`)다. 랜딩 입력이 하이픈을 받아 주고
+     (`normalizeRoomCode`), 채팅에 붙여 넣었을 때도 사람이 읽기 좋다. */
+  let codeMsgTimer = 0;
+  ($("roomCode") as HTMLButtonElement).onclick = async () => {
+    const btn = $("roomCode") as HTMLButtonElement;
+    const msg = $("roomCodeMsg");
+    const shown = btn.textContent ?? "";
+    if (!shown || shown === "—") return;
+    /* 라벨의 출처는 마크업 하나다 — 여기에 다시 적으면 1.5초 뒤 옛 라벨로 되돌아간다. */
+    const label = msg.dataset.label ?? msg.textContent ?? "";
+    msg.dataset.label = label;
+    /* 🔴 **연타하면 앞 타이머가 뒤 확인을 잘라 먹는다** — 실측: 클릭 → 1000ms → 클릭 →
+       600ms 뒤 이미 «방 코드»로 돌아가 있었다(두 번째 확인이 500ms만 살았다).
+       이전 타이머를 취소한다. (같은 구조의 `#copyBtn`도 함께 고쳤다.) */
+    const say = (text: string, ms: number): void => {
+      msg.textContent = text;
+      window.clearTimeout(codeMsgTimer);
+      codeMsgTimer = window.setTimeout(() => {
+        msg.textContent = label;
+      }, ms);
+    };
+    try {
+      await navigator.clipboard.writeText(shown);
+      say("복사됨", 1500);
+    } catch {
+      /* 클립보드가 막힌 환경(비보안 컨텍스트 등)에서 말없이 지나가면 «아무 일도 안 일어났다»로
+         읽힌다. 코드를 **잡아 주고** 잡아 줬다는 사실을 말한다 — 그 상태에서 Cmd/Ctrl+C가 듣는다. */
+      const sel = window.getSelection();
+      if (sel) {
+        sel.removeAllRanges();
+        const r = document.createRange();
+        r.selectNodeContents(btn);
+        sel.addRange(r);
+      }
+      /* 문안은 하나다(§8.1) — `#copyBtn`도 같은 `직접 복사`를 쓴다.
+         긴 «직접 복사해 주세요»로 통일하면 이 라벨이 59px 밀려 코드가 움직인다(실측 폭 차이). */
+      say("직접 복사", 2500);
+    }
+  };
+
+  let linkMsgTimer = 0;
   ($("copyBtn") as HTMLButtonElement).onclick = async () => {
     const link = ($("inviteLink") as HTMLInputElement).value;
     // 라벨의 출처는 마크업 하나다 — 여기에 다시 적으면 1.5초 뒤 옛 라벨로 되돌아간다.
     const btn = $("copyBtn") as HTMLButtonElement;
-    const label = btn.textContent ?? "";
+    const label = btn.dataset.label ?? btn.textContent ?? "";
+    btn.dataset.label = label;
+    const back = (ms: number): void => {
+      window.clearTimeout(linkMsgTimer);
+      linkMsgTimer = window.setTimeout(() => {
+        btn.textContent = label;
+      }, ms);
+    };
     try {
       await navigator.clipboard.writeText(link);
       btn.textContent = "복사됨";
-      window.setTimeout(() => {
-        btn.textContent = label;
-      }, 1500);
+      back(1500);
     } catch {
       // 클립보드가 막힌 환경(비보안 컨텍스트 등)에서는 **말없이 아무 일도 안 일어난 것**처럼 보였다.
       // 링크를 잡아 주고, 잡아 줬다는 사실을 말한다.
       ($("inviteLink") as HTMLInputElement).select();
-      btn.textContent = "직접 복사해 주세요";
-      window.setTimeout(() => {
-        btn.textContent = label;
-      }, 2500);
+      btn.textContent = "직접 복사";
+      back(2500);
     }
   };
 

@@ -487,8 +487,13 @@
         .card .inv-code-k { font-size: 13px; }
         /* 카드만 넓히면 **폭 456px 막대에 13px 글자**가 얇게 늘어난다(초안 캡처).
            ⚠️ `.char`는 뺀다 — 캐릭터 칸이 `<button>`이라 `.card button`(0,1,1)이
-           `.char`(0,1,0)를 **특정도로 이겨** 12px 의도를 15px로 덮었다. */
-        .card button:not(.char),
+           `.char`(0,1,0)를 **특정도로 이겨** 12px 의도를 15px로 덮었다.
+           🔴 **`.inv-code-v`도 같은 이유로 뺀다** — 56회차가 방 코드를 `<strong>`에서
+              `<button>`으로 바꾸자 이 줄이 즉시 그것을 잡아 **20px → 15px로 깎았다**
+              (검수 실측: 데스크톱 `119.2×24` → `89.4×24`). 코드가 아래 초대 링크 글자와
+              같은 무게가 돼 53·54회차가 세운 «코드는 이 카드의 1층» 위계가 무너졌다.
+              **바로 위 줄에 적어 둔 함정을 같은 줄에서 반복한 것이다.** */
+        .card button:not(.char):not(.inv-code-v),
         .card input { font-size: 15px; }
         /* 🔴 이 셋은 `.card button/input`이 **못 잡는다** — 각자 더 뒤에서 12px을 다시 건다.
            안 올리면 «넓어진 막대에 작은 글자»가 카드 안에 그대로 남는다(검수 실측).
@@ -697,7 +702,7 @@
       /* 라벨과 값이 **한 줄**이다 — 두 줄로 쌓으면 그만큼 카드가 자란다(위 마크업 주석). */
       /* 코드를 «갈라 그리는» 서체는 호스트 화면만이 아니라 **받아 적는 칸**에도 걸려야 한다. */
       .code-in { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-      .inv-code { display: flex; align-items: baseline; gap: 8px; margin: 0 0 12px; }
+      .inv-code { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; }
       /* 12px은 이 파일의 라벨 축이다(`.field label`·`.pick-label`·`.hint-sm`·`.divider`·`.host-hint`).
          초안의 11px은 **저장소에 없는 일회성 값**이었고, 데스크톱 분기가 부제·라벨을 15/13px로
          올리는데 로비에서 그 규칙이 `.subtitle`과 함께 죽어 «카드에서 가장 작은 글자»가 됐다. */
@@ -715,15 +720,85 @@
          ⚠️ ~~«값 자체는 가공하지 않는다 · 대소문자가 유효하다»~~ 도 옛 id 공간의 이야기다.
             화면은 `formatRoomCode`로 **끊어** 보여 주고 입력은 `normalizeRoomCode`가
             하이픈·공백·소문자를 받아 준다. **끊음은 보기용**이고 서버에 가는 값은 민값이다. */
+      /* 🔴 **버튼처럼 칠하지 않는다.** 코드는 이 카드의 1층이고, 상자·배경을 주면 위계가
+         무너져 `[링크 복사]`와 같은 무게로 보인다. 누를 수 있다는 신호는 **hover·focus에서만**
+         낸다(그 상태는 S9·S13·S14가 잰다 — 평상 상태만 재던 시절의 사각지대가 아니다). */
       .inv-code-v {
-        display: block; font-size: 20px; font-weight: 800; letter-spacing: 0.06em;
+        font-size: 20px; font-weight: 800; letter-spacing: 0.06em;
         line-height: 1.2; color: var(--wds-label-strong);
+        background: none; border: 0; padding: 0; text-align: left; cursor: pointer;
+        /* 이 파일의 다른 커스텀 버튼이 전부 지우는 두 축을 새 버튼만 빠뜨리고 있었다
+           (`.char`:531이 「사파리/iOS의 UA 렌더를 지배하는 축 — 헤드리스로는 확인할 수 없는
+           차이라 원인을 아예 제거한다」고 적어 둔 그것이다). 탭 하이라이트도 마찬가지 —
+           «버튼처럼 칠하지 않는다»고 해 놓고 터치에서 유일하게 보이는 피드백이
+           UA 기본 회색 상자(`rgba(0,0,0,0.18)`)였다(검수 실측). */
+        appearance: none; -webkit-appearance: none;
+        -webkit-tap-highlight-color: transparent;
         /* 접두는 이 파일의 다른 세 곳(:346·:348·:1328)이 이미 짝을 맞춰 둔 규약이다. */
         -webkit-user-select: all; user-select: all;
         font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       }
+      /* 밑줄은 hover·focus에서만 — 평상시에는 «값»으로 읽히고, 손을 대면 «누를 수 있는 것»이 된다.
+         `text-decoration-color`를 흐리게 해 코드 자체의 대비(13.78:1)를 안 건드린다. */
+      /* 🔴 **터치에는 hover가 없다.** 신호를 hover·focus에만 두면 폰에서 이 기능은
+         **발견 자체가 불가능하다**(검수 실측: 탭 «전»에는 `text-decoration: none`,
+         `matchMedia("(hover: none)")` = true). 방을 공유하는 주된 맥락이 폰인데 그렇다.
+         → coarse에서는 **점선 밑줄을 상시** 둔다. 실선(hover)보다 약해 위계를 안 건드리면서
+            «이건 누를 수 있다»를 말한다. */
+      @media (hover: none) {
+        .inv-code-v {
+          text-decoration: underline dotted; text-underline-offset: 3px;
+          text-decoration-color: var(--wds-label-alternative);
+        }
+      }
+      .inv-code-v:hover, .inv-code-v:focus-visible {
+        /* 🔴 **전역 `button:hover`가 여기까지 샌다.** 이 파일의 `button:hover`는
+           `background: var(--wds-primary-strong)`이고 특이도 (0,1,1)이라 평상 규칙
+           `.inv-code-v`(0,1,0)의 `background: none`을 **hover에서만** 이긴다 —
+           그 순간 코드 위에 진갈색이 깔려 대비가 **1.98:1**로 떨어졌다(게이트 S9 실측).
+           25회차가 「`button:hover`가 커스텀 버튼으로 새어 1.16:1이 됐다」고 기록한
+           **바로 그 사고**다. 상태 규칙끼리 (0,2,0)으로 이긴다. */
+        background: none;
+        text-decoration: underline; text-underline-offset: 3px;
+        text-decoration-color: var(--wds-label-alternative);
+      }
+      /* 🔴 **버튼이 되는 순간 포인터 하한이 걸린다**(S3 · 손가락 44 · 마우스 24).
+         코드 줄은 24px(짧은 화면 19.2px)이라 손가락에서 미달이다. 그런데 **키우면 카드가 자라고**,
+         카드가 자라면 `cardGuard`에서 `[잔치 시작]`이 밀린다(53회차가 46px으로 겪었다).
+         → coarse에서만 키우고, **늘어난 만큼 아래 여백에서 되받는다.** */
+      /* 마우스 하한 24px — 코드 줄은 짧은 화면에서 19.2px이라 **마우스에서도 미달**이었다
+         (게이트 S3 실측 `89.4×18`·`95.3×19.2`). 데스크톱은 이미 24px이라 이 줄이 값을 안 바꾼다. */
+      .inv-code-v { min-height: 24px; display: flex; align-items: center; }
+      /* ⚠️ 손가락 하한 44px은 **여기서 안 준다** — 아래 `@media (pointer: coarse)`의
+         `.card button`(0,1,1)이 이미 주고 있고, 내 `.inv-code-v`(0,1,0)는 그것을 못 이긴다.
+         초안이 여기에 `min-height: 44px`을 적어 두고 「coarse에서만 키운다」고 서술했는데
+         **아무 일도 안 하는 규칙이었다**(검수가 CSSOM 매치 순서로 증명). 여백만 되받는다. */
+      @media (pointer: coarse) {
+        .inv-code { margin-bottom: 0; }
+      }
+      /* 🔴 «둘 다 3글자라 안 흔들린다»는 **공백을 안 셌다** — 실측 `방 코드` 37.33 ·
+         `복사됨` 33.75 · `직접 복사` 48.56px이라 코드 왼쪽 모서리가 −3.58 ~ +11.23px 움직였다.
+         바로 아래 `#copyBtn`이 **같은 결함에 같은 처방**을 이미 갖고 있었는데 안 썼다. */
+      #roomCodeMsg { display: inline-block; min-width: 49px; }
       /* 성공 문안(`복사됨`)이 라벨보다 짧아 버튼이 줄어들면 그 순간 줄 전체가 흔들린다. */
       #copyBtn { min-width: 84px; }
+      /* 🔴 **자라는 조건과 되받는 조건이 같아야 한다.** 코드 줄이 19.2 → 44px로 자라는 것은
+         `pointer: coarse`(손가락 하한 · `.card button`이 준다) 때문인데, 초안은 되받기를
+         `max-height: 719px` tier에만 걸었다 — **두 조건은 독립이다.** 그 결과 마우스·짧은 화면
+         8개는 4.8px만 자랐는데 **25~28px을 깎였고**(5배 과잉), 정작 `phone`(coarse·긴 화면)은
+         되받기가 안 걸려 +8px 자랐다(검수 실측). 되받기는 **둘 다 걸리는 곳**에만 건다.
+         ⚠️ `#lobby`로 특이도를 올린다 — 같은 값을 겨냥한 `.char`·`.char-grid` 기본 조이기가
+            `max-height` tier에 이미 있어(0,1,0) 그대로 쓰면 소스 순서 싸움이 된다. */
+      @media (pointer: coarse) and (max-height: 719px) {
+        #lobby .char { padding: 1px 2px; }
+        #lobby .char-grid { gap: 2px; margin-top: 0; }
+        #lobby #playerList { margin: 0; }
+        /* ⚠️ **검수가 여기서 틀렸다.** 「`.persona`에 `margin-bottom`이 없으니 이 선언은
+           2px을 «더한다»」고 했는데, `#lobbyPersona`가 :585에서 **16px**을 갖고 있다
+           (검수는 `.persona`만 grep했다). 이 줄은 16 → 2로 **14px을 되받는** 규칙이고,
+           지웠더니 `n320`이 5px 넘쳤다(실측). 서브에이전트도 틀린다 — 코드로 재확인한다. */
+        #lobby #lobbyPersona { margin-bottom: 2px; }
+      }
       #playerList { list-style: none; padding: 0; margin: 8px 0 16px; }
       #playerList li {
         padding: 8px 10px; background: var(--wds-bg-normal); border: 1px solid var(--wds-bg-alternative);
@@ -755,6 +830,7 @@
            **높이를 사실상 그대로** 둔다. 16px은 본문(12)보다 크고 굵어 여전히 주인공이다. */
         #lobby .card .inv-code { margin-bottom: 4px; }
         #lobby .inv-code-v { font-size: 16px; }
+
         .invite { margin-bottom: 6px; }
         #playerList { margin: 2px 0 2px; }
         #landing .game-meta { margin-bottom: 6px; }
@@ -773,6 +849,14 @@
         .rp-col .rp-hand { padding: 5px 4px; }
         .char { padding: 3px 2px; }
         .char-grid { gap: 3px; margin-top: 2px; }
+        /* ⚠️ 위 둘과 아래 `#playerList`는 **손가락 화면에서 더 조인 값이 따로 있다**
+           (`(pointer: coarse) and (max-height: 719px)` 블록). 여기 값은 마우스·짧은 화면 몫이다. */
+        /* 🔴 **자라는 조건과 되받는 조건이 같아야 한다.** 코드 줄이 19.2 → 44px로 자라는 것은
+           `pointer: coarse`(손가락 하한) 때문인데, 초안은 되받기를 이 tier(`max-height`)에만
+           걸었다 — **두 조건은 독립이다.** 그 결과 마우스·짧은 화면 8개는 4.8px만 자랐는데
+           **25~28px을 깎였고**(5배 과잉), 정작 `phone`(coarse·긴 화면)은 되받기가 안 걸려
+           +8px 자랐다(검수 실측). 되받기는 **둘 다 걸리는 곳**에만 건다. */
+
         .pick-label { margin-bottom: 2px; }
         #lobbyPersona { margin-top: 2px; min-height: 0; padding: 6px 10px; }
       }
@@ -2607,9 +2691,16 @@
              13·17·37회차가 전부 같은 곳에서 걸린 함정이다.
              없앤 문장은 「초대 링크를 친구에게 공유하세요」인데, **읽을 수 없는 링크를
              공유하라는 문장**이었다. 지금은 코드가 보이고 버튼이 «링크 복사»라고 말한다. -->
+        <!-- 🔴 **버튼을 늘리지 않고 코드 자신을 누를 수 있게 한다.** 플랜 73이
+             「버튼을 하나 더 놓으면 «무엇을 복사하는가»가 다시 흐려진다」며 미뤄 둔 자리다 —
+             그 걱정은 옳으므로, 대신 **누르는 것이 곧 복사되는 것**이 되게 했다.
+             `<strong>`이던 것이 `<button>`이 되면서 **키보드 도달과 역할이 공짜로 따라온다**
+             (그전에는 Tab이 이 줄을 지나쳤다).
+             피드백은 **옆 라벨**이 낸다 — 코드 자신을 «복사됨»으로 바꾸면 정작 공유할 값이
+             사라진다. `방 코드`와 `복사됨`은 **둘 다 3글자**라 줄이 안 흔들린다. -->
         <p class="inv-code">
-          <span class="inv-code-k">방 코드</span>
-          <strong id="roomCode" class="inv-code-v">—</strong>
+          <span class="inv-code-k" id="roomCodeMsg" aria-live="polite">방 코드</span>
+          <button type="button" id="roomCode" class="inv-code-v">—</button>
         </p>
         <!-- 🔴 이 줄은 **손대지 않는다.** 초안이 링크 원문을 11px muted로 «강등»했다가
              게이트 S3에 걸렸다 — `#inviteLink`는 `readonly`여도 **입력 컨트롤**이라
