@@ -3243,6 +3243,18 @@ let createPublic = true;
  */
 const showJoinFailed = (e?: unknown): void => {
   if (e !== undefined) console.warn("[room-join]", e);
+  /* 🔴 **문지기의 문장은 화면에 도달해야 한다.** 55회차가 서버에 429를 넣고 「랜딩이 그
+     message를 그대로 보여 준다」고 적었는데 **거짓이었다** — 이 함수는 `e`를 콘솔로만 보내고
+     고정 문장을 띄웠다(검수 지적). 그러면 막힌 사람이 「없는 방이거나 이미 시작한 판이에요」를
+     보는데, 그 순간 그 문장은 **사실이 아니다**(방이 없어서가 아니라 막혀서다).
+     ⚠️ **429 하나만 예외로 둔다.** 원문 오류를 통째로 띄우면 서버 내부 문구가 화면에 새고
+        「경로가 늘었다고 다른 문장을 배우게 하지 않는다」는 §8.1 규약도 깨진다. */
+  const code = (e as { code?: unknown } | undefined)?.code;
+  const msg = (e as { message?: unknown } | undefined)?.message;
+  if (code === 429 && typeof msg === "string" && msg) {
+    setLandingMsg(msg);
+    return;
+  }
   /* 🔴 53회차 문안(«대소문자까지 그대로 입력했는지»)은 **54회차에 거짓이 됐다** —
      코드는 대문자 전용이고 `normalizeRoomCode`가 어차피 올린다. 대소문자는 실패의 원인이
      **될 수 없는데** 화면이 그것을 원인으로 지목하고 있었다(검수 지적).
