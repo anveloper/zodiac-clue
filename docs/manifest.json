@@ -56,6 +56,10 @@
     "dir": "plans/done",
     "items": [
       {
+        "path": "plans/done/79-phone-column-contract.md",
+        "title": "plan: 폰 컬럼에 계약을 준다 — 58회차가 전건 초록으로 통과한 이유"
+      },
+      {
         "path": "plans/done/78-phone-column-heights.md",
         "title": "plan: 폰 우측 컬럼 — 추리 도구가 반 줄에서 잘린다"
       },
