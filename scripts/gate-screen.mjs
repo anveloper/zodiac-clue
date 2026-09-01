@@ -3352,6 +3352,53 @@ const FAULTS = [
     })()`,
   },
   {
+    id: "F29-짧은가로에서몫나누기",
+    expect: "S1",
+    screen: "game-column",
+    vp: "land",
+    signature: /유일한 통로/,
+    why:
+      "**짧은 가로 화면에도** 3:2 몫을 강제한다 — 58·59회차가 실제로 그렇게 내보냈고 " +
+      "로그의 온전한 줄이 `land` 2 → **1**, `edge` 1 → **0**이 됐다(검수 실측). " +
+      "🔴 그 화면은 고정 크롬이 **컬럼의 47%**다(`#aiPanel` 66 + 손잡이 2개 88 = 154 / 324) — " +
+      "그 안에서 몫을 어떻게 나눠도 로그가 죽는다. 그래서 조건을 `min-height: 501px`로 " +
+      "좁혔고, **그 조건 자체를 이 결함이 지킨다.** " +
+      "⚠️ `F28`은 `phone` 전용이라 이 회귀를 **못 잡는다**(검수 실증: 되돌려도 자기시험 초록).",
+    js: `(() => {
+      const st = document.createElement('style');
+      st.id = 'zc-fault-short-share';
+      st.textContent = '.rp-col .rp-evi { height: auto !important; flex: 3 1 0 !important; min-height: 200px !important; }'
+        + '.rp-col .rp-log { flex: 2 1 0 !important; }';
+      document.head.appendChild(st);
+      return 'injected';
+    })()`,
+  },
+  {
+    id: "F28-로그가컬럼밖으로",
+    expect: "S1",
+    screen: "game-column",
+    vp: "phone",
+    /* 🔴 `/rp-head/`는 **로그와 증거 머리글을 구분하지 못한다** — `path()`가 id 없는 div를
+       `div.rp-head`로만 찍기 때문이다. 검수가 증거 머리글만 밀어내고도 이 지문에 걸리는 것을
+       실증했다(로그 계약이 죽어도 «잡았다»고 보고한다). 그 항목의 `why` 고유 문구로 좁힌다. */
+    signature: /유일한 통로/,
+    why:
+      "폰 컬럼에서 증거 노트를 내용 높이로 풀어 **로그를 컬럼 밖으로** 밀어낸다 — " +
+      "58회차 초안이 실제로 그렇게 나갔고 **게이트는 전건 초록이었다**(로그 top 414 → 864 · " +
+      "컬럼 높이 828). 이 파일의 `F21` 주석이 이미 「`#logPanel`이 `protect`에 없어 " +
+      "**S1은 원리적으로 침묵한다**」고 적어 뒀는데 그 구멍을 아무도 안 메웠다. " +
+      "`index.html`은 그 패널을 「반증·계략·소환이 사람에게 닿는 **유일한 통로**」라 부른다. " +
+      "59회차가 `#logPanel .rp-head`를 계약에 넣어 막았다.",
+    js: `(() => {
+      const st = document.createElement('style');
+      st.id = 'zc-fault-log-pushed';
+      st.textContent = '.rp-col .rp-evi { flex: 0 0 auto !important; height: auto !important; }'
+        + '.rp-col .rp-evi .rp-body { overflow: visible !important; }';
+      document.head.appendChild(st);
+      return 'injected';
+    })()`,
+  },
+  {
     id: "F27-상대단위로새는의도",
     expect: "S15",
     screen: "lobby",
