@@ -98,6 +98,10 @@
     "dir": "plans/done",
     "items": [
       {
+        "path": "plans/done/78-phone-column-heights.md",
+        "title": "plan: 폰 우측 컬럼 — 추리 도구가 반 줄에서 잘린다"
+      },
+      {
         "path": "plans/done/77-type-intent.md",
         "title": "plan: S15 «글자 크기 의도» — 요소를 겨냥한 선언이 타입 선언에 지는 것을 잡는다"
       },
