@@ -69,6 +69,13 @@ const RUNNERS = {
     //     이 저장소의 하한은 Node 20이고 거기엔 타입 스트리핑이 없다.
     skipCodes: { 3: "동작 검사 불가(실행기가 TS를 직접 못 읽는다) — 선언 검사만 돌았다" },
   },
+  joinguard: {
+    cmd: process.execPath,
+    args: ["scripts/gate-join-guard.mjs"],
+    jsonArgs: ["scripts/gate-join-guard.mjs", "--json"],
+    // 3 = 서버를 못 띄웠다(의존성 부재 등) → 실패가 아니라 SKIP. **통과로 세지 않는다.**
+    skipCodes: { 3: "서버 기동 실패 — 자물쇠를 재지 못했다" },
+  },
   sim: {
     cmd: process.execPath,
     args: ["scripts/sim-balance.mjs", "--gate"],
@@ -112,7 +119,7 @@ const RUNNERS = {
 
 /* ⚠️ **`ITEMS`에 넣는 것만으로는 안 돈다** — 도는 것은 이 배열이다.
    54회차가 `roomcode`를 `ITEMS`에만 넣고 «PASS 5»가 그대로인 것을 보고 알았다. */
-const ORDER = ["typecheck", "roomcode", "docs", "gpu", "sim", "narrator", "build", "bundle", "screen"];
+const ORDER = ["typecheck", "roomcode", "docs", "gpu", "sim", "narrator", "build", "bundle", "joinguard", "screen"];
 
 if (OPT.list) {
   console.log("항목            quick  근거");
