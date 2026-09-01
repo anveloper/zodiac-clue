@@ -89,6 +89,11 @@
  *                 S13이 원리적으로 못 보는 축이다 — 축이 `:focus-within`이고 결함이
  *                 **coarse에만** 나는데 S13은 coarse를 SKIP한다. **포커스는 손가락에도 있다.**
  *                 마우스를 안 쓰고 `focus()`만 부르므로 **모든 뷰포트에서 돈다.**
+ *   S15 글자 의도  **요소를 겨냥한 글자 크기가 «타입만 겨냥한» 선언에 졌는가.**
+ *                 S5는 «하한»(10px)만 재고 coarse에서만 돈다 — 15px은 하한을 안 어긴다.
+ *                 어긴 것은 하한이 아니라 **의도**다. 이 사고는 **세 번** 났고
+ *                 (`.char` · `.inv-code-v` · `.full`) 앞의 둘은 **사람이 눈으로** 찾았다.
+ *                 특이도는 **안 계산한다** — 승자는 `getComputedStyle`이 알려 준다.
  *
  *   ⚠️ S5·S6·S9는 §사람 확인 «읽히는가»에서 **기계가 잴 수 있는 조각만** 떼어낸 것이다.
  *      줄바꿈·서체·행간, 그리고 **`:active`·`:focus` 상태의 색**은 여전히 사람 몫이고
@@ -996,6 +1001,190 @@ function pageProbe(cfg) {
      * 이 속성은 이 값이어야 한다」. 재는 쪽은 **계산된 스타일을 읽기만** 한다 —
      * 34·37·38회차가 「재는 쪽이 식을 쓰면 틀린다」를 세 번 증명했다.
      */
+    /**
+     * S15 — **글자 크기의 «의도»가 이겼는가.**
+     *
+     * 🔴 56회차가 이 사각지대를 실증했다: `#roomCode`를 `<strong>` → `<button>`으로 바꾸자
+     *    데스크톱 tier의 `.card button:not(.char)`가 `.inv-code-v`를 이겨 코드가
+     *    **20px → 15px**로 깎였는데 **게이트가 전건 초록**이었다. S5는 «하한»(10px)이고
+     *    coarse에서만 돌며, 15px은 하한을 안 어긴다 — 어긴 것은 하한이 아니라 **의도**다.
+     *    같은 함정이 `.char`(캐릭터 칸)에 이미 한 번 있었다. 즉 **두 번째**다.
+     *
+     * **특이도를 계산하지 않는다.** 계산하면 「재는 쪽이 식을 쓰면 틀린다」(34·37·38회차)를
+     * 또 하게 된다. 승자는 `getComputedStyle`이 알려 주고, 우리는 **«주어»만** 본다:
+     * 진 선언이 클래스/ID로 이 요소를 겨냥했는데 이긴 선언은 **타입만**(`button`·`input`)
+     * 겨냥했다면, 그것은 캐스케이드가 아니라 **의도가 새어 나간 것**이다.
+     * 반대(더 구체적인 클래스 규칙이 이기는 것)는 정상이므로 안 잡는다.
+     */
+    typeIntent: (() => {
+      /* 선택자 리스트를 **괄호를 세며** 자른다.
+         🔴 초안은 `sel.split(",")`이었다 — `:not(a, b)` 하나에 규칙이 조각나
+         `el.matches`가 던지고 `catch → false`로 **통째로 사라졌다**(검수 실측: 같은 결함을
+         `:not(.a):not(.b)`로 쓰면 FAIL, `:not(.a, .b)`로 쓰면 PASS).
+         하필 `index.html`의 이번 회차 주석이 **그 리팩터를 다음 사람에게 권한다.** */
+      const branches = (sel) => {
+        const out = [];
+        let depth = 0;
+        let cur = "";
+        for (const ch of sel) {
+          if (ch === "(" || ch === "[") depth++;
+          else if (ch === ")" || ch === "]") depth--;
+          if (ch === "," && depth === 0) {
+            out.push(cur);
+            cur = "";
+          } else cur += ch;
+        }
+        if (cur.trim()) out.push(cur);
+        return out.map((b) => b.trim()).filter(Boolean);
+      };
+      /* 선택자의 **마지막 컴파운드**(주어)를 뽑고 `:not(...)`·`:is(...)` 속을 걷어낸다 —
+         `.card button:not(.char)`의 주어는 `button`이지 `.char`가 아니다. */
+      const subject = (branch) => {
+        /* 결합자 분리도 괄호를 세야 한다 — `:not(a + b)`의 `+`는 결합자가 아니다. */
+        let depth = 0;
+        let last = "";
+        for (const ch of branch) {
+          if (ch === "(" || ch === "[") depth++;
+          else if (ch === ")" || ch === "]") depth--;
+          if (depth === 0 && (ch === " " || ch === ">" || ch === "+" || ch === "~")) last = "";
+          else last += ch;
+        }
+        let out = last;
+        for (let i = 0; i < 5; i++) out = out.replace(/:(?:not|is|where|has)\([^()]*\)/g, "");
+        return out;
+      };
+      const targetsElement = (sub) => /[.#\[]/.test(sub);
+      /* 🔴 **px 리터럴만 판정한다.** 초안은 선언 문자열과 계산값을 그대로 비교해서
+         ① `0.9375rem`(=15px)으로 쓰면 **못 잡고**(검수 실측)
+         ② `font: inherit`처럼 px가 아닌 값은 «진 선언»으로 오인했다
+            (이 저장소에 이미 `.evi-hit { font: inherit }`가 21개 있다 — 값이 안 겹쳐서
+             오늘만 조용할 뿐, `.evi-chip`을 한 글자 바꾸면 무의미한 FAIL이 난다).
+         못 재는 것은 **«못 잰다»고 센다.** */
+      const pxOf = (v) => {
+        const m = /^\s*(-?\d+(?:\.\d+)?)px\s*$/.exec(v ?? "");
+        return m ? Number(m[1]) : null;
+      };
+      /* 🔴 **상대 단위를 «못 읽는다»로 넘기면 그것이 우회로가 된다** — 검수가 `0.9375rem`(=15px)로
+         같은 결함을 만들어 통과시켰다. 단위는 푼다. 푸는 데 필요한 기준(root·부모)은
+         **브라우저에게 묻는다**(계산하지 않는다 — 이 저장소가 세 번 배운 규칙). */
+      const rootPx = () => parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+      const resolve = (raw, el) => {
+        const v = (raw ?? "").trim();
+        const px = pxOf(v);
+        if (px !== null) return px;
+        const m = /^(-?\d+(?:\.\d+)?)(rem|em|%|pt)$/.exec(v);
+        if (!m) return null;
+        const n = Number(m[1]);
+        const parentPx = () =>
+          parseFloat(getComputedStyle(el.parentElement ?? document.documentElement).fontSize) || rootPx();
+        if (m[2] === "rem") return n * rootPx();
+        if (m[2] === "pt") return (n * 96) / 72;
+        if (m[2] === "em") return n * parentPx();
+        return (n / 100) * parentPx();
+      };
+      const found = [];
+      const skipped = { nonPx: 0, nested: 0, badSel: 0, cond: 0 };
+      /* 🔴 **조건은 누적한다.** 초안은 안쪽 조건이 바깥을 **대체**해서, 바깥이 거짓인데
+         안쪽만 참이면 적용되지도 않는 선언을 잡았고(오탐), `@supports`를 `matchMedia`에
+         넣어 진짜 결함을 놓쳤다(미탐 — 둘 다 검수 실측). 이 저장소에 중첩 `@media`가
+         이미 둘 있고 `gap 720×620`에서 「바깥 거짓·안쪽 참」이 실제로 성립한다. */
+      const condOk = (conds) =>
+        conds.every((c) =>
+          c.kind === "supports" ? CSS.supports(c.text) : matchMedia(c.text).matches,
+        );
+      const walk = (list, conds) => {
+        for (const rule of list) {
+          const isMedia = typeof CSSMediaRule !== "undefined" && rule instanceof CSSMediaRule;
+          const isSupports = typeof CSSSupportsRule !== "undefined" && rule instanceof CSSSupportsRule;
+          if (isMedia || isSupports) {
+            walk(rule.cssRules ?? [], [
+              ...conds,
+              { kind: isSupports ? "supports" : "media", text: rule.conditionText ?? rule.media?.mediaText ?? "all" },
+            ]);
+            continue;
+          }
+          if (rule.selectorText && rule.style) {
+            /* 중첩 CSS(`& button`)는 부모를 합성해야 매치된다 — 안 하면 조용히 샌다.
+               초안 주석은 「그 안도 본다」고 적었지만 **실제로는 던지고 버려졌다**(검수 실측).
+               합성은 안 한다(규칙이 는다) — 대신 **못 쟀다고 센다.** */
+            if (rule.selectorText.includes("&")) {
+              skipped.nested++;
+            } else {
+              const raw = rule.style.getPropertyValue("font-size");
+              if (raw) {
+                if (!condOk(conds)) skipped.cond++;
+                else found.push({ sel: rule.selectorText, raw });
+              }
+            }
+          }
+          if (rule.cssRules?.length && !isMedia && !isSupports) walk(rule.cssRules, conds);
+        }
+      };
+      for (const sheet of document.styleSheets) {
+        let list;
+        try {
+          list = sheet.cssRules;
+        } catch {
+          /* 교차 오리진 시트는 못 읽는다 — 이 저장소의 스타일은 인라인 `<style>`이라 전부 읽힌다 */
+          skipped.badSel++;
+          continue;
+        }
+        walk(list, []);
+      }
+      const out = [];
+      const seen = { checked: 0, zero: 0 };
+      for (const el of document.querySelectorAll("*")) {
+        const r = el.getBoundingClientRect();
+        if (r.width < 1 || r.height < 1) {
+          seen.zero++;
+          continue;
+        }
+        seen.checked++;
+        const now = pxOf(getComputedStyle(el).fontSize);
+        if (now === null) continue;
+        let lost = null;
+        let wonType = null;
+        let wonClass = false;
+        for (const f of found) {
+          /* 🔴 **매치되는 «모든» 가지를 본다.** 초안은 `find()`로 첫 가지만 봐서,
+             `button, .card .full`은 FAIL이고 `.card .full, button`은 PASS였다 —
+             **순서만 뒤집으면 판정이 갈렸다**(검수 실측). */
+          let bs;
+          try {
+            bs = branches(f.sel).filter((b) => el.matches(b));
+          } catch {
+            skipped.badSel++;
+            continue;
+          }
+          if (!bs.length) continue;
+          /* 단위는 이 요소 기준으로 푼다(`em`·`%`는 부모에 딸린다). 못 푸는 값
+             (`inherit`·`smaller` 등)은 **판정에서 빼고 «못 읽었다»로 센다.** */
+          const val = resolve(f.raw, el);
+          if (val === null) {
+            skipped.nonPx++;
+            continue;
+          }
+          const same = Math.abs(val - now) < 0.5;
+          for (const b of bs) {
+            const mine = targetsElement(subject(b));
+            if (!same && mine) lost = { sel: b, px: `${f.raw}` };
+            if (same && mine) wonClass = true;
+            if (same && !mine) wonType = { sel: b, px: `${f.raw}` };
+          }
+        }
+        if (lost && wonType && !wonClass) {
+          out.push({
+            path: path(el),
+            want: lost.px,
+            got: `${now}px`,
+            intent: lost.sel,
+            leak: wonType.sel,
+            text: (el.textContent ?? "").trim().slice(0, 20),
+          });
+        }
+      }
+      return { leaks: out, seen, skipped };
+    })(),
     layout: (cfg.layoutRules ?? [])
       /* 🔴 **조건은 CSS 문자열 그대로 `matchMedia`에 묻는다.** 초안은 `minW/maxH` 같은 **숫자로
          재구현**했는데, 그건 34·37·38회차가 세 번 지적받은 「재는 쪽이 식을 쓰면 오진한다」다.
@@ -1323,6 +1512,39 @@ const judge = (screen, viewport, data) => {
         (bad ? " — **프레이밍이 어긋났다**" : ""),
         {});
     }
+  }
+
+  // ── S15 글자 크기 의도 ──
+  // 「요소를 겨냥한 선언이 타입만 겨냥한 선언에 졌는가」. S5는 **하한**만 재므로
+  // 「하한은 지켰는데 의도가 뒤집힌」 회귀는 원리적으로 안 보였다(56회차 실증 · `.char`가 첫 번째).
+  {
+    const ti = data.typeIntent ?? { leaks: [], seen: { checked: 0, zero: 0 }, skipped: {} };
+    const sk = ti.skipped ?? {};
+    const unmeasured = (sk.nonPx ?? 0) + (sk.nested ?? 0) + (sk.badSel ?? 0);
+    add("S15", ti.leaks.length ? "FAIL" : "PASS",
+      /* 🔴 **은폐된 미측정을 만들지 않는다.** 초안은 크기 0인 요소를 조용히 건너뛰고
+         (랜딩 140개 중 100개!) 못 읽은 선언도 안 셌다 — 이 파일이 스스로 「은폐된 미측정이
+         가장 위험하다」고 적어 둔 규약을 어겼다(검수 지적). S5·S11이 이미 제외 수를 인쇄한다. */
+      `요소 ${ti.seen.checked}개 검사 · 안 그려져 제외 ${ti.seen.zero}개 · ` +
+        `«타입 선언에 진 글자 크기» ${ti.leaks.length}건 · ` +
+        `못 읽은 선언 ${unmeasured}건(px 아님 ${sk.nonPx ?? 0} · 중첩 ${sk.nested ?? 0} · 해석 실패 ${sk.badSel ?? 0}) · ` +
+        `조건 불일치로 건너뜀 ${sk.cond ?? 0}건`,
+      {
+        always: true,
+        lines: ti.leaks.length
+          ? ti.leaks.map(
+              (l) =>
+                `✗ ${l.path} — \`${l.intent}\`의 **${l.want}** 의도가 \`${l.leak}\`에 져서 ` +
+                `**${l.got}**로 그려진다 "${l.text}"`,
+            )
+          : [
+              "□ 이 검사가 없던 시절 **세 번** 새어 나갔다 — `.char`(12 → 15px) · " +
+                "`.inv-code-v`(20 → 15px) · `.full`(16 → 15px). 셋 다 `.card button`이 이겼고, " +
+                "앞의 둘은 **사람이 눈으로** 찾았다(게이트는 전건 초록이었다). 셋째는 이 검사가 찾았다",
+              "□ **못 읽은 선언은 «괜찮다»가 아니다** — px 리터럴이 아니거나(`rem`·`inherit`) " +
+                "CSS 중첩(`&`)이면 이 검사는 그 선언을 못 본다. 그 수가 늘면 검사가 조용해진다",
+            ],
+      });
   }
 
   // ── S12 조판 분기 ──
@@ -3126,6 +3348,68 @@ const FAULTS = [
     js: `(() => {
       const b = document.getElementById('endTurn');
       b.style.cssText += ';min-width:20px;min-height:20px;width:20px;height:20px;padding:0;font-size:8px';
+      return 'injected';
+    })()`,
+  },
+  {
+    id: "F27-상대단위로새는의도",
+    expect: "S15",
+    screen: "lobby",
+    vp: "desktop",
+    signature: /의도가/,
+    why:
+      "같은 누출을 **`rem`으로** 쓴다. 🔴 초안은 선언 문자열과 계산값을 **문자로 비교**해서 " +
+      "`0.9375rem`(=15px)이면 조용히 통과했다(검수 실증). 단위를 안 풀면 그것이 우회로가 된다. " +
+      "또한 초안은 `font: inherit` 같은 값을 «진 선언»으로 오인했다 — 이 저장소에 그런 요소가 " +
+      "이미 **21개**(`.evi-hit`) 있고, 값이 안 겹쳐서 «오늘만» 조용했다.",
+    js: `(() => {
+      const st = document.createElement('style');
+      st.id = 'zc-fault-type-rem';
+      st.textContent = '@media (min-width: 761px) and (min-height: 600px) {'
+        + ' .card button { font-size: 0.9375rem !important; } }';
+      document.head.appendChild(st);
+      return 'injected';
+    })()`,
+  },
+  {
+    id: "F26-쉼표not으로새는의도",
+    expect: "S15",
+    screen: "lobby",
+    vp: "desktop",
+    signature: /의도가/,
+    why:
+      "누출 규칙을 **`:not(a, b)`** 꼴로 쓴다. 🔴 초안은 선택자 리스트를 `split(\",\")`로 잘라 " +
+      "괄호 속 쉼표에 규칙이 조각났고, `el.matches`가 던져 **그 규칙이 통째로 사라졌다** " +
+      "— 같은 결함이 `:not(.a):not(.b)`면 FAIL, `:not(.a, .b)`면 PASS였다(검수 실증). " +
+      "하필 `index.html`의 제외 목록 주석이 **그 리팩터를 다음 사람에게 권한다.**",
+    js: `(() => {
+      const st = document.createElement('style');
+      st.id = 'zc-fault-type-comma';
+      st.textContent = '@media (min-width: 761px) and (min-height: 600px) {'
+        + ' .card button:not(.zzz, .yyy) { font-size: 15px !important; } }';
+      document.head.appendChild(st);
+      return 'injected';
+    })()`,
+  },
+  {
+    id: "F25-타입선언이의도를이김",
+    expect: "S15",
+    screen: "lobby",
+    vp: "desktop",
+    signature: /의도가/,
+    why:
+      "데스크톱 tier의 `.card button`이 **요소를 겨냥한 글자 크기 의도를 이기게** 만든다. " +
+      "🔴 이 사고는 **세 번 났다** — `.char`(12 → 15px) · `.inv-code-v`(20 → 15px) · " +
+      "`.full`(16 → 15px). 앞의 둘은 사람이 눈으로 찾았고 **게이트는 전건 초록**이었다. " +
+      "S5는 «하한»(10px)이고 coarse에서만 도는데 15px은 하한을 안 어긴다 — " +
+      "어긴 것은 하한이 아니라 **의도**다. 셋째는 이 검사가 만들어지자마자 찾았다.",
+    js: `(() => {
+      const st = document.createElement('style');
+      st.id = 'zc-fault-type-intent';
+      /* 배포 규칙보다 뒤에 오는 같은 조건의 규칙 — 제외 목록을 무력화한다 */
+      st.textContent = '@media (min-width: 761px) and (min-height: 600px) {'
+        + ' .card button { font-size: 15px !important; } }';
+      document.head.appendChild(st);
       return 'injected';
     })()`,
   },
