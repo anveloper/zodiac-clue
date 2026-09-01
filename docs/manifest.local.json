@@ -98,6 +98,10 @@
     "dir": "plans/done",
     "items": [
       {
+        "path": "plans/done/77-type-intent.md",
+        "title": "plan: S15 «글자 크기 의도» — 요소를 겨냥한 선언이 타입 선언에 지는 것을 잡는다"
+      },
+      {
         "path": "plans/done/76-copy-room-code.md",
         "title": "plan: 방 코드를 «누를 수 있게» — 코드만 복사 · 키보드 도달"
       },
