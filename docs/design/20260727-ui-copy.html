@@ -710,6 +710,75 @@
           <b style="color:var(--red)">🔴 초안의 랜딩 쌍 <code>.join-row</code>는 원리적으로 못 잡았다</b>
           (버튼 y 12..62 vs 줄 y 63..107 — <b>1px 차로 안 겹친다</b>).
           주석에는 정답(<code>.divider</code>)을 적어 놓고 다른 선택자를 코딩했다.</li>
+        <li><b style="color:var(--red)">🔴 「이제 게이트가 잰다」는 절반이었다 — 카드의 「머리」는 아무도 안 봤다</b>
+          <span class="tag t-new">2026-09-02 · 60회차</span><br>
+          43회차의 두 쌍은 <b>짧은 가로의 2단 조판</b>을 재고 <code>#lobbyChars</code>는 <b>격자</b>를 잰다 —
+          좁은 <b>세로</b> 폰에서 카드의 <b>첫 두 줄</b>은 어느 쌍도 안 본다.
+          실측: <code>n320 320×568</code>·<code>p553 375×553</code>의 랜딩·대기실 <b>넷 모두</b>에서
+          <code>#bgmCtrl</code>이 <code>h1</code>을 <b>31×29px</b>, 랜딩 <code>.subtitle</code>을
+          <b>31×8px</b> 덮고 있었다. 58회차 검수가 손으로 찾아 큐에 남겼는데
+          <b>재는 쌍이 없어 두 회차를 살아남았다.</b>
+          <ul>
+            <li><b style="color:var(--red)">🔴 폰이 「안전」한 게 아니라 「세로로 비켜 있을」 뿐이다.</b>
+              CDP 실측 랜딩 <code>phone 390×844</code>에서 <code>h1</code>과 버튼은
+              <b>가로로 27px 겹쳐 있다</b> — 58회차 큐의 「폰에서 가로로 27~31px」이 이 수다.
+              안 부딪치는 이유는 카드가 세로 중앙 정렬로 <code>y 134.5</code>까지 내려가 있기 때문뿐이고
+              <b>카드 높이는 내용에 달렸다.</b> 대기실 <code>phone</code> 1인 실측: 카드 678 → 위 83 →
+              <code>h1.top</code> 108 vs 버튼 바닥 62 = 여유 <b>46px</b>. 카드가 <b>166px</b>(= 844 − 678)
+              더 자라면 넘쳐서 위 여백이 <code>.center</code> 패딩 <b>16에 고정</b>되고
+              <code>h1.top</code>은 41 = 버튼 바닥보다 <b>21px 위</b>가 된다.
+              13·17회차의 「카드가 자라면 고정 좌표를 가로지른다」가 세로 폰에서 그대로 살아 있었다.<br>
+              ⚠️ <code>n320</code>·<code>p553</code>은 <b>이미 넘쳐 있다</b>(<code>.card.y</code> = 16 ·
+              <code>scrollH</code> 585 &gt; 568) — 거기서 「위 여백은 나머지 값」이라는 논리는 성립하지 않는다.</li>
+            <li><b style="color:var(--red)">🔴 세로로 비켜서는 못 막는다(되주입).</b>
+              <code>.center { padding-top: 78px }</code>은 <code>n320</code>·<code>p553</code> 대기실에서
+              <code>[잔치 시작]</code>을 <b>35·32px 잘라 먹고</b> <code>#hostHint</code>를 화면 밖으로 냈다(S1).
+              둘 다 계약이라 <b>세로 예산이 없다.</b></li>
+            <li><b class="good">처방은 가로다</b> — <code>@media (max-width: 490px)</code>에서
+              <code>#landing h1, #landing .subtitle, #lobby h1 { margin-right: 39px }</code>.
+              <ul>
+                <li><b>식(CDP로 5개 폭 검증)</b>: 여유
+                  <code>= (L − 68) − ((L + cardW)/2 − 1 − pad)</code>,
+                  <code>cardW = min(380, L − 32)</code>. <code>L ≤ 412</code>면 <b><code>pad − 51</code></b>
+                  (= −31 / −27), <code>L &gt; 412</code>면 <b><code>L/2 − 257 + pad</code></b>.
+                  실측 대조 — <code>n320</code> −31 · <code>p553</code> −31 · 랜딩 <code>phone</code> −27 ·
+                  <code>L=474</code> <b>0.0</b> · <code>L=484</code> <b>5.0</b>. <b>전부 일치한다.</b></li>
+                <li><b>경계 490은 「규칙 없이도 8px이 남는 폭」</b>이다
+                  (<code>L/2 − 257 + pad ≥ 8</code> · pad 20).
+                  <b style="color:var(--red)">🔴 「겹침이 0이 되는 폭」(474)으로 끊으면</b>
+                  <code>L = 484</code>가 <b>여유 5px</b>로 남는다 — 게이트가
+                  <code>minOverlapEdgePx: 4</code> 이하를 안 세므로 <b>조용히 사라질 수 있는 값</b>이다.
+                  벼랑을 남기지 않는다.</li>
+                <li><b>여백 39 = 최악 겹침 31 + 8</b>(관용치 4의 2배). 실측 여유
+                  <code>n320</code>·<code>p553</code> <b>8.0</b> · <code>phone</code> <b>12.0</b>.</li>
+                <li><b style="color:var(--red)">🔴 초안 둘이 연달아 틀렸다.</b>
+                  ① <code>#bgmCtrl</code> 폭을 <b>56</b>으로 셌다 — <code>.bgm-vol</code>이
+                  <code>&lt;input type=range&gt;</code>의 <b>UA <code>margin: 2px</code>을 안 지운다</b>
+                  (실측 60 · 이 문서와 게이트가 이미 「60 → 162」로 적어 둔 값이다).
+                  ② 경계를 <b>카드 「바깥」 상자</b>로 풀어(테두리·패딩 누락) 508로 잡았다 —
+                  474~507의 34px 띠는 겹침이 0인데 자리를 내주고 있었다.</li>
+                <li>⚠️ <b><code>padding-right</code>가 아니라 <code>margin-right</code>다.</b>
+                  게이트도 사람 눈도 <b>테두리 상자</b>를 본다(자기시험 <code>F31</code>이 이 오답을 지킨다).</li>
+                <li>⚠️ <b><code>word-break: keep-all</code>은 미디어 쿼리 밖에 둔다.</b> 자리를 뺀 첫 판에서
+                  <code>n320</code> 부제가 «훔친 자를 <b>추 / 리하라</b>»로 갈렸다(한국어 기본 줄바꿈은 음절 단위).
+                  초안은 이 처방을 <code>max-width: 490</code> 안에 넣었는데 <b>keep-all은 언어의 성질이지
+                  폭의 성질이 아니다</b> — <code>edge 620×340</code>은 쿼리 밖인데 부제 상자가 235px뿐이라
+                  문안 두 자만 늘면 같은 갈림이 되돌아온다.</li>
+                <li><b>대가(전후 실측)</b>: <code>n320</code>에서만 부제가 두 줄이 되어(높이 16 → 32)
+                  카드 553 → <b>569</b>, <code>#landingMsg</code>(<code>role="status"</code>) 바닥
+                  562 → <b>578</b>로 첫 화면(568) 밖(스크롤로 닿는다). <code>p553</code>·<code>phone</code>·대기실은
+                  <b>높이 변화 0</b>. ⚠️ <code>#landingMsg</code>는 <code>protect</code>에 없어 게이트가 조용하다 —
+                  <b>계약에 넣는 것이 다음 회차 몫</b>이다.</li>
+              </ul></li>
+            <li>✅ <b>새 쌍 셋 + 자기시험 둘이 이 자리를 지킨다</b> — 랜딩 <code>#bgmCtrl</code>↔<code>h1</code>·<code>.subtitle</code>,
+              대기실 <code>#bgmCtrl</code>↔<code>h1</code>. <code>F30</code>(랜딩에서 <code>margin-right</code>를
+              지운다 = <b>변경 전 코드</b>) · <code>F31</code>(대기실에서 margin을 padding으로 바꾼다 =
+              <b>초안이 저지를 뻔한 오답</b>). 두 쌍의 <code>why</code>를 <b>서로 다르게</b> 썼다 —
+              자기시험이 <code>why</code>를 지문으로 쓰므로 같은 문장이면 「다른 쌍이 울어도 잡았다」고
+              보고한다(59회차 <code>/rp-head/</code>의 교훈).<br>
+              <b style="color:var(--red)">🔴 「머리글이 먼저 맞는다」의 근거는 「위 여백이 나머지 값」이 아니라
+              「카드의 첫 줄」이다</b> — 결함을 실측한 두 뷰포트는 카드가 이미 넘쳐 위쪽에 고정돼 있다(검수가 뒤집었다).</li>
+          </ul></li>
         <li><b style="color:var(--red)">⚠️ 평상 상태만 덮는다</b> —
           <code>.bgm-ctrl:hover, :focus-within</code>이 열리면 버튼이 왼쪽으로 <b>97px</b> 커져
           콘텐츠를 덮는다. Tab 한 번이면 닿는다.<br>
@@ -2602,6 +2671,7 @@
     <tr><th>§</th><th>문안 묶음</th><th>파일</th><th>함수 / 요소</th></tr>
     <tr><td>1.7</td><td>부유 컨트롤 배치 <span class="tag t-done">적용 완료</span></td><td class="q">client/index.html</td><td class="q"><code>.bgm-ctrl</code> — 폰 · <code>pointer:coarse</code> 두 블록의 <code>top</code>을 <code>body.no-scroll</code>로 한정</td></tr>
     <tr><td>1.7</td><td>부유 컨트롤 <b>여는 방향</b> <span class="tag t-done">적용 완료 2026-09-01</span></td><td class="q">client/index.html · scripts/gate.config.mjs · scripts/gate-screen.mjs</td><td class="q"><code>@media (max-height: 500px)</code>의 <code>#bgmCtrl:hover, :focus-within { flex-direction: column }</code> — 게이트는 <code>focusPairs</code> + <b>S14</b>(<code>probeFocusGeometry</code>)가 재고 <code>F24</code>가 지킨다</td></tr>
+    <tr><td>1.7</td><td>부유 컨트롤 ↔ <b>카드 머리글</b> <span class="tag t-done">적용 완료 2026-09-02</span></td><td class="q">client/index.html · scripts/gate.config.mjs</td><td class="q"><code>@media (max-width: 490px)</code>의 <code>#landing h1, #landing .subtitle, #lobby h1 { margin-right: 39px }</code> + <code>.card .subtitle { word-break: keep-all }</code>(조건 없이) — 새 쌍 셋과 자기시험 <code>F30</code>·<code>F31</code>이 지킨다</td></tr>
     <tr><td>3</td><td>목표 카드 <span class="tag t-soon">선행</span></td><td class="q">client/index.html · client/src/main.ts</td><td class="q">신규 <code>#goalCard</code> · <code>enterGame()</code> 말미 · <code>.hud-ctrl</code> 끝 <code>[?]</code></td></tr>
     <tr><td>4.1</td><td>손패 라벨</td><td class="q">client/src/main.ts</td><td class="q">onMessage("hand") ≈212 · <code>#hand</code> 초기 텍스트</td></tr>
     <tr><td>4.2</td><td>공통 단서</td><td class="q">server/rooms/clue-room.ts · client/src/main.ts</td><td class="q">startGame() ≈546 · buildEvidence()</td></tr>
@@ -2655,6 +2725,23 @@
 
   <footer>
     <b>변경 이력</b><br>
+    <b>2026-09-02(60회차)</b>: <b>배경음 버튼이 「카드의 머리」 위에 서 있었다.</b>
+    실측 <code>n320</code>·<code>p553</code>의 랜딩·대기실 <b>넷 모두</b>에서 <code>h1</code>을
+    <b>31×29px</b>(랜딩은 <code>.subtitle</code>까지 <b>31×8px</b>) 덮었다. 58회차 검수가 손으로
+    찾아 큐에 남겼는데 <b>재는 쌍이 없어 두 회차를 살아남았다.</b><br>
+    🔴 더 중요한 것은 <b>「지금 안 겹치는 폰」</b>이다 — <code>phone 390×844</code>의 여유가
+    <b>4px</b>이고 대기실 카드는 사람이 들어올 때마다 자란다(게이트는 1인으로 잰다).
+    13·17회차가 기록한 「카드가 자라면 고정 좌표를 가로지른다」가 <b>세로 폰에서 그대로 살아 있었다.</b><br>
+    ⚠️ 첫 처방(<code>.center { padding-top: 78px }</code>)은 <b>되주입에서 죽었다</b> —
+    대기실 <code>[잔치 시작]</code>을 <b>35·32px 잘라 먹고</b> <code>#hostHint</code>를 화면 밖으로 냈다.
+    세로 예산이 없어 <b>가로로 비켰다</b>(<code>margin-right: 39px</code> · 경계 <code>490</code>은
+    「규칙 없이도 8px이 남는 폭」).<br>
+    🔴 <b>검수가 유도를 두 번 뒤집었다</b> — ① <code>#bgmCtrl</code> 폭을 56으로 셌다
+    (<code>.bgm-vol</code>이 UA <code>margin: 2px</code>을 안 지운다 · 실측 <b>60</b>)
+    ② 경계를 카드 「바깥」 상자로 풀어 508로 잡았다(474~507은 겹침 0). CDP로 다섯 폭에서 식을
+    검증했고 실측 여유는 <code>n320</code>·<code>p553</code> <b>8.0</b> · <code>phone</code> <b>12.0</b>이다.<br>
+    ⚠️ <code>padding-right</code>는 오답이다(<code>F31</code>이 지킨다). <code>keep-all</code>은
+    <b>폭 조건 밖</b>에 뒀다 — 언어의 성질이기 때문이다.<br>
     <b>2026-09-01(59회차)</b>: <b>폰 컬럼에 계약을 줬다 — 58회차가 전건 초록으로 통과한 이유.</b>
     <code>#logPanel</code>이 <code>protect</code>에 없어 S1이 원리적으로 침묵했다(게이트 자신이
     <code>F21</code> 주석에 적어 둔 구멍이다). 계약을 붙이자마자 <b>58회차 최종본의 결함</b>이
