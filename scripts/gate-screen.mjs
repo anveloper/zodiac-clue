@@ -3374,6 +3374,52 @@ const FAULTS = [
     })()`,
   },
   {
+    id: "F30-버튼이카드머리위로",
+    expect: "S1",
+    screen: "landing",
+    vp: "n320",
+    /* 🔴 지문을 **랜딩 부제 쌍의 고유 문구**로 좁힌다. 「카드 위 여백의 하한이 무너지면…」은
+       랜딩 `h1`과 대기실 `h1`이 **같은 문장을 공유**하므로, 그걸 쓰면 «다른 쌍이 울어도
+       잡았다»고 보고한다 — 79회차가 `/rp-head/`로 정확히 그 실수를 했다. */
+    signature: /제목 다음 줄까지/,
+    why:
+      "카드 머리글의 오른쪽 자리(`margin-right: 36px`)를 지운다 — **변경 전 코드가 그 상태였고** " +
+      "`n320 320×568`·`p553 375×553`의 랜딩·대기실 넷 모두에서 `#bgmCtrl`이 `h1`을 **31×29px**, " +
+      "랜딩 `.subtitle`을 **31×8px** 덮고 있었다(60회차 실측). 43회차가 만든 두 쌍은 " +
+      "**짧은 가로의 2단 조판**과 **캐릭터 격자**를 재므로 이 자리를 원리적으로 못 본다 — " +
+      "58회차 검수가 손으로 찾아 큐에 남긴 뒤 **두 회차를 살아남았다.** " +
+      "⚠️ `padding-right`로 바꿔 놓는 회귀도 같은 결함이다(글자만 물러나고 상자는 그대로).",
+    js: `(() => {
+      const st = document.createElement('style');
+      st.id = 'zc-fault-card-head';
+      st.textContent = '#landing h1, #landing .subtitle, #lobby h1 { margin-right: 0 !important; }';
+      document.head.appendChild(st);
+      return 'injected';
+    })()`,
+  },
+  {
+    id: "F31-대기실머리글도같이",
+    expect: "S1",
+    screen: "lobby",
+    vp: "n320",
+    /* `F30`은 **랜딩**만 잰다. 두 화면은 조판이 다르고(대기실 머리글 아래가 곧 방 코드다)
+       쌍도 다르므로, 한쪽이 초록이어도 다른 쪽 계약이 죽어 있을 수 있다.
+       지문은 대기실 쌍의 **고유 문구**다 — 두 `h1` 쌍이 사유 문장을 공유하면 이 시험은
+       «다른 쌍이 울어도 잡았다»고 보고한다(79회차 `/rp-head/`의 교훈). */
+    signature: /방 코드가 바로 아래라/,
+    why:
+      "같은 회귀를 **대기실**에서 낸다 — `margin-right`를 `padding-right`로 바꿔 놓는다. " +
+      "글자는 물러나지만 **테두리 상자는 그대로**라 겹침이 남는다(60회차 초안이 저지를 뻔한 오답). " +
+      "실측 `n320`에서 `#bgmCtrl`이 `#lobby h1`을 **31×29px** 덮는다.",
+    js: `(() => {
+      const st = document.createElement('style');
+      st.id = 'zc-fault-lobby-head';
+      st.textContent = '#lobby h1 { margin-right: 0 !important; padding-right: 39px !important; }';
+      document.head.appendChild(st);
+      return 'injected';
+    })()`,
+  },
+  {
     id: "F28-로그가컬럼밖으로",
     expect: "S1",
     screen: "game-column",
