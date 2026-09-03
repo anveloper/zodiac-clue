@@ -780,7 +780,10 @@
               「카드의 첫 줄」이다</b> — 결함을 실측한 두 뷰포트는 카드가 이미 넘쳐 위쪽에 고정돼 있다(검수가 뒤집었다).</li>
           </ul></li>
         <li><b style="color:var(--red)">⚠️ 평상 상태만 덮는다</b> —
-          <code>.bgm-ctrl:hover, :focus-within</code>이 열리면 버튼이 왼쪽으로 <b>97px</b> 커져
+          <code>.bgm-ctrl:hover, :focus-within</code>이 열리면 버튼이 왼쪽으로 <b>102px</b>
+          (<s>97px</s>은 낡은 수 · 50→152 데스크톱 · 60→162 coarse로 증분은 같다) 커져
+          <span class="tag t-new">2026-09-03 정정</span> — 폭 ≤490의 카드 화면은 61회차가
+          <b>54px</b>(60 → 114)로 줄였다 —
           콘텐츠를 덮는다. Tab 한 번이면 닿는다.<br>
           <s style="opacity:.55">🔴 51회차에 <code>hoverPairs</code>로 선언은 됐지만 아직 안 잡힌다 …
           여전히 사람 몫이다.</s><br>
@@ -805,6 +808,100 @@
             <li><b>실측 여유</b>(초점 열림 기준):
               <code>edge</code>·<code>land</code> <b>27px</b> · <code>n320</code>·<code>p553</code> <b>16px</b> ·
               <code>gap 720×620</code> <b>60px</b> · 데스크톱 <b>329px</b>. 최소는 16px이다.</li>
+          </ul></li>
+        <li><b style="color:var(--red)">🔴 좁은 「세로」 폰은 그 조이기의 밖에 있었다 — 여덟 회차를 살았다</b>
+          <span class="tag t-new">2026-09-03 · 61회차</span><br>
+          52회차가 조건을 <code>max-height: 500px</code>으로 좁힌 것은 옳았지만, 그러면
+          <code>n320 320×568</code>은 <b>어느 분기에도 안 걸려 옆으로 162px이 그대로 열린다.</b>
+          S14 실측 — <code>#roomCode</code>를 <b>39.3×8px 덮는다</b>
+          (<code>p553</code> 여유 15.7 · <code>phone</code> 79).
+          방 코드는 「옆 사람에게 불러 주고 받아 적게 하는 값」(53회차 <code>protect</code>)이라
+          <b>열어 둔 채로 읽을 수 없으면 못 쓴다.</b>
+          <ul>
+            <li><b style="color:var(--red)">🔴 계약이 없어서 아무도 안 봤다.</b>
+              <code>#roomCode</code>는 53회차에 <code>protect</code>로 올라갔는데 S14의
+              <code>vs</code>(52회차 목록)에는 <b>안 따라 들어왔다.</b> 60회차가 넣어 재 보고도
+              「고치려면 52회차의 축을 다시 열어야 한다」며 큐로 넘겼다. →
+              <b>「계약에 넣는 것」과 「고치는 것」을 같은 회차에</b> 한다.
+              넣기만 하면 머지가 막히고, 고치기만 하면 다음 회차가 조용히 되돌린다
+              (41·44회차 <code>#hostHint</code>).</li>
+            <li><b class="good">처방은 「세로」도 「자리」도 아니라 「폭」이다</b> — 슬라이더 92 → <b>44</b>면
+              컨테이너가 162 → <b>114</b>가 된다(패딩 12+4 + 슬라이더 44 + UA 마진 4 + gap 6 + 아이콘 44).
+              <ul>
+                <li><b>식</b>: 여유 <code>= L − 8 − 컨테이너폭 − 189.3</code>.
+                  <code>#roomCode</code> 오른쪽 <b>189.3</b>은 카드 왼쪽 16 + 테두리 1 + 패딩 20 +
+                  라벨 49 + gap 8 + 코드 <b>95.3</b>이고, <code>L ≤ 412</code>에서 카드가
+                  <code>L − 32</code>라 <b>왼쪽이 16으로 고정</b>되므로 폭에 안 변한다.
+                  코드 폭 95.3도 <b>결정적이다</b> — 등폭 서체 · <code>ROOM_CODE_LEN</code> 8 +
+                  하이픈 = 9글자라 어떤 방을 만들어도 같다.<br>
+                  ⟹ 162면 <code>L − 359.3</code>(실측 <code>n320</code> −39.3 · <code>p553</code> +15.7 —
+                  <b>소수점까지 일치</b>) · 114면 <code>L − 311.3</code> ↳
+                  <b><code>n320</code> 8.7px</b>(게이트 실측 8.7).</li>
+                <li><b>44는 「저장소에 있는 값」이자 「들어가는 최댓값」</b>이다. 폭 하한 320에서
+                  여유 8(관용치 4의 2배 — 60회차 규약)을 요구하면 컨테이너 ≤ <b>114.7</b>,
+                  슬라이더 ≤ <b>44.7</b>. 52회차의 짧은 화면 분기가 쓰는 값과 같은 수라
+                  <b>새 상수를 안 만든다.</b></li>
+                <li><b style="color:var(--red)">🔴 세로로 여는 것은 이미 기각된 답이다</b> —
+                  바로 위 항목이 그 실측이다(<code>[복사]</code> 여유 16 → <b>−4px</b>).
+                  같은 오답을 다시 고르지 마라.</li>
+                <li><b>경계는 490 — 새로 만들지 않는다.</b> 아래 「분기 경계는 하나여야 한다」가
+                  금지하는 것은 <b>새 축</b>이고, 490은 60회차가 머리글 거터에 이미 쓴 수다.
+                  실제로 필요한 폭은 <code>L &lt; 359.3</code>뿐이라 391~490은
+                  <b>필요 없는데 걸리는 띠</b>지만(43회차가 <code>1280×450</code>에서 경계한 그것),
+                  거기서 잃는 것은 「슬라이더가 48px 짧다」 하나이고 얻는 것은
+                  <b>경계가 둘이 아닌 것</b>이다.<br>
+                  <b style="color:var(--red)">🔴 「그 규칙을 지킨다」가 아니라 「새 경계를 안 만든다」가
+                  정확하다</b>(검수 정정) — 490 자체는 60회차가 만든 <b>두 번째</b> 축이고
+                  <b>양쪽에 계측 뷰포트가 없다</b>(391~619 미계측). 50회차가 <code>bannerBand</code>·
+                  <code>bannerTop</code>으로 세운 예외 조건을 그 축은 아직 못 갚았다(큐).</li>
+                <li><b><code>flex-direction</code>은 안 딸려 온다.</b> 세로 열기는 「짧은」 화면의
+                  처방이고 이 분기는 폭만 본다.<br>
+                  <b style="color:var(--red)">🔴 52회차 블록은 손대지 않는다</b>(검수 정정).
+                  초안은 폭 규칙을 그 블록에서 「떼어 내」 조건을 넓혔는데, 그러면 그 블록의
+                  특이도 주석이 <b>근거를 잃고</b> 짧은 화면의 형상까지 이 회차의 책임이 된다.
+                  새 규칙은 <b>더하기만</b> 한다.</li>
+                <li><b style="color:var(--red)">🔴 「재본 축에만」 건다 — 「화면」도 축이다</b>(검수 지적).
+                  초안은 화면 조건 없이 걸어 <b>게임 화면(<code>body.no-scroll</code>)의 슬라이더까지</b>
+                  92 → 44로 줄였다. 거기서는 컨트롤이 <code>left: 16</code>에서 <b>오른쪽으로</b> 열려
+                  덮을 상대가 없고(우측 컬럼이 열리면 아예 <code>display:none</code>), 결함은
+                  <b>카드 화면에서만</b> 실측됐다 — 폰에서 가장 오래 보는 화면의 음량 조절을
+                  근거 없이 반토막 냈던 것이다. → <code>body:not(.no-scroll)</code>로 좁혔다
+                  ((1,3,1) &gt; (0,3,0)).</li>
+                <li><b style="color:var(--red)">🔴 <code>max-height: 719</code> 「밖」에서는 가로가 아니라
+                  「세로」가 지킨다</b>(검수 실측 · 정정). 초안이 「최악은 좁고 짧은 쪽」이라 적었는데
+                  <b>거짓이다.</b> 높이 ≥720이면 코드가 20px, 카드 패딩이 24라 <code>#roomCode</code>
+                  오른쪽이 <b>217.2</b>로 밀려 가로 여유가 <code>L − 339.2</code>가 된다 —
+                  <b>320~339에서 최대 19.2px 겹친다.</b> 안 우는 이유는 그때 카드가 위에 붙어
+                  (<code>.center</code> 패딩 16) <code>h1.top</code> 41 → 바닥 70 → 코드 줄 top <b>74</b>이고
+                  버튼 바닥이 62라 <b>세로로 12px</b> 벌어지기 때문이다. 그 12는 사람이 더 들어와도
+                  안 줄어드는 <b>바닥값</b>이지만 <code>.card</code> 패딩이나 <code>h1</code> 조판이 바뀌면
+                  사라진다. <b>계측 뷰포트가 없다</b>(큐). 60회차가 「폰은 세로로만 비켜 있다」로
+                  정정한 것과 <b>같은 종류의 사실</b>이다.</li>
+                <li>⚠️ <b>식에 안 적힌 항 둘.</b> ① 코드 폭 95.3에는 <code>letter-spacing: 0.06em</code>이
+                  <b>마지막 글자 뒤에도</b> 붙어 <code>9 × 0.96 = 8.64px</code>이 들어 있다 —
+                  여유 8.7px과 거의 같은 크기라 <code>0.08em</code>으로만 올려도 5.8px이 된다.
+                  ② 헤드리스는 <code>env(safe-area-inset-*)</code>이 <b>0</b>이다. 실기 세로에서는 보통
+                  0이지만, 0이 아니면 <code>.center</code>(왼쪽)와 <code>.bgm-ctrl</code>(오른쪽)이 서로
+                  다가와 그만큼 깎인다 — 「0이다」가 아니라 <b>「0이라 가정한다」</b>가 정확하다.</li>
+                <li>⚠️ <b>머리글은 여전히 덮는다 — 그리고 안 잰다.</b> 열린 폭 114면
+                  <code>n320</code>·<code>p553</code>에서 <code>h1</code>을 <b>46×29px</b> 덮는다
+                  (랜딩 부제까지). 52회차의 <code>vs</code> 철학(「반드시 쓸 수 있어야 하는 것만 건다 ·
+                  스스로 연 팝오버가 덩어리를 스치는 것은 결함이 아니다」)에 따라
+                  <b>의도적으로 안 넣었다</b> — 60회차가 계약을 준 것은 <b>평상 상태</b>(상시 덮음)다.
+                  판단이 바뀌면 <code>focusPairs[0].vs</code>에 넣어라(그 순간 운다).</li>
+                <li>⚠️ <b>44px 상태를 재는 검사가 0개다</b>(검수). S3는 평상 폭 0을 숨김으로 제외하고,
+                  S13은 coarse를 SKIP하며 데스크톱은 이 폭에 안 들어온다. 열린 손가락 타깃은
+                  <b>44×4</b>이고 트랙 44 − thumb ≈16 = 실이동 <b>약 28px</b>에 <code>step="1"</code>
+                  (1px ≈ 3.6단계)이다 — <code>step="5"</code>면 폭 계산을 안 건드리고 조작성만
+                  회복한다(큐).</li>
+                <li>✅ <b><code>F32</code>가 지킨다</b> — 좁히기를 되돌리면 <code>n320</code>에서
+                  <code>#roomCode</code>를 39.3×8px 덮는다. <code>F24</code>(짧은 화면 ·
+                  <code>edge</code>)와 <b>다른 축</b>이라 시험도 둘이다.<br>
+                  <b style="color:var(--red)">🔴 지문을 「폭 162」에서 「<code>#roomCode</code>를」로
+                  바꿨다</b>(검수 지적) — 그전 S14 FAIL 줄은 <code>vs</code>(선택자 <b>전체</b>)를 찍어서
+                  <code>#startBtn</code>이 대신 울어도 초록이었다. S14가 <b>최악 상대의 이름을
+                  인쇄하도록</b> 먼저 고쳤다(<code>gate-screen.mjs</code>의 <code>hit</code>).</li>
+              </ul></li>
           </ul></li>
         <li><b style="color:var(--red)">🔴 S14는 「겹쳤나」가 아니라 「얼마나 남았나」를 적는다</b>
           <span class="tag t-new">2026-09-01</span> — 이번 회차가 여유 16px을 <b>−4px</b>로 바꿔 놓고도
@@ -2671,6 +2768,7 @@
     <tr><th>§</th><th>문안 묶음</th><th>파일</th><th>함수 / 요소</th></tr>
     <tr><td>1.7</td><td>부유 컨트롤 배치 <span class="tag t-done">적용 완료</span></td><td class="q">client/index.html</td><td class="q"><code>.bgm-ctrl</code> — 폰 · <code>pointer:coarse</code> 두 블록의 <code>top</code>을 <code>body.no-scroll</code>로 한정</td></tr>
     <tr><td>1.7</td><td>부유 컨트롤 <b>여는 방향</b> <span class="tag t-done">적용 완료 2026-09-01</span></td><td class="q">client/index.html · scripts/gate.config.mjs · scripts/gate-screen.mjs</td><td class="q"><code>@media (max-height: 500px)</code>의 <code>#bgmCtrl:hover, :focus-within { flex-direction: column }</code> — 게이트는 <code>focusPairs</code> + <b>S14</b>(<code>probeFocusGeometry</code>)가 재고 <code>F24</code>가 지킨다</td></tr>
+    <tr><td>1.7</td><td>부유 컨트롤 ↔ <b>방 코드</b>(포커스 열림) <span class="tag t-done">적용 완료 2026-09-03</span></td><td class="q">client/index.html · scripts/gate.config.mjs · scripts/gate-screen.mjs</td><td class="q"><code>@media (max-height: 500px), (max-width: 490px)</code>의 <code>#bgmCtrl:focus-within .bgm-vol { width: 44px }</code> — 컨테이너 162 → 114로 <code>n320</code> 여유 <b>8.7px</b>. S14 <code>vs</code>에 <code>#roomCode</code>를 넣고 자기시험 <code>F32</code>가 지킨다</td></tr>
     <tr><td>1.7</td><td>부유 컨트롤 ↔ <b>카드 머리글</b> <span class="tag t-done">적용 완료 2026-09-02</span></td><td class="q">client/index.html · scripts/gate.config.mjs</td><td class="q"><code>@media (max-width: 490px)</code>의 <code>#landing h1, #landing .subtitle, #lobby h1 { margin-right: 39px }</code> + <code>.card .subtitle { word-break: keep-all }</code>(조건 없이) — 새 쌍 셋과 자기시험 <code>F30</code>·<code>F31</code>이 지킨다</td></tr>
     <tr><td>3</td><td>목표 카드 <span class="tag t-soon">선행</span></td><td class="q">client/index.html · client/src/main.ts</td><td class="q">신규 <code>#goalCard</code> · <code>enterGame()</code> 말미 · <code>.hud-ctrl</code> 끝 <code>[?]</code></td></tr>
     <tr><td>4.1</td><td>손패 라벨</td><td class="q">client/src/main.ts</td><td class="q">onMessage("hand") ≈212 · <code>#hand</code> 초기 텍스트</td></tr>
@@ -2725,12 +2823,32 @@
 
   <footer>
     <b>변경 이력</b><br>
+    <b>2026-09-03(61회차)</b>: <b>배경음 팝오버가 「방 코드」 위에서 열렸다. 여덟 회차를 살았다.</b>
+    <code>#bgmCtrl:focus-within</code>이 열리면 컨테이너가 60 → <b>162</b>가 되어
+    <code>n320 320×568</code>에서 <code>#roomCode</code>를 <b>39.3×8px 덮었다</b>
+    (<code>p553</code> 여유 15.7 · <code>phone</code> 79). 52회차가 「세로로 연다」의 조건을
+    <code>max-height: 500px</code>으로 좁힌 것은 옳았지만, 그러면 <b>좁고 긴 폰은 어느 분기에도
+    안 걸린다.</b><br>
+    🔴 <b>계약이 없어서 아무도 안 봤다</b> — <code>#roomCode</code>는 53회차에
+    <code>protect</code>로 올라갔는데 S14의 <code>vs</code>(52회차 목록)에는 안 따라 들어왔다.
+    60회차가 넣어 재 보고도 큐로 넘겼다. → <b>「계약에 넣는 것」과 「고치는 것」은 같은 회차에</b>
+    한다(41·44회차 <code>#hostHint</code>의 교훈).<br>
+    <b class="good">처방은 폭이다</b> — 슬라이더 92 → <b>44</b>, 컨테이너 162 → <b>114</b>.
+    여유 <code>L − 311.3</code> ↳ <code>n320</code> <b>8.7px</b>(게이트 실측). 44는 52회차 짧은
+    화면 분기가 이미 쓰는 값이자 <b>폭 하한 320에서 여유 8을 남기는 최댓값</b>(≤44.7)이다 —
+    새 상수를 안 만든다. 경계도 <b>490을 다시 쓴다</b>(60회차 머리글 거터와 같은 수 ·
+    「분기 경계는 하나여야 한다」).<br>
+    ⚠️ 세로로 여는 것은 <b>이미 기각된 답</b>이다(52회차 실측 <code>[복사]</code> 16 → −4px).
+    <code>F32</code>가 지킨다.
+    <br><br>
     <b>2026-09-02(60회차)</b>: <b>배경음 버튼이 「카드의 머리」 위에 서 있었다.</b>
     실측 <code>n320</code>·<code>p553</code>의 랜딩·대기실 <b>넷 모두</b>에서 <code>h1</code>을
     <b>31×29px</b>(랜딩은 <code>.subtitle</code>까지 <b>31×8px</b>) 덮었다. 58회차 검수가 손으로
     찾아 큐에 남겼는데 <b>재는 쌍이 없어 두 회차를 살아남았다.</b><br>
-    🔴 더 중요한 것은 <b>「지금 안 겹치는 폰」</b>이다 — <code>phone 390×844</code>의 여유가
-    <b>4px</b>이고 대기실 카드는 사람이 들어올 때마다 자란다(게이트는 1인으로 잰다).
+    🔴 더 중요한 것은 <b>「지금 안 겹치는 폰」</b>이다 — <code>phone 390×844</code>는
+    <b>가로로 27px 겹쳐 있고</b> 세로로만 비켜 있다(CDP 실측 여유 <b>46px</b> —
+    <s>4px</s>은 캡처를 눈으로 읽어 표시 배율을 빠뜨린 수다).
+    대기실 카드는 사람이 들어올 때마다 자라 그 46px을 먹는다(게이트는 1인으로 잰다).
     13·17회차가 기록한 「카드가 자라면 고정 좌표를 가로지른다」가 <b>세로 폰에서 그대로 살아 있었다.</b><br>
     ⚠️ 첫 처방(<code>.center { padding-top: 78px }</code>)은 <b>되주입에서 죽었다</b> —
     대기실 <code>[잔치 시작]</code>을 <b>35·32px 잘라 먹고</b> <code>#hostHint</code>를 화면 밖으로 냈다.
