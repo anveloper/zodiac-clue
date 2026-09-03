@@ -1645,7 +1645,8 @@ const judge = (screen, viewport, data) => {
               : !x.applied
                 ? `✗ ${x.focus} — **포커스가 안 걸렸다** — 못 잰 것이지 «안 덮는» 것이 아니다 · ${x.why}`
                 : over(x)
-                  ? `✗ ${x.focus}에 포커스 → ${x.vs}를 **${x.w}×${x.h}px 덮는다**(그때 폭 ${x.on}) · ${x.why}`
+                  ? `✗ ${x.focus}에 포커스 → **${x.hit || x.vs}**를 **${x.w}×${x.h}px 덮는다**` +
+                    `(그때 폭 ${x.on} · 상대 ${x.seen}개) · ${x.why}`
                   : (x.seen ?? 0) === 0
                     ? `□ ${x.focus} — **상대가 이 화면에 하나도 없다** — 쟀는데 괜찮은 것이 아니라 잴 대상이 없었다 · ${x.why}`
                     : `□ ${x.focus}에 포커스 → 안 덮는다 · 가장 가까운 ${x.near}까지 ` +
@@ -2043,6 +2044,13 @@ const probeFocusGeometry = async (sid, pairs = SCREEN.focusPairs ?? []) => {
            그래서 안 겹칠 때는 «얼마나 더 자라야 닿는가»를 함께 잰다.
            두 사각형은 두 축 «모두»에서 겹쳐야 겹치므로, 그 거리는 큰 쪽 간격이다. */
         let best = { w: 0, h: 0 };
+        /* 🔴 **«무엇을» 덮었는지 적는다** [2026-09-03 · 61회차 검수]. 그전에는 FAIL 줄이
+           vs(선택자 문자열 **전체**)를 찍어서, 자기시험 지문으로는 「vs 중 뭔가를 덮었다」
+           까지밖에 못 박았다 — #roomCode 계약이 죽고 #startBtn이 대신 울어도 초록이다.
+           79회차가 「두 쌍이 같은 문장을 쓰면 어느 쪽이 울었는지 못 가린다」로 적어 둔 것의
+           **한 쌍 안 버전**이고, near가 이미 쓰는 nm()을 최악 상대에도 붙이면 끝난다.
+           (주입 코드 안에는 백틱을 쓰지 않는다 — 이 블록은 통째로 템플릿 리터럴이다.) */
+        let hit = "";
         let gap = Infinity, near = "";
         const nm = (e) => e.id ? "#" + e.id : "." + (e.className || "").split(/\s+/)[0];
         for (const b of bs) {
@@ -2050,7 +2058,7 @@ const probeFocusGeometry = async (sid, pairs = SCREEN.focusPairs ?? []) => {
           const rb = b.getBoundingClientRect();
           const w = r10(Math.min(ra.right, rb.right) - Math.max(ra.left, rb.left));
           const h = r10(Math.min(ra.bottom, rb.bottom) - Math.max(ra.top, rb.top));
-          if (w * h > best.w * best.h) best = { w, h };
+          if (w * h > best.w * best.h) { best = { w, h }; hit = nm(b); }
           if (!(w > 0 && h > 0)) {
             const dx = Math.max(rb.left - ra.right, ra.left - rb.right, 0);
             const dy = Math.max(rb.top - ra.bottom, ra.top - rb.bottom, 0);
@@ -2059,7 +2067,7 @@ const probeFocusGeometry = async (sid, pairs = SCREEN.focusPairs ?? []) => {
           }
         }
         a.blur();
-        return { ...best, on: r10(ra.width), applied, seen: bs.length,
+        return { ...best, hit, on: r10(ra.width), applied, seen: bs.length,
                  gap: Number.isFinite(gap) ? gap : null, near };
       })()`);
       items.push({ ...fp, ...(m ?? { missing: true }) });
@@ -3415,6 +3423,35 @@ const FAULTS = [
       const st = document.createElement('style');
       st.id = 'zc-fault-lobby-head';
       st.textContent = '#lobby h1 { margin-right: 0 !important; padding-right: 39px !important; }';
+      document.head.appendChild(st);
+      return 'injected';
+    })()`,
+  },
+  {
+    id: "F32-팝오버가방코드위로",
+    expect: "S14",
+    screen: "lobby",
+    vp: "n320",
+    /* 🔴 **`F24`와 «같은 결함»이 아니다.** F24는 `edge 620×340`, 즉 **짧은** 화면에서
+       52회차의 세로 열기가 살아 있는지 본다. 이것은 `n320 320×568` — **짧지 않고 좁은** 쪽이라
+       그 분기가 원리적으로 안 걸린다. 축이 둘이므로 시험도 둘이다.
+       🔴 **지문은 «무엇을 덮었나»로 못 박는다**(검수 지적). 초안은 `/그때 폭 162/`였는데,
+          그건 「162로 되돌아갔고 `vs` 중 **뭔가**를 덮었다」까지만 증명한다 —
+          `#roomCode` 계약이 죽고 `#startBtn`이 대신 울어도 초록이었다. 그래서 S14가
+          **최악 상대의 이름을 인쇄하도록** 먼저 고쳤다(위 `hit`). 덤으로 지문이
+          «이 수리가 통제하지 않는 상수»(평상 92 · 아이콘 44)에 안 묶인다. */
+    signature: /\*\*#roomCode\*\*를/,
+    why:
+      "좁은 폭의 슬라이더 좁히기(92 → 44)를 되돌린다 — 컨테이너가 114 → **162**가 되어 " +
+      "`n320`에서 `#roomCode`를 **39.3×8px 덮는다**(61회차 실측 · 고치기 전 상태가 그것이었다). " +
+      "🔴 이 결함은 **52회차부터 여덟 회차를 살아 있었다** — `#roomCode`가 53회차에 `protect`로 " +
+      "올라갔는데 S14의 `vs`에는 안 따라 들어왔기 때문이다. 계약이 없으면 게이트는 초록을 준다.",
+    js: `(() => {
+      const st = document.createElement('style');
+      st.id = 'zc-fault-focus-wide-narrow';
+      /* 61회차의 \`@media (max-height: 500px), (max-width: 490px)\` 분기만 무력화한다 —
+         방향·패딩·gap은 이 폭에서 이미 기본값이라 건드릴 것이 없다(F24와 다른 점). */
+      st.textContent = '#bgmCtrl:hover .bgm-vol, #bgmCtrl:focus-within .bgm-vol { width: 92px !important; }';
       document.head.appendChild(st);
       return 'injected';
     })()`,
